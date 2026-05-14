@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import csv
 import sys
+import time
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -14,6 +16,7 @@ REPORT_DIR = Path("/kaggle/working/_eatfitai_v4_source_audit_reports")
 REPORTS_ZIP = Path("/kaggle/working/eatfitai_v4_source_audit_reports.zip")
 SOURCE_MANIFEST = os.environ.get("EATFITAI_V4_SOURCE_MANIFEST", "clean_v4_external_source_candidates_2026-05-13.csv")
 MAX_ANNOTATION_FILE_BYTES = int(os.environ.get("EATFITAI_V4_MAX_ANNOTATION_FILE_MB", "120")) * 1024 * 1024
+MAX_RUNTIME_SECONDS = int(os.environ.get("EATFITAI_V4_MAX_RUNTIME_SECONDS", "30000"))
 
 SKIP_CLASS_DIR_NAMES = {
     "ann_dir",
@@ -156,7 +159,7 @@ CODE_DIR = find_code_dir()
 if str(CODE_DIR) not in sys.path:
     sys.path.insert(0, str(CODE_DIR))
 
-from audit_sources import audit_mounted_source  # type: ignore  # noqa: E402
+from audit_sources import audit_mounted_source, load_manifest_class_names  # type: ignore  # noqa: E402
 from common import (  # type: ignore  # noqa: E402
     IMAGE_EXTS,
     find_data_yaml,
@@ -230,12 +233,12 @@ def find_dataset_mount(dataset_ref: str, root: Path = KAGGLE_INPUT) -> Path | No
     return None
 
 
-def find_yolo_root(root: Path) -> Path | None:
+def find_yolo_root(root: Path, require_data_yaml: bool = True) -> Path | None:
     candidates = [root]
     candidates.extend(path.parent for path in sorted(root.rglob("data.y*ml")))
     for candidate in candidates:
         has_direct_data_yaml = (candidate / "data.yaml").exists() or (candidate / "data.yml").exists()
-        if has_direct_data_yaml and find_split_dirs(candidate):
+        if find_split_dirs(candidate) and (has_direct_data_yaml or not require_data_yaml):
             return candidate
     return None
 
@@ -259,6 +262,30 @@ def iter_imagefolder_class_dirs(root: Path) -> list[Path]:
         if direct_images(directory):
             class_dirs.append(directory)
     return class_dirs
+
+
+def parse_int_label(value: str) -> int | None:
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return int(text, 10)
+    except ValueError:
+        return None
+
+
+def load_source_class_name_map(row: dict[str, str]) -> tuple[dict[int, str], list[str]]:
+    source = dict(row)
+    source.setdefault("source_slug", source_slug_for_ref(row.get("dataset_ref", "")))
+    names, warnings, _source = load_manifest_class_names(source)
+    return names, warnings
+
+
+def mapped_directory_class_name(class_dir_name: str, class_names: dict[int, str]) -> str:
+    class_id = parse_int_label(class_dir_name)
+    if class_id is not None and class_id in class_names:
+        return class_names[class_id]
+    return class_dir_name
 
 
 def base_source_row(row: dict[str, str], mount_path: Path | None, status: str, audit_mode: str) -> dict[str, Any]:
@@ -310,9 +337,10 @@ def class_candidate(
 
 def audit_classification_imagefolder_source(row: dict[str, str], mount_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     stats: dict[str, dict[str, Any]] = defaultdict(lambda: {"images": 0, "splits": Counter()})
+    class_names, class_map_warnings = load_source_class_name_map(row)
     for class_dir in iter_imagefolder_class_dirs(mount_path):
         images = direct_images(class_dir)
-        raw_class_name = class_dir.name
+        raw_class_name = mapped_directory_class_name(class_dir.name, class_names)
         split_name = split_for_class_dir(class_dir)
         stats[raw_class_name]["images"] += len(images)
         stats[raw_class_name]["splits"][split_name] += len(images)
@@ -333,8 +361,169 @@ def audit_classification_imagefolder_source(row: dict[str, str], mount_path: Pat
     source_row["class_count"] = len(candidates)
     source_row["image_count"] = sum(int(candidate["images"]) for candidate in candidates)
     source_row["candidate_count"] = len(candidates)
+    source_row["warnings"] = ";".join(sorted(set(class_map_warnings)))
     if not candidates:
-        source_row["warnings"] = "no_imagefolder_class_dirs_found"
+        source_row["warnings"] = "|".join([source_row["warnings"], "no_imagefolder_class_dirs_found"]).strip("|")
+    return source_row, candidates
+
+
+def find_csv_label_files(row: dict[str, str], mount_path: Path) -> list[Path]:
+    explicit = row.get("csv_label_file", "").strip()
+    if explicit:
+        direct = mount_path / explicit
+        matches = [direct] if direct.exists() else sorted(mount_path.rglob(explicit))
+        return [path for path in matches if path.is_file()]
+    return sorted(path for path in mount_path.rglob("*.csv") if path.stat().st_size <= MAX_ANNOTATION_FILE_BYTES)
+
+
+def first_present(row: dict[str, str], names: tuple[str, ...]) -> str:
+    lower_map = {key.lower(): key for key in row.keys()}
+    for name in names:
+        actual = lower_map.get(name.lower())
+        if actual and str(row.get(actual, "")).strip():
+            return str(row.get(actual, "")).strip()
+    return ""
+
+
+def audit_classification_csv_source(row: dict[str, str], mount_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    class_column = row.get("csv_class_column", "").strip()
+    image_column = row.get("csv_image_column", "").strip()
+    split_name = row.get("csv_split", "").strip() or "all"
+    stats: dict[str, dict[str, Any]] = defaultdict(lambda: {"instances": 0, "image_ids": set(), "splits": Counter()})
+    warnings: list[str] = []
+    files = find_csv_label_files(row, mount_path)
+    for path in files:
+        try:
+            with path.open("r", encoding="utf-8-sig", newline="") as f:
+                reader = csv.DictReader(f)
+                for csv_row in reader:
+                    raw_class_name = (
+                        str(csv_row.get(class_column, "")).strip()
+                        if class_column
+                        else first_present(
+                            csv_row,
+                            (
+                                "ClassName",
+                                "class_name",
+                                "class",
+                                "label",
+                                "category",
+                                "food",
+                                "food_name",
+                                "dish",
+                                "name",
+                            ),
+                        )
+                    )
+                    if not raw_class_name:
+                        continue
+                    image_id = (
+                        str(csv_row.get(image_column, "")).strip()
+                        if image_column
+                        else first_present(
+                            csv_row,
+                            ("ImageId", "image_id", "image", "filename", "file_name", "path", "id"),
+                        )
+                    )
+                    stats[raw_class_name]["instances"] += 1
+                    if image_id:
+                        stats[raw_class_name]["image_ids"].add(image_id)
+                    stats[raw_class_name]["splits"][split_name] += 1
+        except Exception as exc:
+            warnings.append(f"csv_parse_failed:{path.name}:{type(exc).__name__}")
+
+    candidates = [
+        class_candidate(
+            row,
+            raw_class_name=class_name,
+            images=len(values["image_ids"]) if values["image_ids"] else int(values["instances"]),
+            instances=int(values["instances"]),
+            split_counts=dict(values["splits"]),
+            candidate_origin="classification_pseudo_box_review",
+        )
+        for class_name, values in sorted(stats.items(), key=lambda item: normalize_label(item[0]))
+        if int(values["instances"]) > 0
+    ]
+    source_row = base_source_row(row, mount_path, "audited", "classification_csv")
+    source_row["class_count"] = len(candidates)
+    source_row["image_count"] = count_images_under(mount_path)
+    source_row["label_count"] = sum(int(candidate["instances"]) for candidate in candidates)
+    source_row["annotation_file_count"] = len(files)
+    source_row["candidate_count"] = len(candidates)
+    source_row["warnings"] = "|".join(warnings[:20])
+    if not candidates:
+        source_row["warnings"] = "|".join([source_row["warnings"], "no_csv_class_labels_found"]).strip("|")
+    return source_row, candidates
+
+
+def find_uec_category_file(mount_path: Path) -> Path | None:
+    for path in [mount_path / "category.txt", *mount_path.rglob("category.txt")]:
+        if path.is_file():
+            return path
+    return None
+
+
+def read_uec_category_names(path: Path | None) -> tuple[dict[int, str], list[str]]:
+    warnings: list[str] = []
+    if path is None:
+        return {}, ["uec_category_txt_missing"]
+    names: dict[int, str] = {}
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            for item in reader:
+                class_id = parse_int_label(item.get("id", ""))
+                name = str(item.get("name", "")).strip()
+                if class_id is not None and name:
+                    names[class_id] = name
+    except Exception as exc:
+        warnings.append(f"uec_category_parse_failed:{type(exc).__name__}")
+    if not names:
+        warnings.append("uec_category_names_missing")
+    return names, warnings
+
+
+def audit_uecfood_source(row: dict[str, str], mount_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    category_names, warnings = read_uec_category_names(find_uec_category_file(mount_path))
+    stats: dict[str, dict[str, Any]] = defaultdict(lambda: {"images": 0, "instances": 0})
+    annotation_files = sorted(mount_path.rglob("bb_info.txt"))
+    for bb_file in annotation_files:
+        class_id = parse_int_label(bb_file.parent.name)
+        class_name = category_names.get(class_id or -1, bb_file.parent.name)
+        try:
+            lines = bb_file.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+        except Exception as exc:
+            warnings.append(f"uec_bb_info_read_failed:{bb_file.parent.name}:{type(exc).__name__}")
+            continue
+        for line in lines[1:]:
+            parts = line.strip().split()
+            if len(parts) < 5:
+                continue
+            box_count = max(1, (len(parts) - 1) // 4)
+            stats[class_name]["images"] += 1
+            stats[class_name]["instances"] += box_count
+
+    candidates = [
+        class_candidate(
+            row,
+            raw_class_name=class_name,
+            images=int(values["images"]),
+            instances=int(values["instances"]),
+            split_counts={"all": int(values["images"])},
+            candidate_origin="uec_bbox_metadata_review",
+        )
+        for class_name, values in sorted(stats.items(), key=lambda item: normalize_label(item[0]))
+        if int(values["images"]) > 0
+    ]
+    source_row = base_source_row(row, mount_path, "audited", "uecfood_bbox_metadata")
+    source_row["class_count"] = len(candidates)
+    source_row["image_count"] = count_images_under(mount_path)
+    source_row["label_count"] = sum(int(candidate["instances"]) for candidate in candidates)
+    source_row["annotation_file_count"] = len(annotation_files)
+    source_row["candidate_count"] = len(candidates)
+    source_row["warnings"] = "|".join(warnings[:20])
+    if not candidates:
+        source_row["warnings"] = "|".join([source_row["warnings"], "no_uec_bbox_rows_found"]).strip("|")
     return source_row, candidates
 
 
@@ -366,6 +555,8 @@ def audit_yolo_source(row: dict[str, str], mount_path: Path, yolo_root: Path) ->
             "source_slug": source_slug,
             "extracted_path": yolo_root.as_posix(),
             "initial_decision": "REVIEW",
+            "class_names_file": row.get("class_names_file", ""),
+            "class_names_key": row.get("class_names_key", ""),
         },
         yolo_root,
     )
@@ -439,10 +630,35 @@ def collect_coco_category_stats(value: Any) -> dict[str, dict[str, Any]]:
     return stats
 
 
+def collect_vqa_dish_stats(value: Any) -> dict[str, dict[str, Any]]:
+    rows: list[Any]
+    if isinstance(value, list):
+        rows = value
+    elif isinstance(value, dict):
+        candidate_rows = value.get("annotations") or value.get("data") or value.get("items")
+        rows = candidate_rows if isinstance(candidate_rows, list) else []
+    else:
+        rows = []
+
+    stats: dict[str, dict[str, Any]] = defaultdict(lambda: {"instances": 0, "image_ids": set()})
+    for item in rows[:200000]:
+        if not isinstance(item, dict):
+            continue
+        dish = item.get("dish")
+        if not isinstance(dish, str) or not dish.strip():
+            continue
+        image_id = item.get("image_id") or item.get("image") or item.get("file_name")
+        stats[dish.strip()]["instances"] += 1
+        if image_id is not None:
+            stats[dish.strip()]["image_ids"].add(image_id)
+    return stats
+
+
 def audit_annotation_or_file_pool_source(row: dict[str, str], mount_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     files = annotation_files(mount_path)
     category_counts: Counter[str] = Counter()
     category_image_ids: dict[str, set[Any]] = defaultdict(set)
+    category_origins: dict[str, str] = {}
     warnings: list[str] = []
     for path in files:
         if path.suffix.lower() != ".json":
@@ -457,6 +673,12 @@ def audit_annotation_or_file_pool_source(row: dict[str, str], mount_path: Path) 
             for class_name, stats in coco_stats.items():
                 category_counts[class_name] += int(stats["instances"])
                 category_image_ids[class_name].update(stats["image_ids"])
+                category_origins[class_name] = "annotation_category_review"
+        elif dish_stats := collect_vqa_dish_stats(data):
+            for class_name, stats in dish_stats.items():
+                category_counts[class_name] += int(stats["instances"])
+                category_image_ids[class_name].update(stats["image_ids"])
+                category_origins[class_name] = "vqa_dish_label_review"
         else:
             collect_category_names_from_json(data, category_counts)
 
@@ -468,7 +690,7 @@ def audit_annotation_or_file_pool_source(row: dict[str, str], mount_path: Path) 
             images=len(category_image_ids.get(name, set())),
             instances=count,
             split_counts={"all": len(category_image_ids.get(name, set()))} if category_image_ids.get(name) else {},
-            candidate_origin="annotation_category_review",
+            candidate_origin=category_origins.get(name, "annotation_category_review"),
         )
         for name, count in sorted(category_counts.items(), key=lambda item: normalize_label(item[0]))
     ]
@@ -542,10 +764,16 @@ def audit_source(row: dict[str, str], root: Path = KAGGLE_INPUT) -> tuple[dict[s
     if mount_path is None:
         return base_source_row(row, None, "missing_mount", "none"), []
 
-    yolo_root = find_yolo_root(mount_path)
     source_format = row.get("source_format", "").lower()
+    yolo_root = find_yolo_root(mount_path, require_data_yaml=True)
+    if yolo_root is None and ("yolo" in source_format or "detection" in source_format or "object_detection" in source_format):
+        yolo_root = find_yolo_root(mount_path, require_data_yaml=False)
     if yolo_root is not None and ("yolo" in source_format or "detection" in source_format or "object_detection" in source_format):
         return audit_yolo_source(row, mount_path, yolo_root)
+    if "uecfood" in source_format or "uec_food" in source_format:
+        return audit_uecfood_source(row, mount_path)
+    if "classification_csv" in source_format:
+        return audit_classification_csv_source(row, mount_path)
     if "classification" in source_format or "imagefolder" in source_format:
         return audit_classification_imagefolder_source(row, mount_path)
     if "segmentation" in source_format:
@@ -562,18 +790,12 @@ def zip_reports(report_dir: Path, out_zip: Path) -> None:
                 zf.write(path, path.relative_to(report_dir.parent))
 
 
-def main() -> int:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    manifest = read_csv(CODE_DIR / SOURCE_MANIFEST)
-    source_rows: list[dict[str, Any]] = []
-    class_rows: list[dict[str, Any]] = []
-    for row in manifest:
-        source_row, candidates = audit_source(row)
-        source_rows.append(source_row)
-        class_rows.extend(candidates)
-
-    write_csv(REPORT_DIR / "v4_source_audit.csv", source_rows, SOURCE_AUDIT_FIELDS)
-    write_csv(REPORT_DIR / "class_candidates_v4.csv", class_rows, CLASS_CANDIDATE_FIELDS)
+def source_audit_summary(
+    source_rows: list[dict[str, Any]],
+    class_rows: list[dict[str, Any]],
+    completed_all_sources: bool,
+    stopped_reason: str = "",
+) -> dict[str, Any]:
     summary = {
         "source_count": len(source_rows),
         "audited_source_count": sum(1 for row in source_rows if row.get("status") == "audited"),
@@ -581,9 +803,65 @@ def main() -> int:
         "candidate_class_rows": len(class_rows),
         "total_candidate_images": sum(int(row.get("images") or 0) for row in class_rows),
         "audit_modes": dict(Counter(str(row.get("audit_mode", "")) for row in source_rows)),
+        "completed_all_sources": completed_all_sources,
     }
-    write_json(REPORT_DIR / "v4_source_audit_summary.json", summary)
-    zip_reports(REPORT_DIR, REPORTS_ZIP)
+    if stopped_reason:
+        summary["stopped_reason"] = stopped_reason
+    return summary
+
+
+def write_report_bundle(
+    report_dir: Path,
+    reports_zip: Path,
+    source_rows: list[dict[str, Any]],
+    class_rows: list[dict[str, Any]],
+    completed_all_sources: bool,
+    stopped_reason: str = "",
+) -> dict[str, Any]:
+    write_csv(report_dir / "v4_source_audit.csv", source_rows, SOURCE_AUDIT_FIELDS)
+    write_csv(report_dir / "class_candidates_v4.csv", class_rows, CLASS_CANDIDATE_FIELDS)
+    summary = source_audit_summary(source_rows, class_rows, completed_all_sources, stopped_reason)
+    write_json(report_dir / "v4_source_audit_summary.json", summary)
+    zip_reports(report_dir, reports_zip)
+    return summary
+
+
+def main() -> int:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    manifest = read_csv(CODE_DIR / SOURCE_MANIFEST)
+    source_rows: list[dict[str, Any]] = []
+    class_rows: list[dict[str, Any]] = []
+    completed_all_sources = True
+    stopped_reason = ""
+    started_at = time.monotonic()
+    for index, row in enumerate(manifest, start=1):
+        elapsed = time.monotonic() - started_at
+        if source_rows and elapsed >= MAX_RUNTIME_SECONDS:
+            completed_all_sources = False
+            stopped_reason = f"time_guard_after_{len(source_rows)}_sources"
+            for pending in manifest[index - 1 :]:
+                source_rows.append(base_source_row(pending, None, "time_guard_pending", "none"))
+            break
+        dataset_ref = row.get("dataset_ref", "")
+        print(f"V4_SOURCE_AUDIT_PROGRESS {index}/{len(manifest)} {dataset_ref}", flush=True)
+        try:
+            source_row, candidates = audit_source(row)
+        except Exception as exc:
+            source_row = base_source_row(row, None, "audit_error", "none")
+            source_row["warnings"] = f"{type(exc).__name__}:{exc}"
+            candidates = []
+        source_rows.append(source_row)
+        class_rows.extend(candidates)
+        write_report_bundle(REPORT_DIR, REPORTS_ZIP, source_rows, class_rows, completed_all_sources=False)
+
+    summary = write_report_bundle(
+        REPORT_DIR,
+        REPORTS_ZIP,
+        source_rows,
+        class_rows,
+        completed_all_sources=completed_all_sources,
+        stopped_reason=stopped_reason,
+    )
     print(json.dumps(summary, ensure_ascii=False, indent=2), flush=True)
     return 0
 

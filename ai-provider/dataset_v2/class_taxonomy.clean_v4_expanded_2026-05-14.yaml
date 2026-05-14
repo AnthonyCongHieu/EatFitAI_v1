@@ -1,5 +1,5 @@
 version: 2026-05-13-clean-v4-expanded
-source_policy: clean_candidate_sources_v4_2026-05-13.csv
+source_policy: clean_candidate_sources_v4_2026-05-14.csv
 notes:
 - ASCII canonical slugs only to avoid Vietnamese mojibake in training artifacts.
 - Default production clean excludes noncommercial_only sources unless --include-noncommercial

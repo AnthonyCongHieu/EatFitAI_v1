@@ -27,6 +27,19 @@ source_gates:
   require_sample_grid_review: true
   reject_unknown_license_for_default_training: true
 class_design:
+  canonical_label_remaps:
+    tomato_raw: tomato
+    carrot_raw: carrot
+    bell_pepper_red_raw: bell_pepper
+    strawberries: strawberry
+    bread_wholemeal: bread_whole_wheat
+    pasta_spaghetti: pasta
+    orange_orange_fruit: orange
+    cucumber_cuke: cucumber
+    bell_pepper_capsicum: bell_pepper
+  targeted_collection_fit_lanes:
+    - VIETNAMESE_DISH_EXPANSION
+  targeted_collection_min_images: 180
   split_if_preparation_changes_calories_and_is_visual:
     - luoc
     - chien
@@ -43,3 +56,6 @@ class_design:
     - rau
     - label
     - person
+    - con_nguoi
+    - human
+    - face

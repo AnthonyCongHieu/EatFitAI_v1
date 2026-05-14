@@ -198,8 +198,10 @@ The optimal next target is:
 
 ## Current Implementation Status
 
-Implemented local V4 candidate scoring after the Kaggle V4 source audit
-completed.
+Implemented local V4 candidate scoring after pulling usable V4 source-audit
+artifacts. The latest full-audit Kaggle version later exceeded Kaggle's max
+execution duration, so do not treat the full audit kernel as the next job to
+rerun.
 
 Generated artifacts:
 
@@ -209,15 +211,23 @@ Generated artifacts:
 - `ai-provider/dataset_v2/class_taxonomy.clean_v4_expanded_2026-05-13.yaml`
 - `ai-provider/dataset_v2/clean_candidate_sources_v4_2026-05-13.csv`
 
-Default/commercial-safe scoring result after V4 source audit version 4:
+Default/commercial-safe scoring result after pulling the usable V4 source audit
+output on 2026-05-14:
 
-- Base classes: 105.
-- Accepted new classes: 32.
-- Final class count if applied: 137.
+- Latest Kaggle status: `hiuinhcng/eatfitai-v4-source-audit`
+  `CANCEL_ACKNOWLEDGED`.
+- Failure message: exceeded Kaggle's max allowed execution duration.
+- Root cause: the full audit mounted too many heavyweight broad sources,
+  including Food41/ChineseFoodNet/large global image pools.
+- Output pulled to
+  `_dataset_v2_reports/kaggle_v4_source_audit_latest/_eatfitai_v4_source_audit_reports/`.
+- Base classes: 126, using Clean V3 Expanded as the base taxonomy.
+- Accepted new classes: 42.
+- Final class count if applied: 168.
 - Decision status: `collect_more_v4_classes_before_gpu`.
-- Decision counts: 62 existing, 32 accepted/priority accepted, 5 generic
-  bucket holds, 39 manual nutrition-mapping holds, 79 more-data holds, 357
-  private/license holds, 459 rejects.
+- Decision counts: 69 existing, 42 accepted/priority accepted, 5 generic
+  bucket holds, 39 manual nutrition-mapping holds, 72 more-data holds, 56
+  targeted Vietnamese collection holds, 101 private/license holds, 784 rejects.
 
 Private/noncommercial what-if scoring result after V4 source audit version 4:
 
@@ -234,14 +244,135 @@ Completed V4 adapter improvements:
 - Beverage, sauce-only, and condiment labels such as `water`, `coffee`,
   `wine`, `sauce`, `jam`, `honey`, and `butter` are held for nutrition mapping
   instead of entering the detector taxonomy.
+- Numeric category ids from detection sources are rejected before taxonomy
+  append.
+- Common Food Recognition/FoodSeg naming variants are remapped before scoring:
+  examples include `tomato_raw -> tomato`, `carrot_raw -> carrot`,
+  `strawberries -> strawberry`, and `orange_orange_fruit -> orange`.
+- Permissive Vietnamese dish candidates with at least 180 eligible images are
+  marked `hold_targeted_collection` instead of being treated as final rejects.
 
 Decision:
 
 - Do not push Clean Build V4 yet.
 - Do not run YOLO11m V4 training yet.
-- The next task is to improve V4 adapters/source policy before another build:
-  class-name remapping for Food Recognition/FoodSeg103, targeted permissive
-  Vietnamese sources, and manual promotion of visually strong held classes.
+- Do not rerun the full source audit kernel as-is.
+- The next task is a smaller CPU-only targeted Vietnamese source audit, then
+  rerun V4 scoring against the combined candidate set.
+- Manual promotion of visually strong held classes should happen only after the
+  extra-source pass, because the current 168-class result is still far below the
+  300-class minimum GPU gate.
+
+2026-05-14 follow-up after the full-audit timeout:
+
+- Added checkpoint/time-guard output to `kaggle_v4_source_audit_kernel.py`.
+- Added targeted source manifest
+  `clean_v4_targeted_vietnamese_source_candidates_2026-05-14.csv`.
+- Added CPU-only targeted kernel
+  `hiuinhcng/eatfitai-v4-targeted-vietnamese-source-audit`.
+- Targeted kernel mounts only Vietnamese follow-up sources and avoids
+  Food41/ChineseFoodNet/global heavy sources.
+- Targeted kernel version 1 failed because Kaggle executed from `/kaggle/src`
+  and the entrypoint imported `kaggle_v4_source_audit_kernel` before adding the
+  pipeline-code folder to `sys.path`.
+- Targeted kernel version 2 fixes the isolated-entrypoint import path and is
+  running on Kaggle.
+- Targeted kernel version 2 completed, but did not unlock new accepted classes:
+  5/5 sources audited, 52 candidate rows, 8,053 candidate images. VietFood67
+  mounted 171,619 images/label text files but produced `no_category_names_found`
+  because the Kaggle package lacks a bundled class-id map.
+- Targeted kernel version 3 changed VietFood67 to `yolo_detection`, but still
+  lacked class names because the source has YOLO labels without `data.yaml`.
+- Added `vietfood67_class_names_2026-05-14.yaml` from the upstream
+  `nvhnam/FoodDetector` class list linked by the Kaggle metadata.
+- Added YOLO fallback for mounted datasets with `images/labels` split folders
+  and an external class map.
+- Targeted kernel version 4 is running on Kaggle. It should confirm VietFood67
+  as `yolo_detection` with the external class map before any taxonomy gate uses
+  it.
+- Targeted kernel version 4 completed successfully:
+  - 5/5 targeted sources audited, 0 missing mounts.
+  - 120 candidate rows, 669,399 candidate images.
+  - Audit modes: 1 YOLO detection, 2 annotation/file-pool, 2 classification
+    image-folder.
+  - VietFood67 audited as `yolo_detection` with 68 classes, 171,619 images,
+    171,619 label files, and `data_yaml_missing;external_class_map_used`.
+- Combined V4 audit after targeted version 4:
+  - 31 source rows, 27 audited, 2 missing mounts.
+  - 2,314 candidate class rows.
+  - 1,462,719 total candidate images.
+- Default/commercial-safe V4 gate after targeted version 4:
+  - Base classes: 126.
+  - Accepted new classes: 42.
+  - Final class count if applied: 168.
+  - Status: `collect_more_v4_classes_before_gpu`.
+- Private/noncommercial what-if gate after targeted version 4:
+  - Accepted new classes: 52.
+  - Final class count if applied: 178.
+  - Status: `collect_more_v4_classes_before_gpu`.
+- VietFood67 taxonomy impact:
+  - 63/68 classes already map to existing base classes.
+  - `rau` is held as a generic bucket label.
+  - `con_nguoi`, `hamburger`, `pho_mai`, and `salad` are rejected by
+    reject aliases.
+  - No VietFood67 class is appended as a new class; the source is a strong
+    bbox/data booster for private/noncommercial lanes, not a class-expansion
+    source.
+- The targeted Vietnamese audit automation was deleted after completion.
+- Old automation `v4-source-audit-kaggle-follow-up` was removed because it
+  pointed to the canceled full-audit kernel.
+- New automation `v4-targeted-vietnamese-audit-follow-up` checks the targeted
+  CPU job every 30 minutes.
+- Validation: `python -m pytest ai-provider/tests/test_dataset_v2_v4_source_audit.py ai-provider/tests/test_dataset_v2_clean_v4_candidate_mining.py -q`
+  passed with 20 tests and 2 subtests.
+
+2026-05-14 class-expansion follow-up after VietFood67 proved mostly overlap:
+
+- Research conclusion: the next class-count jump needs broader prepared-dish
+  sources, not more Vietnamese overlap alone. The current gate is still 168
+  public-safe classes / 178 private-lane classes, both below the 300-class
+  minimum for spending GPU.
+- Added audit adapters:
+  - `classification_csv` for Kaggle/AIcrowd-style CSV labels such as
+    `train_img.csv`.
+  - `uecfood256_bbox` for UECFood `category.txt` plus per-class `bb_info.txt`.
+  - Numeric image-folder class mapping via external class maps, needed for
+    CNFood-241-style folders such as `000`, `001`, ...
+  - `dataset.yaml` / `dataset.yml` support for YOLO sources that do not use
+    the exact `data.yaml` filename.
+- Added class maps:
+  - `cnfood241_class_names_2026-05-14.yaml` with 241 English dish labels.
+  - `uecfood256_class_names_2026-05-14.yaml` with 256 UEC category labels.
+- Added class-expansion manifest
+  `clean_v4_class_expansion_source_candidates_2026-05-14.csv`.
+- Audit lanes in that manifest:
+  - Public/default candidates: `bjoernjostein/food-classification`
+    (CC0 CSV, 61 classes), `raahimshah/desi-food-dataset-annotated`
+    (MIT YOLO), `nikolasgegenava/popular-street-foods` (MIT image-folder).
+  - Private/noncommercial class-count ceiling candidate:
+    `zachaluza/cnfood-241` (CC BY-NC 3.0, 241 classes, 191k images).
+  - Audit-only/license-blocked reference: `rkuo2000/uecfood256`
+    (256-class bbox metadata, Kaggle license unknown).
+  - Quality/license holds: `patzer0/16-famous-chinese-dishes` has a Kaggle
+    Apache tag but description warns about possible copyright restrictions;
+    `jiezh2/common-chinese-food` is only five classes and described as 32x32
+    augmented images.
+  - Adapter hold: `rock3yu/dimsum50-0-1` is promising, but the Kaggle file list
+    showed flat images without a proven label map, so it remains out of the
+    audit kernel until mapping is proven.
+- Published pipeline-code dataset version:
+  `hiuinhcng/eatfitai-dataset-v2-pipeline-code`, message
+  `v4 class expansion CPU audit adapters maps and manifest`.
+- Pushed CPU-only Kaggle kernel:
+  `hiuinhcng/eatfitai-v4-class-expansion-source-audit`.
+  - GPU disabled.
+  - Timeout set to 32,400 seconds.
+  - Initial status after push: `RUNNING`.
+- Created heartbeat automation `v4-class-expansion-audit-follow-up` to check
+  every 30 minutes, download output when complete, rerun public/private V4
+  mining, and report whether the class count reaches the 300-class GPU gate.
+- Validation: `python -m pytest ai-provider/tests/test_dataset_v2_v4_source_audit.py ai-provider/tests/test_dataset_v2_clean_v4_candidate_mining.py -q`
+  passed with 31 tests and 3 subtests.
 
 ## Source Links
 

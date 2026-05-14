@@ -4,14 +4,14 @@
   "final_class_count_if_applied": 168,
   "decision_counts": {
     "accept": 30,
-    "existing": 69,
-    "hold_generic_label": 5,
+    "existing": 111,
+    "hold_generic_label": 6,
     "hold_manual_mapping": 39,
     "hold_more_data": 72,
     "hold_private_or_license": 101,
     "hold_targeted_collection": 56,
     "priority_accept": 12,
-    "reject": 784
+    "reject": 787
   },
   "accepted_new_class_names": [
     "apple",

@@ -10,7 +10,7 @@ data evidence is strong enough.
 ## Phase 0 - Baseline Lock
 
 - [x] Keep YOLO11m Clean V1 as rollback/evidence baseline.
-- [x] Keep Clean V2 Kaggle build running as a separate baseline.
+- [x] Keep Clean V2 Kaggle build as a separate baseline.
 - [x] Do not reorder the existing 105 classes.
 - [x] Do not promote any model from public diagnostic seed alone.
 
@@ -122,7 +122,10 @@ Prepared artifacts:
 - [x] `kaggle_clean_build_v3_kernel_metadata.json`.
 - [x] Local Kaggle folder: `_dataset_v2_clean_build_v3_kernel`.
 - [x] Pipeline-code dataset versioned on Kaggle with V3 assets.
-- [ ] Push Clean Build V3 only after Clean Build V2 leaves `RUNNING`.
+- [x] Clean Build V2 left `RUNNING`; Kaggle status is `COMPLETE`.
+- [x] Pull Clean Build V2 reports locally.
+- [ ] Do not push Clean Build V3 now; V4 evidence supersedes it and current
+  V4 class count is still below the GPU gate.
 
 Hard pass:
 
@@ -133,6 +136,18 @@ Hard pass:
 - `image_open_failed=0`.
 - No empty train/valid/test split.
 - Accepted new classes appear in train and valid.
+
+Current Clean Build V2 evidence:
+
+- Report path:
+  `_dataset_v2_reports/kaggle_clean_build_v2_completed/_dataset_v2_clean_build_reports/`.
+- `hard_gate_passed=true`.
+- 40,000 images, 105 classes, 166,703 retained instances.
+- Splits: 33,932 train, 4,002 valid, 2,066 test images.
+- No malformed rows, no class-out-of-range rows, no bbox-out-of-bounds rows,
+  no image-open failures, no cross-split exact duplicate images.
+- Warning: classes `44`, `80`, and `82` are missing from valid, so this remains
+  a baseline dataset, not a promotion-ready final dataset.
 
 Fail:
 

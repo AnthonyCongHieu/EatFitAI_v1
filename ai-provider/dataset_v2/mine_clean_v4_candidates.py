@@ -84,6 +84,21 @@ DEFAULT_POLICY: dict[str, Any] = {
             "coffee",
             "wine",
         },
+        "canonical_label_remaps": {
+            "tomato_raw": "tomato",
+            "carrot_raw": "carrot",
+            "bell_pepper_red_raw": "bell_pepper",
+            "strawberries": "strawberry",
+            "bread_wholemeal": "bread_whole_wheat",
+            "pasta_spaghetti": "pasta",
+            "orange_orange_fruit": "orange",
+            "cucumber_cuke": "cucumber",
+            "bell_pepper_capsicum": "bell_pepper",
+        },
+        "targeted_collection_fit_lanes": {
+            "VIETNAMESE_DISH_EXPANSION",
+        },
+        "targeted_collection_min_images": 180,
     },
 }
 
@@ -127,11 +142,42 @@ def load_policy(path: Path | None) -> dict[str, Any]:
         }
     elif isinstance(manual_terms, set):
         policy["class_design"]["manual_mapping_terms"] = default_manual_terms | manual_terms
+    default_remaps = dict(DEFAULT_POLICY["class_design"]["canonical_label_remaps"])
+    remaps = policy.get("class_design", {}).get("canonical_label_remaps", {})
+    if isinstance(remaps, dict):
+        policy["class_design"]["canonical_label_remaps"] = {
+            normalize_candidate_name(str(key)): normalize_candidate_name(str(value))
+            for key, value in {**default_remaps, **remaps}.items()
+        }
+    default_lanes = set(DEFAULT_POLICY["class_design"]["targeted_collection_fit_lanes"])
+    lanes = policy.get("class_design", {}).get("targeted_collection_fit_lanes", set())
+    if isinstance(lanes, list):
+        policy["class_design"]["targeted_collection_fit_lanes"] = default_lanes | {str(lane).strip() for lane in lanes}
+    elif isinstance(lanes, set):
+        policy["class_design"]["targeted_collection_fit_lanes"] = default_lanes | lanes
     return policy
 
 
+def source_key(row: dict[str, str]) -> str:
+    return (row.get("dataset_ref") or row.get("source_ref") or row.get("source_slug") or "").strip()
+
+
 def source_index(source_rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
-    return {row.get("source_slug", "").strip(): row for row in source_rows if row.get("source_slug", "").strip()}
+    index: dict[str, dict[str, str]] = {}
+    slug_counts: defaultdict[str, int] = defaultdict(int)
+    for row in source_rows:
+        slug = row.get("source_slug", "").strip()
+        if slug:
+            slug_counts[slug] += 1
+    for row in source_rows:
+        key = source_key(row)
+        if key:
+            index[key] = row
+    for row in source_rows:
+        slug = row.get("source_slug", "").strip()
+        if slug and slug_counts[slug] == 1:
+            index.setdefault(slug, row)
+    return index
 
 
 def source_hold_reason(source: dict[str, str] | None, include_private: bool = False) -> str:
@@ -162,6 +208,13 @@ def row_origin(row: dict[str, str]) -> str:
     return origin or "unknown"
 
 
+def canonical_candidate_name(candidate_name: str, policy: dict[str, Any]) -> str:
+    remaps = policy.get("class_design", {}).get("canonical_label_remaps", {})
+    if isinstance(remaps, dict):
+        return str(remaps.get(candidate_name, candidate_name))
+    return candidate_name
+
+
 def origin_family(origin: str) -> str:
     if "classification" in origin:
         return "classification_pseudo_box_source"
@@ -171,13 +224,17 @@ def origin_family(origin: str) -> str:
 def aggregate_candidates(
     rows: list[dict[str, str]],
     source_rows: list[dict[str, str]],
+    policy: dict[str, Any],
     include_private: bool = False,
 ) -> list[dict[str, Any]]:
     sources = source_index(source_rows)
     grouped: dict[str, dict[str, Any]] = {}
     for row in rows:
         raw_name = (row.get("raw_class_name") or row.get("normalized_class_name") or "").strip()
-        candidate_name = normalize_candidate_name(raw_name or row.get("normalized_class_name") or "")
+        candidate_name = canonical_candidate_name(
+            normalize_candidate_name(raw_name or row.get("normalized_class_name") or ""),
+            policy,
+        )
         if not candidate_name:
             continue
         group = grouped.setdefault(
@@ -188,6 +245,7 @@ def aggregate_candidates(
                 "sources": set(),
                 "eligible_sources": set(),
                 "hold_reasons": set(),
+                "targeted_collection_lanes": set(),
                 "images": 0,
                 "instances": 0,
                 "eligible_images": 0,
@@ -197,21 +255,27 @@ def aggregate_candidates(
         )
         if raw_name:
             group["raw_labels"].add(raw_name)
-        source_slug = row.get("source_slug", "").strip()
-        if source_slug:
-            group["sources"].add(source_slug)
+        row_source_key = source_key(row)
+        if row_source_key:
+            group["sources"].add(row_source_key)
         images = int_value(row.get("images"))
         instances = int_value(row.get("instances"))
         group["images"] += images
         group["instances"] += instances
         origin = row_origin(row)
         group["origin_images"][origin] += images
-        hold_reason = source_hold_reason(sources.get(source_slug), include_private=include_private)
+        source = sources.get(row_source_key)
+        hold_reason = source_hold_reason(source, include_private=include_private)
         if hold_reason:
             group["hold_reasons"].add(hold_reason)
             continue
-        if source_slug:
-            group["eligible_sources"].add(source_slug)
+        source = source or {}
+        fit_lane = source.get("fit_lane", "").strip()
+        targeted_lanes = policy.get("class_design", {}).get("targeted_collection_fit_lanes", set())
+        if fit_lane and fit_lane in targeted_lanes:
+            group["targeted_collection_lanes"].add(fit_lane)
+        if row_source_key:
+            group["eligible_sources"].add(row_source_key)
         group["eligible_images"] += images
         group["eligible_instances"] += instances
     return list(grouped.values())
@@ -226,6 +290,10 @@ def dominant_origin(origin_images: dict[str, int]) -> str:
 def is_generic_label(candidate_name: str, policy: dict[str, Any]) -> bool:
     hold_labels = policy.get("class_design", {}).get("hold_generic_labels", set())
     return candidate_name in hold_labels
+
+
+def is_numeric_or_placeholder_label(candidate_name: str) -> bool:
+    return candidate_name.isdigit() or len(candidate_name) <= 1
 
 
 def needs_manual_mapping(candidate_name: str, policy: dict[str, Any]) -> bool:
@@ -243,12 +311,15 @@ def decision_for(
     origin: str,
     existing_canonical_class: str,
     base_reject_alias: bool,
+    targeted_collection_candidate: bool,
     policy: dict[str, Any],
 ) -> tuple[str, str, bool]:
     if existing_canonical_class:
         return "existing", "base_taxonomy_class", False
     if base_reject_alias:
         return "reject", "base_reject_alias", False
+    if is_numeric_or_placeholder_label(candidate_name):
+        return "reject", "numeric_or_placeholder_label", False
     if is_generic_label(candidate_name, policy):
         return "hold_generic_label", "generic_or_bucket_label", False
     if needs_manual_mapping(candidate_name, policy):
@@ -271,6 +342,10 @@ def decision_for(
             return "accept", "detection_accept_images_or_instances", True
         if eligible_images >= int(gates["hold_images"]):
             return "hold_more_data", "detection_below_accept_threshold", False
+    if targeted_collection_candidate and eligible_images >= int(
+        policy.get("class_design", {}).get("targeted_collection_min_images", 180)
+    ):
+        return "hold_targeted_collection", "vietnamese_permissive_source_needs_more_data", False
     return "reject", "too_few_eligible_images", False
 
 
@@ -284,7 +359,7 @@ def score_candidates(
     alias_map = taxonomy_alias_map(base_taxonomy)
     reject_aliases = taxonomy_reject_aliases(base_taxonomy)
     scorecard: list[dict[str, Any]] = []
-    for candidate in aggregate_candidates(rows, source_rows, include_private=include_private):
+    for candidate in aggregate_candidates(rows, source_rows, policy=policy, include_private=include_private):
         candidate_name = candidate["candidate_name"]
         raw_labels = sorted(candidate["raw_labels"])
         existing_canonical = existing_canonical_for(candidate_name, raw_labels, alias_map)
@@ -300,6 +375,7 @@ def score_candidates(
             origin,
             existing_canonical,
             base_reject_alias,
+            bool(candidate["targeted_collection_lanes"]),
             policy,
         )
         scorecard.append(
@@ -319,6 +395,7 @@ def score_candidates(
                 "raw_labels": "|".join(raw_labels),
                 "dominant_candidate_origin": origin,
                 "hold_reasons": "|".join(sorted(candidate["hold_reasons"])),
+                "targeted_collection_lanes": "|".join(sorted(candidate["targeted_collection_lanes"])),
                 "decision_reason": reason,
             }
         )
@@ -329,8 +406,9 @@ def score_candidates(
         "hold_more_data": 3,
         "hold_generic_label": 4,
         "hold_manual_mapping": 5,
-        "hold_private_or_license": 6,
-        "reject": 7,
+        "hold_targeted_collection": 6,
+        "hold_private_or_license": 7,
+        "reject": 8,
     }
     return sorted(
         scorecard,
@@ -407,12 +485,13 @@ def build_source_policy_rows(source_rows: list[dict[str, str]], scorecard: list[
         slug = source.get("source_slug", "").strip()
         if not slug:
             continue
+        key = source_key(source)
         output.append(
             {
                 "source_slug": slug,
                 "audit_state": source.get("status", ""),
                 "clean_lane": source.get("fit_lane", ""),
-                "include_in_default_clean": "yes" if slug in accepted_sources else "no",
+                "include_in_default_clean": "yes" if key in accepted_sources or slug in accepted_sources else "no",
                 "license_lane": source.get("license", ""),
                 "cache_state": "kaggle_v4_source_audit",
                 "source_weight_cap": "0.60" if slug in accepted_sources else "0.00",

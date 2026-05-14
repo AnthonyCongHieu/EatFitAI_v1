@@ -30,7 +30,9 @@
     "shanemarvinmay/food-image-dataset",
     "nguyentrongdai/vietnamese-foods-dataset",
     "keno31/vietnaemese-food-dataset",
-    "trainingdatapro/food-segmentation"
+    "trainingdatapro/food-segmentation",
+    "kyoru4444/foodlensvn",
+    "trungquncao/vietnamese-food"
   ],
   "competition_sources": [],
   "kernel_sources": []

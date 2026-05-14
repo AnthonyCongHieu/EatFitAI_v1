@@ -1,0 +1,248 @@
+cnfood241:
+  dataset_ref: zachaluza/cnfood-241
+  source: Kaggle CNFOOD-241 class_names.xlsx - Sheet1.csv downloaded for CPU audit
+    mapping
+  license_gate: Original dataset is CC BY-NC 3.0 and includes ChineseFoodNet-derived
+    images; private/noncommercial audit only.
+  names:
+    0: Mapo Tofu
+    1: Home style sauteed Tofu
+    2: Fried Tofu
+    3: Bean curd
+    4: Stinky tofu
+    5: Hot and sour shredded potatoes
+    6: Mashed potatoes
+    7: Pan fried potato
+    8: Braised beans with potato
+    9: Disanxian
+    10: French fries
+    11: Yuxiang Eggplant
+    12: Mashed garlic eggplant
+    13: Eggplant with mince pork
+    14: Spicy cabbage
+    15: Sour cabbage
+    16: Steamed Baby Cabbage
+    17: Shredded cabbage
+    18: Sauteed Lettuce in Oyster Sauce
+    19: Saute vegetable
+    20: Stir-fried water spinach
+    21: Lettuce with smashed garlic
+    22: Sauteed spinach
+    23: Sauteed bean sprouts
+    24: Sauteed broad beans
+    25: Soybean with pork
+    26: Broccoli with Oyster Sauce
+    27: Deep Fried lotus root
+    28: Lotus root
+    29: Tomato salad
+    30: Chicken gizzard
+    31: Black fungus salad
+    32: Cucumber in Sauce
+    33: Peanuts
+    34: Seaweed salad
+    35: Yams in Hot Toffee
+    36: Fried Yam
+    37: Fried beans
+    38: Oyster mushroom
+    39: stuffed bitter melon
+    40: sauteed bitter melon
+    41: pepper with tiger skin
+    42: Yuba salad
+    43: fried cauliflower
+    44: Sauteed Sweet Corn with Pine Nuts
+    45: Sauted Chinese Greens with Mushrooms
+    46: Spiced mushroom
+    47: Celery and tofu
+    48: Sauteed Lily Bulbs and Celery
+    49: Leak and tofu
+    50: Scrambled egg with tomato
+    51: Scrambled Egg with Leek
+    52: Scrambled Egg with cucumber
+    53: Steamed egg custard
+    54: Pork liver
+    55: Pig ears
+    56: Char siu (barbecued pork)
+    57: Steamed pork with rice powder
+    58: Sweet and sour spareribs
+    59: Braised spareribs with kelp
+    60: Cola Chicken wings
+    61: Chicken Feet with Pickled Peppers
+    62: Chicken Feet with black bean sauce
+    63: Steamed Chicken with Chili Sauce
+    64: Roast goose
+    65: Boiled chicken
+    66: Saute Spicy Chicken
+    67: Steamed Chicken with Mushroom
+    68: chicken braised with brown sauce
+    69: Soy sauce chicken
+    70: Spicy Chicken
+    71: Kung Pao Chicken
+    72: Stewed Chicken with Three Cups Sauce
+    73: Shredded chicken
+    74: Fried chicken drumsticks
+    75: Beer duck
+    76: Scalloped pork or lamb kidneys
+    77: Braised pork
+    78: Braised beef
+    79: Beef Seasoned with Soy Sauce
+    80: Sirloin tomatoes
+    81: Stewed sirloin potatoes
+    82: Sauteed Beef Fillet with Hot Green Pepper
+    83: Pork with salted vegetable
+    84: Double cooked pork slices
+    85: Braised Pork with Vermicelli
+    86: Boiled Shredded pork in chili oil
+    87: Fried Sweet and Sour Tenderloin
+    88: Cripsy sweet & sour pork slices
+    89: Pot bag meat
+    90: Shredded Pork with Vegetables
+    91: Tiger lily buds in Baconic
+    92: Sauteed Shredded Pork in Sweet Bean Sauce
+    93: Shredded pork with bean
+    94: Braised pig feet with soy sauce
+    95: Tripe
+    96: Shredded pork and green pepper
+    97: Yu-Shiang Shredded Pork
+    98: Braised Fungus with pork slice
+    99: Sauteed Sliced Pork,Eggs and Black Fungus
+    100: Lettuce shredded meat
+    101: Sauteed Vermicelli with Spicy Minced Pork
+    102: Fried Lamb with Cumin
+    103: Lamb shashlik
+    104: Sauteed Sliced Lamb with Scallion
+    105: Stewed Pork Ball in Brown Sauce
+    106: Boiled Fish with Picked Cabbage and Chili
+    107: grilled fish
+    108: Sweet and sour fish
+    109: Sweet and Sour Mandarin Fish
+    110: Braised Hairtail in Brown Sauce
+    111: Steamed Fish Head with Diced Hot Red Peppers
+    112: Fish Filets in Hot Chili Oil
+    113: Steamed Perch
+    114: Cheese Shrimp Meat
+    115: Shrimp broccoli
+    116: Braised Shrimp in chili oil
+    117: Spicy shrimp
+    118: Spicy crayfish
+    119: Shrimp Duplings
+    120: Steamed shrimp with garlic and vermicelli
+    121: Sauteed Shrimp meat
+    122: Pipi shrimp
+    123: Scallop in Shell
+    124: Oysters
+    125: squid
+    126: Abalone
+    127: Crab
+    128: Turtle
+    129: eel
+    130: fried rice
+    131: Omelette
+    132: Steamed Bun Stuffed
+    133: Steamed Pork Dumplings
+    134: egg omelet
+    135: Potato omelet
+    136: Egg pie cake
+    137: Marinated Egg
+    138: Poached Egg
+    139: Pine cake with Diced Scallion
+    140: Sesame seed cake
+    141: Roujiamo
+    142: Leek box
+    143: Mantou with purple yam and pumpkin
+    144: Mantou
+    145: Baozi
+    146: Pumpkin cakes
+    147: Pizza
+    148: Deep-Fried Dough Sticks
+    149: sauteed noodles with minced meat
+    150: Chongqing Hot and Sour Rice Noodles
+    151: Cold noodles
+    152: Noodles with egg and tomato
+    153: spaghetti with meat sauce
+    154: Noodles with tomato sauce
+    155: Cold Rice Noodles
+    156: Sichuan noodles with peppery sauce
+    157: Saozi noodles
+    158: fried noodles
+    159: Dumplings
+    160: Corn Cob
+    161: Braised beef noodle
+    162: fried rice noodles
+    163: Steamed vermicelli roll
+    164: Pork wonton
+    165: Fried Dumplings
+    166: Tangyuan
+    167: Millet congee
+    168: Sweet potato porridge
+    169: Jellyfish
+    170: Minced Pork Congee with Preserved Egg
+    171: Rice congee
+    172: Rice
+    173: Kimbap
+    174: Stone pot of rice
+    175: Black bone chicken soup
+    176: Crucian and Bean Curd Soup
+    177: Dough Drop and Assorted Vegetable Soup
+    178: Hot and Sour Soup
+    179: Pork ribs soup with radish
+    180: Tomato and Egg Soup
+    181: West Lake beef soup
+    182: Lotus Root and Rib soup
+    183: Seaweed and Egg Soup
+    184: Seaweed tofu soup
+    185: Corn and sparerib soup
+    186: Spinach and pork liver soup
+    187: Borsch
+    188: White fungus soup
+    189: White gourd soup
+    190: Miso soup
+    191: Duck Blood in Chili Sauce
+    192: Pork Lungs in Chili Sauce
+    193: Mala xiang guo
+    194: Golden meat rolls
+    195: Chiffon Cake
+    196: Egg Tart
+    197: Bread
+    198: Croissant
+    199: toast
+    200: Crackers
+    201: cookies
+    202: Soda biscuit
+    203: Double skin milk
+    204: ice cream
+    205: Egg pudding
+    206: Sweet stewed snow pear
+    207: Fruit salad
+    208: Beef stew with radish
+    209: Beijing Roast Duck
+    210: Egg steamed meat pie
+    211: dry fried hairtail
+    212: Griddle Pork Intestines
+    213: Chrysanthemum fish
+    214: Steamed pork with rice powder
+    215: Pumpkin porridge
+    216: Braised mushroom with chicken
+    217: Lemon chicken feet
+    218: Sliced meat
+    219: Stir-fried Pork with Garlic
+    220: Stuffed Pork with Chillies
+    221: Pan-fried Crucian Carp
+    222: Russian red cabbage soup
+    223: Dry-aged Cauliflower
+    224: Poached Egg in Fermented Glutinous Rice Soup
+    225: Brown sugar ice powder
+    226: Twist
+    227: Cured pork
+    228: Curry Chicken Nuggets
+    229: Shredded chicken
+    230: Coconut Chicken
+    231: Goat Soup
+    232: Sliced Boiled Pork with Garlic Sauce
+    233: Fried milk
+    234: scalded prawns
+    235: Steamed small yellow croaker
+    236: Shrimp tail with garlic
+    237: edamame beans
+    238: Sugar oil cake
+    239: Preserved egg salad
+    240: clay pot rice
