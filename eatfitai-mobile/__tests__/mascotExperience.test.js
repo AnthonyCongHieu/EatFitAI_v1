@@ -7,14 +7,14 @@ const readSource = (relativePath) => {
 };
 
 describe('Mochi mascot experience', () => {
-  it('defines a reusable sprite-backed Mochi component with the planned animation states', () => {
+  it('defines a reusable vector-rig Mochi component with the planned animation states', () => {
     const source = readSource('src/components/MascotCharacter.tsx');
 
     expect(source).toContain('export type MascotState');
     expect(source).toContain('MOCHI_STATE_ASSETS');
-    expect(source).toContain('<Image');
-    expect(source).toContain('source={MOCHI_ASSETS[assetKey]}');
-    expect(source).toContain('contentFit="contain"');
+    expect(source).toContain('MochiRig');
+    expect(source).not.toContain('<Image');
+    expect(source).not.toContain('MOCHI_ASSETS[');
     expect(source).toContain("'idle'");
     expect(source).toContain("'wave'");
     expect(source).toContain("'thinking'");
@@ -57,12 +57,13 @@ describe('Mochi mascot experience', () => {
     expect(source).toContain('import MascotCharacter');
     expect(source).toContain('<MascotCharacter');
     expect(source).toContain("state={hasReminders ? 'reminder' : 'idle'}");
+    expect(source).toContain('bottom: 170');
     expect(source).toContain('TEST_IDS.home.mascotButton');
     expect(source).not.toContain('styles.robotFace');
     expect(source).not.toContain('styles.robotVisor');
   });
 
-  it('exposes a real-device Mochi preview screen from the authenticated app', () => {
+  it('exposes a real-device Mochi room screen from the authenticated app', () => {
     const typeSource = readSource('src/app/types/index.ts');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
@@ -76,12 +77,38 @@ describe('Mochi mascot experience', () => {
     expect(navigatorSource).toContain("currentRouteName !== 'MochiPreview'");
     expect(profileSource).toContain("navigation.navigate('MochiPreview')");
     expect(profileSource).toContain('TEST_IDS.profile.mochiPreviewButton');
-    expect(previewSource).toContain('MOCHI_PREVIEW_STATES');
-    expect(previewSource).toContain('<MascotCharacter');
-    expect(previewSource).toContain('MOCHI_ASSETS');
-    expect(previewSource).toContain('source-sheet crop');
+    expect(profileSource).toContain('Phòng Mochi');
+    expect(previewSource).toContain('MochiRoomScene');
+    expect(previewSource).toContain('getMochiCompanionState');
+    expect(previewSource).toContain('Cosmetic unlocks');
+    expect(previewSource).not.toContain('MochiFallback');
+    expect(previewSource).not.toContain('mochi-room-fallback-mascot');
     expect(testIdsSource).toContain("mochiPreviewButton: 'profile-mochi-preview-button'");
     expect(testIdsSource).toContain("mochiPreviewScreen: 'mochi-preview-screen'");
+  });
+
+  it('renders Mochi Room with a layered vector rig instead of PNG sprites or GLView', () => {
+    const roomSource = readSource('src/features/mochi/MochiRoomScene.tsx');
+    const rigSource = readSource('src/features/mochi/MochiRig.tsx');
+    const previewSource = readSource('src/app/screens/dev/MochiPreviewScreen.tsx');
+
+    expect(roomSource).toContain('LinearGradient');
+    expect(roomSource).toContain('MochiRig');
+    expect(roomSource).toContain('mochi-room-3d-rig');
+    expect(roomSource).not.toContain('GLView');
+    expect(roomSource).not.toContain('expo-gl');
+    expect(roomSource).not.toContain('CapsuleGeometry');
+    expect(previewSource).not.toContain('MascotCharacter');
+    expect(rigSource).toContain('MOCHI_VECTOR_LAYERS');
+    expect(rigSource).toContain('mochiHeadbandPink');
+    expect(rigSource).toContain('mochiInk');
+    expect(rigSource).toContain('MUZZLE');
+    expect(rigSource).toContain('renderEyes');
+    expect(rigSource).toContain("expression === 'drinkWater'");
+    expect(rigSource).toContain('activeAccessoryIds');
+    expect(rigSource).not.toContain('<Image');
+    expect(rigSource).not.toContain('.png');
+    expect(rigSource).not.toContain('mochiBellyCream');
   });
 
   it('defines a first-login home tutorial with storage gate and expected controls', () => {
@@ -116,6 +143,9 @@ describe('Mochi mascot experience', () => {
       'src/components/MascotOverlay.tsx',
       'src/components/home/HomeFirstLoginTutorial.tsx',
       'src/components/home/QuickActionsOverlay.tsx',
+      'src/features/mochi/MochiRoomScene.tsx',
+      'src/features/mochi/MochiRig.tsx',
+      'src/app/screens/dev/MochiPreviewScreen.tsx',
       'src/testing/testIds.ts',
     ]
       .map(readSource)

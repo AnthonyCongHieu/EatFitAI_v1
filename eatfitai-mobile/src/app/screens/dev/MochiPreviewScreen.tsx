@@ -1,215 +1,244 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   Pressable,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
+import { useQuery } from '@tanstack/react-query';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
-import MascotCharacter, {
-  MOCHI_STATE_ASSETS,
-  type MascotState,
-} from '../../../components/MascotCharacter';
 import { ThemedText } from '../../../components/ThemedText';
 import SubScreenLayout from '../../../components/ui/SubScreenLayout';
-import {
-  MOCHI_ASSETS,
-  MOCHI_ASSET_METADATA,
-  type MochiAssetKey,
-} from '../../../assets/mascot/mochi/mochiAssets';
+import { useSmartReminders } from '../../../hooks/useSmartReminders';
+import { useDiaryStore } from '../../../store/useDiaryStore';
+import { useGamificationStore } from '../../../store/useGamificationStore';
+import { waterService, type WaterIntakeData } from '../../../services/waterService';
 import { EN } from '../../../theme/emeraldNebula';
 import { TEST_IDS } from '../../../testing/testIds';
+import type { RootStackParamList } from '../../types';
+import MochiRoomScene from '../../../features/mochi/MochiRoomScene';
+import {
+  getMochiCompanionState,
+  type MochiPrimaryAction,
+} from '../../../features/mochi/mochiCompanionEngine';
 
-type MochiPreviewState = {
-  state: MascotState;
-  label: string;
-  caption: string;
-  icon: keyof typeof Ionicons.glyphMap;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const ACTION_LABELS: Record<MochiPrimaryAction, string> = {
+  scanFood: 'Quét món',
+  addMeal: 'Ghi bữa',
+  water: 'Uống nước',
+  viewProgress: 'Xem thành tích',
 };
 
-export const MOCHI_PREVIEW_STATES: MochiPreviewState[] = [
-  {
-    state: 'idle',
-    label: 'Đứng yên',
-    caption: 'Idle nhẹ, dùng cho FAB hoặc trạng thái chờ.',
-    icon: 'radio-button-on',
-  },
-  {
-    state: 'wave',
-    label: 'Chào bạn',
-    caption: 'Lắc thân và tay từ pose hello.',
-    icon: 'hand-left-outline',
-  },
-  {
-    state: 'thinking',
-    label: 'Suy nghĩ',
-    caption: 'Nghiêng đầu chậm khi phân vân calo.',
-    icon: 'bulb-outline',
-  },
-  {
-    state: 'pointing',
-    label: 'Quét món',
-    caption: 'Nhịp scan dùng pose cầm điện thoại và món ăn.',
-    icon: 'scan-outline',
-  },
-  {
-    state: 'success',
-    label: 'Thành công',
-    caption: 'Bounce ăn mừng khi đạt mục tiêu hoặc streak.',
-    icon: 'trophy-outline',
-  },
-  {
-    state: 'reminder',
-    label: 'Nhắc nhở',
-    caption: 'Đung đưa mạnh hơn để gọi chú ý trên mobile.',
-    icon: 'notifications-outline',
-  },
-  {
-    state: 'error',
-    label: 'Ngạc nhiên',
-    caption: 'Shake ngắn cho cảnh món nhiều calo hoặc lỗi nhẹ.',
-    icon: 'alert-circle-outline',
-  },
-];
+const ACTION_ICONS: Record<MochiPrimaryAction, keyof typeof Ionicons.glyphMap> = {
+  scanFood: 'scan-outline',
+  addMeal: 'restaurant-outline',
+  water: 'water-outline',
+  viewProgress: 'trophy-outline',
+};
 
-const MOCHI_POSES = Object.keys(MOCHI_ASSETS) as MochiAssetKey[];
+const unlockCopy = (ids: string[]): string => {
+  if (ids.length === 0) return 'Chưa mở phụ kiện';
+  if (ids.includes('trophy')) return 'Cúp mục tiêu đã sẵn sàng';
+  if (ids.includes('medal')) return 'Huy chương streak đã mở';
+  if (ids.includes('water_bottle')) return 'Bình nước đang trực ca';
+  return 'Mochi đã có đồ mới';
+};
 
 const MochiPreviewScreen = (): React.ReactElement => {
-  const { width } = useWindowDimensions();
-  const [selectedState, setSelectedState] = useState<MascotState>('idle');
+  const navigation = useNavigation<NavigationProp>();
+  const summary = useDiaryStore((s) => s.summary);
+  const fetchSummary = useDiaryStore((s) => s.fetchSummary);
+  const { reminders } = useSmartReminders();
+  const currentStreak = useGamificationStore((s) => s.currentStreak);
+  const totalXP = useGamificationStore((s) => s.totalXP);
+  const achievements = useGamificationStore((s) => s.achievements);
+  const checkStreak = useGamificationStore((s) => s.checkStreak);
+  const fetchWeeklyLogs = useGamificationStore((s) => s.fetchWeeklyLogs);
 
-  const activePreview = useMemo(
+  const { data: waterData } = useQuery<WaterIntakeData>({
+    queryKey: ['water-intake-today'],
+    queryFn: () => waterService.getWaterIntake(new Date()),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    fetchSummary().catch(() => undefined);
+    checkStreak().catch(() => undefined);
+    fetchWeeklyLogs().catch(() => undefined);
+  }, [checkStreak, fetchSummary, fetchWeeklyLogs]);
+
+  const companionState = useMemo(
     () =>
-      MOCHI_PREVIEW_STATES.find((item) => item.state === selectedState) ??
-      MOCHI_PREVIEW_STATES[0]!,
-    [selectedState],
+      getMochiCompanionState({
+        reminders,
+        totalCalories: summary?.totalCalories,
+        targetCalories: summary?.targetCalories,
+        waterAmountMl: waterData?.amountMl,
+        waterTargetMl: waterData?.targetMl,
+        currentStreak,
+        totalXP,
+        unlockedAchievementIds: achievements
+          .filter((achievement) => Boolean(achievement.unlockedAt))
+          .map((achievement) => achievement.id),
+      }),
+    [achievements, currentStreak, reminders, summary, totalXP, waterData],
   );
 
-  const activeAssetKey = MOCHI_STATE_ASSETS[selectedState];
-  const stageSize = Math.min(Math.max(width * 0.44, 150), 220);
-  const stateButtonWidth = Math.max((width - 72) / 2, 136);
-  const poseTileWidth = Math.max((width - 72) / 3, 88);
+  const runPrimaryAction = () => {
+    if (companionState.primaryAction === 'scanFood') {
+      navigation.navigate('AiCamera');
+      return;
+    }
+
+    if (companionState.primaryAction === 'addMeal') {
+      navigation.navigate('FoodSearch', {
+        autoFocus: true,
+        showQuickSuggestions: true,
+        returnToDiaryOnSave: true,
+      });
+      return;
+    }
+
+    if (companionState.primaryAction === 'water') {
+      navigation.navigate('AppTabs', {
+        screen: 'HomeTab',
+        params: {
+          source: 'water-quick-action',
+          focusWaterRequestId: Date.now(),
+        },
+      });
+      return;
+    }
+
+    navigation.navigate('Achievements');
+  };
+
+  const accessoryNames = companionState.activeAccessoryIds.map((id) => {
+    if (id === 'water_bottle') return 'Bình nước';
+    if (id === 'streak_badge') return 'Huy hiệu streak';
+    if (id === 'medal') return 'Huy chương';
+    return 'Cúp mục tiêu';
+  });
 
   return (
     <SubScreenLayout
-      title="Mochi preview"
-      subtitle="source-sheet crop / mobile motion test"
+      title="Phòng Mochi"
+      subtitle="mascot vector sống động / cà khịa có kiểm soát"
       testID={TEST_IDS.profile.mochiPreviewScreen}
       contentContainerStyle={styles.content}
     >
-      <Animated.View entering={FadeInDown.duration(260)} style={styles.stageCard}>
-        <View style={styles.stageGlow} />
-        <View style={styles.mascotStage}>
-          <MascotCharacter
-            state={selectedState}
-            hasReminder={selectedState === 'reminder'}
-            size={stageSize}
-            testID="mochi-preview-live-mascot"
+      <Animated.View entering={FadeInDown.duration(260)} style={styles.hero}>
+        <View style={styles.sceneShell}>
+          <MochiRoomScene
+            animation={companionState.animation}
+            activeAccessoryIds={companionState.activeAccessoryIds}
           />
         </View>
 
-        <View style={styles.stateSummary}>
-          <View style={styles.stateIcon}>
-            <Ionicons name={activePreview.icon} size={19} color={EN.bg} />
-          </View>
-          <View style={styles.stateCopy}>
-            <ThemedText style={styles.stateTitle}>{activePreview.label}</ThemedText>
-            <ThemedText style={styles.stateCaption}>{activePreview.caption}</ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.sourcePill}>
-          <ThemedText style={styles.sourceText}>
-            {MOCHI_ASSET_METADATA[activeAssetKey].fileName}
+        <View style={styles.dialogueBubble}>
+          <View style={styles.dialogueTail} />
+          <ThemedText style={styles.dialogueLabel}>Mochi nói</ThemedText>
+          <ThemedText style={styles.dialogueText}>
+            {companionState.dialogue}
           </ThemedText>
         </View>
       </Animated.View>
 
-      <View style={styles.sectionHeader}>
-        <ThemedText style={styles.sectionTitle}>Motion states</ThemedText>
-        <ThemedText style={styles.sectionMeta}>{MOCHI_PREVIEW_STATES.length} trạng thái</ThemedText>
-      </View>
-
-      <View style={styles.stateGrid}>
-        {MOCHI_PREVIEW_STATES.map((item) => {
-          const isSelected = item.state === selectedState;
-
-          return (
-            <Pressable
-              key={item.state}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              onPress={() => setSelectedState(item.state)}
-              style={({ pressed }) => [
-                styles.stateButton,
-                { width: stateButtonWidth },
-                isSelected && styles.stateButtonActive,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Ionicons
-                name={item.icon}
-                size={18}
-                color={isSelected ? EN.bg : EN.primary}
-              />
-              <ThemedText
-                style={[
-                  styles.stateButtonText,
-                  isSelected && styles.stateButtonTextActive,
-                ]}
-                numberOfLines={1}
-              >
-                {item.label}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Animated.View entering={FadeInUp.delay(80)} style={styles.actionPanel}>
+        <View style={styles.actionCopy}>
+          <ThemedText style={styles.panelTitle}>Mood hiện tại</ThemedText>
+          <ThemedText style={styles.panelSubtitle}>
+            {companionState.mood.replace(/_/g, ' ')} / {companionState.animation}
+          </ThemedText>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={runPrimaryAction}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons
+            name={ACTION_ICONS[companionState.primaryAction]}
+            size={18}
+            color={EN.bg}
+          />
+          <ThemedText style={styles.primaryButtonText}>
+            {ACTION_LABELS[companionState.primaryAction]}
+          </ThemedText>
+        </Pressable>
+      </Animated.View>
 
       <View style={styles.sectionHeader}>
-        <ThemedText style={styles.sectionTitle}>24 source poses</ThemedText>
-        <ThemedText style={styles.sectionMeta}>crop từ sheet gốc</ThemedText>
+        <ThemedText style={styles.sectionTitle}>Cosmetic unlocks</ThemedText>
+        <ThemedText style={styles.sectionMeta}>
+          {companionState.activeAccessoryIds.length}/4
+        </ThemedText>
       </View>
 
-      <View style={styles.poseGrid}>
-        {MOCHI_POSES.map((poseKey) => {
-          const isMappedPose = poseKey === activeAssetKey;
-          const meta = MOCHI_ASSET_METADATA[poseKey];
+      <View style={styles.unlockPanel}>
+        <View style={styles.unlockIcon}>
+          <Ionicons name="sparkles-outline" size={21} color="#F5C280" />
+        </View>
+        <View style={styles.unlockCopy}>
+          <ThemedText style={styles.unlockTitle}>
+            {unlockCopy(companionState.activeAccessoryIds)}
+          </ThemedText>
+          <ThemedText style={styles.unlockSubtitle}>
+            {accessoryNames.length > 0
+              ? accessoryNames.join(', ')
+              : 'Log bữa, uống nước và giữ streak để Mochi có đồ mới.'}
+          </ThemedText>
+        </View>
+      </View>
 
-          return (
-            <Pressable
-              key={poseKey}
-              accessibilityRole="imagebutton"
-              onPress={() => {
-                const mappedState = MOCHI_PREVIEW_STATES.find(
-                  (item) => MOCHI_STATE_ASSETS[item.state] === poseKey,
-                );
-                if (mappedState) {
-                  setSelectedState(mappedState.state);
-                }
-              }}
-              style={({ pressed }) => [
-                styles.poseTile,
-                { width: poseTileWidth },
-                isMappedPose && styles.poseTileActive,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Image
-                source={MOCHI_ASSETS[poseKey]}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-                style={styles.poseImage}
-              />
-              <ThemedText style={styles.poseLabel} numberOfLines={1}>
-                {meta.fileName.replace('.png', '').replace(/^\d+_/, '')}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
+      <View style={styles.quickGrid}>
+        {([
+          ['scanFood', 'scan-outline'],
+          ['addMeal', 'restaurant-outline'],
+          ['water', 'water-outline'],
+          ['viewProgress', 'trophy-outline'],
+        ] as const).map(([action, icon]) => (
+          <Pressable
+            key={action}
+            accessibilityRole="button"
+            onPress={() => {
+              if (action === 'scanFood') navigation.navigate('AiCamera');
+              if (action === 'addMeal') {
+                navigation.navigate('FoodSearch', {
+                  autoFocus: true,
+                  showQuickSuggestions: true,
+                  returnToDiaryOnSave: true,
+                });
+              }
+              if (action === 'water') {
+                navigation.navigate('AppTabs', {
+                  screen: 'HomeTab',
+                  params: {
+                    source: 'water-quick-action',
+                    focusWaterRequestId: Date.now(),
+                  },
+                });
+              }
+              if (action === 'viewProgress') navigation.navigate('Achievements');
+            }}
+            style={({ pressed }) => [
+              styles.quickAction,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name={icon} size={20} color={EN.primary} />
+            <ThemedText style={styles.quickText}>
+              {ACTION_LABELS[action]}
+            </ThemedText>
+          </Pressable>
+        ))}
       </View>
     </SubScreenLayout>
   );
@@ -219,75 +248,87 @@ const styles = StyleSheet.create({
   content: {
     gap: 18,
   },
-  stageCard: {
-    minHeight: 300,
-    borderRadius: 22,
-    backgroundColor: '#171A22',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 194, 128, 0.24)',
+  hero: {
+    gap: 14,
+  },
+  sceneShell: {
+    minHeight: 330,
+    borderRadius: 24,
     overflow: 'hidden',
-    padding: 18,
+    backgroundColor: '#141824',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 194, 128, 0.22)',
   },
-  stageGlow: {
+  dialogueBubble: {
+    borderRadius: 18,
+    backgroundColor: '#FFF6E7',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 194, 128, 0.55)',
+    padding: 15,
+    position: 'relative',
+  },
+  dialogueTail: {
     position: 'absolute',
-    left: -40,
-    right: -40,
-    top: -80,
-    height: 210,
-    backgroundColor: 'rgba(245, 194, 128, 0.18)',
+    top: -8,
+    left: 34,
+    width: 16,
+    height: 16,
+    backgroundColor: '#FFF6E7',
+    transform: [{ rotate: '45deg' }],
+    borderLeftWidth: 1,
+    borderTopWidth: 1,
+    borderColor: 'rgba(245, 194, 128, 0.55)',
   },
-  mascotStage: {
-    minHeight: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
+  dialogueLabel: {
+    color: '#7C4A20',
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 5,
   },
-  stateSummary: {
+  dialogueText: {
+    color: '#3F2A17',
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 22,
+  },
+  actionPanel: {
+    borderRadius: 18,
+    backgroundColor: EN.surfaceLow,
+    borderWidth: 1,
+    borderColor: EN.outline,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 246, 231, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 246, 231, 0.1)',
-    padding: 12,
   },
-  stateIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F5C280',
-  },
-  stateCopy: {
+  actionCopy: {
     flex: 1,
-    gap: 3,
+    gap: 4,
   },
-  stateTitle: {
-    color: '#FFF6E7',
-    fontSize: 16,
-    fontWeight: '800',
+  panelTitle: {
+    color: EN.onSurface,
+    fontSize: 15,
+    fontWeight: '900',
   },
-  stateCaption: {
-    color: '#D9C7AE',
+  panelSubtitle: {
+    color: EN.textMuted,
     fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-  },
-  sourcePill: {
-    alignSelf: 'flex-start',
-    marginTop: 12,
-    borderRadius: 999,
-    backgroundColor: 'rgba(245, 194, 128, 0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 194, 128, 0.24)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  sourceText: {
-    color: '#F5C280',
-    fontSize: 11,
     fontWeight: '700',
+  },
+  primaryButton: {
+    minHeight: 44,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    backgroundColor: EN.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  primaryButtonText: {
+    color: EN.bg,
+    fontSize: 13,
+    fontWeight: '900',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -297,73 +338,71 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: EN.onSurface,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   sectionMeta: {
     color: EN.textMuted,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  stateGrid: {
+  unlockPanel: {
+    borderRadius: 18,
+    backgroundColor: '#171A22',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 194, 128, 0.2)',
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  unlockIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(245, 194, 128, 0.12)',
+  },
+  unlockCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  unlockTitle: {
+    color: '#FFF6E7',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  unlockSubtitle: {
+    color: '#D9C7AE',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
+  quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
-  stateButton: {
-    minHeight: 48,
-    borderRadius: 15,
+  quickAction: {
+    width: '47%',
+    minHeight: 58,
+    borderRadius: 16,
     backgroundColor: EN.surfaceLow,
     borderWidth: 1,
     borderColor: EN.outline,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    paddingHorizontal: 13,
   },
-  stateButtonActive: {
-    backgroundColor: '#F5C280',
-    borderColor: '#FFE0AB',
-  },
-  stateButtonText: {
+  quickText: {
     flex: 1,
     color: EN.onSurface,
     fontSize: 13,
     fontWeight: '800',
   },
-  stateButtonTextActive: {
-    color: EN.bg,
-  },
-  poseGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  poseTile: {
-    aspectRatio: 0.86,
-    borderRadius: 16,
-    backgroundColor: '#FFF6E7',
-    borderWidth: 1,
-    borderColor: 'rgba(123, 71, 31, 0.22)',
-    overflow: 'hidden',
-    padding: 8,
-  },
-  poseTileActive: {
-    borderWidth: 2,
-    borderColor: '#F5C280',
-  },
-  poseImage: {
-    flex: 1,
-    width: '100%',
-  },
-  poseLabel: {
-    color: '#4B2D17',
-    fontSize: 10,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 4,
-  },
   pressed: {
-    opacity: 0.72,
+    opacity: 0.76,
     transform: [{ scale: 0.98 }],
   },
 });

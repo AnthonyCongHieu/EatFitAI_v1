@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -11,10 +10,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import {
-  MOCHI_ASSETS,
-  type MochiAssetKey,
-} from '../assets/mascot/mochi/mochiAssets';
+import type { MochiAssetKey } from '../assets/mascot/mochi/mochiAssets';
+import MochiRig, { type MochiRigExpression } from '../features/mochi/MochiRig';
 
 export type MascotState =
   | 'idle'
@@ -38,6 +35,16 @@ export const MOCHI_STATE_ASSETS: Record<MascotState, MochiAssetKey> = {
   thinking: 'thinking',
   pointing: 'scanFood',
   success: 'goalComplete',
+  reminder: 'reminder',
+  error: 'surprised',
+};
+
+const MOCHI_STATE_EXPRESSIONS: Record<MascotState, MochiRigExpression> = {
+  idle: 'idle',
+  wave: 'wave',
+  thinking: 'thinking',
+  pointing: 'pointing',
+  success: 'success',
   reminder: 'reminder',
   error: 'surprised',
 };
@@ -176,9 +183,8 @@ const MascotCharacter = ({
     opacity: state === 'reminder' || hasReminder ? 0.38 : 0.18,
   }));
 
-  const assetKey = MOCHI_STATE_ASSETS[state];
-  const imageSize = size * 1.38;
   const stageSize = size * 1.18;
+  const rigSize = size * 1.32;
 
   return (
     <Animated.View
@@ -201,19 +207,18 @@ const MascotCharacter = ({
       />
       <Animated.View
         style={[
-          styles.sprite,
+          styles.rig,
           {
-            width: imageSize,
-            height: imageSize,
+            width: rigSize,
+            height: rigSize,
           },
           characterStyle,
         ]}
       >
-        <Image
-          source={MOCHI_ASSETS[assetKey]}
-          contentFit="contain"
-          cachePolicy="memory-disk"
-          style={styles.spriteImage}
+        <MochiRig
+          expression={MOCHI_STATE_EXPRESSIONS[state]}
+          hasReminder={hasReminder}
+          size={rigSize}
         />
       </Animated.View>
       {hasReminder && <View style={styles.reminderDot} />}
@@ -235,13 +240,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(123, 71, 31, 0.2)',
     zIndex: 0,
   },
-  sprite: {
+  rig: {
     overflow: 'visible',
     zIndex: 2,
-  },
-  spriteImage: {
-    width: '100%',
-    height: '100%',
   },
   reminderDot: {
     position: 'absolute',

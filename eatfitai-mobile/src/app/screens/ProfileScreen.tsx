@@ -352,7 +352,7 @@ const ProfileScreen = (): React.ReactElement => {
           />
           <MenuRow
             icon="sparkles-outline"
-            label="Xem thử Mochi mascot"
+            label="Phòng Mochi"
             iconBg={P.primary + '18'}
             iconColor={P.primary}
             chevronColor={P.primary + '80'}

@@ -182,7 +182,7 @@ const MascotOverlay = (): React.ReactElement => {
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 170,
     right: 20,
     zIndex: 1000,
     elevation: 10,
