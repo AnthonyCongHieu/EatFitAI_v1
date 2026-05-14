@@ -414,11 +414,18 @@ const OnboardingScreen = (): React.ReactElement => {
           5: 100,
         };
         animateProgressTo(progressMap[nextStep] || 100);
+
+        if (nextStep === 5) {
+          setTimeout(() => {
+            mainScrollRef.current?.scrollToEnd({ animated: true });
+          }, 800);
+        }
       }, 950); // Delay chậm lại để thanh % kịp chạy và UX nhìn rõ ràng hơn
       return () => clearTimeout(timer);
     }
   }, [aiResult, currentStep, analysisStarted, analysisStep]);
 
+  const mainScrollRef = useRef<ScrollView>(null);
   const rulerScrollRef = useRef<ScrollView>(null);
   const rulerInitialized = useRef(false);
   const [rulerContainerWidth, setRulerContainerWidth] = useState(0);
@@ -575,14 +582,7 @@ const OnboardingScreen = (): React.ReactElement => {
             explanation: response.data.explanation ?? null,
           },
         });
-        if (response.data.offlineMode) {
-          Toast.show({
-            type: 'info',
-            text1: 'Offline mode',
-            text2:
-              'AI đang tạm thời không khả dụng. App dùng công thức chuẩn để hoàn tất onboarding.',
-          });
-        }
+        // Do nothing for offlineMode, user requested to remove the notification.
       } else {
         setAiResult(null);
         setCalculationError(
@@ -864,14 +864,24 @@ const OnboardingScreen = (): React.ReactElement => {
                     <ThemedText
                       variant="h2"
                       weight="700"
-                      style={{ color: C.primary, fontSize: 30 }}
+                      style={{ 
+                        color: C.primary, 
+                        fontSize: 32, 
+                        lineHeight: 40,
+                        includeFontPadding: false,
+                        paddingTop: 2,
+                      }}
                     >
                       {data.age || '24'}
                     </ThemedText>
                     <ThemedText
                       variant="bodySmall"
                       weight="600"
-                      style={{ color: C.onSurfaceVariant, marginLeft: 4 }}
+                      style={{ 
+                        color: C.onSurfaceVariant, 
+                        marginLeft: 6,
+                        includeFontPadding: false,
+                      }}
                     >
                       tuổi
                     </ThemedText>
@@ -1072,9 +1082,6 @@ const OnboardingScreen = (): React.ReactElement => {
       pixelsPerUnit: 12,
       precision: 0,
     });
-    if (Math.abs(snap.offset - offset) > 0.5) {
-      rulerScrollRef.current?.scrollTo({ x: snap.offset, animated: true });
-    }
     setData((prev) => ({ ...prev, heightCm: String(snap.value) }));
   };
 
@@ -1086,9 +1093,6 @@ const OnboardingScreen = (): React.ReactElement => {
       pixelsPerUnit: 100,
       precision: 1,
     });
-    if (Math.abs(snap.offset - offset) > 0.5) {
-      weightRulerRef.current?.scrollTo({ x: snap.offset, animated: true });
-    }
     setData((prev) => ({ ...prev, weightKg: String(snap.value) }));
   };
 
@@ -1100,9 +1104,6 @@ const OnboardingScreen = (): React.ReactElement => {
       pixelsPerUnit: 100,
       precision: 1,
     });
-    if (Math.abs(snap.offset - offset) > 0.5) {
-      targetWeightRulerRef.current?.scrollTo({ x: snap.offset, animated: true });
-    }
     targetRulerScrollXRef.current = snap.offset;
     targetRulerNativeScrollX.value = snap.offset;
     setTargetDisplayWeight(snap.value);
@@ -1407,8 +1408,6 @@ const OnboardingScreen = (): React.ReactElement => {
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={12}
-                      decelerationRate="fast"
-                      disableIntervalMomentum
                       contentOffset={{ x: ((parseInt(data.heightCm, 10) || 160) - 100) * 12, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: rulerContainerWidth / 2 - 6,
@@ -1417,9 +1416,6 @@ const OnboardingScreen = (): React.ReactElement => {
                         alignItems: 'flex-end',
                       }}
                       onMomentumScrollEnd={(e) => {
-                        snapHeightRulerToOffset(e.nativeEvent.contentOffset.x);
-                      }}
-                      onScrollEndDrag={(e) => {
                         snapHeightRulerToOffset(e.nativeEvent.contentOffset.x);
                       }}
                       scrollEventThrottle={64}
@@ -1519,8 +1515,6 @@ const OnboardingScreen = (): React.ReactElement => {
                       horizontal
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={10}
-                      decelerationRate="fast"
-                      disableIntervalMomentum
                       contentOffset={{ x: ((parseFloat(data.weightKg) || 60) - 30) * 100, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: weightRulerWidth / 2 - 5,
@@ -1529,9 +1523,6 @@ const OnboardingScreen = (): React.ReactElement => {
                         alignItems: 'flex-end',
                       }}
                       onMomentumScrollEnd={(e) => {
-                        snapWeightRulerToOffset(e.nativeEvent.contentOffset.x);
-                      }}
-                      onScrollEndDrag={(e) => {
                         snapWeightRulerToOffset(e.nativeEvent.contentOffset.x);
                       }}
                       scrollEventThrottle={64}
@@ -1993,8 +1984,6 @@ const OnboardingScreen = (): React.ReactElement => {
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   snapToInterval={10}
-                  decelerationRate="fast"
-                  disableIntervalMomentum
                   contentContainerStyle={{
                     paddingLeft: targetWeightRulerWidth / 2 - 5,
                     paddingRight: targetWeightRulerWidth / 2 - 5,
@@ -2003,9 +1992,6 @@ const OnboardingScreen = (): React.ReactElement => {
                   }}
                   onScroll={onTargetRulerScroll}
                   onMomentumScrollEnd={(e) => {
-                    snapTargetWeightRulerToOffset(e.nativeEvent.contentOffset.x);
-                  }}
-                  onScrollEndDrag={(e) => {
                     snapTargetWeightRulerToOffset(e.nativeEvent.contentOffset.x);
                   }}
                   scrollEventThrottle={16}
@@ -2985,30 +2971,6 @@ const OnboardingScreen = (): React.ReactElement => {
                       </View>
                     </View>
                   </View>
-                  {aiResult.offlineMode && (
-                    <View
-                      style={{
-                        marginTop: 12,
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 999,
-                        backgroundColor: 'rgba(251, 191, 36, 0.16)',
-                        borderWidth: 1,
-                        borderColor: 'rgba(251, 191, 36, 0.45)',
-                        alignSelf: 'center',
-                      }}
-                    >
-                      <ThemedText
-                        style={{
-                          fontSize: 11,
-                          color: '#FBBF24',
-                          fontFamily: 'Inter_600SemiBold',
-                        }}
-                      >
-                        Offline mode
-                      </ThemedText>
-                    </View>
-                  )}
                 </View>
               </Animated.View>
             )}
@@ -3195,12 +3157,12 @@ const OnboardingScreen = (): React.ReactElement => {
           <Pressable
             testID={TEST_IDS.auth.onboardingCompleteButton}
             onPress={handleComplete}
-            disabled={isCalculating || !aiResult}
+            disabled={isCalculating || !aiResult || analysisStep < 5}
             style={({ pressed }) => [
               s.nebulaCTA,
               { width: '100%' },
               pressed && { transform: [{ scale: 0.97 }] },
-              (isCalculating || !aiResult) && { opacity: 0.4 },
+              (isCalculating || !aiResult || analysisStep < 5) && { opacity: 0.4 },
             ]}
           >
             <LinearGradient
@@ -3223,7 +3185,6 @@ const OnboardingScreen = (): React.ReactElement => {
               >
                 Bắt đầu sử dụng
               </ThemedText>
-              <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
             </View>
           </Pressable>
         </View>
@@ -3388,8 +3349,12 @@ const OnboardingScreen = (): React.ReactElement => {
           {/* Content */}
           <View style={s.content}>
             <ScrollView
+              ref={mainScrollRef}
               style={s.scrollArea}
               showsVerticalScrollIndicator={false}
+              bounces={false}
+              overScrollMode="never"
+              scrollEnabled={currentStep === 5}
               contentContainerStyle={[
                 s.scrollContent,
                 currentStep <= 5 && { paddingHorizontal: 24 },

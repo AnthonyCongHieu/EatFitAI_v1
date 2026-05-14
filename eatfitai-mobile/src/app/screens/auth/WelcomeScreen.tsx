@@ -1,10 +1,12 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
   Dimensions,
   ScrollView,
   Pressable,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -150,6 +152,7 @@ const GoogleLogo = () => (
 const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   /* ─── Glow pulse animation ─── */
   const glowPulse = useSharedValue(1);
@@ -170,31 +173,38 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
   }));
 
   /* ─── Navigation handlers ─── */
-  const handleGoogleLogin = useCallback(async () => {
-    try {
-      logger.info('[WelcomeScreen] Starting Google Sign-In...');
-      const result = await signInWithGoogle();
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Đăng nhập với Google thành công',
-        text2: 'Chào mừng bạn!',
-      });
-
-      if (result.needsOnboarding) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Onboarding' }],
+  const handleGoogleLogin = useCallback(() => {
+    logger.info('[WelcomeScreen] Google button PRESSED');
+    setIsGoogleLoading(true);
+    
+    signInWithGoogle()
+      .then((result) => {
+        logger.info('[WelcomeScreen] Google Sign-In success:', result);
+        Toast.show({
+          type: 'success',
+          text1: 'Đăng nhập với Google thành công',
+          text2: 'Chào mừng bạn!',
         });
-      }
-    } catch (error: any) {
-      logger.error('[WelcomeScreen] Google Sign-In Error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Đăng nhập thất bại',
-        text2: error?.message || 'Đã có lỗi xảy ra',
+
+        if (result.needsOnboarding) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Onboarding' }],
+          });
+        }
+      })
+      .catch((error: any) => {
+        logger.error('[WelcomeScreen] Google Sign-In Error:', error);
+        Alert.alert('Đăng nhập thất bại', error?.message || 'Đã có lỗi xảy ra');
+        Toast.show({
+          type: 'error',
+          text1: 'Đăng nhập thất bại',
+          text2: error?.message || 'Đã có lỗi xảy ra',
+        });
+      })
+      .finally(() => {
+        setIsGoogleLoading(false);
       });
-    }
   }, [navigation, signInWithGoogle]);
 
   const handleEmailLogin = useCallback(() => {
@@ -351,10 +361,14 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                   testID={TEST_IDS.auth.welcomeGoogleButton}
                 >
                   <View style={styles.googleIconWrap}>
-                    <GoogleLogo />
+                    {isGoogleLoading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <GoogleLogo />
+                    )}
                   </View>
                   <ThemedText variant="body" style={styles.glassButtonText}>
-                    Tiếp tục với Google
+                    {isGoogleLoading ? 'Đang kết nối...' : 'Tiếp tục với Google'}
                   </ThemedText>
                 </Pressable>
 
