@@ -27,6 +27,9 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#090E1C"
       },
+      "splash": {
+        "backgroundColor": "#090E1C"
+      },
       "package": "com.eatfitai.app",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",

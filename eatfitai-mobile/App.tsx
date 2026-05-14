@@ -214,5 +214,6 @@ export default function App(): React.ReactElement | null {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: '#090E1C', // Prevents white flash on Android before SystemUI kicks in
   },
 });
