@@ -489,12 +489,16 @@ def build_source_policy_rows(source_rows: list[dict[str, str]], scorecard: list[
         output.append(
             {
                 "source_slug": slug,
+                "source_ref": key,
+                "dataset_ref": source.get("dataset_ref", ""),
+                "source_format": source.get("source_format", ""),
+                "audit_mode": source.get("audit_mode", ""),
                 "audit_state": source.get("status", ""),
                 "clean_lane": source.get("fit_lane", ""),
                 "include_in_default_clean": "yes" if key in accepted_sources or slug in accepted_sources else "no",
                 "license_lane": source.get("license", ""),
                 "cache_state": "kaggle_v4_source_audit",
-                "source_weight_cap": "0.60" if slug in accepted_sources else "0.00",
+                "source_weight_cap": "0.60" if key in accepted_sources or slug in accepted_sources else "0.00",
                 "required_filters": source.get("next_gate", ""),
                 "reason": source.get("decision", ""),
             }

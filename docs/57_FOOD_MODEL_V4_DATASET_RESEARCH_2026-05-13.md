@@ -374,6 +374,50 @@ Decision:
 - Validation: `python -m pytest ai-provider/tests/test_dataset_v2_v4_source_audit.py ai-provider/tests/test_dataset_v2_clean_v4_candidate_mining.py -q`
   passed with 31 tests and 3 subtests.
 
+2026-05-14 class-expansion audit result and clean-build gate:
+
+- `hiuinhcng/eatfitai-v4-class-expansion-source-audit` completed successfully.
+- Audit output showed 8 configured sources, 7 audited sources, 0 missing
+  mounts, 584 candidate class rows, and 243,986 candidate images.
+- Combined V4 audit after replacing duplicate source refs now has 38 sources,
+  34 audited sources, 2,898 candidate class rows, and 1,706,705 candidate
+  images.
+- Public-safe mining result:
+  - Base classes: 126.
+  - Accepted new classes: 49.
+  - Final public-safe class count if applied: 175.
+  - Gate status: still below the 300-class GPU threshold.
+- Private/noncommercial mining result:
+  - Base classes: 126.
+  - Accepted new classes: 184.
+  - Final private-lane class count if applied: 310.
+  - Gate status: eligible for CPU clean-build candidate generation, not yet
+    eligible for GPU training until the candidate dataset passes strict
+    validation.
+- Fixed source-policy scoring so accepted class-expansion sources are capped by
+  either internal source slug or Kaggle `dataset_ref`; this prevents accepted
+  sources such as CNFood-241 from being accidentally capped to zero.
+- Added CPU clean-build adapters in
+  `ai-provider/dataset_v2/build_clean_dataset_v4_from_kaggle_sources.py` for:
+  YOLO detection sources, image-folder classification, CSV classification,
+  COCO annotation pools, and FoodSeg-style mask-to-bbox conversion.
+- Added CPU-only Kaggle clean-build kernel
+  `hiuinhcng/eatfitai-dataset-v2-clean-build-v4-class-expansion`.
+  - GPU disabled.
+  - Max images target: 260,000 candidate images before validation and source
+    caps.
+  - Uses the private/noncommercial 310-class taxonomy and source policy.
+  - UECFood256 remains excluded because its Kaggle license is unknown.
+- Published pipeline-code dataset version with the clean-build adapters and
+  kernel files, then pushed clean-build kernel version #1.
+- Current status after push: `RUNNING`.
+- Created heartbeat automation `v4-clean-build-class-expansion-follow-up` to
+  check every 30 minutes, download outputs after completion, inspect summary,
+  manifest, validation, inventory, and issue files, then decide the next
+  CPU-only quality gate.
+- Validation: `python -m pytest ai-provider/tests/test_dataset_v2_clean_v4_candidate_mining.py ai-provider/tests/test_dataset_v2_v4_source_audit.py -q`
+  passed with 32 tests and 5 subtests.
+
 ## Source Links
 
 - Food-101 / ETH Zurich via Hugging Face:

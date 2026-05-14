@@ -349,6 +349,19 @@ class DatasetV2V4SourceAuditTests(unittest.TestCase):
         self.assertIn("rkuo2000/uecfood256", metadata["dataset_sources"])
         self.assertNotIn("rock3yu/dimsum50-0-1", metadata["dataset_sources"])
 
+    def test_v4_class_expansion_clean_build_metadata_is_cpu_only_and_mounts_included_sources(self):
+        metadata = json.loads(
+            (DATASET_DIR / "kaggle_clean_build_v4_class_expansion_kernel_metadata.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(metadata["code_file"], "kaggle_clean_build_v4_class_expansion_kernel.py")
+        self.assertFalse(metadata["enable_gpu"])
+        self.assertIn("hiuinhcng/eatfitai-dataset-v2-pipeline-code", metadata["dataset_sources"])
+        self.assertIn("zachaluza/cnfood-241", metadata["dataset_sources"])
+        self.assertIn("bjoernjostein/food-classification", metadata["dataset_sources"])
+        self.assertIn("fontainenathan/foodseg103", metadata["dataset_sources"])
+        self.assertNotIn("rkuo2000/uecfood256", metadata["dataset_sources"])
+
     def test_v4_class_expansion_manifest_separates_public_private_and_blocked_sources(self):
         manifest_path = DATASET_DIR / "clean_v4_class_expansion_source_candidates_2026-05-14.csv"
         rows = {
@@ -433,6 +446,8 @@ class DatasetV2V4SourceAuditTests(unittest.TestCase):
             "kaggle_v4_source_audit_kernel.py",
             "kaggle_v4_targeted_vietnamese_source_audit_kernel.py",
             "kaggle_v4_class_expansion_source_audit_kernel.py",
+            "kaggle_clean_build_v4_class_expansion_kernel.py",
+            "build_clean_dataset_v4_from_kaggle_sources.py",
         ):
             with self.subTest(script_name=script_name):
                 result = subprocess.run(

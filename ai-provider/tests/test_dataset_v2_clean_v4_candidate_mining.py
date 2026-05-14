@@ -432,6 +432,13 @@ class CleanV4CandidateMiningTests(unittest.TestCase):
         self.assertEqual(scorecard[0]["eligible_source_count"], 1)
         self.assertEqual(scorecard[0]["eligible_sources"], "owner-a/vietnamese-food")
 
+        policy_rows = miner.build_source_policy_rows(source_rows, scorecard)
+        by_ref = {row["source_ref"]: row for row in policy_rows}
+        self.assertEqual(by_ref["owner-a/vietnamese-food"]["include_in_default_clean"], "yes")
+        self.assertEqual(by_ref["owner-a/vietnamese-food"]["source_weight_cap"], "0.60")
+        self.assertEqual(by_ref["owner-b/vietnamese-food"]["include_in_default_clean"], "no")
+        self.assertEqual(by_ref["owner-b/vietnamese-food"]["source_weight_cap"], "0.00")
+
     def test_build_expanded_taxonomy_preserves_base_order_and_records_v4_metadata(self):
         base_taxonomy = {
             "classes": ["banh_mi", "pho"],

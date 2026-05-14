@@ -1,0 +1,23 @@
+{
+  "id": "hiuinhcng/eatfitai-dataset-v2-clean-build-v4-class-expansion",
+  "title": "EatFitAI Dataset V2 Clean Build V4 Class Expansion",
+  "code_file": "kaggle_clean_build_v4_class_expansion_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
+    "karos2504/100-vietnamese-food",
+    "meowluvmatcha/vnfood-30-100",
+    "awsaf49/food-recognition-2022-dataset",
+    "fontainenathan/foodseg103",
+    "henningheyen/lvis-fruits-and-vegetables-dataset",
+    "bjoernjostein/food-classification",
+    "raahimshah/desi-food-dataset-annotated",
+    "zachaluza/cnfood-241"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}
