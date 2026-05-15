@@ -278,6 +278,16 @@ const StatsScreen = (): React.ReactElement => {
     enabled: activeTab === 'week',
   });
 
+  // Custom water target (per user, stored locally) — used to compute weekly target correctly
+  const [customWaterTargetMl, setCustomWaterTargetMl] = useState<number | null>(null);
+  useEffect(() => {
+    if (activeTab === 'week') {
+      waterService.getCustomWaterTarget().then(setCustomWaterTargetMl);
+    }
+  }, [activeTab]);
+  // Effective daily target: prefer local custom target, then API value, then default 2000
+  const effectiveWaterTargetMl = customWaterTargetMl ?? weeklyWaterData?.targetMl ?? 2000;
+
   /* ─── Data: Profile ─── */
 
   /* ─── Data: Month extras (weight change + water average) ─── */
@@ -1188,7 +1198,7 @@ const StatsScreen = (): React.ReactElement => {
                           {((weeklyWaterData?.totalMl ?? 0) / 1000).toFixed(1)}
                         </ThemedText>
                         <ThemedText style={S.wkProteinTarget}>
-                          {' '}/ {(((weeklyWaterData?.targetMl ?? 2000) * 7) / 1000).toFixed(1)}L
+                          {' '}/ {((effectiveWaterTargetMl * 7) / 1000).toFixed(1)}L
                         </ThemedText>
                       </View>
                       <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
@@ -1200,7 +1210,7 @@ const StatsScreen = (): React.ReactElement => {
                         colors={['#0EA5E9', '#7dd3fc']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={[S.wkProteinBarFill, { width: `${Math.min(100, Math.round(((weeklyWaterData?.totalMl ?? 0) / ((weeklyWaterData?.targetMl ?? 2000) * 7)) * 100))}%` as any, shadowColor: '#0EA5E9' }]}
+                        style={[S.wkProteinBarFill, { width: `${Math.min(100, Math.round(((weeklyWaterData?.totalMl ?? 0) / (effectiveWaterTargetMl * 7)) * 100))}%` as any, shadowColor: '#0EA5E9' }]}
                       />
                     </View>
                   </View>
