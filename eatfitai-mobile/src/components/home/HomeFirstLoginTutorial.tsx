@@ -8,14 +8,19 @@ import * as Haptics from 'expo-haptics';
 import MascotCharacter, { type MascotState } from '../MascotCharacter';
 import { ThemedText } from '../ThemedText';
 import { TEST_IDS } from '../../testing/testIds';
+import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
+import { getMoChiExperience } from '../../features/mochi/mochiExperienceCatalog';
+import type { MoChiPetEventType } from '../../features/mochi/mochiPoseCatalog';
 
 export const HOME_TUTORIAL_SEEN_KEY = 'home_tutorial_v1_seen';
 
 type TutorialStep = {
+  mochiEvent?: MoChiPetEventType;
   title: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
   mascotState: MascotState;
+  poseKey?: MoChiPoseKey;
 };
 
 const TUTORIAL_STEPS: TutorialStep[] = [
@@ -42,6 +47,49 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     description: 'Theo dõi calories, bữa ăn và lượng nước trong ngày để biết mình còn thiếu gì.',
     icon: 'calendar',
     mascotState: 'success',
+  },
+];
+
+const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    mochiEvent: 'tutorial_welcome',
+    title: 'Gặp MoChi',
+    description: getMoChiExperience('tutorial_welcome').dialogue,
+    icon: 'sparkles',
+    mascotState: 'wave',
+    poseKey: 'boxIdle',
+  },
+  {
+    mochiEvent: 'tutorial_scan',
+    title: 'Quét khi muốn nhanh',
+    description: getMoChiExperience('tutorial_scan').dialogue,
+    icon: 'camera',
+    mascotState: 'pointing',
+    poseKey: 'foodPhone',
+  },
+  {
+    mochiEvent: 'tutorial_search',
+    title: 'Tìm khi cần chắc',
+    description: getMoChiExperience('tutorial_search').dialogue,
+    icon: 'restaurant',
+    mascotState: 'thinking',
+    poseKey: 'mealChoice',
+  },
+  {
+    mochiEvent: 'tutorial_water',
+    title: 'Một nhịp nước',
+    description: getMoChiExperience('tutorial_water').dialogue,
+    icon: 'water',
+    mascotState: 'success',
+    poseKey: 'waterGlass',
+  },
+  {
+    mochiEvent: 'tutorial_progress',
+    title: 'Xem bức tranh tổng',
+    description: getMoChiExperience('tutorial_progress').dialogue,
+    icon: 'analytics',
+    mascotState: 'reporting',
+    poseKey: 'reportReview',
   },
 ];
 
@@ -85,11 +133,12 @@ const HomeFirstLoginTutorial = ({
     };
   }, [isAuthenticated, needsOnboarding]);
 
-  const currentStep = TUTORIAL_STEPS[currentStepIndex] ?? TUTORIAL_STEPS[0]!;
-  const isLastStep = currentStepIndex === TUTORIAL_STEPS.length - 1;
+  const tutorialSteps = FIRST_WIN_TUTORIAL_STEPS;
+  const currentStep = tutorialSteps[currentStepIndex] ?? tutorialSteps[0]!;
+  const isLastStep = currentStepIndex === tutorialSteps.length - 1;
 
   const progressText = useMemo(
-    () => `${currentStepIndex + 1}/${TUTORIAL_STEPS.length}`,
+    () => `${currentStepIndex + 1}/${tutorialSteps.length}`,
     [currentStepIndex],
   );
 
@@ -109,7 +158,7 @@ const HomeFirstLoginTutorial = ({
       return;
     }
 
-    setCurrentStepIndex((value) => Math.min(value + 1, TUTORIAL_STEPS.length - 1));
+    setCurrentStepIndex((value) => Math.min(value + 1, tutorialSteps.length - 1));
   }, [completeTutorial, isLastStep]);
 
   if (!visible) {
@@ -152,7 +201,11 @@ const HomeFirstLoginTutorial = ({
           </View>
 
           <View style={styles.mascotStage}>
-            <MascotCharacter state={currentStep.mascotState} size={104} />
+            <MascotCharacter
+              state={currentStep.mascotState}
+              poseKey={currentStep.poseKey}
+              size={104}
+            />
           </View>
 
           <View style={styles.copyBlock}>
@@ -164,7 +217,7 @@ const HomeFirstLoginTutorial = ({
           </View>
 
           <View style={styles.dotsRow}>
-            {TUTORIAL_STEPS.map((step, index) => (
+            {tutorialSteps.map((step, index) => (
               <View
                 key={step.title}
                 style={[

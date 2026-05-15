@@ -6,6 +6,7 @@ import {
   type MoChiPrimaryAction,
 } from './mochiPoseCatalog';
 import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
+import { getMoChiExperience } from './mochiExperienceCatalog';
 
 export type { MoChiPetEventType, MoChiPetMood, MoChiPrimaryAction };
 
@@ -51,10 +52,10 @@ export const BODY_SHAMING_MARKERS = [
   'cân nặng của bạn tệ',
 ];
 
-const EVENT_STATE: Record<
+const EVENT_STATE: Partial<Record<
   MoChiPetEventType,
   Omit<MoChiPetState, 'eventType' | 'poseKey'>
-> = {
+>> = {
   app_idle: {
     mood: 'idle',
     dialogue: 'MoChi đang trực ca. Có món cần scan, bữa cần ghi, hay nước cần nhắc không?',
@@ -203,12 +204,16 @@ const resolveEventType = (input: MoChiPetInput): MoChiPetEventType => {
 
 export const getMoChiPetState = (input: MoChiPetInput): MoChiPetState => {
   const eventType = resolveEventType(input);
-  const state = EVENT_STATE[eventType];
+  const experience = getMoChiExperience(eventType);
 
   return {
     eventType,
     poseKey: getMoChiPoseForEvent(eventType),
-    ...state,
+    mood: experience.mood,
+    dialogue: experience.dialogue,
+    primaryAction: experience.primaryAction,
+    urgency: experience.priority,
+    shouldBubble: experience.shouldBubble,
   };
 };
 

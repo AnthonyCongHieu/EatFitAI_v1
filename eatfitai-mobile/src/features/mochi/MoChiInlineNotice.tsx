@@ -4,27 +4,36 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import MoChiSprite from './MoChiSprite';
 import { getMoChiEventState, type MoChiPetEventType } from './mochiPetEngine';
+import { getMoChiExperience } from './mochiExperienceCatalog';
 
 type MoChiInlineNoticeProps = {
   mochiEvent: MoChiPetEventType;
   title?: string;
+  message?: string;
+  ctaLabel?: string;
   compact?: boolean;
 };
 
 const MoChiInlineNotice = ({
   mochiEvent,
-  title = 'MoChi',
+  title,
+  message,
+  ctaLabel,
   compact = false,
 }: MoChiInlineNoticeProps): React.ReactElement => {
   const state = getMoChiEventState(mochiEvent);
+  const experience = getMoChiExperience(mochiEvent);
   const spriteSize = compact ? 72 : 92;
 
   return (
     <View style={[styles.root, compact && styles.compact]}>
       <MoChiSprite poseKey={state.poseKey} size={spriteSize} animated={!compact} />
       <View style={styles.copy}>
-        <ThemedText style={styles.title}>{title}</ThemedText>
-        <ThemedText style={styles.dialogue}>{state.dialogue}</ThemedText>
+        <ThemedText style={styles.title}>{title ?? experience.title}</ThemedText>
+        <ThemedText style={styles.dialogue}>{message ?? state.dialogue}</ThemedText>
+        {(ctaLabel ?? experience.ctaLabel) && (
+          <ThemedText style={styles.cta}>{ctaLabel ?? experience.ctaLabel}</ThemedText>
+        )}
       </View>
     </View>
   );
@@ -61,6 +70,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#dee1f7',
     lineHeight: 18,
+  },
+  cta: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#4BE277',
+    lineHeight: 16,
   },
 });
 

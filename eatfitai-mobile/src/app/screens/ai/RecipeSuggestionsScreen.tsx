@@ -13,6 +13,7 @@ import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
+import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
@@ -201,11 +202,13 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             renderSkeleton()
           ) : error ? (
             <View style={S.center}>
+              <MoChiInlineNotice mochiEvent="recipe_error" compact />
               <Ionicons name="alert-circle" size={48} color={P.danger} />
               <ThemedText style={S.errorText}>{error}</ThemedText>
             </View>
           ) : recipes.length === 0 ? (
             <View style={S.centerEmpty}>
+              <MoChiInlineNotice mochiEvent="recipe_empty" compact />
               <Ionicons name="restaurant-outline" size={64} color={P.onSurfaceVariant} />
               <ThemedText style={S.emptyText}>
                 Hãy nhập nguyên liệu phía trên để{'\n'}chúng tôi lên thực đơn cho bạn!
@@ -213,6 +216,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             </View>
           ) : (
             <>
+              <MoChiInlineNotice mochiEvent="recipe_success" compact />
               {featuredRecipe && (
               <Animated.View entering={FadeInDown.springify()} style={S.featuredCard}>
                 <View style={S.featuredContent}>

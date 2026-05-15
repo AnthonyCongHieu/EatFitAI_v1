@@ -774,6 +774,7 @@ const HomeScreen = (): React.ReactElement => {
             ) : (
               /* Empty state */
               <View style={styles.emptyState}>
+                {isToday(selectedDate) && <MoChiInlineNotice mochiEvent="diary_empty_today" compact />}
                 <ThemedText style={styles.emptyTitle}>
                   {isToday(selectedDate) ? 'Chưa có món nào hôm nay' : 'Không có dữ liệu'}
                 </ThemedText>

@@ -16,6 +16,11 @@ export type MoChiPetMood =
 export type MoChiPetEventType =
   | 'app_idle'
   | 'tutorial_step'
+  | 'tutorial_welcome'
+  | 'tutorial_scan'
+  | 'tutorial_search'
+  | 'tutorial_water'
+  | 'tutorial_progress'
   | 'meal_reminder'
   | 'water_reminder'
   | 'scan_processing'
@@ -23,6 +28,42 @@ export type MoChiPetEventType =
   | 'scan_empty'
   | 'scan_error'
   | 'meal_logged'
+  | 'diary_empty_today'
+  | 'diary_review'
+  | 'food_search_empty'
+  | 'food_search_no_results'
+  | 'food_search_error'
+  | 'voice_idle'
+  | 'voice_listening'
+  | 'voice_review'
+  | 'voice_success'
+  | 'voice_error'
+  | 'recipe_empty'
+  | 'recipe_searching'
+  | 'recipe_success'
+  | 'recipe_error'
+  | 'stats_low_data'
+  | 'weekly_review'
+  | 'achievement_unlocked'
+  | 'profile_incomplete'
+  | 'weight_checkin'
+  | 'nutrition_targets'
+  | 'nutrition_explain'
+  | 'hydration_goal'
+  | 'meal_choice'
+  | 'workout_nudge'
+  | 'favorite_saved'
+  | 'cooking_prep'
+  | 'diet_warning'
+  | 'companion_rest'
+  | 'companion_love'
+  | 'companion_determined'
+  | 'companion_surprised'
+  | 'companion_embarrassed'
+  | 'companion_strained'
+  | 'companion_box_idle'
+  | 'app_offline'
+  | 'generic_error'
   | 'water_added'
   | 'streak_unlocked'
   | 'calorie_caution'
@@ -129,6 +170,11 @@ const POSE_MOOD: Partial<Record<MoChiPoseKey, MoChiPetMood>> = {
 export const MOCHI_EVENT_TO_POSE: Record<MoChiPetEventType, MoChiPoseKey> = {
   app_idle: 'idle',
   tutorial_step: 'celebrate',
+  tutorial_welcome: 'boxIdle',
+  tutorial_scan: 'foodPhone',
+  tutorial_search: 'mealChoice',
+  tutorial_water: 'waterGlass',
+  tutorial_progress: 'reportReview',
   meal_reminder: 'foodPhone',
   water_reminder: 'hydrate',
   scan_processing: 'analyzing',
@@ -136,6 +182,42 @@ export const MOCHI_EVENT_TO_POSE: Record<MoChiPetEventType, MoChiPoseKey> = {
   scan_empty: 'confused',
   scan_error: 'sadCry',
   meal_logged: 'saladSuccess',
+  diary_empty_today: 'tabletLog',
+  diary_review: 'tabletMeal',
+  food_search_empty: 'faceThinking',
+  food_search_no_results: 'burgerSurprise',
+  food_search_error: 'faceStrained',
+  voice_idle: 'faceCheerful',
+  voice_listening: 'faceSurprised',
+  voice_review: 'faceThinking',
+  voice_success: 'thumbsUp',
+  voice_error: 'faceSad',
+  recipe_empty: 'healthyBasket',
+  recipe_searching: 'cookingPrep',
+  recipe_success: 'heartLove',
+  recipe_error: 'reportPanic',
+  stats_low_data: 'faceCalm',
+  weekly_review: 'reportReview',
+  achievement_unlocked: 'sparkleSuccess',
+  profile_incomplete: 'faceEmbarrassed',
+  weight_checkin: 'weighIn',
+  nutrition_targets: 'foodScale',
+  nutrition_explain: 'carbExplain',
+  hydration_goal: 'waterGlass',
+  meal_choice: 'spinChoice',
+  workout_nudge: 'workout',
+  favorite_saved: 'faceHappy',
+  cooking_prep: 'phoneMealPrep',
+  diet_warning: 'dietWarning',
+  companion_rest: 'calm',
+  companion_love: 'faceLove',
+  companion_determined: 'faceDetermined',
+  companion_surprised: 'faceShocked',
+  companion_embarrassed: 'faceEmbarrassed',
+  companion_strained: 'faceStrained',
+  companion_box_idle: 'boxIdle',
+  app_offline: 'faceTired',
+  generic_error: 'angry',
   water_added: 'waterGlass',
   streak_unlocked: 'celebrate',
   calorie_caution: 'cakeConcern',

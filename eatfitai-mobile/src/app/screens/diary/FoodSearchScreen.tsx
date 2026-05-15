@@ -37,6 +37,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
+import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import { t } from '../../../i18n/vi';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
@@ -667,6 +668,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
         ) : errorMessage ? (
           <View style={{ marginTop: 24 }}>
+            <MoChiInlineNotice mochiEvent="food_search_error" compact />
             <AnimatedEmptyState
               variant="error"
               title="Tìm kiếm thất bại"
@@ -752,6 +754,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
         ) : query.trim() && items.length === 0 && hasSearched ? (
           <View style={{ marginTop: 24 }}>
+            <MoChiInlineNotice mochiEvent="food_search_no_results" compact />
             <AnimatedEmptyState
               variant="no-search-results"
               title="Không tìm thấy kết quả"
@@ -760,6 +763,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
         ) : (
           <View style={S.recentArea}>
+            <MoChiInlineNotice mochiEvent="food_search_empty" compact />
             <View style={S.sectionHeader}>
               <ThemedText style={S.sectionTitle}>TÌM KIẾM GẦN ĐÂY</ThemedText>
             </View>

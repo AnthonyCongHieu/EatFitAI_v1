@@ -41,6 +41,8 @@ import { useVoiceStore } from '../../store/useVoiceStore';
 import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
+import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
+import type { MoChiPetEventType } from '../../features/mochi/mochiPoseCatalog';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -472,6 +474,15 @@ const VoiceScreen = (): React.ReactElement => {
   /* ═══════════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════════ */
+  const voiceMoChiEvent: MoChiPetEventType =
+    isVoiceAiBlocked ? 'app_offline'
+    : error || status === 'error' ? 'voice_error'
+    : status === 'success' ? 'voice_success'
+    : status === 'review' ? 'voice_review'
+    : isRecording || status === 'listening' || status === 'processing' || status === 'parsing'
+      ? 'voice_listening'
+      : 'voice_idle';
+
   return (
     <View style={[S.container, { paddingTop: insets.top }]} testID={TEST_IDS.voice.screen}>
 
@@ -520,6 +531,12 @@ const VoiceScreen = (): React.ReactElement => {
         )}
 
         {/* ═══ CHAT HISTORY ═══ */}
+        {!isRecording && (
+          <Animated.View entering={FadeInUp.delay(90)} style={S.moChiNotice}>
+            <MoChiInlineNotice mochiEvent={voiceMoChiEvent} compact />
+          </Animated.View>
+        )}
+
         {chatMessages.length > 0 && (
           <Animated.View entering={FadeInUp.delay(100)} style={S.chatArea}>
             {chatMessages.map((msg) => (
@@ -849,6 +866,9 @@ const S = StyleSheet.create({
   chatArea: {
     gap: 16,
     marginBottom: 20,
+  },
+  moChiNotice: {
+    marginBottom: 16,
   },
   bubbleRow: {
     flexDirection: 'row',
