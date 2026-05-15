@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDiaryStore } from '../store/useDiaryStore';
 import { MEAL_TYPES, type MealTypeId } from '../types';
 import { waterService, type WaterIntakeData } from '../services/waterService';
+import { useGamificationStore } from '../store/useGamificationStore';
 
 export interface SmartReminder {
   id: string;
@@ -69,6 +70,10 @@ export function useSmartReminders(options?: {
   const enabled = options?.enabled ?? true;
   const summary = useDiaryStore((s) => s.summary);
   const isLoadingDiary = useDiaryStore((s) => s.isLoading);
+
+  const pendingBrokenStreak = useGamificationStore((s) => s.pendingBrokenStreak);
+  const brokenStreakDate = useGamificationStore((s) => s.brokenStreakDate);
+  const streakRecoveriesLeft = useGamificationStore((s) => s.streakRecoveriesLeft);
 
   const { data: waterData, isPending: waterLoading } = useQuery<WaterIntakeData>({
     queryKey: ['water-intake-today'],
@@ -134,9 +139,20 @@ export function useSmartReminders(options?: {
       });
     }
 
+    // --- 3. NHẮC NHỞ KHÔI PHỤC CHUỖI (ƯU TIÊN CAO NHẤT) ---
+    if (pendingBrokenStreak !== null && brokenStreakDate !== null) {
+      reminders.unshift({
+        id: 'streak-recovery',
+        type: 'meal',
+        label: 'Khôi phục chuỗi',
+        emoji: '🆘',
+        message: `Chuỗi của bạn bị đứt! Bạn còn ${streakRecoveriesLeft ?? 3} lần khôi phục. Hãy ghi bù nhật ký để khôi phục chuỗi nhé!`,
+      });
+    }
+
     const hasReminders = reminders.length > 0;
     const bubbleText = hasReminders ? reminders[0]!.message : null;
 
     return { reminders, hasReminders, bubbleText };
-  }, [enabled, summary, waterData, isLoadingDiary, waterLoading]);
+  }, [enabled, summary, waterData, isLoadingDiary, waterLoading, pendingBrokenStreak, brokenStreakDate, streakRecoveriesLeft]);
 }

@@ -1,6 +1,7 @@
 import apiClient from './apiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../utils/logger';
+import { useAuthStore } from '../store/useAuthStore';
 
 export interface WaterIntakeData {
   date: string;
@@ -15,7 +16,12 @@ const formatDateForApi = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
-const WATER_TARGET_KEY = '@eatfitai_water_target_ml';
+export const BASE_WATER_TARGET_KEY = '@eatfitai_water_target_ml';
+
+const getWaterTargetKey = () => {
+  const userId = useAuthStore.getState().user?.id || 'guest';
+  return `${BASE_WATER_TARGET_KEY}_${userId}`;
+};
 
 export const waterService = {
   /** Lấy lượng nước uống theo ngày */
@@ -74,7 +80,8 @@ export const waterService = {
   /** Lấy mục tiêu nước tùy chỉnh (local) */
   async getCustomWaterTarget(): Promise<number | null> {
     try {
-      const val = await AsyncStorage.getItem(WATER_TARGET_KEY);
+      const key = getWaterTargetKey();
+      const val = await AsyncStorage.getItem(key);
       return val !== null ? Number(val) : null;
     } catch {
       return null;
@@ -84,13 +91,32 @@ export const waterService = {
   /** Lưu mục tiêu nước tùy chỉnh (local) — truyền null để reset về mặc định */
   async setCustomWaterTarget(ml: number | null): Promise<void> {
     try {
+      const key = getWaterTargetKey();
       if (ml === null) {
-        await AsyncStorage.removeItem(WATER_TARGET_KEY);
+        await AsyncStorage.removeItem(key);
       } else {
-        await AsyncStorage.setItem(WATER_TARGET_KEY, String(ml));
+        await AsyncStorage.setItem(key, String(ml));
       }
     } catch (e) {
       logger.warn('[waterService] setCustomWaterTarget failed', e);
+    }
+  },
+
+  /** Lấy tổng hợp nước uống theo tuần từ backend */
+  async getWeeklyWaterIntake(startDate: string, endDate: string): Promise<WeeklyWaterData> {
+    try {
+      const { data } = await apiClient.get<WeeklyWaterData>('/api/water-intake/weekly', {
+        params: { startDate, endDate },
+      });
+      const customTarget = await this.getCustomWaterTarget();
+      if (customTarget !== null) {
+        data.targetMl = customTarget;
+      }
+      return data;
+    } catch (error) {
+      logger.warn('[waterService] Weekly water fetch failed', error);
+      const customTarget = await this.getCustomWaterTarget();
+      return { startDate, endDate, totalMl: 0, averageMl: 0, daysWithData: 0, targetMl: customTarget !== null ? customTarget : 2000 };
     }
   },
 };
@@ -103,3 +129,11 @@ export interface MonthlyWaterData {
   daysWithData: number;
 }
 
+export interface WeeklyWaterData {
+  startDate: string;
+  endDate: string;
+  totalMl: number;
+  averageMl: number;
+  daysWithData: number;
+  targetMl: number;
+}

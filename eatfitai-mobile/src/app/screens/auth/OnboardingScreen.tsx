@@ -48,6 +48,7 @@ import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthS
 import apiClient, { aiApiClient } from '../../../services/apiClient';
 import { aiService } from '../../../services/aiService';
 import { profileService } from '../../../services/profileService';
+import { waterService } from '../../../services/waterService';
 import { trackEvent } from '../../../services/analytics';
 import { showSuccess } from '../../../utils/errorHandler';
 import logger from '../../../utils/logger';
@@ -661,9 +662,9 @@ const OnboardingScreen = (): React.ReactElement => {
       try {
         // Save profile với đầy đủ thông tin
         await updateProfile({
-          heightCm: Number(data.heightCm),
-          weightKg: Number(data.weightKg),
-          targetWeightKg: data.targetWeightKg ? Number(data.targetWeightKg) : undefined,
+          heightCm: Number(data.heightCm.replace(',', '.')),
+          weightKg: Number(data.weightKg.replace(',', '.')),
+          targetWeightKg: data.targetWeightKg ? Number(data.targetWeightKg.replace(',', '.')) : undefined,
           gender: data.gender || undefined,
           dateOfBirth: dateOfBirth,
           activityLevelId: activityLevelMap[data.activityLevel] || 3,
@@ -680,8 +681,8 @@ const OnboardingScreen = (): React.ReactElement => {
         }
 
         await profileService.createBodyMetrics({
-          heightCm: Number(data.heightCm),
-          weightKg: Number(data.weightKg),
+          heightCm: Number(data.heightCm.replace(',', '.')),
+          weightKg: Number(data.weightKg.replace(',', '.')),
           note: 'Onboarding fallback while profile API is degraded',
         });
         profileSavedWithFallback = true;
@@ -709,6 +710,14 @@ const OnboardingScreen = (): React.ReactElement => {
           }
           // Vẫn tiếp tục vì đây không phải critical error
         }
+      }
+
+      // Explicitly clear any stale water target from a previous account session
+      // so that it correctly falls back to the backend's dynamic calculation.
+      try {
+        await waterService.setCustomWaterTarget(null);
+      } catch (e) {
+        // ignore
       }
 
       // Gọi API đánh dấu onboarding hoàn tất trên server

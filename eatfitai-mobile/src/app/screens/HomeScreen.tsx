@@ -314,18 +314,30 @@ const HomeScreen = (): React.ReactElement => {
     const focusWaterRequestId = route.params?.focusWaterRequestId;
     if (
       !focusWaterRequestId
-      || waterCardY == null
       || lastHandledWaterFocusRequestRef.current === focusWaterRequestId
     ) {
       return;
     }
 
     lastHandledWaterFocusRequestRef.current = focusWaterRequestId;
-    const timer = setTimeout(() => {
-      screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
-    }, 250);
 
-    return () => clearTimeout(timer);
+    // Retry scrolling with increasing delays to handle cases where
+    // the water card hasn't laid out yet (e.g., navigating from another tab)
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const tryScroll = (delay: number) => {
+      const t = setTimeout(() => {
+        if (waterCardY != null) {
+          screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
+        }
+      }, delay);
+      timers.push(t);
+    };
+
+    tryScroll(300);
+    tryScroll(600);
+    tryScroll(1000);
+
+    return () => timers.forEach(clearTimeout);
   }, [route.params?.focusWaterRequestId, waterCardY]);
 
   const showCommonErrors = useCallback(
@@ -677,9 +689,10 @@ const HomeScreen = (): React.ReactElement => {
               </View>
             ) : todayEntries.length > 0 ? (
               <View style={{ gap: 0 }}>
-                {todayEntries.map((entry, index) => {
+                {todayEntries.slice(0, 5).map((entry, index) => {
                   const emoji = getFoodEmoji(entry.foodName);
-                  const isLast = index === todayEntries.length - 1;
+                  const displayedCount = Math.min(todayEntries.length, 5);
+                  const isLast = index === displayedCount - 1;
 
                   // Định dạng thời gian theo múi giờ Hà Nội (UTC+7)
                   let timeStr = '';

@@ -51,6 +51,9 @@ export const toastConfig: ToastConfig = {
   warning: (props) => (
     <CustomToast {...props} iconName="warning" iconColor={C.warning} />
   ),
+  achievement: (props) => (
+    <CustomToast {...props} iconName="trophy" iconColor="#fbbf24" />
+  ),
 };
 
 const styles = StyleSheet.create({

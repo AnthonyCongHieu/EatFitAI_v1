@@ -353,7 +353,7 @@ CÔNG THỨC: Mifflin-St Jeor
 THÔNG TIN: {gender}, {age} tuổi, {height_cm}cm, {weight_kg}kg, {activity_level}, {goal}
 
 TRẢ LỜI JSON (chỉ JSON, không giải thích thêm):
-{{"calories": int, "protein": int, "carbs": int, "fat": int, "explanation": "giải thích ngắn gọn"}}"""
+{{"calories": int, "protein": int, "carbs": int, "fat": int, "explanation": "giải thích ngắn gọn BẰNG TIẾNG VIỆT, dễ hiểu cho người dùng phổ thông, không dùng thuật ngữ kỹ thuật"}}"""
 
     # Do not cache the raw Gemini response here. The response must pass domain
     # validation first; otherwise one malformed model response can stick and

@@ -275,12 +275,12 @@ describe('StatsScreen weekly review focus', () => {
 
     const screen = render(<StatsScreen />);
 
-    expect(await screen.findByTestId(TEST_IDS.stats.weeklyReviewCard)).toBeTruthy();
+    expect(await screen.findByText('Tổng Năng Lượng')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId(TEST_IDS.stats.todayTabButton));
 
     await waitFor(() => {
-      expect(screen.queryByTestId(TEST_IDS.stats.weeklyReviewCard)).toBeNull();
+      expect(screen.queryByText('Tổng Năng Lượng')).toBeNull();
     });
   }, 15000);
 });

@@ -203,6 +203,57 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy tổng hợp lượng nước uống theo tuần
+        /// GET /api/water-intake/weekly?startDate=2026-05-12&endDate=2026-05-18
+        /// </summary>
+        [HttpGet("weekly")]
+        public async Task<ActionResult> GetWeeklyWaterIntake(
+            [FromQuery] string startDate,
+            [FromQuery] string endDate)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var start = DateOnly.Parse(startDate);
+                var end = DateOnly.Parse(endDate);
+
+                var records = await _db.WaterIntakes
+                    .Where(w => w.UserId == userId && w.IntakeDate >= start && w.IntakeDate <= end)
+                    .OrderBy(w => w.IntakeDate)
+                    .ToListAsync();
+
+                var daysWithData = records.Count;
+                var totalMl = records.Sum(r => r.AmountMl);
+                var averageMl = daysWithData > 0 ? totalMl / daysWithData : 0;
+                var targetMl = await GetDailyTargetMlAsync(userId);
+
+                return Ok(new
+                {
+                    startDate = start.ToString("yyyy-MM-dd"),
+                    endDate = end.ToString("yyyy-MM-dd"),
+                    totalMl,
+                    averageMl,
+                    daysWithData,
+                    targetMl,
+                    daily = records.Select(r => new
+                    {
+                        date = r.IntakeDate.ToString("yyyy-MM-dd"),
+                        amountMl = r.AmountMl,
+                        targetMl = r.TargetMl,
+                    })
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Token không hợp lệ" });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Lỗi khi lấy dữ liệu nước tuần", HttpContext));
+            }
+        }
+
         private async Task<int> GetDailyTargetMlAsync(Guid userId)
         {
             var weightKg = await _db.BodyMetrics
