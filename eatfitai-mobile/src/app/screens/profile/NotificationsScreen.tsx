@@ -69,7 +69,7 @@ const P = {
   surfaceContainerLowest: '#090e1c',
   surfaceContainerLow: '#161b2b',
   surfaceContainerHighest: '#2f3445',
-  surfaceGlass: 'rgba(37, 41, 58, 0.4)',
+  surfaceGlass: '#1a1e2e',  // Solid color — rgba causes 2-tone bug on Android
   onSurface: '#dee1f7',
   onSurfaceVariant: '#bccbb9',
   glassBorder: 'rgba(61, 74, 61, 0.2)',
