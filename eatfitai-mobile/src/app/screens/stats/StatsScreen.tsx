@@ -858,7 +858,7 @@ const StatsScreen = (): React.ReactElement => {
                     colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
+                    style={[StyleSheet.absoluteFill, S.weekCardGradient]}
                   />
                   {/* Ring */}
                   <View style={S.heroRingWrap}>
@@ -944,7 +944,7 @@ const StatsScreen = (): React.ReactElement => {
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
+                    style={[StyleSheet.absoluteFill, S.weekCardGradient]}
                   />
                   {/* Header row */}
                   <View style={S.wkChartHeader}>
@@ -2217,7 +2217,7 @@ const S = StyleSheet.create({
   /* ═══ WEEK TAB REDESIGN ═══ */
   wkRingCard: {
     backgroundColor: 'rgba(22, 27, 43, 0.5)',
-
+    minHeight: 340,
     borderRadius: 24,
     paddingHorizontal: 24,
     paddingVertical: 28,
@@ -2226,11 +2226,9 @@ const S = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
-    shadowColor: P.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 32,
-    elevation: 8,
+  },
+  weekCardGradient: {
+    borderRadius: 24,
   },
   wkRingUnit: {
     fontSize: 13,
@@ -2255,18 +2253,13 @@ const S = StyleSheet.create({
   /* Glassmorphism chart */
   wkGlassChart: {
     backgroundColor: 'rgba(22, 27, 43, 0.5)',
-
+    minHeight: 300,
     borderRadius: 24,
     paddingHorizontal: 20,
     paddingVertical: 24,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
-    shadowColor: P.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 32,
-    elevation: 8,
   },
   wkChartHeader: {
     flexDirection: 'row',

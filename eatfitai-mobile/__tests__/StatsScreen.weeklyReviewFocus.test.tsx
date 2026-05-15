@@ -221,6 +221,7 @@ jest.mock('../src/services/waterService', () => ({
   waterService: {
     getWaterIntake: jest.fn(),
     getMonthlyWaterIntake: jest.fn(),
+    getCustomWaterTarget: jest.fn().mockResolvedValue(null),
   },
 }));
 
