@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
+import Toast from 'react-native-toast-message';
 import { diaryService } from '../services/diaryService';
 
 export const GAMIFICATION_STORAGE_KEY = 'gamification-storage';
@@ -359,6 +360,16 @@ export const useGamificationStore = create<GamificationState>()(
         set((state) => {
           const achievement = state.achievements.find((a) => a.id === id);
           if (achievement && !achievement.unlockedAt) {
+            // Hiển thị thông báo chúc mừng
+            setTimeout(() => {
+              Toast.show({
+                type: 'achievement',
+                text1: 'Thành tựu mới!',
+                text2: `Đã mở khóa: ${achievement.title}`,
+                visibilityTime: 4000,
+              });
+            }, 500);
+
             return {
               achievements: state.achievements.map((a) =>
                 a.id === id
@@ -409,6 +420,14 @@ export const useGamificationStore = create<GamificationState>()(
 
           // Auto unlock nếu đạt target
           if (newProgress >= a.target) {
+            setTimeout(() => {
+              Toast.show({
+                type: 'achievement',
+                text1: 'Thành tựu mới!',
+                text2: `Đã mở khóa: ${a.title}`,
+                visibilityTime: 4000,
+              });
+            }, 500);
             return { ...a, progress: a.target, unlockedAt: new Date().toISOString() };
           }
 
