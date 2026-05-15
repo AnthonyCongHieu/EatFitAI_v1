@@ -465,6 +465,15 @@ class DatasetV2V4SourceAuditTests(unittest.TestCase):
 
                 self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_v4_clean_build_kernel_does_not_zip_large_dataset_by_default(self):
+        script = (DATASET_DIR / "kaggle_clean_build_v4_class_expansion_kernel.py").read_text(encoding="utf-8")
+
+        self.assertIn("WRITE_DATASET_ZIP", script)
+        self.assertIn("EATFITAI_CLEAN_V4_CLASS_EXPANSION_WRITE_DATASET_ZIP", script)
+        self.assertIn('"false"', script)
+        self.assertIn("if WRITE_DATASET_ZIP:", script)
+        self.assertNotIn("zip_path(CLEAN_DATASET_DIR, CLEAN_DATASET_ZIP)\n    zip_path(REPORT_DIR, REPORTS_ZIP)", script)
+
     def test_v4_targeted_kernel_imports_base_from_isolated_entrypoint(self):
         script = DATASET_DIR / "kaggle_v4_targeted_vietnamese_source_audit_kernel.py"
         result = subprocess.run(

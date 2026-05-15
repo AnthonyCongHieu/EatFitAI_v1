@@ -14,6 +14,10 @@ CLEAN_DATASET_DIR = Path("/kaggle/working/eatfitai_dataset_v2_clean_v4_class_exp
 CLEAN_DATASET_ZIP = Path("/kaggle/working/eatfitai_dataset_v2_clean_v4_class_expansion_candidate.zip")
 REPORTS_ZIP = Path("/kaggle/working/eatfitai_dataset_v2_clean_build_v4_class_expansion_reports.zip")
 CLEAN_MAX_IMAGES = int(os.environ.get("EATFITAI_CLEAN_V4_CLASS_EXPANSION_MAX_IMAGES", "260000"))
+WRITE_DATASET_ZIP = os.environ.get(
+    "EATFITAI_CLEAN_V4_CLASS_EXPANSION_WRITE_DATASET_ZIP",
+    "false",
+).strip().lower() in {"1", "true", "yes", "y"}
 CLEAN_SOURCE_POLICY = os.environ.get(
     "EATFITAI_CLEAN_V4_CLASS_EXPANSION_SOURCE_POLICY",
     "clean_candidate_sources_v4_class_expansion_private_2026-05-14.csv",
@@ -85,7 +89,10 @@ def main() -> int:
     validation_summary = validate(CLEAN_DATASET_DIR)
     payload = {"build": summary, "validation": validation_summary}
     (REPORT_DIR / "clean_build_v4_result.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    zip_path(CLEAN_DATASET_DIR, CLEAN_DATASET_ZIP)
+    if WRITE_DATASET_ZIP:
+        zip_path(CLEAN_DATASET_DIR, CLEAN_DATASET_ZIP)
+    else:
+        print("Skipping dataset zip; Kaggle output keeps the dataset directory.", flush=True)
     zip_path(REPORT_DIR, REPORTS_ZIP)
     print(json.dumps(payload, ensure_ascii=False, indent=2), flush=True)
     return 0
