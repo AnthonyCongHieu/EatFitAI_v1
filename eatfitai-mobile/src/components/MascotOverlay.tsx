@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
-  FadeIn,
   FadeInUp,
   SlideInRight,
   useAnimatedStyle,
@@ -41,8 +40,34 @@ const PET_MOOD_TO_STATE: Record<string, MascotState> = {
   reporting: 'reporting',
 };
 
+const MASCOT_OVERLAY_SIZE = MASCOT_FRAME_SIZE.overlay;
+const FAB_BOTTOM = 170;
+const FAB_RIGHT = 20;
+const DRAG_EDGE_MARGIN = 12;
+const MIN_DIALOGUE_VISIBLE_MS = 4500;
+const MAX_DIALOGUE_VISIBLE_MS = 9500;
+const DIALOGUE_WORD_MS = 420;
+const DIALOGUE_SETTLE_MS = 1200;
+
+const clampDragOffset = (value: number, min: number, max: number): number => {
+  'worklet';
+
+  const lower = Math.min(min, max);
+  const upper = Math.max(min, max);
+
+  return Math.min(Math.max(value, lower), upper);
+};
+
+const getDialogueVisibleMs = (dialogue: string): number => {
+  const wordCount = dialogue.trim().split(/\s+/u).filter(Boolean).length;
+  const readableMs = wordCount * DIALOGUE_WORD_MS + DIALOGUE_SETTLE_MS;
+
+  return Math.min(Math.max(readableMs, MIN_DIALOGUE_VISIBLE_MS), MAX_DIALOGUE_VISIBLE_MS);
+};
+
 const MascotOverlay = (): React.ReactElement => {
   const navigation = useNavigation<any>();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [dismissedEvent, setDismissedEvent] = useState<string | null>(null);
   const { reminders, hasReminders } = useSmartReminders();
@@ -76,6 +101,17 @@ const MascotOverlay = (): React.ReactElement => {
 
   const shouldBubble = petState.shouldBubble && dismissedEvent !== petState.eventType;
   const mascotState = PET_MOOD_TO_STATE[petState.mood] ?? 'idle';
+  const dragBounds = useMemo(() => {
+    const startLeft = screenWidth - FAB_RIGHT - MASCOT_OVERLAY_SIZE;
+    const startTop = screenHeight - FAB_BOTTOM - MASCOT_OVERLAY_SIZE;
+
+    return {
+      minX: DRAG_EDGE_MARGIN - startLeft,
+      maxX: screenWidth - DRAG_EDGE_MARGIN - MASCOT_OVERLAY_SIZE - startLeft,
+      minY: DRAG_EDGE_MARGIN - startTop,
+      maxY: screenHeight - DRAG_EDGE_MARGIN - MASCOT_OVERLAY_SIZE - startTop,
+    };
+  }, [screenHeight, screenWidth]);
 
   const floatAnim = useSharedValue(0);
   const mascotOffsetX = useSharedValue(0);
@@ -118,6 +154,33 @@ const MascotOverlay = (): React.ReactElement => {
     };
   }, [bubbleBounce, shouldBubble]);
 
+  useEffect(() => {
+    if (!shouldBubble) {
+      return;
+    }
+
+    const hideTimer = setTimeout(() => {
+      setDismissedEvent(petState.eventType);
+    }, getDialogueVisibleMs(petState.dialogue));
+
+    return () => clearTimeout(hideTimer);
+  }, [petState.dialogue, petState.eventType, shouldBubble]);
+
+  useEffect(() => {
+    mascotOffsetX.value = clampDragOffset(
+      mascotOffsetX.value,
+      dragBounds.minX,
+      dragBounds.maxX,
+    );
+    mascotOffsetY.value = clampDragOffset(
+      mascotOffsetY.value,
+      dragBounds.minY,
+      dragBounds.maxY,
+    );
+    mascotSavedX.value = mascotOffsetX.value;
+    mascotSavedY.value = mascotOffsetY.value;
+  }, [dragBounds, mascotOffsetX, mascotOffsetY, mascotSavedX, mascotSavedY]);
+
   const floatStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: mascotOffsetX.value },
@@ -133,14 +196,22 @@ const MascotOverlay = (): React.ReactElement => {
     () =>
       Gesture.Pan()
         .onUpdate((e) => {
-          mascotOffsetX.value = mascotSavedX.value + e.translationX;
-          mascotOffsetY.value = mascotSavedY.value + e.translationY;
+          mascotOffsetX.value = clampDragOffset(
+            mascotSavedX.value + e.translationX,
+            dragBounds.minX,
+            dragBounds.maxX,
+          );
+          mascotOffsetY.value = clampDragOffset(
+            mascotSavedY.value + e.translationY,
+            dragBounds.minY,
+            dragBounds.maxY,
+          );
         })
         .onEnd(() => {
           mascotSavedX.value = mascotOffsetX.value;
           mascotSavedY.value = mascotOffsetY.value;
         }),
-    [mascotOffsetX, mascotOffsetY, mascotSavedX, mascotSavedY],
+    [dragBounds, mascotOffsetX, mascotOffsetY, mascotSavedX, mascotSavedY],
   );
 
   const runPrimaryAction = (action: MoChiPrimaryAction) => {
@@ -282,8 +353,8 @@ const MascotOverlay = (): React.ReactElement => {
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: 170,
-    right: 20,
+    bottom: FAB_BOTTOM,
+    right: FAB_RIGHT,
     zIndex: 1000,
     elevation: 10,
     alignItems: 'flex-end',

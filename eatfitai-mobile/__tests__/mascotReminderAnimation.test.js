@@ -16,4 +16,18 @@ describe('Mascot reminder bubble animation', () => {
     expect(bubbleBounceEffect).toContain('withTiming(-2');
     expect(bubbleBounceEffect).not.toContain('withSpring');
   });
+
+  it('auto-hides readable dialogue bubbles instead of leaving them on screen', () => {
+    expect(source).toContain('getDialogueVisibleMs(petState.dialogue)');
+    expect(source).toContain('setTimeout(() => {');
+    expect(source).toContain('setDismissedEvent(petState.eventType)');
+  });
+
+  it('clamps mascot dragging to the visible screen bounds', () => {
+    expect(source).toContain('useWindowDimensions');
+    expect(source).toContain('DRAG_EDGE_MARGIN');
+    expect(source).toContain('clampDragOffset');
+    expect(source).toContain('mascotOffsetX.value = clampDragOffset(');
+    expect(source).toContain('mascotOffsetY.value = clampDragOffset(');
+  });
 });
