@@ -30,7 +30,7 @@ type MochiRoomSceneProps = {
   animated?: boolean;
 };
 
-export const MOCHI_ROOM_RENDERER = 'vector-rig';
+export const MOCHI_ROOM_RENDERER = 'server-png-export';
 
 const getAnimationIntensity = (animation: MochiAnimation): number => {
   if (animation === 'celebrate') return 1.45;

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -24,6 +24,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { MOCHI_VECTOR_TRACE_XML } from './mochiVectorTraceAssets';
+import { MOCHI_ASSETS } from '../../assets/mascot/mochi/mochiAssets';
 import {
   MOCHI_POSE_CATALOG,
   MOCHI_VECTOR_LAYERS as VECTOR_LAYERS,
@@ -951,7 +952,7 @@ const MochiRig = ({
   expression,
   size,
   pose,
-  rendererMode = 'vector',
+  rendererMode = 'pngFallback',
   animated = true,
   activeAccessoryIds,
   hasReminder = false,
@@ -1084,7 +1085,13 @@ const MochiRig = ({
       style={[styles.root, { width: size, height: size }]}
     >
       <Animated.View style={[styles.rigMotion, rigMotionStyle]}>
-        {canRenderTrace && tracedXml ? (
+        {rendererMode === 'pngFallback' ? (
+          <Image
+            source={MOCHI_ASSETS[poseMeta.sourceAsset]}
+            resizeMode="contain"
+            style={styles.pngMascot}
+          />
+        ) : canRenderTrace && tracedXml ? (
           <SvgXml xml={tracedXml} width="100%" height="100%" />
         ) : (
           <Svg width="100%" height="100%" viewBox="0 0 240 240">
@@ -1169,6 +1176,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     overflow: 'visible',
+  },
+  pngMascot: {
+    width: '100%',
+    height: '100%',
   },
 });
 

@@ -7,7 +7,7 @@ const readSource = (relativePath) => {
 };
 
 describe('Mochi mascot experience', () => {
-  it('defines a reusable vector-rig Mochi component with the planned animation states', () => {
+  it('defines a reusable Mochi component with the planned animation states', () => {
     const source = readSource('src/components/MascotCharacter.tsx');
 
     expect(source).toContain('export type MascotState');
@@ -87,7 +87,7 @@ describe('Mochi mascot experience', () => {
     expect(testIdsSource).toContain("mochiPreviewScreen: 'mochi-preview-screen'");
   });
 
-  it('renders Mochi Room with a layered vector rig instead of PNG sprites or GLView', () => {
+  it('renders Mochi Room with the exported server mascot assets instead of the old generated vector look', () => {
     const roomSource = readSource('src/features/mochi/MochiRoomScene.tsx');
     const rigSource = readSource('src/features/mochi/MochiRig.tsx');
     const previewSource = readSource('src/app/screens/dev/MochiPreviewScreen.tsx');
@@ -100,14 +100,14 @@ describe('Mochi mascot experience', () => {
     expect(roomSource).not.toContain('CapsuleGeometry');
     expect(previewSource).not.toContain('MascotCharacter');
     expect(rigSource).toContain('MOCHI_VECTOR_LAYERS');
+    expect(rigSource).toContain("rendererMode = 'pngFallback'");
+    expect(rigSource).toContain('MOCHI_ASSETS[poseMeta.sourceAsset]');
     expect(rigSource).toContain('mochiHeadbandPink');
     expect(rigSource).toContain('mochiInk');
     expect(rigSource).toContain('MUZZLE');
     expect(rigSource).toContain('renderEyes');
     expect(rigSource).toContain("expression === 'drinkWater'");
     expect(rigSource).toContain('activeAccessoryIds');
-    expect(rigSource).not.toContain('<Image');
-    expect(rigSource).not.toContain('.png');
     expect(rigSource).not.toContain('mochiBellyCream');
   });
 

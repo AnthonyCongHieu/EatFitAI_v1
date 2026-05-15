@@ -31,7 +31,7 @@ export type MochiAssetMeta = {
   sourceSheet: string;
 };
 
-export const MOCHI_SOURCE_SHEET = 'ChatGPT Image 16_21_49 13 thg 5, 2026.png';
+export const MOCHI_SOURCE_SHEET = 'mochi-handdrawn-study.html export, 2026-05-15';
 
 export const MOCHI_ASSETS: Record<MochiAssetKey, ImageSourcePropType> = {
   idle: require('./characters/01_idle.png'),
@@ -86,4 +86,3 @@ export const MOCHI_ASSET_METADATA: Record<MochiAssetKey, MochiAssetMeta> = {
   streakTracking: { fileName: '23_streak_tracking.png', sourceSheet: MOCHI_SOURCE_SHEET },
   goalComplete: { fileName: '24_goal_complete.png', sourceSheet: MOCHI_SOURCE_SHEET },
 };
-
