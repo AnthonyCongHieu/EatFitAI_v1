@@ -276,11 +276,11 @@ export const useGamificationStore = create<GamificationState>()(
           const today = new Date();
           const todayStr = today.toISOString().split('T')[0] ?? '';
           const state = get();
-          
+
           let newStreak = state.currentStreak;
           let newLongestStreak = state.longestStreak;
           let newLastLogDate = state.lastLogDate;
-          
+
           // Fallback an toàn cho loggedDates
           const loggedDatesSet = new Set(state.loggedDates || []);
 
@@ -322,7 +322,7 @@ export const useGamificationStore = create<GamificationState>()(
           // KIỂM TRA PHỤC HỒI CHUỖI
           if (newPendingBrokenStreak !== null && newBrokenStreakDate !== null) {
              const hasLoggedBrokenDate = (summary.dailyCalories[newBrokenStreakDate] ?? 0) > 0;
-             
+
              if (hasLoggedBrokenDate) {
                 // Đã ghi bù -> Phục hồi chuỗi!
                 newStreak = newPendingBrokenStreak;
@@ -330,7 +330,7 @@ export const useGamificationStore = create<GamificationState>()(
                 newPendingBrokenStreak = null;
                 newBrokenStreakDate = null;
                 newStreakRecoveriesLeft = Math.max(0, newStreakRecoveriesLeft - 1);
-                
+
                 // Hiện Toast thông báo thành công
                 setTimeout(() => {
                   Toast.show({
@@ -344,7 +344,7 @@ export const useGamificationStore = create<GamificationState>()(
                 const brokenDateObj = new Date(newBrokenStreakDate);
                 const diffTime = today.getTime() - brokenDateObj.getTime();
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                
+
                 if (diffDays >= 3) {
                    // Quá thời hạn 2 ngày
                    newPendingBrokenStreak = null;
@@ -403,10 +403,10 @@ export const useGamificationStore = create<GamificationState>()(
                      type: 'error',
                      text1: 'Chuỗi đã bị đứt!',
                      text2: 'Bạn đã dùng hết quyền khôi phục trong tháng.',
-                   });
-                 }, 1000);
-              }
-              
+                 });
+               }, 1000);
+             }
+
               newStreak = 0;
             }
           }

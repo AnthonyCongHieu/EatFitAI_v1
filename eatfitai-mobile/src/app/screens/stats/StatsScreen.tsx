@@ -806,7 +806,7 @@ const StatsScreen = (): React.ReactElement => {
           const avgDailyProtein = wkLoggedDaysCount > 0 ? Math.round(weekSummary.totalProtein / wkLoggedDaysCount) : 0;
           const avgDailyCarbs = wkLoggedDaysCount > 0 ? Math.round(weekSummary.totalCarbs / wkLoggedDaysCount) : 0;
           const avgDailyFat = wkLoggedDaysCount > 0 ? Math.round(weekSummary.totalFat / wkLoggedDaysCount) : 0;
-          
+
           // Days On Track: Calo nạp vào xấp xỉ mức cho phép (từ 70% đến 115% target)
           const daysOnTrack = wkLoggedDays.filter(d => d.calories >= targetCal * 0.7 && d.calories <= targetCal * 1.15).length;
 
