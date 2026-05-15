@@ -488,7 +488,7 @@ const S = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 15,
-    backgroundColor: P.glassHeader,
+    backgroundColor: 'transparent',
   },
   iconBtn: {
     width: 40,
