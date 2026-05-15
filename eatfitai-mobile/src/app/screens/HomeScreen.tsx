@@ -311,18 +311,30 @@ const HomeScreen = (): React.ReactElement => {
     const focusWaterRequestId = route.params?.focusWaterRequestId;
     if (
       !focusWaterRequestId
-      || waterCardY == null
       || lastHandledWaterFocusRequestRef.current === focusWaterRequestId
     ) {
       return;
     }
 
     lastHandledWaterFocusRequestRef.current = focusWaterRequestId;
-    const timer = setTimeout(() => {
-      screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
-    }, 250);
 
-    return () => clearTimeout(timer);
+    // Retry scrolling with increasing delays to handle cases where
+    // the water card hasn't laid out yet (e.g., navigating from another tab)
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const tryScroll = (delay: number) => {
+      const t = setTimeout(() => {
+        if (waterCardY != null) {
+          screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
+        }
+      }, delay);
+      timers.push(t);
+    };
+
+    tryScroll(300);
+    tryScroll(600);
+    tryScroll(1000);
+
+    return () => timers.forEach(clearTimeout);
   }, [route.params?.focusWaterRequestId, waterCardY]);
 
   const showCommonErrors = useCallback(

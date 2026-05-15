@@ -91,7 +91,7 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
       label: 'CÔNG THỨC',
       onPress: onRecipes,
     },
-    { icon: 'water', label: 'LƯỢNG NƯỚC', onPress: onWater },
+    { icon: 'water', label: 'UỐNG NƯỚC', onPress: onWater },
   ];
 
   const handleAction = useCallback(

@@ -105,12 +105,28 @@ const MascotOverlay = (): React.ReactElement => {
                 .easing(Easing.out(Easing.ease))}
               style={[styles.chatBubbleWrap, bubbleBounceStyle]}
             >
-              <View style={styles.chatBubble}>
-                <ThemedText style={styles.chatBubbleText} numberOfLines={2}>
-                  {bubbleText}
-                </ThemedText>
-              </View>
-              <View style={styles.chatBubbleArrow} />
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const isWater = reminders.some(r => r.type === 'water');
+                  if (isWater) {
+                    navigation.navigate('AppTabs', {
+                      screen: 'HomeTab',
+                      params: { source: 'water-quick-action', focusWaterRequestId: Date.now() },
+                    });
+                  } else {
+                    navigation.navigate('FoodSearch', { autoFocus: true, showQuickSuggestions: true, returnToDiaryOnSave: true });
+                  }
+                }}
+                style={{ alignItems: 'flex-end' }}
+              >
+                <View style={styles.chatBubble}>
+                  <ThemedText style={styles.chatBubbleText} numberOfLines={2}>
+                    {bubbleText}
+                  </ThemedText>
+                </View>
+                <View style={styles.chatBubbleArrow} />
+              </Pressable>
             </Animated.View>
           )}
 
