@@ -40,11 +40,12 @@ import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { TEST_IDS } from '../../../testing/testIds';
 import type { MealTypeId } from '../../../types';
 
 const PAGE_SIZE = 20;
-const RECENT_SEARCHES_KEY = '@eatfit_recent_searches';
+const RECENT_SEARCHES_KEY_PREFIX = '@eatfit_recent_searches_';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'>;
 type FoodSearchRouteProp = RouteProp<RootStackParamList, 'FoodSearch'>;
@@ -79,6 +80,8 @@ const FoodSearchScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const preferences = useUserPreferenceStore((s) => s.preferences);
   const fetchPreferences = useUserPreferenceStore((s) => s.fetchPreferences);
+  const userId = useAuthStore((s) => s.user?.id) || 'guest';
+  const recentSearchesKey = `${RECENT_SEARCHES_KEY_PREFIX}${userId}`;
 
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<FoodItem[]>([]);
@@ -103,14 +106,16 @@ const FoodSearchScreen = (): React.ReactElement => {
   const initialQuery = route.params?.initialQuery;
   const defaultMealType = route.params?.defaultMealType as MealTypeId | undefined;
 
-  const loadRecentSearches = async () => {
+  const loadRecentSearches = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+      const stored = await AsyncStorage.getItem(recentSearchesKey);
       if (stored) {
         setRecentSearches(JSON.parse(stored));
+      } else {
+        setRecentSearches([]);
       }
     } catch (e) {}
-  };
+  }, [recentSearchesKey]);
 
   const loadRecentFoods = useCallback(async () => {
     try {
@@ -133,12 +138,12 @@ const FoodSearchScreen = (): React.ReactElement => {
   useEffect(() => {
     loadFavorites(initialTab === 'favorites');
     if (initialTab === 'favorites') setActiveTab('favorites');
-    loadRecentSearches();
+    loadRecentSearches().catch(() => undefined);
     if (showQuickSuggestions) {
       loadRecentFoods().catch(() => undefined);
       loadCommonMeals().catch(() => undefined);
     }
-  }, [initialTab, loadCommonMeals, loadRecentFoods, showQuickSuggestions]);
+  }, [initialTab, loadCommonMeals, loadRecentFoods, loadRecentSearches, showQuickSuggestions]);
 
   // When navigated with initialQuery (e.g. from barcode scan fallback), auto-search
   useEffect(() => {
@@ -153,7 +158,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       const filtered = recentSearches.filter(searchTerm => searchTerm.toLowerCase() !== term.toLowerCase());
       const newSearches = [term, ...filtered].slice(0, 10);
       setRecentSearches(newSearches);
-      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newSearches));
+      await AsyncStorage.setItem(recentSearchesKey, JSON.stringify(newSearches));
     } catch (e) {}
   };
 

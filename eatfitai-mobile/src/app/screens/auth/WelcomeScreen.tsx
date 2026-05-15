@@ -34,7 +34,7 @@ import { TEST_IDS } from '../../../testing/testIds';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 import { useAuthStore } from '../../../store/useAuthStore';
 import Toast from 'react-native-toast-message';
-import { logger } from '../../../utils/logger';
+import logger from '../../../utils/logger';
 
 const { width, height } = Dimensions.get('window');
 
