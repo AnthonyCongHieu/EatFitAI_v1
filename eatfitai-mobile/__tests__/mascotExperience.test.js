@@ -32,6 +32,10 @@ describe('MoChi virtual pet experience', () => {
     expect(overlaySource).toContain("navigation.navigate('FoodSearch'");
     expect(overlaySource).toContain("screen: 'HomeTab'");
     expect(overlaySource).toContain('focusWaterRequestId: Date.now()');
+    expect(overlaySource).toContain('setShowQuickActions(true);');
+    expect(overlaySource).toContain('accessibilityLabel="Mở gợi ý MoChi"');
+    expect(overlaySource).toContain('onLongPress={() => runPrimaryAction(petState.primaryAction)}');
+    expect(overlaySource).not.toContain("if (petState.primaryAction !== 'dismiss')");
     expect(overlaySource).not.toContain('MochiRig');
   });
 

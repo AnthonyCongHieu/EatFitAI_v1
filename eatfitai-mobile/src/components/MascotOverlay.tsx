@@ -197,8 +197,12 @@ const MascotOverlay = (): React.ReactElement => {
             >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Ẩn lời nhắc MoChi"
-                onPress={() => setDismissedEvent(petState.eventType)}
+                accessibilityLabel="Mở gợi ý MoChi"
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  runPrimaryAction(petState.primaryAction);
+                }}
+                onLongPress={() => setDismissedEvent(petState.eventType)}
                 style={styles.chatBubble}
               >
                 <ThemedText style={styles.chatBubbleTitle}>MoChi</ThemedText>
@@ -214,13 +218,9 @@ const MascotOverlay = (): React.ReactElement => {
             style={styles.fab}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              if (petState.primaryAction !== 'dismiss') {
-                runPrimaryAction(petState.primaryAction);
-              } else {
-                setShowQuickActions(true);
-              }
+              setShowQuickActions(true);
             }}
-            onLongPress={() => setShowQuickActions(true)}
+            onLongPress={() => runPrimaryAction(petState.primaryAction)}
             testID={TEST_IDS.home.mascotButton}
             nativeID={TEST_IDS.home.fabButton}
             accessibilityRole="button"
