@@ -372,7 +372,7 @@ export const vi = {
     ingredientsList: 'Danh sách nguyên liệu',
     analyzingImage: 'Đang phân tích ảnh...',
     noIngredients: 'Chưa có nguyên liệu. Vui lòng chụp lại.',
-    selected: '✓ Đã chọn',
+    selected: 'Đã chọn',
     select: 'Chọn',
     confidence: (percent: number) => `Độ tin cậy: ${percent}%`,
     ingredients: (list: string) => `Nguyên liệu: ${list}`,

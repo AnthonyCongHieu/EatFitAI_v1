@@ -8,6 +8,7 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -28,37 +29,37 @@ const getStatusConfig = (type: StatusType, theme: any) => {
     case 'success':
       return {
         color: theme.colors.success,
-        icon: '✓',
+        iconName: 'checkmark-circle',
         backgroundColor: theme.colors.success + '15',
       };
     case 'error':
       return {
         color: theme.colors.danger,
-        icon: '✕',
+        iconName: 'close-circle',
         backgroundColor: theme.colors.danger + '15',
       };
     case 'warning':
       return {
         color: theme.colors.warning,
-        icon: '⚠',
+        iconName: 'warning',
         backgroundColor: theme.colors.warning + '15',
       };
     case 'info':
       return {
         color: theme.colors.info,
-        icon: 'ℹ',
+        iconName: 'information-circle',
         backgroundColor: theme.colors.info + '15',
       };
     case 'loading':
       return {
         color: theme.colors.primary,
-        icon: '⟳',
+        iconName: 'refresh',
         backgroundColor: theme.colors.primary + '15',
       };
     default:
       return {
         color: theme.colors.muted,
-        icon: '•',
+        iconName: 'ellipse',
         backgroundColor: theme.colors.muted + '15',
       };
   }
@@ -133,18 +134,11 @@ export const StatusIndicator = ({
           >
             {customIcon || (
               <View style={styles.icon}>
-                <Animated.Text
-                  style={[
-                    styles.iconText,
-                    {
-                      color: config.color,
-                      fontSize: sizeConfig.fontSize,
-                      fontFamily: theme.typography.button.fontFamily,
-                    },
-                  ]}
-                >
-                  {config.icon}
-                </Animated.Text>
+                <Ionicons
+                  name={config.iconName as keyof typeof Ionicons.glyphMap}
+                  size={sizeConfig.fontSize + 4}
+                  color={config.color}
+                />
               </View>
             )}
           </Animated.View>
@@ -188,10 +182,6 @@ const styles = StyleSheet.create({
   icon: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconText: {
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
   textContainer: {
     flex: 1,

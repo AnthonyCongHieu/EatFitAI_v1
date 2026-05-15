@@ -11,6 +11,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import { AppCard } from './AppCard';
 import { AppChip } from './AppChip';
 import { AppStepper } from './AppStepper';
+import Icon from '../Icon';
 import type { MappedFoodItem } from '../../types/ai';
 import type { MealTypeId } from '../../types';
 import { getVisionFoodDisplayName } from '../../utils/translate';
@@ -58,11 +59,6 @@ const AiDetectionCardComponent = ({
           justifyContent: 'center',
           alignItems: 'center',
           marginRight: theme.spacing.md,
-        },
-        checkmark: {
-          color: theme.colors.card,
-          fontSize: 16,
-          fontWeight: 'bold',
         },
         titleContainer: {
           flex: 1,
@@ -154,7 +150,7 @@ const AiDetectionCardComponent = ({
             accessibilityRole="checkbox"
             accessibilityState={{ checked: selected }}
           >
-            {selected && <ThemedText style={styles.checkmark}>✓</ThemedText>}
+            {selected && <Icon name="checkmark" size={16} color={theme.colors.card} />}
           </Pressable>
 
           <View style={styles.titleContainer}>

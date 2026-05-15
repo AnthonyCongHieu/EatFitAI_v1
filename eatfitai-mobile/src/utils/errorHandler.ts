@@ -191,12 +191,12 @@ export type SuccessType =
   | 'custom';
 
 const successMessages: Record<SuccessType, { text1: string; text2?: string }> = {
-  meal_added: { text1: '✅ Đã thêm vào nhật ký', text2: 'Bữa ăn đã được ghi nhận' },
-  meal_updated: { text1: '✅ Đã cập nhật', text2: 'Thay đổi đã được lưu' },
+  meal_added: { text1: 'Đã thêm vào nhật ký', text2: 'Bữa ăn đã được ghi nhận' },
+  meal_updated: { text1: 'Đã cập nhật', text2: 'Thay đổi đã được lưu' },
   meal_deleted: { text1: '🗑️ Đã xóa', text2: 'Món ăn đã được xóa khỏi nhật ký' },
-  food_added: { text1: '✅ Đã thêm món ăn', text2: 'Món ăn mới đã được tạo' },
-  settings_saved: { text1: '✅ Đã lưu cài đặt' },
-  profile_updated: { text1: '✅ Đã cập nhật hồ sơ' },
+  food_added: { text1: 'Đã thêm món ăn', text2: 'Món ăn mới đã được tạo' },
+  settings_saved: { text1: 'Đã lưu cài đặt' },
+  profile_updated: { text1: 'Đã cập nhật hồ sơ' },
   target_updated: {
     text1: '🎯 Đã cập nhật mục tiêu',
     text2: 'Mục tiêu dinh dưỡng mới đã được áp dụng',

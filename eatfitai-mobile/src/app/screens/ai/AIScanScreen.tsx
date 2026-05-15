@@ -11,11 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import {
-  BarcodeScanningResult,
-  CameraView,
-  useCameraPermissions,
-} from 'expo-camera';
+import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -225,112 +221,118 @@ const AIScanScreen: React.FC = () => {
     ],
   );
 
-  const processImage = useCallback(async (uri: string, source: 'camera' | 'gallery') => {
-    if (!guardVisionAiReady(source)) {
-      return;
-    }
+  const processImage = useCallback(
+    async (uri: string, source: 'camera' | 'gallery') => {
+      if (!guardVisionAiReady(source)) {
+        return;
+      }
 
-    setMode('preview');
-    setIsProcessing(true);
-    setShowProcessingBanner(true);
-    setProcessingMessageIndex(0);
-    setDetectionResult(null);
-    setResultNotice(null);
-    trackEvent('ai_scan_start', {
-      flow: 'ai_scan',
-      step: 'detect',
-      status: 'submitted',
-      metadata: { source },
-    });
-
-    let processedUri = uri;
-    try {
-      const manipulatedResult = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: SCAN_IMAGE_UPLOAD_WIDTH } }],
-        {
-          compress: SCAN_IMAGE_UPLOAD_QUALITY,
-          format: ImageManipulator.SaveFormat.JPEG,
-        },
-      );
-      processedUri = manipulatedResult.uri;
-      setCapturedUri(processedUri);
-    } catch (compressError) {
-      console.warn('Image compression failed, using original:', compressError);
-      setCapturedUri(uri);
-    }
-
-    try {
-      const result = await aiService.detectFoodByImage(processedUri);
-      const filteredItems = result.items.filter(isUsableVisionItem);
-
-      setDetectionResult({
-        ...result,
-        items: filteredItems,
-      });
-      setResultNotice(
-        filteredItems.length === 0
-          ? {
-              title: 'Chưa tìm thấy món ăn phù hợp',
-              description: 'Thử chụp lại rõ hơn hoặc dùng tìm kiếm thủ công.',
-            }
-          : null,
-      );
-      const topDetectedItem = [...filteredItems].sort(
-        (a, b) => b.confidence - a.confidence,
-      )[0];
-      setResultGrams(getDefaultVisionGrams(topDetectedItem));
-      setMode('results');
-      trackEvent('ai_scan_result', {
+      setMode('preview');
+      setIsProcessing(true);
+      setShowProcessingBanner(true);
+      setProcessingMessageIndex(0);
+      setDetectionResult(null);
+      setResultNotice(null);
+      trackEvent('ai_scan_start', {
         flow: 'ai_scan',
         step: 'detect',
-        status: filteredItems.length > 0 ? 'success' : 'empty',
-        metadata: {
-          source,
-          itemCount: filteredItems.length,
-          unmappedCount: result.unmappedLabels.length,
-        },
+        status: 'submitted',
+        metadata: { source },
       });
-    } catch (error) {
-      if (isAiOfflineError(error)) {
-        setDetectionResult({ items: [], unmappedLabels: [] });
-        setResultNotice({
-          title: 'AI tạm offline',
-          description: 'Bạn vẫn có thể tìm món thủ công hoặc thử lại sau.',
+
+      let processedUri = uri;
+      try {
+        const manipulatedResult = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width: SCAN_IMAGE_UPLOAD_WIDTH } }],
+          {
+            compress: SCAN_IMAGE_UPLOAD_QUALITY,
+            format: ImageManipulator.SaveFormat.JPEG,
+          },
+        );
+        processedUri = manipulatedResult.uri;
+        setCapturedUri(processedUri);
+      } catch (compressError) {
+        console.warn('Image compression failed, using original:', compressError);
+        setCapturedUri(uri);
+      }
+
+      try {
+        const result = await aiService.detectFoodByImage(processedUri);
+        const filteredItems = result.items.filter(isUsableVisionItem);
+
+        setDetectionResult({
+          ...result,
+          items: filteredItems,
         });
+        setResultNotice(
+          filteredItems.length === 0
+            ? {
+                title: 'Chưa tìm thấy món ăn phù hợp',
+                description: 'Thử chụp lại rõ hơn hoặc dùng tìm kiếm thủ công.',
+              }
+            : null,
+        );
+        const topDetectedItem = [...filteredItems].sort(
+          (a, b) => b.confidence - a.confidence,
+        )[0];
+        setResultGrams(getDefaultVisionGrams(topDetectedItem));
         setMode('results');
         trackEvent('ai_scan_result', {
-          category: 'error',
           flow: 'ai_scan',
           step: 'detect',
-          status: 'failure',
+          status: filteredItems.length > 0 ? 'success' : 'empty',
           metadata: {
             source,
-            reason: 'ai_offline',
+            itemCount: filteredItems.length,
+            unmappedCount: result.unmappedLabels.length,
           },
         });
-      } else {
-        trackEvent('ai_scan_result', {
-          category: 'error',
-          flow: 'ai_scan',
-          step: 'detect',
-          status: 'failure',
-          metadata: {
-            source,
-            message: (error as { message?: string } | null)?.message,
-          },
-        });
-        handleApiErrorWithCustomMessage(error, {
-          server_error: { text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' },
-          network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
-          unknown: { text1: 'Không thể phân tích ảnh', text2: 'Vui lòng thử lại' },
-        });
-        setMode('camera');
+      } catch (error) {
+        if (isAiOfflineError(error)) {
+          setDetectionResult({ items: [], unmappedLabels: [] });
+          setResultNotice({
+            title: 'AI tạm offline',
+            description: 'Bạn vẫn có thể tìm món thủ công hoặc thử lại sau.',
+          });
+          setMode('results');
+          trackEvent('ai_scan_result', {
+            category: 'error',
+            flow: 'ai_scan',
+            step: 'detect',
+            status: 'failure',
+            metadata: {
+              source,
+              reason: 'ai_offline',
+            },
+          });
+        } else {
+          trackEvent('ai_scan_result', {
+            category: 'error',
+            flow: 'ai_scan',
+            step: 'detect',
+            status: 'failure',
+            metadata: {
+              source,
+              message: (error as { message?: string } | null)?.message,
+            },
+          });
+          handleApiErrorWithCustomMessage(error, {
+            server_error: { text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' },
+            network_error: {
+              text1: 'Không có kết nối',
+              text2: 'Kiểm tra mạng và thử lại',
+            },
+            unknown: { text1: 'Không thể phân tích ảnh', text2: 'Vui lòng thử lại' },
+          });
+          setMode('camera');
+        }
+      } finally {
+        setIsProcessing(false);
       }
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [guardVisionAiReady]);
+    },
+    [guardVisionAiReady],
+  );
 
   const handleCaptureInternal = useCallback(async () => {
     if (!cameraRef.current) return;
@@ -461,7 +463,7 @@ const AIScanScreen: React.FC = () => {
         });
         Toast.show({
           type: 'success',
-          text1: '✅ Đã nhận diện mã vạch',
+          text1: 'Đã nhận diện mã vạch',
           text2: foodDetail.name,
         });
         navigation.navigate('FoodDetail', {
@@ -579,16 +581,24 @@ const AIScanScreen: React.FC = () => {
   const ratio = resultGrams / 100;
   const computedCal = useMealMacroTotals
     ? Math.round(mealMacroTotals.calories)
-    : topItem ? Math.round((topItem.caloriesPer100g ?? 0) * ratio) : 0;
+    : topItem
+      ? Math.round((topItem.caloriesPer100g ?? 0) * ratio)
+      : 0;
   const computedProtein = useMealMacroTotals
     ? Math.round(mealMacroTotals.protein)
-    : topItem ? Math.round((topItem.proteinPer100g ?? 0) * ratio) : 0;
+    : topItem
+      ? Math.round((topItem.proteinPer100g ?? 0) * ratio)
+      : 0;
   const computedCarbs = useMealMacroTotals
     ? Math.round(mealMacroTotals.carb)
-    : topItem ? Math.round((topItem.carbPer100g ?? 0) * ratio) : 0;
+    : topItem
+      ? Math.round((topItem.carbPer100g ?? 0) * ratio)
+      : 0;
   const computedFat = useMealMacroTotals
     ? Math.round(mealMacroTotals.fat)
-    : topItem ? Math.round((topItem.fatPer100g ?? 0) * ratio) : 0;
+    : topItem
+      ? Math.round((topItem.fatPer100g ?? 0) * ratio)
+      : 0;
 
   /* ═══════════════════════════════════════════════
      Permission screens
@@ -615,7 +625,11 @@ const AIScanScreen: React.FC = () => {
         </ThemedText>
         <ThemedText
           variant="body"
-          style={{ textAlign: 'center', paddingHorizontal: 32, color: P.onSurfaceVariant }}
+          style={{
+            textAlign: 'center',
+            paddingHorizontal: 32,
+            color: P.onSurfaceVariant,
+          }}
         >
           {'Cho phép truy cập camera để quét món ăn bằng AI'}
         </ThemedText>
@@ -746,16 +760,14 @@ const AIScanScreen: React.FC = () => {
           )}
 
           {/* Inline processing banner */}
-          {showProcessingBanner && (mode === 'preview') && (
+          {showProcessingBanner && mode === 'preview' && (
             <Animated.View entering={FadeIn.duration(300)} style={S.inlineBanner}>
               <ActivityIndicator size="small" color={P.primary} />
-              <ThemedText style={S.inlineBannerText}>
-                {processingText}
-              </ThemedText>
+              <ThemedText style={S.inlineBannerText}>{processingText}</ThemedText>
             </Animated.View>
           )}
 
-          {showProcessingBanner && (mode === 'preview') && (
+          {showProcessingBanner && mode === 'preview' && (
             <MoChiInlineNotice mochiEvent="scan_processing" compact />
           )}
 
@@ -835,7 +847,9 @@ const AIScanScreen: React.FC = () => {
             ) : (
               <View style={S.galleryPill}>
                 <Icon name="barcode-outline" size="sm" color="text" />
-                <ThemedText style={S.galleryPillText}>Quét tự động khi thấy mã vạch</ThemedText>
+                <ThemedText style={S.galleryPillText}>
+                  Quét tự động khi thấy mã vạch
+                </ThemedText>
               </View>
             )}
 
@@ -902,10 +916,14 @@ const AIScanScreen: React.FC = () => {
                         </ThemedText>
                       </View>
                     ) : null}
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 4 }}>
-                      <ThemedText style={S.drawerKcal}>
-                        {computedCal} kcal
-                      </ThemedText>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'baseline',
+                        marginTop: 4,
+                      }}
+                    >
+                      <ThemedText style={S.drawerKcal}>{computedCal} kcal</ThemedText>
                       {hasMultipleDetectedItems ? (
                         <ThemedText style={S.drawerServing}> / ước tính bữa</ThemedText>
                       ) : (
@@ -916,7 +934,10 @@ const AIScanScreen: React.FC = () => {
                           }}
                           hitSlop={8}
                         >
-                          <ThemedText style={S.drawerServing}> / {resultGrams}g</ThemedText>
+                          <ThemedText style={S.drawerServing}>
+                            {' '}
+                            / {resultGrams}g
+                          </ThemedText>
                         </Pressable>
                       )}
                     </View>
@@ -960,8 +981,9 @@ const AIScanScreen: React.FC = () => {
                       const itemCalories = Math.round(
                         ((item.caloriesPer100g ?? 0) * itemGrams) / 100,
                       );
-                      const statusLabel = item.trustSummary?.label
-                        ?? (item.isMatched ? 'Đã khớp dinh dưỡng' : 'Cần xác nhận');
+                      const statusLabel =
+                        item.trustSummary?.label ??
+                        (item.isMatched ? 'Đã khớp dinh dưỡng' : 'Cần xác nhận');
                       const key = `${item.source ?? 'vision'}-${item.userFoodItemId ?? item.foodItemId ?? item.label}-${index}`;
 
                       return (
@@ -1005,8 +1027,6 @@ const AIScanScreen: React.FC = () => {
                     })}
                   </ScrollView>
                 </View>
-
-
 
                 {/* Macro visualization */}
                 <View style={S.macroRow}>
@@ -1110,7 +1130,10 @@ const AIScanScreen: React.FC = () => {
                   <View style={S.searchManualRow}>
                     <ThemedText style={S.searchManualTextNormal}>Không đúng?</ThemedText>
                     <Pressable onPress={() => navigation.navigate('FoodSearch')}>
-                      <ThemedText style={S.searchManualTextLink}> Tìm thủ công</ThemedText>
+                      <ThemedText style={S.searchManualTextLink}>
+                        {' '}
+                        Tìm thủ công
+                      </ThemedText>
                     </Pressable>
                   </View>
                 </View>
@@ -1198,10 +1221,7 @@ const AIScanScreen: React.FC = () => {
           style={S.modalOverlay}
         >
           <Pressable style={S.modalOverlay} onPress={() => setShowGramModal(false)}>
-            <Pressable
-              style={S.gramModalCard}
-              onPress={(e) => e.stopPropagation()}
-            >
+            <Pressable style={S.gramModalCard} onPress={(e) => e.stopPropagation()}>
               <ThemedText style={S.gramModalTitle}>Nhập khối lượng</ThemedText>
               <ThemedText style={S.gramModalSubtitle}>gram</ThemedText>
 
@@ -1219,38 +1239,39 @@ const AIScanScreen: React.FC = () => {
               </View>
 
               {/* Preview macros */}
-              {topItem && (() => {
-                const previewGrams = parseInt(gramInputValue, 10) || 0;
-                const pr = previewGrams / 100;
-                return (
-                  <View style={S.gramPreviewRow}>
-                    <View style={S.gramPreviewItem}>
-                      <ThemedText style={[S.gramPreviewVal, { color: P.primary }]}>
-                        {Math.round((topItem.caloriesPer100g ?? 0) * pr)}
-                      </ThemedText>
-                      <ThemedText style={S.gramPreviewLabel}>kcal</ThemedText>
+              {topItem &&
+                (() => {
+                  const previewGrams = parseInt(gramInputValue, 10) || 0;
+                  const pr = previewGrams / 100;
+                  return (
+                    <View style={S.gramPreviewRow}>
+                      <View style={S.gramPreviewItem}>
+                        <ThemedText style={[S.gramPreviewVal, { color: P.primary }]}>
+                          {Math.round((topItem.caloriesPer100g ?? 0) * pr)}
+                        </ThemedText>
+                        <ThemedText style={S.gramPreviewLabel}>kcal</ThemedText>
+                      </View>
+                      <View style={S.gramPreviewItem}>
+                        <ThemedText style={S.gramPreviewVal}>
+                          {Math.round((topItem.proteinPer100g ?? 0) * pr)}g
+                        </ThemedText>
+                        <ThemedText style={S.gramPreviewLabel}>Protein</ThemedText>
+                      </View>
+                      <View style={S.gramPreviewItem}>
+                        <ThemedText style={S.gramPreviewVal}>
+                          {Math.round((topItem.carbPer100g ?? 0) * pr)}g
+                        </ThemedText>
+                        <ThemedText style={S.gramPreviewLabel}>Carbs</ThemedText>
+                      </View>
+                      <View style={S.gramPreviewItem}>
+                        <ThemedText style={S.gramPreviewVal}>
+                          {Math.round((topItem.fatPer100g ?? 0) * pr)}g
+                        </ThemedText>
+                        <ThemedText style={S.gramPreviewLabel}>Fat</ThemedText>
+                      </View>
                     </View>
-                    <View style={S.gramPreviewItem}>
-                      <ThemedText style={S.gramPreviewVal}>
-                        {Math.round((topItem.proteinPer100g ?? 0) * pr)}g
-                      </ThemedText>
-                      <ThemedText style={S.gramPreviewLabel}>Protein</ThemedText>
-                    </View>
-                    <View style={S.gramPreviewItem}>
-                      <ThemedText style={S.gramPreviewVal}>
-                        {Math.round((topItem.carbPer100g ?? 0) * pr)}g
-                      </ThemedText>
-                      <ThemedText style={S.gramPreviewLabel}>Carbs</ThemedText>
-                    </View>
-                    <View style={S.gramPreviewItem}>
-                      <ThemedText style={S.gramPreviewVal}>
-                        {Math.round((topItem.fatPer100g ?? 0) * pr)}g
-                      </ThemedText>
-                      <ThemedText style={S.gramPreviewLabel}>Fat</ThemedText>
-                    </View>
-                  </View>
-                );
-              })()}
+                  );
+                })()}
 
               <View style={S.gramModalBtns}>
                 <Pressable
@@ -1259,10 +1280,7 @@ const AIScanScreen: React.FC = () => {
                 >
                   <ThemedText style={S.gramCancelBtnText}>Hủy</ThemedText>
                 </Pressable>
-                <Pressable
-                  style={S.gramConfirmBtn}
-                  onPress={handleGramModalConfirm}
-                >
+                <Pressable style={S.gramConfirmBtn} onPress={handleGramModalConfirm}>
                   <LinearGradient
                     colors={[P.primary, P.primaryDim]}
                     start={{ x: 0, y: 0 }}

@@ -143,9 +143,12 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         <View
           style={[styles.resultBox, { backgroundColor: theme.colors.success + '20' }]}
         >
-          <ThemedText variant="bodySmall" color="success">
-            ✓ "{lastParsedText}"
-          </ThemedText>
+          <View style={styles.resultContent}>
+            <Icon name="checkmark-circle" size="sm" color="success" />
+            <ThemedText variant="bodySmall" color="success">
+              "{lastParsedText}"
+            </ThemedText>
+          </View>
         </View>
       )}
 
@@ -197,6 +200,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     marginTop: 4,
+  },
+  resultContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });
 

@@ -1,8 +1,4 @@
-﻿import axios, {
-  AxiosError,
-  AxiosHeaders,
-  InternalAxiosRequestConfig,
-} from 'axios';
+﻿import axios, { AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
 import { getAccessTokenMem } from './authTokens';
@@ -117,7 +113,7 @@ export const initializeApiClient = async (): Promise<boolean> => {
     const discoveredUrl = await getApiUrl();
     if (discoveredUrl) {
       applyBaseUrl(discoveredUrl);
-      logger.info('[APIClient] ✅ Đã dùng URL từ scan/cache:', discoveredUrl);
+      logger.info('[APIClient] Đã dùng URL từ scan/cache:', discoveredUrl);
       isApiInitialized = true;
       return true;
     }
