@@ -151,16 +151,16 @@ function Remove-StalePreviewBuildOutputs {
 
 function Assert-EmbeddedUpdatesManifestHasMascotAssets {
     $mascotCharacterPath = Join-Path $projectRoot 'src\components\MascotCharacter.tsx'
-    $mochiRigPath = Join-Path $projectRoot 'src\features\mochi\MochiRig.tsx'
+    $mochiSpritePath = Join-Path $projectRoot 'src\features\mochi\MoChiSprite.tsx'
 
-    if ((Test-Path $mascotCharacterPath) -and (Test-Path $mochiRigPath)) {
+    if ((Test-Path $mascotCharacterPath) -and (Test-Path $mochiSpritePath)) {
         $mascotCharacterSource = Get-Content -Raw $mascotCharacterPath
-        if (($mascotCharacterSource -match 'MochiRig') -and ($mascotCharacterSource -notmatch 'MOCHI_ASSETS\[')) {
+        if (($mascotCharacterSource -match 'MoChiSprite') -and ($mascotCharacterSource -notmatch 'MOCHI_SPRITES\[')) {
             return
         }
     }
 
-    $mascotAssetDir = Join-Path $projectRoot 'src\assets\mascot\mochi\characters'
+    $mascotAssetDir = Join-Path $projectRoot 'src\assets\mascot\mochi\sprites'
     if (-not (Test-Path $mascotAssetDir)) {
         return
     }
@@ -179,8 +179,8 @@ function Assert-EmbeddedUpdatesManifestHasMascotAssets {
     $manifestAssets = @($manifest.assets)
     $mochiAssets = @(
         $manifestAssets | Where-Object {
-            ($_.subdirectory -like '*/assets/src/assets/mascot/mochi/characters*') -or
-            ($_.resourcesFilename -like 'src_assets_mascot_mochi_characters_*')
+            ($_.subdirectory -like '*/assets/src/assets/mascot/mochi/sprites*') -or
+            ($_.resourcesFilename -like 'src_assets_mascot_mochi_sprites_*')
         }
     )
 

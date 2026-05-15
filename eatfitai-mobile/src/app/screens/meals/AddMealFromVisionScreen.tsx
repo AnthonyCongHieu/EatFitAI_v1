@@ -42,6 +42,7 @@ import {
 } from '../../../utils/visionReview';
 import { TEST_IDS } from '../../../testing/testIds';
 import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
+import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
@@ -78,6 +79,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const [replacePickerVisible, setReplacePickerVisible] = useState(false);
   const [replaceTargetIndex, setReplaceTargetIndex] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSavedMoChi, setShowSavedMoChi] = useState(false);
 
   const selectedItems = useMemo(
     () => detectionItems.filter((detection) => detection.selected),
@@ -354,6 +356,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         text2: `${selectedItems.length} món - ${Math.round(totalCalories)} kcal`,
       });
 
+      setShowSavedMoChi(true);
       await invalidateDiaryQueries(queryClient);
       // A1.3: Notification prompt after first diary log
       promptIfFirstLog();
@@ -567,6 +570,8 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             Vui lòng kiểm tra lại thông tin, điều chỉnh khối lượng hoặc thêm bớt các món và chọn bữa ăn trước khi lưu vào nhật ký.
           </ThemedText>
         </View>
+
+        {showSavedMoChi && <MoChiInlineNotice mochiEvent="meal_logged" compact />}
 
         {matchedItems.length > 0 ? (
           <>

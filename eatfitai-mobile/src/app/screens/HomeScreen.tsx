@@ -44,6 +44,7 @@ import { TEST_IDS } from '../../testing/testIds';
 import { waterService, type WaterIntakeData } from '../../services/waterService';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial';
+import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -249,6 +250,7 @@ const HomeScreen = (): React.ReactElement => {
   const [serverDown, setServerDown] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
+  const [showWaterMoChi, setShowWaterMoChi] = useState(false);
 
   // Water intake state
   const { data: waterData } = useQuery<WaterIntakeData>({
@@ -271,6 +273,7 @@ const HomeScreen = (): React.ReactElement => {
 
     try {
       await waterService.addWater(new Date());
+      setShowWaterMoChi(true);
     } catch (err: any) {
       if (prevData) {
         queryClient.setQueryData(['water-intake-today'], prevData);
@@ -811,6 +814,11 @@ const HomeScreen = (): React.ReactElement => {
               </Pressable>
             </View>
           </View>
+          {showWaterMoChi && (
+            <View style={styles.moChiWaterNotice}>
+              <MoChiInlineNotice mochiEvent="water_added" compact />
+            </View>
+          )}
         </Animated.View>
       </Screen>
       <HomeFirstLoginTutorial
@@ -1173,6 +1181,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
     elevation: 4,
+  },
+  moChiWaterNotice: {
+    marginTop: 12,
   },
   waterLeft: {
     flexDirection: 'row',

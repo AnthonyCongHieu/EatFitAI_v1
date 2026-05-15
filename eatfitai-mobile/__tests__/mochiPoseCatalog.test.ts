@@ -1,75 +1,77 @@
+declare const __dirname: string;
+declare const require: (moduleName: string) => any;
+
+const fs = require('fs');
+const path = require('path');
+
 import {
-  MOCHI_ANIMATION_TO_POSE,
-  MOCHI_POSE_CATALOG,
-  MOCHI_POSE_ORDER,
+  MOCHI_REQUIRED_EVENT_POSES,
+  MOCHI_SPRITE_CATALOG,
+  MOCHI_SPRITE_ORDER,
+  getMoChiPoseForEvent,
 } from '../src/features/mochi/mochiPoseCatalog';
-import {
-  MOCHI_VECTOR_TRACE_META,
-  MOCHI_VECTOR_TRACE_XML,
-} from '../src/features/mochi/mochiVectorTraceAssets';
+import { MOCHI_SPRITES, MOCHI_SPRITE_METADATA } from '../src/assets/mascot/mochi/mochiAssets';
 
-describe('Mochi pose catalog', () => {
-  it('defines exactly 24 production vector poses', () => {
-    expect(MOCHI_POSE_ORDER).toHaveLength(24);
-    expect(new Set(MOCHI_POSE_ORDER).size).toBe(24);
+describe('MoChi sprite catalog', () => {
+  it('defines the required event poses from the source sprite sheets', () => {
+    expect(MOCHI_SPRITE_ORDER).toEqual(expect.arrayContaining(MOCHI_REQUIRED_EVENT_POSES));
 
-    for (const poseKey of MOCHI_POSE_ORDER) {
-      const pose = MOCHI_POSE_CATALOG[poseKey];
+    for (const poseKey of MOCHI_REQUIRED_EVENT_POSES) {
+      const pose = MOCHI_SPRITE_CATALOG[poseKey];
 
+      expect(pose).toBeDefined();
       expect(pose.key).toBe(poseKey);
-      expect(pose.sourceAsset).toBe(poseKey);
-      expect(pose.order).toBeGreaterThanOrEqual(1);
-      expect(pose.order).toBeLessThanOrEqual(24);
-      expect(pose.labelVi).toEqual(expect.any(String));
-      expect(pose.labelVi.length).toBeGreaterThan(3);
-      expect(pose.accessibilityLabel).toContain('Mochi');
-      expect(pose.accessoryIds).toEqual(expect.any(Array));
+      expect(pose.accessibilityLabel).toContain('MoChi');
+      expect(MOCHI_SPRITES[poseKey]).toBeDefined();
+      expect(MOCHI_SPRITE_METADATA[poseKey].sourceSheet).toMatch(/^mochi-source-[12]\.png$/);
     }
   });
 
-  it('maps every companion animation to a non-ambiguous pose', () => {
-    expect(MOCHI_ANIMATION_TO_POSE).toEqual({
-      idle: 'idle',
-      wave: 'hello',
-      happy: 'happy',
-      thinking: 'thinking',
-      surprised: 'surprised',
-      reminder: 'reminder',
-      drinkWater: 'drinkWater',
-      celebrate: 'goalComplete',
-    });
+  it('maps pet events to explicit semantic poses', () => {
+    expect(getMoChiPoseForEvent('app_idle')).toBe('idle');
+    expect(getMoChiPoseForEvent('meal_reminder')).toBe('foodPhone');
+    expect(getMoChiPoseForEvent('water_reminder')).toBe('hydrate');
+    expect(getMoChiPoseForEvent('scan_processing')).toBe('analyzing');
+    expect(getMoChiPoseForEvent('scan_success')).toBe('sparkleSuccess');
+    expect(getMoChiPoseForEvent('scan_empty')).toBe('confused');
+    expect(getMoChiPoseForEvent('scan_error')).toBe('sadCry');
+    expect(getMoChiPoseForEvent('meal_logged')).toBe('saladSuccess');
+    expect(getMoChiPoseForEvent('water_added')).toBe('waterGlass');
+    expect(getMoChiPoseForEvent('streak_unlocked')).toBe('celebrate');
+    expect(getMoChiPoseForEvent('calorie_caution')).toBe('cakeConcern');
+    expect(getMoChiPoseForEvent('report_ready')).toBe('reportReview');
+  });
 
-    for (const poseKey of Object.values(MOCHI_ANIMATION_TO_POSE)) {
-      expect(MOCHI_POSE_CATALOG[poseKey]).toBeDefined();
+  it('ships optimized runtime sprites without importing the large source sheets', () => {
+    const assetSource = fs.readFileSync(
+      path.join(__dirname, '..', 'src/assets/mascot/mochi/mochiAssets.ts'),
+      'utf8',
+    );
+    const spritesDir = path.join(__dirname, '..', 'src/assets/mascot/mochi/sprites');
+
+    expect(assetSource).toContain('./sprites/01_idle.png');
+    expect(assetSource).not.toContain('tools/mascot/sources');
+
+    for (const poseKey of MOCHI_REQUIRED_EVENT_POSES) {
+      const fileName = MOCHI_SPRITE_METADATA[poseKey].fileName;
+      const spritePath = path.join(spritesDir, fileName);
+
+      expect(fs.existsSync(spritePath)).toBe(true);
+      expect(fs.statSync(spritePath).size).toBeGreaterThan(4000);
     }
   });
 
-  it('keeps Vietnamese labels readable', () => {
-    const labels = MOCHI_POSE_ORDER
-      .map((poseKey) => MOCHI_POSE_CATALOG[poseKey].labelVi)
+  it('removes the old vector rig and room implementation', () => {
+    const featureDir = path.join(__dirname, '..', 'src/features/mochi');
+    const fileNames = fs.readdirSync(featureDir) as string[];
+    const allSources = fileNames
+      .filter((fileName) => fileName.endsWith('.ts') || fileName.endsWith('.tsx'))
+      .map((fileName) => fs.readFileSync(path.join(featureDir, fileName), 'utf8'))
       .join('\n');
 
-    expect(labels).toContain('Đứng yên');
-    expect(labels).toContain('Quét món ăn');
-    expect(labels).toContain('Uống nước');
-    expect(labels).toContain('Đạt mục tiêu');
-    expect(labels).not.toMatch(/[\u00c3\u00c2\u00c4\u00c6]|\u00e1\u00bb|\u00e2[\u201d\u2022]/u);
-  });
-
-  it('has production vector trace data for every pose', () => {
-    for (const poseKey of MOCHI_POSE_ORDER) {
-      const xml = MOCHI_VECTOR_TRACE_XML[poseKey];
-      const meta = MOCHI_VECTOR_TRACE_META[poseKey];
-
-      expect(xml).toContain('<svg ');
-      expect(xml).toContain('viewBox=');
-      expect(xml).toContain('preserveAspectRatio=');
-      expect(xml).not.toContain('<image');
-      expect(xml).not.toContain('data:image');
-      expect(meta.width).toBeGreaterThan(40);
-      expect(meta.height).toBeGreaterThan(40);
-      expect(meta.pathCount).toBeGreaterThan(40);
-      expect(meta.byteLength).toBe(xml.length);
-    }
+    expect(fs.existsSync(path.join(featureDir, 'MochiRig.tsx'))).toBe(false);
+    expect(fs.existsSync(path.join(featureDir, 'MochiRoomScene.tsx'))).toBe(false);
+    expect(fs.existsSync(path.join(featureDir, 'mochiVectorTraceAssets.ts'))).toBe(false);
+    expect(allSources).not.toMatch(/MochiRig|MochiRoomScene|MOCHI_VECTOR_TRACE/u);
   });
 });

@@ -1,389 +1,165 @@
-import type { MochiAssetKey } from '../../assets/mascot/mochi/mochiAssets';
-import type { MochiAccessoryId, MochiAnimation } from './mochiCompanionEngine';
+import type { MoChiPoseKey, MoChiSpriteVariant } from '../../assets/mascot/mochi/mochiAssets';
+import { MOCHI_SPRITE_METADATA } from '../../assets/mascot/mochi/mochiAssets';
 
-export type MochiPoseKey = MochiAssetKey;
-
-export type MochiAnimationPreset =
-  | 'breathing'
-  | 'wave'
-  | 'thumbsUp'
-  | 'celebrate'
-  | 'thinking'
-  | 'surprised'
-  | 'sleepy'
-  | 'writing'
-  | 'phone'
-  | 'scan'
-  | 'analysis'
-  | 'mealLog'
-  | 'drink'
-  | 'healthyChoice'
-  | 'reminder'
-  | 'exercise'
-  | 'streak'
-  | 'goal';
-
-export type MochiVectorLayer =
-  | 'shadow'
-  | 'body'
-  | 'ears'
-  | 'headband'
-  | 'face'
-  | 'arms'
-  | 'legs'
-  | 'accessories'
-  | 'motionFx';
-
-export type MochiRendererMode = 'vector' | 'pngFallback' | 'compare';
-
-export type MochiExpressionKey =
+export type MoChiPetMood =
   | 'idle'
   | 'happy'
-  | 'excited'
+  | 'hungry'
+  | 'thirsty'
   | 'thinking'
-  | 'surprised'
-  | 'sleepy'
-  | 'focused'
-  | 'eating'
-  | 'drinkWater'
-  | 'celebrate';
+  | 'confused'
+  | 'concerned'
+  | 'error'
+  | 'celebrating'
+  | 'reporting';
 
-export type MochiPoseAccessory =
-  | 'notebook'
-  | 'pen'
-  | 'phone'
-  | 'appPhone'
-  | 'scanFrame'
-  | 'foodPlate'
-  | 'analysisCard'
-  | 'caloriePhone'
-  | 'breakfastBowl'
-  | 'lunchPlate'
-  | 'dinnerPlate'
-  | 'waterBottle'
-  | 'fruitBowl'
-  | 'smartChoicePlate'
-  | 'bellBubble'
-  | 'dumbbells'
-  | 'streakBoard'
-  | 'trophy'
-  | 'confetti';
+export type MoChiPetEventType =
+  | 'app_idle'
+  | 'tutorial_step'
+  | 'meal_reminder'
+  | 'water_reminder'
+  | 'scan_processing'
+  | 'scan_success'
+  | 'scan_empty'
+  | 'scan_error'
+  | 'meal_logged'
+  | 'water_added'
+  | 'streak_unlocked'
+  | 'calorie_caution'
+  | 'report_ready';
 
-export type MochiPoseMeta = {
-  key: MochiPoseKey;
+export type MoChiPrimaryAction =
+  | 'scanFood'
+  | 'addMeal'
+  | 'water'
+  | 'viewProgress'
+  | 'viewDiary'
+  | 'dismiss';
+
+export type MoChiSpriteMeta = {
+  key: MoChiPoseKey;
   order: number;
+  variant: MoChiSpriteVariant;
+  mood: MoChiPetMood;
   labelVi: string;
   accessibilityLabel: string;
-  sourceAsset: MochiAssetKey;
-  expression: MochiExpressionKey;
-  animationPreset: MochiAnimationPreset;
-  accessoryIds: MochiPoseAccessory[];
-  companionAccessories?: MochiAccessoryId[];
-  bodyLean?: number;
 };
 
-export const MOCHI_VECTOR_LAYERS: MochiVectorLayer[] = [
-  'shadow',
-  'body',
-  'ears',
-  'headband',
-  'face',
-  'arms',
-  'legs',
-  'accessories',
-  'motionFx',
-];
-
-export const MOCHI_POSE_ORDER: MochiPoseKey[] = [
+export const MOCHI_SPRITE_ORDER: MoChiPoseKey[] = [
   'idle',
-  'hello',
-  'happy',
-  'excited',
-  'thinking',
-  'surprised',
-  'sleepy',
-  'notebook',
-  'logCalorieNote',
-  'holdPhone',
-  'openApp',
-  'scanFood',
-  'analyzeResult',
-  'showCalorie',
-  'breakfastLog',
-  'lunchLog',
-  'dinnerLog',
-  'drinkWater',
-  'healthyFood',
-  'smartChoice',
-  'reminder',
-  'exercise',
-  'streakTracking',
-  'goalComplete',
+  'angry',
+  'sadCry',
+  'celebrate',
+  'confused',
+  'calm',
+  'foodPhone',
+  'analyzing',
+  'hydrate',
+  'thumbsUp',
+  'sparkleSuccess',
+  'faceShocked',
+  'faceSurprised',
+  'faceSad',
+  'faceTired',
+  'faceThinking',
+  'faceHappy',
+  'faceEmbarrassed',
+  'faceCalm',
+  'faceLove',
+  'faceDetermined',
+  'faceCheerful',
+  'faceStrained',
+  'foodScale',
+  'cakeConcern',
+  'tabletLog',
+  'tabletMeal',
+  'carbExplain',
+  'saladSuccess',
+  'burgerSurprise',
+  'mealChoice',
+  'workout',
+  'heartLove',
+  'healthyBasket',
+  'weighIn',
+  'waterGlass',
+  'reportReview',
+  'reportPanic',
+  'phoneMealPrep',
+  'dietWarning',
+  'cookingPrep',
+  'spinChoice',
+  'boxIdle',
 ];
 
-export const MOCHI_POSE_CATALOG: Record<MochiPoseKey, MochiPoseMeta> = {
-  idle: {
-    key: 'idle',
-    order: 1,
-    labelVi: 'Đứng yên',
-    accessibilityLabel: 'Mochi đứng yên',
-    sourceAsset: 'idle',
-    expression: 'idle',
-    animationPreset: 'breathing',
-    accessoryIds: [],
-  },
-  hello: {
-    key: 'hello',
-    order: 2,
-    labelVi: 'Chào bạn',
-    accessibilityLabel: 'Mochi vẫy tay chào bạn',
-    sourceAsset: 'hello',
-    expression: 'happy',
-    animationPreset: 'wave',
-    accessoryIds: [],
-    bodyLean: -2,
-  },
-  happy: {
-    key: 'happy',
-    order: 3,
-    labelVi: 'Vui vẻ',
-    accessibilityLabel: 'Mochi vui vẻ giơ hai ngón cái',
-    sourceAsset: 'happy',
-    expression: 'happy',
-    animationPreset: 'thumbsUp',
-    accessoryIds: [],
-  },
-  excited: {
-    key: 'excited',
-    order: 4,
-    labelVi: 'Phấn khích',
-    accessibilityLabel: 'Mochi phấn khích ăn mừng',
-    sourceAsset: 'excited',
-    expression: 'excited',
-    animationPreset: 'celebrate',
-    accessoryIds: ['confetti'],
-  },
-  thinking: {
-    key: 'thinking',
-    order: 5,
-    labelVi: 'Đang suy nghĩ',
-    accessibilityLabel: 'Mochi đang suy nghĩ',
-    sourceAsset: 'thinking',
-    expression: 'thinking',
-    animationPreset: 'thinking',
-    accessoryIds: [],
-    bodyLean: 4,
-  },
-  surprised: {
-    key: 'surprised',
-    order: 6,
-    labelVi: 'Ngạc nhiên',
-    accessibilityLabel: 'Mochi ngạc nhiên',
-    sourceAsset: 'surprised',
-    expression: 'surprised',
-    animationPreset: 'surprised',
-    accessoryIds: ['bellBubble'],
-  },
-  sleepy: {
-    key: 'sleepy',
-    order: 7,
-    labelVi: 'Buồn ngủ',
-    accessibilityLabel: 'Mochi buồn ngủ',
-    sourceAsset: 'sleepy',
-    expression: 'sleepy',
-    animationPreset: 'sleepy',
-    accessoryIds: [],
-    bodyLean: 5,
-  },
-  notebook: {
-    key: 'notebook',
-    order: 8,
-    labelVi: 'Cầm sổ tay',
-    accessibilityLabel: 'Mochi cầm sổ tay',
-    sourceAsset: 'notebook',
-    expression: 'focused',
-    animationPreset: 'writing',
-    accessoryIds: ['notebook'],
-  },
-  logCalorieNote: {
-    key: 'logCalorieNote',
-    order: 9,
-    labelVi: 'Ghi chú calo',
-    accessibilityLabel: 'Mochi ghi chú calo',
-    sourceAsset: 'logCalorieNote',
-    expression: 'focused',
-    animationPreset: 'writing',
-    accessoryIds: ['notebook', 'pen'],
-  },
-  holdPhone: {
-    key: 'holdPhone',
-    order: 10,
-    labelVi: 'Cầm điện thoại',
-    accessibilityLabel: 'Mochi cầm điện thoại',
-    sourceAsset: 'holdPhone',
-    expression: 'idle',
-    animationPreset: 'phone',
-    accessoryIds: ['phone'],
-  },
-  openApp: {
-    key: 'openApp',
-    order: 11,
-    labelVi: 'Mở ứng dụng',
-    accessibilityLabel: 'Mochi mở ứng dụng EatFitAI',
-    sourceAsset: 'openApp',
-    expression: 'happy',
-    animationPreset: 'phone',
-    accessoryIds: ['appPhone'],
-  },
-  scanFood: {
-    key: 'scanFood',
-    order: 12,
-    labelVi: 'Quét món ăn',
-    accessibilityLabel: 'Mochi quét món ăn',
-    sourceAsset: 'scanFood',
-    expression: 'focused',
-    animationPreset: 'scan',
-    accessoryIds: ['foodPlate', 'phone', 'scanFrame'],
-  },
-  analyzeResult: {
-    key: 'analyzeResult',
-    order: 13,
-    labelVi: 'Phân tích kết quả',
-    accessibilityLabel: 'Mochi phân tích kết quả dinh dưỡng',
-    sourceAsset: 'analyzeResult',
-    expression: 'focused',
-    animationPreset: 'analysis',
-    accessoryIds: ['phone', 'analysisCard'],
-  },
-  showCalorie: {
-    key: 'showCalorie',
-    order: 14,
-    labelVi: 'Hiển thị calo',
-    accessibilityLabel: 'Mochi hiển thị lượng calo',
-    sourceAsset: 'showCalorie',
-    expression: 'happy',
-    animationPreset: 'phone',
-    accessoryIds: ['caloriePhone'],
-  },
-  breakfastLog: {
-    key: 'breakfastLog',
-    order: 15,
-    labelVi: 'Ghi nhận bữa sáng',
-    accessibilityLabel: 'Mochi ghi nhận bữa sáng',
-    sourceAsset: 'breakfastLog',
-    expression: 'eating',
-    animationPreset: 'mealLog',
-    accessoryIds: ['breakfastBowl'],
-  },
-  lunchLog: {
-    key: 'lunchLog',
-    order: 16,
-    labelVi: 'Ghi nhận bữa trưa',
-    accessibilityLabel: 'Mochi ghi nhận bữa trưa',
-    sourceAsset: 'lunchLog',
-    expression: 'happy',
-    animationPreset: 'mealLog',
-    accessoryIds: ['lunchPlate', 'pen'],
-  },
-  dinnerLog: {
-    key: 'dinnerLog',
-    order: 17,
-    labelVi: 'Ghi nhận bữa tối',
-    accessibilityLabel: 'Mochi ghi nhận bữa tối',
-    sourceAsset: 'dinnerLog',
-    expression: 'happy',
-    animationPreset: 'mealLog',
-    accessoryIds: ['dinnerPlate'],
-  },
-  drinkWater: {
-    key: 'drinkWater',
-    order: 18,
-    labelVi: 'Uống nước',
-    accessibilityLabel: 'Mochi uống nước',
-    sourceAsset: 'drinkWater',
-    expression: 'drinkWater',
-    animationPreset: 'drink',
-    accessoryIds: ['waterBottle'],
-    companionAccessories: ['water_bottle'],
-  },
-  healthyFood: {
-    key: 'healthyFood',
-    order: 19,
-    labelVi: 'Ăn lành mạnh',
-    accessibilityLabel: 'Mochi chọn trái cây lành mạnh',
-    sourceAsset: 'healthyFood',
-    expression: 'happy',
-    animationPreset: 'healthyChoice',
-    accessoryIds: ['fruitBowl'],
-  },
-  smartChoice: {
-    key: 'smartChoice',
-    order: 20,
-    labelVi: 'Chọn lựa thông minh',
-    accessibilityLabel: 'Mochi chọn lựa thông minh',
-    sourceAsset: 'smartChoice',
-    expression: 'happy',
-    animationPreset: 'healthyChoice',
-    accessoryIds: ['smartChoicePlate'],
-  },
-  reminder: {
-    key: 'reminder',
-    order: 21,
-    labelVi: 'Nhắc nhở',
-    accessibilityLabel: 'Mochi nhắc nhở',
-    sourceAsset: 'reminder',
-    expression: 'idle',
-    animationPreset: 'reminder',
-    accessoryIds: ['bellBubble'],
-  },
-  exercise: {
-    key: 'exercise',
-    order: 22,
-    labelVi: 'Tập luyện',
-    accessibilityLabel: 'Mochi tập luyện',
-    sourceAsset: 'exercise',
-    expression: 'happy',
-    animationPreset: 'exercise',
-    accessoryIds: ['dumbbells'],
-  },
-  streakTracking: {
-    key: 'streakTracking',
-    order: 23,
-    labelVi: 'Theo dõi streak',
-    accessibilityLabel: 'Mochi theo dõi streak',
-    sourceAsset: 'streakTracking',
-    expression: 'focused',
-    animationPreset: 'streak',
-    accessoryIds: ['streakBoard'],
-    companionAccessories: ['streak_badge'],
-  },
-  goalComplete: {
-    key: 'goalComplete',
-    order: 24,
-    labelVi: 'Đạt mục tiêu',
-    accessibilityLabel: 'Mochi đạt mục tiêu',
-    sourceAsset: 'goalComplete',
-    expression: 'celebrate',
-    animationPreset: 'goal',
-    accessoryIds: ['trophy', 'confetti'],
-    companionAccessories: ['trophy'],
-  },
-};
+export const MOCHI_REQUIRED_EVENT_POSES: MoChiPoseKey[] = [
+  'idle',
+  'foodPhone',
+  'hydrate',
+  'analyzing',
+  'sparkleSuccess',
+  'confused',
+  'sadCry',
+  'saladSuccess',
+  'waterGlass',
+  'celebrate',
+  'cakeConcern',
+  'reportReview',
+];
 
-export const MOCHI_ANIMATION_TO_POSE: Record<MochiAnimation, MochiPoseKey> = {
+const POSE_MOOD: Partial<Record<MoChiPoseKey, MoChiPetMood>> = {
   idle: 'idle',
-  wave: 'hello',
-  happy: 'happy',
-  thinking: 'thinking',
-  surprised: 'surprised',
-  reminder: 'reminder',
-  drinkWater: 'drinkWater',
-  celebrate: 'goalComplete',
+  angry: 'concerned',
+  sadCry: 'error',
+  celebrate: 'celebrating',
+  confused: 'confused',
+  calm: 'idle',
+  foodPhone: 'hungry',
+  analyzing: 'thinking',
+  hydrate: 'thirsty',
+  thumbsUp: 'happy',
+  cakeConcern: 'concerned',
+  saladSuccess: 'happy',
+  burgerSurprise: 'confused',
+  waterGlass: 'thirsty',
+  reportReview: 'reporting',
+  reportPanic: 'error',
+  sparkleSuccess: 'happy',
 };
 
-export const getMochiPoseMeta = (pose: MochiPoseKey): MochiPoseMeta =>
-  MOCHI_POSE_CATALOG[pose];
+export const MOCHI_EVENT_TO_POSE: Record<MoChiPetEventType, MoChiPoseKey> = {
+  app_idle: 'idle',
+  tutorial_step: 'celebrate',
+  meal_reminder: 'foodPhone',
+  water_reminder: 'hydrate',
+  scan_processing: 'analyzing',
+  scan_success: 'sparkleSuccess',
+  scan_empty: 'confused',
+  scan_error: 'sadCry',
+  meal_logged: 'saladSuccess',
+  water_added: 'waterGlass',
+  streak_unlocked: 'celebrate',
+  calorie_caution: 'cakeConcern',
+  report_ready: 'reportReview',
+};
 
-export const getMochiPoseFromAnimation = (
-  animation: MochiAnimation,
-): MochiPoseKey => MOCHI_ANIMATION_TO_POSE[animation];
+export const MOCHI_SPRITE_CATALOG: Record<MoChiPoseKey, MoChiSpriteMeta> =
+  MOCHI_SPRITE_ORDER.reduce(
+    (catalog, key, index) => {
+      const metadata = MOCHI_SPRITE_METADATA[key];
+
+      catalog[key] = {
+        key,
+        order: index + 1,
+        variant: metadata.variant,
+        mood: POSE_MOOD[key] ?? 'idle',
+        labelVi: metadata.labelVi,
+        accessibilityLabel: metadata.accessibilityLabel,
+      };
+
+      return catalog;
+    },
+    {} as Record<MoChiPoseKey, MoChiSpriteMeta>,
+  );
+
+export const getMoChiPoseForEvent = (eventType: MoChiPetEventType): MoChiPoseKey =>
+  MOCHI_EVENT_TO_POSE[eventType];

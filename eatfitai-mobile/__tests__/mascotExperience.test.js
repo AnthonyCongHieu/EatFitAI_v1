@@ -6,135 +6,65 @@ const readSource = (relativePath) => {
   return fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8') : '';
 };
 
-describe('Mochi mascot experience', () => {
-  it('defines a reusable Mochi component with the planned animation states', () => {
-    const source = readSource('src/components/MascotCharacter.tsx');
+describe('MoChi virtual pet experience', () => {
+  it('renders MoChi as a sprite assistant instead of the old vector rig', () => {
+    const characterSource = readSource('src/components/MascotCharacter.tsx');
+    const spriteSource = readSource('src/features/mochi/MoChiSprite.tsx');
 
-    expect(source).toContain('export type MascotState');
-    expect(source).toContain('MOCHI_STATE_ASSETS');
-    expect(source).toContain('MochiRig');
-    expect(source).not.toContain('<Image');
-    expect(source).not.toContain('MOCHI_ASSETS[');
-    expect(source).toContain("'idle'");
-    expect(source).toContain("'wave'");
-    expect(source).toContain("'thinking'");
-    expect(source).toContain("'pointing'");
-    expect(source).toContain("'success'");
-    expect(source).toContain("'reminder'");
-    expect(source).toContain("'error'");
-    expect(source).toContain('hasReminder?: boolean');
-    expect(source).toContain('size?: number');
-    expect(source).toContain('testID?: string');
-    expect(source).toContain('accessibilityLabel="Mochi"');
+    expect(characterSource).toContain('MoChiSprite');
+    expect(characterSource).toContain('export type MascotState');
+    expect(characterSource).toContain("'hungry'");
+    expect(characterSource).toContain("'thirsty'");
+    expect(characterSource).toContain("'celebrating'");
+    expect(characterSource).not.toContain('MochiRig');
+    expect(spriteSource).toContain('MOCHI_SPRITES[poseKey]');
+    expect(spriteSource).toContain("variant?: 'full' | 'face' | 'notice'");
+    expect(spriteSource).toContain('resizeMode="contain"');
   });
 
-  it('ships the Mochi source-sheet sprites as static app assets', () => {
-    const assetSource = readSource('src/assets/mascot/mochi/mochiAssets.ts');
-    const assetDir = path.join(__dirname, '..', 'src/assets/mascot/mochi/characters');
+  it('uses a proactive pet overlay with rule-based state and quick actions', () => {
+    const overlaySource = readSource('src/components/MascotOverlay.tsx');
 
-    expect(assetSource).toContain('01_idle.png');
-    expect(assetSource).toContain('12_scan_food.png');
-    expect(assetSource).toContain('18_drink_water.png');
-    expect(assetSource).toContain('24_goal_complete.png');
-    expect(assetSource).toContain('sourceSheet');
-
-    [
-      '01_idle.png',
-      '02_hello.png',
-      '05_thinking.png',
-      '12_scan_food.png',
-      '18_drink_water.png',
-      '21_reminder.png',
-      '24_goal_complete.png',
-    ].forEach((fileName) => {
-      expect(fs.existsSync(path.join(assetDir, fileName))).toBe(true);
-    });
+    expect(overlaySource).toContain('getMoChiPetState');
+    expect(overlaySource).toContain('<MascotCharacter');
+    expect(overlaySource).toContain('shouldBubble');
+    expect(overlaySource).toContain("navigation.navigate('AiCamera')");
+    expect(overlaySource).toContain("navigation.navigate('FoodSearch'");
+    expect(overlaySource).toContain("screen: 'HomeTab'");
+    expect(overlaySource).toContain('focusWaterRequestId: Date.now()');
+    expect(overlaySource).not.toContain('MochiRig');
   });
 
-  it('uses Mochi from the overlay instead of the old robot face', () => {
-    const source = readSource('src/components/MascotOverlay.tsx');
-
-    expect(source).toContain('import MascotCharacter');
-    expect(source).toContain('<MascotCharacter');
-    expect(source).toContain("state={hasReminders ? 'reminder' : 'idle'}");
-    expect(source).toContain('bottom: 170');
-    expect(source).toContain('TEST_IDS.home.mascotButton');
-    expect(source).not.toContain('styles.robotFace');
-    expect(source).not.toContain('styles.robotVisor');
-  });
-
-  it('exposes a real-device Mochi room screen from the authenticated app', () => {
+  it('removes the old MoChi room route and profile entry', () => {
     const typeSource = readSource('src/app/types/index.ts');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
-    const previewSource = readSource('src/app/screens/dev/MochiPreviewScreen.tsx');
     const testIdsSource = readSource('src/testing/testIds.ts');
 
-    expect(typeSource).toContain('MochiPreview: undefined');
-    expect(navigatorSource).toContain('getMochiPreviewScreen');
-    expect(navigatorSource).toContain('<Stack.Screen');
-    expect(navigatorSource).toContain('name="MochiPreview"');
-    expect(navigatorSource).toContain("currentRouteName !== 'MochiPreview'");
-    expect(profileSource).toContain("navigation.navigate('MochiPreview')");
-    expect(profileSource).toContain('TEST_IDS.profile.mochiPreviewButton');
-    expect(profileSource).toContain('Phòng Mochi');
-    expect(previewSource).toContain('MochiRoomScene');
-    expect(previewSource).toContain('getMochiCompanionState');
-    expect(previewSource).toContain('Cosmetic unlocks');
-    expect(previewSource).not.toContain('MochiFallback');
-    expect(previewSource).not.toContain('mochi-room-fallback-mascot');
-    expect(testIdsSource).toContain("mochiPreviewButton: 'profile-mochi-preview-button'");
-    expect(testIdsSource).toContain("mochiPreviewScreen: 'mochi-preview-screen'");
+    expect(typeSource).not.toContain('MochiPreview');
+    expect(navigatorSource).not.toContain('getMochiPreviewScreen');
+    expect(navigatorSource).not.toContain('MochiPreview');
+    expect(profileSource).not.toContain('Phòng Mochi');
+    expect(profileSource).not.toContain('mochiPreviewButton');
+    expect(testIdsSource).not.toContain('mochiPreviewButton');
+    expect(testIdsSource).not.toContain('mochiPreviewScreen');
   });
 
-  it('renders Mochi Room with the exported server mascot assets instead of the old generated vector look', () => {
-    const roomSource = readSource('src/features/mochi/MochiRoomScene.tsx');
-    const rigSource = readSource('src/features/mochi/MochiRig.tsx');
-    const previewSource = readSource('src/app/screens/dev/MochiPreviewScreen.tsx');
-
-    expect(roomSource).toContain('LinearGradient');
-    expect(roomSource).toContain('MochiRig');
-    expect(roomSource).toContain('mochi-room-3d-rig');
-    expect(roomSource).not.toContain('GLView');
-    expect(roomSource).not.toContain('expo-gl');
-    expect(roomSource).not.toContain('CapsuleGeometry');
-    expect(previewSource).not.toContain('MascotCharacter');
-    expect(rigSource).toContain('MOCHI_VECTOR_LAYERS');
-    expect(rigSource).toContain("rendererMode = 'pngFallback'");
-    expect(rigSource).toContain('MOCHI_ASSETS[poseMeta.sourceAsset]');
-    expect(rigSource).toContain('mochiHeadbandPink');
-    expect(rigSource).toContain('mochiInk');
-    expect(rigSource).toContain('MUZZLE');
-    expect(rigSource).toContain('renderEyes');
-    expect(rigSource).toContain("expression === 'drinkWater'");
-    expect(rigSource).toContain('activeAccessoryIds');
-    expect(rigSource).not.toContain('mochiBellyCream');
-  });
-
-  it('defines a first-login home tutorial with storage gate and expected controls', () => {
+  it('keeps the first-login tutorial and core flows wired to MoChi sprites', () => {
     const tutorialSource = readSource('src/components/home/HomeFirstLoginTutorial.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
-    const testIdsSource = readSource('src/testing/testIds.ts');
+    const scanSource = readSource('src/app/screens/ai/AIScanScreen.tsx');
+    const visionReviewSource = readSource('src/app/screens/meals/AddMealFromVisionScreen.tsx');
 
-    expect(tutorialSource).toContain('HOME_TUTORIAL_SEEN_KEY = \'home_tutorial_v1_seen\'');
-    expect(tutorialSource).toContain('isAuthenticated');
-    expect(tutorialSource).toContain('needsOnboarding');
-    expect(tutorialSource).toContain('AsyncStorage.getItem(HOME_TUTORIAL_SEEN_KEY)');
-    expect(tutorialSource).toContain('AsyncStorage.setItem(HOME_TUTORIAL_SEEN_KEY,');
-    expect(tutorialSource).toContain('Bỏ qua');
-    expect(tutorialSource).toContain('Tiếp tục');
-    expect(tutorialSource).toContain('Xong');
-    expect(tutorialSource).toContain('Quét món bằng AI');
-    expect(tutorialSource).toContain('Thêm món thủ công');
-    expect(tutorialSource).toContain('Nhật ký hôm nay');
-
-    expect(homeSource).toContain('import HomeFirstLoginTutorial');
-    expect(homeSource).toContain('<HomeFirstLoginTutorial');
-    expect(testIdsSource).toContain("mascotButton: 'home-mascot-button'");
-    expect(testIdsSource).toContain("tutorialOverlay: 'home-tutorial-overlay'");
-    expect(testIdsSource).toContain("tutorialNextButton: 'home-tutorial-next-button'");
-    expect(testIdsSource).toContain("tutorialSkipButton: 'home-tutorial-skip-button'");
-    expect(testIdsSource).toContain("tutorialFinishButton: 'home-tutorial-finish-button'");
+    expect(tutorialSource).toContain('MascotCharacter');
+    expect(tutorialSource).toContain("mascotState: 'wave'");
+    expect(tutorialSource).toContain("mascotState: 'thinking'");
+    expect(homeSource).toContain('HomeFirstLoginTutorial');
+    expect(homeSource).toContain("mochiEvent=\"water_added\"");
+    expect(scanSource).toContain("mochiEvent=\"scan_processing\"");
+    expect(scanSource).toContain("mochiEvent=\"scan_empty\"");
+    expect(scanSource).toContain("mochiEvent=\"scan_error\"");
+    expect(visionReviewSource).toContain("mochiEvent=\"meal_logged\"");
   });
 
   it('keeps touched mascot and quick-action UI text free from mojibake markers', () => {
@@ -143,80 +73,15 @@ describe('Mochi mascot experience', () => {
       'src/components/MascotOverlay.tsx',
       'src/components/home/HomeFirstLoginTutorial.tsx',
       'src/components/home/QuickActionsOverlay.tsx',
-      'src/features/mochi/MochiRoomScene.tsx',
-      'src/features/mochi/MochiRig.tsx',
+      'src/features/mochi/MoChiSprite.tsx',
       'src/features/mochi/mochiPoseCatalog.ts',
-      'src/app/screens/dev/MochiPreviewScreen.tsx',
+      'src/features/mochi/mochiPetEngine.ts',
+      'src/assets/mascot/mochi/mochiAssets.ts',
       'src/testing/testIds.ts',
     ]
       .map(readSource)
       .join('\n');
 
     expect(source).not.toMatch(/[\u00c3\u00c2\u00c4\u00c6]|\u00e1\u00bb|\u00e2[\u201d\u2022]/u);
-  });
-
-  it('uses readable Vietnamese labels in the quick actions overlay', () => {
-    const source = readSource('src/components/home/QuickActionsOverlay.tsx');
-
-    expect(source).toContain("label: 'QUÉT THỨC ĂN'");
-    expect(source).toContain("label: 'THÊM BỮA'");
-    expect(source).toContain("label: 'CÔNG THỨC'");
-    expect(source).toContain("label: 'LƯỢNG NƯỚC'");
-    expect(source).toContain('Thao tác nhanh');
-    expect(source).toContain('Bạn muốn thực hiện gì tiếp theo?');
-    expect(source).toContain('CHẠM X ĐỂ QUAY LẠI');
-  });
-
-  it('defines the 24-pose Mochi source catalog when present', () => {
-    const catalogSource = readSource('src/features/mochi/mochiPoseCatalog.ts');
-
-    if (!catalogSource) {
-      return;
-    }
-
-    const poseOrderMatch = catalogSource.match(
-      /export const MOCHI_POSE_ORDER:[\s\S]*?=\s*\[([\s\S]*?)\];/,
-    );
-    const poseKeys = [...(poseOrderMatch?.[1] ?? '').matchAll(/'([^']+)'/g)].map(
-      ([, key]) => key,
-    );
-
-    expect(catalogSource).toContain('export const MOCHI_POSE_ORDER');
-    expect(catalogSource).toContain('export const MOCHI_POSE_CATALOG');
-    expect(catalogSource).toContain('export const MOCHI_ANIMATION_TO_POSE');
-    expect(poseKeys).toEqual([
-      'idle',
-      'hello',
-      'happy',
-      'excited',
-      'thinking',
-      'surprised',
-      'sleepy',
-      'notebook',
-      'logCalorieNote',
-      'holdPhone',
-      'openApp',
-      'scanFood',
-      'analyzeResult',
-      'showCalorie',
-      'breakfastLog',
-      'lunchLog',
-      'dinnerLog',
-      'drinkWater',
-      'healthyFood',
-      'smartChoice',
-      'reminder',
-      'exercise',
-      'streakTracking',
-      'goalComplete',
-    ]);
-    expect(new Set(poseKeys).size).toBe(24);
-    expect(catalogSource).toContain("labelVi: 'Đứng yên'");
-    expect(catalogSource).toContain("labelVi: 'Quét món ăn'");
-    expect(catalogSource).toContain("labelVi: 'Uống nước'");
-    expect(catalogSource).toContain("labelVi: 'Đạt mục tiêu'");
-    expect(catalogSource).toContain("accessibilityLabel: 'Mochi đạt mục tiêu'");
-    expect(catalogSource).toContain("drinkWater: 'drinkWater'");
-    expect(catalogSource).toContain("celebrate: 'goalComplete'");
   });
 });

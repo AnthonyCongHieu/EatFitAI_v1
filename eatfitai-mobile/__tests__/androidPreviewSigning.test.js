@@ -118,9 +118,10 @@ describe('Android preview APK signing guard', () => {
     expect(buildScript).toMatch(/createReleaseUpdatesResources/);
     expect(buildScript).toMatch(/mergeReleaseAssets/);
     expect(buildScript).toMatch(/Assert-EmbeddedUpdatesManifestHasMascotAssets/);
-    expect(buildScript).toMatch(/MochiRig/);
-    expect(buildScript).toMatch(/MOCHI_ASSETS\\\[/);
-    expect(buildScript).toMatch(/src_assets_mascot_mochi_characters_/);
+    expect(buildScript).toMatch(/MoChiSprite/);
+    expect(buildScript).toMatch(/MOCHI_SPRITES\\\[/);
+    expect(buildScript).toMatch(/src_assets_mascot_mochi_sprites_/);
+    expect(buildScript).not.toMatch(/MochiRig/);
   });
 
   it('keeps release signing strict by default instead of silently falling back to local debug keys', () => {

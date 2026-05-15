@@ -52,7 +52,6 @@ export type RootStackParamList = {
   WeightHistory: undefined;
   ChangePassword: undefined;
   About: undefined;
-  MochiPreview: undefined;
   PrivacyPolicy: undefined;
   NotificationsSettings: undefined;
   DietaryRestrictions: undefined;

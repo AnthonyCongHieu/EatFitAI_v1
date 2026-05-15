@@ -104,9 +104,6 @@ const getChangePasswordScreen = lazyScreen(() =>
   require('../screens/profile/ChangePasswordScreen'),
 );
 const getAboutScreen = lazyScreen(() => require('../screens/profile/AboutScreen'));
-const getMochiPreviewScreen = lazyScreen(() =>
-  require('../screens/dev/MochiPreviewScreen'),
-);
 const getPrivacyPolicyScreen = lazyScreen(() =>
   require('../screens/profile/PrivacyPolicyScreen'),
 );
@@ -342,11 +339,6 @@ const AppNavigator = (): React.ReactElement => {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
-                name="MochiPreview"
-                getComponent={getMochiPreviewScreen}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
                 name="PrivacyPolicy"
                 getComponent={getPrivacyPolicyScreen}
                 options={{ headerShown: false }}
@@ -369,7 +361,7 @@ const AppNavigator = (): React.ReactElement => {
               </Stack.Group>
           )}
           </Stack.Navigator>
-          {!isInAuthFlow && currentRouteName !== 'MochiPreview' && <MascotOverlay />}
+          {!isInAuthFlow && currentRouteName !== 'AiCamera' && <MascotOverlay />}
         </>
       )}
     </NavigationContainer>

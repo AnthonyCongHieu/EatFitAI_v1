@@ -60,6 +60,7 @@ import {
   getDistinctVisionResultItems,
   getDefaultVisionGrams,
 } from '../../../utils/visionReview';
+import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
@@ -754,6 +755,10 @@ const AIScanScreen: React.FC = () => {
             </Animated.View>
           )}
 
+          {showProcessingBanner && (mode === 'preview') && (
+            <MoChiInlineNotice mochiEvent="scan_processing" compact />
+          )}
+
           {/* AI status badge (camera mode only) */}
           {isCameraMode && (
             <View style={S.statusBadgeWrap}>
@@ -880,6 +885,7 @@ const AIScanScreen: React.FC = () => {
           >
             {hasDetectedItems && topItem ? (
               <View style={S.drawerContent}>
+                <MoChiInlineNotice mochiEvent="scan_success" compact />
                 {/* Title row */}
                 <View style={S.drawerTitleRow}>
                   <View style={{ flex: 1 }}>
@@ -1112,6 +1118,11 @@ const AIScanScreen: React.FC = () => {
             ) : (
               /* No results / offline state — custom dark theme */
               <View style={S.drawerContent}>
+                {resultNotice?.title === 'AI tạm offline' ? (
+                  <MoChiInlineNotice mochiEvent="scan_error" compact />
+                ) : (
+                  <MoChiInlineNotice mochiEvent="scan_empty" compact />
+                )}
                 <View style={S.noResultsWrap}>
                   <ThemedText style={S.noResultsTitle}>
                     {resultNotice?.title ?? 'Chưa nhận diện được'}

@@ -130,8 +130,6 @@ export const TEST_IDS = {
     weightHistoryButton: 'profile-weight-history-button',
     nutritionSettingsButton: 'profile-nutrition-settings-button',
     nutritionInsightsButton: 'profile-nutrition-insights-button',
-    mochiPreviewButton: 'profile-mochi-preview-button',
-    mochiPreviewScreen: 'mochi-preview-screen',
     logoutButton: 'profile-logout-button',
   },
   nutritionSettings: {

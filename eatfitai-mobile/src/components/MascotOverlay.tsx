@@ -15,17 +15,66 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
 
 import QuickActionsOverlay from './home/QuickActionsOverlay';
-import MascotCharacter from './MascotCharacter';
+import MascotCharacter, { type MascotState } from './MascotCharacter';
 import { TEST_IDS } from '../testing/testIds';
 import { useSmartReminders } from '../hooks/useSmartReminders';
+import { useDiaryStore } from '../store/useDiaryStore';
+import { useGamificationStore } from '../store/useGamificationStore';
+import { waterService, type WaterIntakeData } from '../services/waterService';
 import { ThemedText } from './ThemedText';
+import { getMoChiPetState, type MoChiPrimaryAction } from '../features/mochi/mochiPetEngine';
+
+const PET_MOOD_TO_STATE: Record<string, MascotState> = {
+  idle: 'idle',
+  happy: 'success',
+  hungry: 'hungry',
+  thirsty: 'thirsty',
+  thinking: 'thinking',
+  confused: 'confused',
+  concerned: 'concerned',
+  error: 'error',
+  celebrating: 'celebrating',
+  reporting: 'reporting',
+};
 
 const MascotOverlay = (): React.ReactElement => {
   const navigation = useNavigation<any>();
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const { reminders, hasReminders, bubbleText } = useSmartReminders();
+  const [dismissedEvent, setDismissedEvent] = useState<string | null>(null);
+  const { reminders, hasReminders } = useSmartReminders();
+  const summary = useDiaryStore((s) => s.summary);
+  const currentStreak = useGamificationStore((s) => s.currentStreak);
+  const totalXP = useGamificationStore((s) => s.totalXP);
+  const achievements = useGamificationStore((s) => s.achievements);
+
+  const { data: waterData } = useQuery<WaterIntakeData>({
+    queryKey: ['water-intake-today'],
+    queryFn: () => waterService.getWaterIntake(new Date()),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const petState = useMemo(
+    () =>
+      getMoChiPetState({
+        reminders,
+        totalCalories: summary?.totalCalories,
+        targetCalories: summary?.targetCalories,
+        waterAmountMl: waterData?.amountMl,
+        waterTargetMl: waterData?.targetMl,
+        currentStreak,
+        totalXP,
+        unlockedAchievementIds: achievements
+          .filter((achievement) => Boolean(achievement.unlockedAt))
+          .map((achievement) => achievement.id),
+      }),
+    [achievements, currentStreak, reminders, summary, totalXP, waterData],
+  );
+
+  const shouldBubble = petState.shouldBubble && dismissedEvent !== petState.eventType;
+  const mascotState = PET_MOOD_TO_STATE[petState.mood] ?? 'idle';
 
   const floatAnim = useSharedValue(0);
   const mascotOffsetX = useSharedValue(0);
@@ -45,9 +94,11 @@ const MascotOverlay = (): React.ReactElement => {
     );
   }, [floatAnim]);
 
-  // Gentle timed nudge for the chat bubble every 8 seconds.
   useEffect(() => {
-    if (!hasReminders) return;
+    if (!shouldBubble) {
+      bubbleBounce.value = 0;
+      return;
+    }
 
     bubbleBounce.value = withRepeat(
       withSequence(
@@ -64,7 +115,7 @@ const MascotOverlay = (): React.ReactElement => {
     return () => {
       bubbleBounce.value = 0;
     };
-  }, [bubbleBounce, hasReminders]);
+  }, [bubbleBounce, shouldBubble]);
 
   const floatStyle = useAnimatedStyle(() => ({
     transform: [
@@ -91,6 +142,45 @@ const MascotOverlay = (): React.ReactElement => {
     [mascotOffsetX, mascotOffsetY, mascotSavedX, mascotSavedY],
   );
 
+  const runPrimaryAction = (action: MoChiPrimaryAction) => {
+    if (action === 'scanFood') {
+      navigation.navigate('AiCamera');
+      return;
+    }
+
+    if (action === 'addMeal') {
+      navigation.navigate('FoodSearch', {
+        autoFocus: true,
+        showQuickSuggestions: true,
+        returnToDiaryOnSave: true,
+      });
+      return;
+    }
+
+    if (action === 'water') {
+      navigation.navigate('AppTabs', {
+        screen: 'HomeTab',
+        params: {
+          source: 'water-quick-action',
+          focusWaterRequestId: Date.now(),
+        },
+      });
+      return;
+    }
+
+    if (action === 'viewProgress') {
+      navigation.navigate('Achievements');
+      return;
+    }
+
+    if (action === 'viewDiary') {
+      navigation.navigate('AppTabs', { screen: 'HomeTab' });
+      return;
+    }
+
+    setDismissedEvent(petState.eventType);
+  };
+
   return (
     <>
       <GestureDetector gesture={mascotPanGesture}>
@@ -98,18 +188,24 @@ const MascotOverlay = (): React.ReactElement => {
           entering={FadeInUp.delay(500).springify()}
           style={[styles.fabContainer, floatStyle]}
         >
-          {hasReminders && bubbleText && (
+          {shouldBubble && (
             <Animated.View
-              entering={SlideInRight.delay(1200)
+              entering={SlideInRight.delay(900)
                 .duration(260)
                 .easing(Easing.out(Easing.ease))}
               style={[styles.chatBubbleWrap, bubbleBounceStyle]}
             >
-              <View style={styles.chatBubble}>
-                <ThemedText style={styles.chatBubbleText} numberOfLines={2}>
-                  {bubbleText}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ẩn lời nhắc MoChi"
+                onPress={() => setDismissedEvent(petState.eventType)}
+                style={styles.chatBubble}
+              >
+                <ThemedText style={styles.chatBubbleTitle}>MoChi</ThemedText>
+                <ThemedText style={styles.chatBubbleText} numberOfLines={3}>
+                  {petState.dialogue}
                 </ThemedText>
-              </View>
+              </Pressable>
               <View style={styles.chatBubbleArrow} />
             </Animated.View>
           )}
@@ -118,20 +214,26 @@ const MascotOverlay = (): React.ReactElement => {
             style={styles.fab}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setShowQuickActions(true);
+              if (petState.primaryAction !== 'dismiss') {
+                runPrimaryAction(petState.primaryAction);
+              } else {
+                setShowQuickActions(true);
+              }
             }}
+            onLongPress={() => setShowQuickActions(true)}
             testID={TEST_IDS.home.mascotButton}
             nativeID={TEST_IDS.home.fabButton}
             accessibilityRole="button"
-            accessibilityLabel="Mở trợ lý Mochi"
+            accessibilityLabel="Mở trợ lý MoChi"
           >
             <MascotCharacter
-              state={hasReminders ? 'reminder' : 'idle'}
-              hasReminder={hasReminders}
+              state={mascotState}
+              poseKey={petState.poseKey}
+              hasReminder={hasReminders || shouldBubble}
               size={72}
             />
 
-            {hasReminders && (
+            {(hasReminders || shouldBubble) && (
               <View style={styles.fabPingContainer}>
                 <Animated.View
                   entering={FadeIn.delay(800)}
@@ -217,7 +319,6 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#4be277',
     opacity: 0.6,
   },
   fabDot: {
@@ -225,7 +326,6 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#4be277',
     borderWidth: 2,
     borderColor: '#0a0e1a',
   },
@@ -236,8 +336,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   chatBubble: {
-    maxWidth: 200,
-    minWidth: 140,
+    maxWidth: 230,
+    minWidth: 158,
     backgroundColor: 'rgba(30, 35, 50, 0.95)',
     borderRadius: 16,
     borderWidth: 1,
@@ -249,6 +349,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 6,
+  },
+  chatBubbleTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#86efac',
+    letterSpacing: 0.4,
+    marginBottom: 3,
+    textTransform: 'uppercase',
   },
   chatBubbleText: {
     fontSize: 13,
