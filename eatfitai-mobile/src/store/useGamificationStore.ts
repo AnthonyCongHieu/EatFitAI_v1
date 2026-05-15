@@ -48,6 +48,13 @@ interface GamificationState {
   lastWeeklyFetch: number; // timestamp
   lastStreakCheck: string | null; // date string yyyy-MM-dd
   dailyQuestsClaimed: Record<string, string>; // questId -> date string yyyy-MM-dd
+  loggedDates?: string[]; // Tất cả các ngày đã từng log (dùng để đếm tổng số ngày)
+
+  // STREAK RECOVERY
+  streakRecoveriesLeft?: number;
+  lastRecoveryMonth?: string | null;
+  pendingBrokenStreak?: number | null;
+  brokenStreakDate?: string | null;
 
   // Actions
   checkStreak: () => Promise<void>;
@@ -227,6 +234,11 @@ export const useGamificationStore = create<GamificationState>()(
       lastWeeklyFetch: 0,
       lastStreakCheck: null,
       dailyQuestsClaimed: {},
+      loggedDates: [],
+      streakRecoveriesLeft: 3,
+      lastRecoveryMonth: null,
+      pendingBrokenStreak: null,
+      brokenStreakDate: null,
 
       fetchWeeklyLogs: async () => {
         try {
@@ -263,48 +275,19 @@ export const useGamificationStore = create<GamificationState>()(
         try {
           const today = new Date();
           const todayStr = today.toISOString().split('T')[0] ?? '';
-          const { longestStreak } = get();
+          const state = get();
+          
+          let newStreak = state.currentStreak;
+          let newLongestStreak = state.longestStreak;
+          let newLastLogDate = state.lastLogDate;
+          
+          // Fallback an toàn cho loggedDates
+          const loggedDatesSet = new Set(state.loggedDates || []);
 
-          // Lấy dữ liệu 14 ngày gần nhất để tính streak chính xác hơn
+          // Lấy dữ liệu 14 ngày gần nhất để tính weeklyLogs và bổ sung vào loggedDates
           const summary = await diaryService.getWeekSummary(todayStr);
 
-          // Tính currentStreak từ dữ liệu thực tế (đếm ngược từ hôm nay)
-          let calculatedStreak = 0;
-          let totalDays = 0;
-
-          // Tạo danh sách 14 ngày gần nhất
-          const dates: string[] = [];
-          for (let i = 0; i < 14; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            dates.push(date.toISOString().split('T')[0] ?? '');
-          }
-
-          // Đếm streak (ngày liên tiếp từ hôm nay hoặc hôm qua)
-          let foundFirstLog = false;
-          for (let i = 0; i < dates.length; i++) {
-            const dateStr = dates[i] ?? '';
-            const hasLog = (summary.dailyCalories[dateStr] ?? 0) > 0;
-
-            if (hasLog) {
-              totalDays++;
-              if (!foundFirstLog) {
-                foundFirstLog = true;
-                calculatedStreak = 1;
-              } else {
-                calculatedStreak++;
-              }
-            } else {
-              // Nếu hôm nay chưa log nhưng hôm qua có log thì vẫn tiếp tục đếm
-              if (i === 0) {
-                continue; // Bỏ qua hôm nay nếu chưa log
-              }
-              // Gặp ngày không log thì dừng streak
-              if (foundFirstLog) break;
-            }
-          }
-
-          // Update weeklyLogs (7 ngày gần nhất cho UI)
+          // Cập nhật danh sách 7 ngày gần nhất cho UI
           const weeklyLogs: boolean[] = [];
           for (let i = 6; i >= 0; i--) {
             const date = new Date(today);
@@ -314,27 +297,145 @@ export const useGamificationStore = create<GamificationState>()(
             weeklyLogs.push(hasLog);
           }
 
-          // Cập nhật state
-          const newLongestStreak = Math.max(longestStreak, calculatedStreak);
+          // Quét 14 ngày từ summary để bổ sung vào lịch sử tổng (nếu thiếu)
+          for (let i = 0; i < 14; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0] ?? '';
+            if ((summary.dailyCalories[dateStr] ?? 0) > 0) {
+              loggedDatesSet.add(dateStr);
+            }
+          }
+
+          // RESET LƯỢT KHÔI PHỤC THEO THÁNG
+          const currentMonth = todayStr.substring(0, 7);
+          let newStreakRecoveriesLeft = state.streakRecoveriesLeft ?? 3;
+          let newLastRecoveryMonth = state.lastRecoveryMonth ?? null;
+          if (newLastRecoveryMonth !== currentMonth) {
+             newStreakRecoveriesLeft = 3;
+             newLastRecoveryMonth = currentMonth;
+          }
+
+          let newPendingBrokenStreak = state.pendingBrokenStreak ?? null;
+          let newBrokenStreakDate = state.brokenStreakDate ?? null;
+
+          // KIỂM TRA PHỤC HỒI CHUỖI
+          if (newPendingBrokenStreak !== null && newBrokenStreakDate !== null) {
+             const hasLoggedBrokenDate = (summary.dailyCalories[newBrokenStreakDate] ?? 0) > 0;
+             
+             if (hasLoggedBrokenDate) {
+                // Đã ghi bù -> Phục hồi chuỗi!
+                newStreak = newPendingBrokenStreak;
+                newLastLogDate = newBrokenStreakDate; // Cập nhật lastLogDate về ngày ghi bù
+                newPendingBrokenStreak = null;
+                newBrokenStreakDate = null;
+                newStreakRecoveriesLeft = Math.max(0, newStreakRecoveriesLeft - 1);
+                
+                // Hiện Toast thông báo thành công
+                setTimeout(() => {
+                  Toast.show({
+                    type: 'success',
+                    text1: 'Phục hồi chuỗi thành công!',
+                    text2: `Chuỗi ${newStreak} ngày của bạn đã quay trở lại.`,
+                  });
+                }, 1000);
+             } else {
+                // Kiểm tra hết hạn phục hồi (Quá 2 ngày kể từ ngày đứt chuỗi)
+                const brokenDateObj = new Date(newBrokenStreakDate);
+                const diffTime = today.getTime() - brokenDateObj.getTime();
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (diffDays >= 3) {
+                   // Quá thời hạn 2 ngày
+                   newPendingBrokenStreak = null;
+                   newBrokenStreakDate = null;
+                }
+             }
+          }
+
+          // KIỂM TRA CHUỖI (STRICT INCREMENTAL LOGIC)
+          // Chỉ xét việc người dùng CÓ ghi nhận vào ĐÚNG ngày hôm nay hay không.
+          const hasLoggedToday = (summary.dailyCalories[todayStr] ?? 0) > 0;
+
+          if (hasLoggedToday) {
+            // Đã log hôm nay
+            if (newLastLogDate !== todayStr) {
+              // Hôm nay là lần đầu tiên log -> Tính toán tăng chuỗi
+              const yesterday = new Date(today);
+              yesterday.setDate(today.getDate() - 1);
+              const yesterdayStr = yesterday.toISOString().split('T')[0] ?? '';
+
+              if (newLastLogDate === yesterdayStr) {
+                // Đã log ngày hôm qua -> Tăng chuỗi
+                newStreak += 1;
+              } else {
+                // Không log ngày hôm qua -> Bắt đầu chuỗi mới
+                newStreak = 1;
+              }
+              newLastLogDate = todayStr;
+              newLongestStreak = Math.max(newLongestStreak, newStreak);
+            }
+          } else {
+            // Chưa log hôm nay
+            // Nếu lastLogDate trước ngày hôm qua -> CHUỖI ĐÃ BỊ ĐỨT
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0] ?? '';
+
+            if (newLastLogDate !== null && newLastLogDate !== todayStr && newLastLogDate !== yesterdayStr) {
+              // Chuỗi bị đứt!
+              // Kiểm tra xem có thể khôi phục không
+              const lastLogDateObj = new Date(newLastLogDate);
+              const firstMissedDate = new Date(lastLogDateObj);
+              firstMissedDate.setDate(firstMissedDate.getDate() + 1);
+              const firstMissedStr = firstMissedDate.toISOString().split('T')[0] ?? '';
+
+              const diffTime = today.getTime() - firstMissedDate.getTime();
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+              if (newStreak > 0 && diffDays <= 2 && newStreakRecoveriesLeft > 0) {
+                 // Kích hoạt trạng thái chờ khôi phục
+                 newPendingBrokenStreak = newStreak;
+                 newBrokenStreakDate = firstMissedStr;
+              } else if (newStreak > 0 && newStreakRecoveriesLeft === 0) {
+                 setTimeout(() => {
+                   Toast.show({
+                     type: 'error',
+                     text1: 'Chuỗi đã bị đứt!',
+                     text2: 'Bạn đã dùng hết quyền khôi phục trong tháng.',
+                   });
+                 }, 1000);
+              }
+              
+              newStreak = 0;
+            }
+          }
+
+          const newTotalDaysLogged = loggedDatesSet.size;
 
           set({
-            currentStreak: calculatedStreak,
+            currentStreak: newStreak,
             longestStreak: newLongestStreak,
-            totalDaysLogged: totalDays,
+            lastLogDate: newLastLogDate,
+            totalDaysLogged: newTotalDaysLogged,
+            loggedDates: Array.from(loggedDatesSet),
             weeklyLogs,
             lastWeeklyFetch: Date.now(),
             lastStreakCheck: todayStr,
-            lastLogDate: weeklyLogs[6] ? todayStr : null, // Hôm nay đã log?
+            streakRecoveriesLeft: newStreakRecoveriesLeft,
+            lastRecoveryMonth: newLastRecoveryMonth,
+            pendingBrokenStreak: newPendingBrokenStreak,
+            brokenStreakDate: newBrokenStreakDate,
             // Sync progress cho achievements
             achievements: get().achievements.map((a) => {
               if (a.id === 'streak_3') {
-                return { ...a, progress: Math.min(calculatedStreak, a.target) };
+                return { ...a, progress: Math.min(newStreak, a.target) };
               }
               if (a.id === 'streak_7') {
-                return { ...a, progress: Math.min(calculatedStreak, a.target) };
+                return { ...a, progress: Math.min(newStreak, a.target) };
               }
               if (a.id === 'first_log') {
-                return { ...a, progress: Math.min(totalDays, a.target) };
+                return { ...a, progress: Math.min(newTotalDaysLogged, a.target) };
               }
               return a;
             }),
@@ -342,13 +443,13 @@ export const useGamificationStore = create<GamificationState>()(
 
           // Unlock achievements nếu đạt target
           const { unlockAchievement } = get();
-          if (calculatedStreak >= 3) unlockAchievement('streak_3');
-          if (calculatedStreak >= 7) unlockAchievement('streak_7');
-          if (totalDays >= 1) unlockAchievement('first_log');
+          if (newStreak >= 3) unlockAchievement('streak_3');
+          if (newStreak >= 7) unlockAchievement('streak_7');
+          if (newTotalDaysLogged >= 1) unlockAchievement('first_log');
 
-          console.log('[GamificationStore] Streak calculated:', {
-            calculatedStreak,
-            totalDays,
+          console.log('[GamificationStore] Strict Streak calculated:', {
+            newStreak,
+            newTotalDaysLogged,
             newLongestStreak,
           });
         } catch (error) {
@@ -449,6 +550,11 @@ export const useGamificationStore = create<GamificationState>()(
           lastWeeklyFetch: 0,
           lastStreakCheck: null,
           dailyQuestsClaimed: {},
+          loggedDates: [],
+          streakRecoveriesLeft: 3,
+          lastRecoveryMonth: null,
+          pendingBrokenStreak: null,
+          brokenStreakDate: null,
         });
       },
     }),
