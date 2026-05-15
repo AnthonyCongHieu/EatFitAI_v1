@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import QuickActionsOverlay from './home/QuickActionsOverlay';
 import MascotCharacter, { type MascotState } from './MascotCharacter';
+import MascotFrame, { MASCOT_FRAME_SIZE } from './MascotFrame';
 import { TEST_IDS } from '../testing/testIds';
 import { useSmartReminders } from '../hooks/useSmartReminders';
 import { useDiaryStore } from '../store/useDiaryStore';
@@ -226,22 +227,19 @@ const MascotOverlay = (): React.ReactElement => {
             accessibilityRole="button"
             accessibilityLabel="Mở trợ lý MoChi"
           >
-            <MascotCharacter
-              state={mascotState}
-              poseKey={petState.poseKey}
-              hasReminder={hasReminders || shouldBubble}
-              size={72}
-            />
-
-            {(hasReminders || shouldBubble) && (
-              <View style={styles.fabPingContainer}>
-                <Animated.View
-                  entering={FadeIn.delay(800)}
-                  style={[styles.fabPing, { backgroundColor: '#f59e0b' }]}
-                />
-                <View style={[styles.fabDot, { backgroundColor: '#f59e0b' }]} />
-              </View>
-            )}
+            <MascotFrame
+              size={MASCOT_FRAME_SIZE.overlay}
+              animated
+              pulseDuration={2200}
+              showNotificationDot={hasReminders || shouldBubble}
+            >
+              <MascotCharacter
+                state={mascotState}
+                poseKey={petState.poseKey}
+                hasReminder={hasReminders || shouldBubble}
+                size={82}
+              />
+            </MascotFrame>
           </Pressable>
         </Animated.View>
       </GestureDetector>
@@ -291,19 +289,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   fab: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: 'rgba(15, 23, 42, 0.74)',
-    borderWidth: 1,
-    borderColor: 'rgba(75, 226, 119, 0.34)',
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4be277',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 16,
-    elevation: 8,
   },
   fabPingContainer: {
     position: 'absolute',
