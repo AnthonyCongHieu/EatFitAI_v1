@@ -18,7 +18,17 @@ function normalizeSha1(value) {
 }
 
 function parseGoogleServicesIdentity(googleServices, options = {}) {
+  const identities = parseGoogleServicesIdentities(googleServices, options);
+  if (identities.length > 0) {
+    return identities[0];
+  }
+
+  throw new Error('google-services.json does not contain an Android OAuth client with package name and certificate_hash.');
+}
+
+function parseGoogleServicesIdentities(googleServices, options = {}) {
   const expectedPackageName = options.expectedPackageName || '';
+  const identities = [];
   for (const client of asArray(googleServices.client)) {
     const clientPackageName = client?.client_info?.android_client_info?.package_name || '';
     if (expectedPackageName && clientPackageName && clientPackageName !== expectedPackageName) {
@@ -42,16 +52,25 @@ function parseGoogleServicesIdentity(googleServices, options = {}) {
         );
       }
 
-      return { packageName, certificateSha1 };
+      identities.push({ packageName, certificateSha1 });
     }
   }
 
-  throw new Error('google-services.json does not contain an Android OAuth client with package name and certificate_hash.');
+  if (identities.length === 0) {
+    throw new Error('google-services.json does not contain an Android OAuth client with package name and certificate_hash.');
+  }
+
+  return identities;
 }
 
 function readGoogleServicesIdentity(googleServicesPath, options = {}) {
   const raw = fs.readFileSync(googleServicesPath, 'utf8');
   return parseGoogleServicesIdentity(JSON.parse(raw), options);
+}
+
+function readGoogleServicesIdentities(googleServicesPath, options = {}) {
+  const raw = fs.readFileSync(googleServicesPath, 'utf8');
+  return parseGoogleServicesIdentities(JSON.parse(raw), options);
 }
 
 function parseAaptBadging(output) {
@@ -179,25 +198,32 @@ function verifyAndroidPreviewApk(options = {}) {
     throw new Error('apkPath is required.');
   }
 
-  const identity = options.googleServices
-    ? parseGoogleServicesIdentity(options.googleServices, { expectedPackageName: options.expectedPackageName })
-    : readGoogleServicesIdentity(options.googleServicesPath, { expectedPackageName: options.expectedPackageName });
+  const identities = options.googleServices
+    ? parseGoogleServicesIdentities(options.googleServices, { expectedPackageName: options.expectedPackageName })
+    : readGoogleServicesIdentities(options.googleServicesPath, { expectedPackageName: options.expectedPackageName });
   const apk = inspectApk(apkPath, options);
+  const packageIdentities = identities.filter((identity) => identity.packageName === apk.packageName);
 
-  if (apk.packageName !== identity.packageName) {
-    throw new Error(`APK package mismatch. Expected ${identity.packageName}, got ${apk.packageName}.`);
+  if (packageIdentities.length === 0) {
+    const expectedPackageNames = [...new Set(identities.map((identity) => identity.packageName))].join(', ');
+    throw new Error(`APK package mismatch. Expected ${expectedPackageNames}, got ${apk.packageName}.`);
   }
-  if (apk.certificateSha1 !== identity.certificateSha1) {
+
+  const matchedIdentity = packageIdentities.find((identity) => identity.certificateSha1 === apk.certificateSha1);
+  if (!matchedIdentity) {
+    const expectedCertificateSha1s = packageIdentities
+      .map((identity) => identity.certificateSha1)
+      .join(', ');
     throw new Error(
-      `APK signing SHA-1 mismatch. Expected ${identity.certificateSha1}, got ${apk.certificateSha1}.`,
+      `APK signing SHA-1 mismatch. Expected one of ${expectedCertificateSha1s}, got ${apk.certificateSha1}.`,
     );
   }
 
   return {
     apkPath,
-    expectedPackageName: identity.packageName,
+    expectedPackageName: matchedIdentity.packageName,
     packageName: apk.packageName,
-    expectedCertificateSha1: identity.certificateSha1,
+    expectedCertificateSha1: matchedIdentity.certificateSha1,
     certificateSha1: apk.certificateSha1,
   };
 }
@@ -206,7 +232,9 @@ module.exports = {
   DEFAULT_PACKAGE_NAME,
   normalizeSha1,
   parseGoogleServicesIdentity,
+  parseGoogleServicesIdentities,
   readGoogleServicesIdentity,
+  readGoogleServicesIdentities,
   parseAaptBadging,
   parseApkSignerCerts,
   findAndroidSdkRoot,

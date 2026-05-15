@@ -58,6 +58,46 @@ describe('Android preview APK signing guard', () => {
     });
   });
 
+  it('accepts APKs signed by any google-services Android OAuth client for the package', () => {
+    const { verifyAndroidPreviewApk } = require('../scripts/lib/android-preview-signing');
+    const googleServicesWithRotatedClient = {
+      client: [
+        {
+          client_info: {
+            android_client_info: {
+              package_name: 'com.eatfitai.app',
+            },
+          },
+          oauth_client: [
+            {
+              client_type: 1,
+              android_info: {
+                package_name: 'com.eatfitai.app',
+                certificate_hash: '83ffa699532ed1051a38535c7b01e21d5f41c51f',
+              },
+            },
+            {
+              client_type: 1,
+              android_info: {
+                package_name: 'com.eatfitai.app',
+                certificate_hash: 'b09a9877e12ee0766c9f72f4ee929b404d3558f6',
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = verifyAndroidPreviewApk({
+      apkPath: 'app-release.apk',
+      googleServices: googleServicesWithRotatedClient,
+      execFileSync: createExecMock(),
+      resolveBuildTool,
+    });
+
+    expect(result.expectedCertificateSha1).toBe('b09a9877e12ee0766c9f72f4ee929b404d3558f6');
+  });
+
   it('passes when APK package and signing SHA-1 match google-services', () => {
     const { verifyAndroidPreviewApk } = require('../scripts/lib/android-preview-signing');
     const execFileSync = createExecMock();
@@ -101,7 +141,7 @@ describe('Android preview APK signing guard', () => {
         execFileSync: createExecMock({ sha1: '11:22:33:44' }),
         resolveBuildTool,
       }),
-    ).toThrow(/APK signing SHA-1 mismatch.*b09a9877e12ee0766c9f72f4ee929b404d3558f6.*11223344/);
+    ).toThrow(/APK signing SHA-1 mismatch.*one of.*b09a9877e12ee0766c9f72f4ee929b404d3558f6.*11223344/);
   });
 
   it('wires the APK identity verifier into both build and install preview lanes', () => {
