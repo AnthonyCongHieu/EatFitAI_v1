@@ -485,6 +485,36 @@ Decision:
     `kaggle kernels files hiuinhcng/eatfitai-v4-clean-train-artifact` confirms
     the V4 clean dataset zip exists and has non-trivial size.
 
+2026-05-15 artifact verification and YOLO11m train version 2 push:
+
+- CPU artifact kernel `hiuinhcng/eatfitai-v4-clean-train-artifact` completed.
+- Kaggle output now includes:
+  - `eatfitai_dataset_v2_clean_v4_class_expansion_candidate.zip`.
+  - `eatfitai_dataset_v2_clean_build_v4_class_expansion_train_artifact_reports.zip`.
+  - compact report files such as `clean_build_v4_result.json`.
+- Downloaded only compact report files locally and verified:
+  - Images: 208,640.
+  - Classes: 310.
+  - Train/valid/test images: 177,433 / 20,785 / 10,422.
+  - Validation hard counters: all zero.
+  - `validation.hard_gate_passed`: `true`.
+- Local validation before push:
+  `python -m unittest ai-provider\tests\test_dataset_v2_yolo11m_train_handoff.py`
+  passed with 25 tests.
+- Local validation before push:
+  `python -m unittest ai-provider\tests\test_dataset_v2_v4_source_audit.py`
+  passed with 25 tests.
+- Pushed GPU train kernel
+  `hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion`.
+  - Version: 2.
+  - Kaggle URL:
+    `https://www.kaggle.com/code/hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion`.
+  - Status immediately after push: `RUNNING`.
+- Next gate:
+  wait for train version 2 to complete, then download compact outputs/logs and
+  check `last.pt`, `best.pt`, `best.onnx`, `results.csv`, `args.yaml`, and
+  `yolo11m_resume_manifest.json` before any promotion or runtime eval.
+
 ## Source Links
 
 - Food-101 / ETH Zurich via Hugging Face:
