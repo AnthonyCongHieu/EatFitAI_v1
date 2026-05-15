@@ -89,10 +89,7 @@ const MascotCharacter = ({
     }
   }, [attentionPulse, hasReminder, rotate, state]);
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: attentionPulse.value }],
-    opacity: state === 'idle' ? 0.14 : 0.34,
-  }));
+  // pulseStyle removed since the stage is gone
 
   const rotateStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotate.value}deg` }],
@@ -103,22 +100,11 @@ const MascotCharacter = ({
 
   return (
     <View testID={testID} style={[styles.root, { width: size, height: size }]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.stage,
-          {
-            width: stageSize,
-            height: stageSize,
-            borderRadius: stageSize / 2,
-          },
-          pulseStyle,
-        ]}
-      />
+      {/* background stage circle removed for a fully transparent look */}
       <Animated.View style={[styles.sprite, rotateStyle]}>
         <MoChiSprite poseKey={resolvedPose} size={spriteSize} />
       </Animated.View>
-      {hasReminder && <View style={styles.reminderDot} />}
+      {/* reminderDot handled by MascotFrame now */}
     </View>
   );
 };
