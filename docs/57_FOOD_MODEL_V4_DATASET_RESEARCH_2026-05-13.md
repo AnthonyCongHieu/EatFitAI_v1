@@ -455,6 +455,36 @@ Decision:
   - Follow-up automation `v4-yolo11m-train-follow-up` checks status, downloads
     only compact artifacts/logs, and gates promotion on golden/runtime eval.
 
+2026-05-15 train version 1 failure and artifact-build fix:
+
+- YOLO11m V4 train version 1 failed before training.
+- Root cause:
+  - GPU was available: T4 x2.
+  - Failure occurred in `extract_dataset()`.
+  - `kernel_sources` did not expose the clean-build V4 output directory as a
+    readable dataset under `/kaggle/input`.
+  - `kaggle kernels files hiuinhcng/eatfitai-dataset-v2-clean-build-v4-class-expansion`
+    only showed `_output_.zip` at 888 bytes, so no trainable dataset archive
+    was mounted.
+- Added a dedicated CPU artifact kernel:
+  - `kaggle_clean_build_v4_class_expansion_train_artifact_kernel.py`.
+  - `kaggle_clean_build_v4_class_expansion_train_artifact_kernel_metadata.json`.
+  - Kaggle id: `hiuinhcng/eatfitai-v4-clean-train-artifact`.
+  - Builds the clean dataset under `/tmp` and writes
+    `eatfitai_dataset_v2_clean_v4_class_expansion_candidate.zip` plus reports
+    to `/kaggle/working`.
+- Updated the YOLO11m V4 train metadata to use
+  `hiuinhcng/eatfitai-v4-clean-train-artifact` as its kernel source.
+- Validation:
+  `.\ai-provider\.venv\Scripts\python.exe -m unittest ai-provider\tests\test_dataset_v2_v4_source_audit.py ai-provider\tests\test_dataset_v2_yolo11m_train_handoff.py`
+  passed with 50 tests.
+- Pushed CPU artifact kernel version 1:
+  `hiuinhcng/eatfitai-v4-clean-train-artifact`.
+  - Current status after push: `RUNNING`.
+  - Do not push YOLO11m train again until
+    `kaggle kernels files hiuinhcng/eatfitai-v4-clean-train-artifact` confirms
+    the V4 clean dataset zip exists and has non-trivial size.
+
 ## Source Links
 
 - Food-101 / ETH Zurich via Hugging Face:

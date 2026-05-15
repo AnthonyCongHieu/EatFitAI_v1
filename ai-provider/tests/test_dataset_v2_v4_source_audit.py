@@ -523,6 +523,18 @@ class DatasetV2V4SourceAuditTests(unittest.TestCase):
         self.assertIn("if WRITE_DATASET_ZIP:", script)
         self.assertNotIn("zip_path(CLEAN_DATASET_DIR, CLEAN_DATASET_ZIP)\n    zip_path(REPORT_DIR, REPORTS_ZIP)", script)
 
+    def test_v4_train_artifact_clean_build_kernel_zips_dataset_from_tmp_by_default(self):
+        script = (DATASET_DIR / "kaggle_clean_build_v4_class_expansion_train_artifact_kernel.py").read_text(encoding="utf-8")
+        metadata = json.loads(
+            (DATASET_DIR / "kaggle_clean_build_v4_class_expansion_train_artifact_kernel_metadata.json").read_text(encoding="utf-8")
+        )
+
+        self.assertIn('Path("/tmp/eatfitai_dataset_v2_clean_v4_class_expansion_candidate")', script)
+        self.assertIn('"true"', script)
+        self.assertEqual(metadata["code_file"], "kaggle_clean_build_v4_class_expansion_train_artifact_kernel.py")
+        self.assertEqual(metadata["id"], "hiuinhcng/eatfitai-v4-clean-train-artifact")
+        self.assertFalse(metadata["enable_gpu"])
+
     def test_v4_targeted_kernel_imports_base_from_isolated_entrypoint(self):
         script = DATASET_DIR / "kaggle_v4_targeted_vietnamese_source_audit_kernel.py"
         result = subprocess.run(

@@ -345,7 +345,7 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
         self.assertIn("yolo11m-eatfitai-clean-v4-class-expansion", train_source)
         self.assertEqual(train_metadata["code_file"], "kaggle_yolo11m_clean_v4_class_expansion_train.py")
         self.assertEqual(train_metadata["id"], "hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion")
-        self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build-v4-class-expansion", train_metadata["kernel_sources"])
+        self.assertIn("hiuinhcng/eatfitai-v4-clean-train-artifact", train_metadata["kernel_sources"])
         self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
         self.assertEqual(v4_train.RUN_NAME, "yolo11m-eatfitai-clean-v4-class-expansion")
 
