@@ -146,6 +146,26 @@ export const useProfileStore = create<ProfileState>()(
         lastFetched: state.lastFetched,
         ownerUserId: state.ownerUserId,
       }),
+      merge: (persisted: any, current: ProfileState) => {
+        // Nếu ownerUserId trong cache không khớp với ownerUserId hiện tại
+        // → bỏ profile cũ để tránh hiện data tài khoản khác
+        if (
+          persisted &&
+          typeof persisted === 'object' &&
+          current.ownerUserId &&
+          persisted.ownerUserId !== current.ownerUserId
+        ) {
+          return {
+            ...current,
+            profile: null,
+            lastFetched: null,
+          };
+        }
+        return {
+          ...current,
+          ...(persisted as Partial<ProfileState>),
+        };
+      },
     },
   ),
 );

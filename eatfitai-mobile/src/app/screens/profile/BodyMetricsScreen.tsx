@@ -224,9 +224,6 @@ const BodyMetricsScreen = (): React.ReactElement => {
         <Animated.View entering={FadeInDown.delay(200).duration(400)}>
           <View style={S.sectionHeader}>
             <ThemedText style={S.sectionTitle}>Mục tiêu cân nặng</ThemedText>
-            <Pressable hitSlop={12}>
-              <Ionicons name="information-circle-outline" size={22} color={P.onSurfaceVariant} />
-            </Pressable>
           </View>
 
           <View style={S.card}>
