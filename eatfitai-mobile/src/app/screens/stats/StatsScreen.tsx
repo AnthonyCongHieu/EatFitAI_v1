@@ -54,7 +54,7 @@ import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
 import type { RootStackParamList } from '../../types';
-import { waterService, type WaterIntakeData, type MonthlyWaterData } from '../../../services/waterService';
+import { waterService, type WaterIntakeData, type MonthlyWaterData, type WeeklyWaterData } from '../../../services/waterService';
 import { profileService } from '../../../services/profileService';
 import { useQuery } from '@tanstack/react-query';
 import logger from '../../../utils/logger';
@@ -262,6 +262,20 @@ const StatsScreen = (): React.ReactElement => {
   });
   const statsWaterAmount = statsWaterData?.amountMl ?? 0;
   const statsWaterTarget = statsWaterData?.targetMl ?? 2000;
+
+  /* ─── Data: Weekly Water ─── */
+  const weekStartDate = selectedWeekDate;
+  const weekEndDateStr = useMemo(() => {
+    const d = new Date(selectedWeekDate);
+    d.setDate(d.getDate() + 6);
+    return formatLocalDate(d);
+  }, [selectedWeekDate]);
+  const { data: weeklyWaterData } = useQuery<WeeklyWaterData>({
+    queryKey: ['water-intake-weekly', weekStartDate, weekEndDateStr],
+    queryFn: () => waterService.getWeeklyWaterIntake(weekStartDate, weekEndDateStr),
+    staleTime: 2 * 60 * 1000,
+    enabled: activeTab === 'week',
+  });
 
   /* ─── Data: Profile ─── */
 
@@ -611,7 +625,7 @@ const StatsScreen = (): React.ReactElement => {
                   <View style={S.heroMacros}>
                     {/* Protein: emerald gradient */}
                     <MacroBar
-                      label="PROTEIN"
+                      label="ĐẠM"
                       value={protein}
                       target={targetP}
                       valueColor="#34d399" /* emerald-400 */
@@ -620,7 +634,7 @@ const StatsScreen = (): React.ReactElement => {
                     />
                     {/* Carbs: secondary gradient */}
                     <MacroBar
-                      label="CARBS"
+                      label="TINH BỘT"
                       value={carbs}
                       target={targetC}
                       valueColor={P.secondary}
@@ -629,7 +643,7 @@ const StatsScreen = (): React.ReactElement => {
                     />
                     {/* Fat: tertiary gradient */}
                     <MacroBar
-                      label="FAT"
+                      label="CHẤT BÉO"
                       value={fat}
                       target={targetF}
                       valueColor={P.tertiaryContainer}
@@ -785,6 +799,16 @@ const StatsScreen = (): React.ReactElement => {
           const wkTargetFat = targetF * 7;
           const wkFatPct = wkTargetFat > 0 ? Math.min(1, weekSummary.totalFat / wkTargetFat) : 0;
 
+          // --- NEW: Averages & Days On Track ---
+          const wkLoggedDaysCount = wkLoggedDays.length;
+          const avgDailyCal = wkLoggedDaysCount > 0 ? Math.round(wkTotalCal / wkLoggedDaysCount) : 0;
+          const avgDailyProtein = wkLoggedDaysCount > 0 ? Math.round(weekSummary.totalProtein / wkLoggedDaysCount) : 0;
+          const avgDailyCarbs = wkLoggedDaysCount > 0 ? Math.round(weekSummary.totalCarbs / wkLoggedDaysCount) : 0;
+          const avgDailyFat = wkLoggedDaysCount > 0 ? Math.round(weekSummary.totalFat / wkLoggedDaysCount) : 0;
+          
+          // Days On Track: Calo nạp vào xấp xỉ mức cho phép (từ 70% đến 115% target)
+          const daysOnTrack = wkLoggedDays.filter(d => d.calories >= targetCal * 0.7 && d.calories <= targetCal * 1.15).length;
+
           return (
           <>
             {/* Week nav */}
@@ -806,107 +830,7 @@ const StatsScreen = (): React.ReactElement => {
               </View>
             </Animated.View>
 
-            {weeklyReview && (
-              <Animated.View entering={FadeInDown.delay(125).springify()}>
-                <Tilt3DCard
-                  width={cardW}
-                  height={245}
-                  maxTilt={4}
-                  showReflection={false}
-                  useDeviceMotion
-                  activeTouch={false}
-                >
-                  <View
-                    testID={TEST_IDS.stats.weeklyReviewCard}
-                    style={[
-                      S.weeklyReviewCard,
-                      isWeeklyReviewFocused && S.weeklyReviewCardFocused,
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={['rgba(75, 226, 119, 0.12)', 'rgba(255,255,255,0.02)']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
-                    />
 
-                    <View style={S.weeklyReviewHeader}>
-                      <View>
-                        <ThemedText style={S.weeklyReviewEyebrow}>
-                          Báo cáo tuần
-                        </ThemedText>
-                        <ThemedText style={S.weeklyReviewTitle}>
-                          {weeklyReview.message}
-                        </ThemedText>
-                      </View>
-                      <View style={S.weeklyReviewBadge}>
-                        <ThemedText style={S.weeklyReviewBadgeText}>
-                          {Math.round(weeklyReview.dataQuality)}% dữ liệu
-                        </ThemedText>
-                      </View>
-                    </View>
-
-                    <View style={S.weeklyReviewMetrics}>
-                      <View style={S.weeklyReviewMetric}>
-                        <ThemedText style={S.weeklyReviewMetricValue}>
-                          {Math.round(weeklyReview.confidence)}%
-                        </ThemedText>
-                        <ThemedText style={S.weeklyReviewMetricLabel}>
-                          Độ tin cậy
-                        </ThemedText>
-                      </View>
-                      <View style={S.weeklyReviewMetric}>
-                        <ThemedText style={S.weeklyReviewMetricValue}>
-                          {Math.round(weeklyReview.insights.complianceScore ?? 0)}%
-                        </ThemedText>
-                        <ThemedText style={S.weeklyReviewMetricLabel}>
-                          Tuân thủ
-                        </ThemedText>
-                      </View>
-                      <View style={S.weeklyReviewMetric}>
-                        <ThemedText style={S.weeklyReviewMetricValue}>
-                          {weeklyReview.insights.energyLevel ?? 'Ổn định'}
-                        </ThemedText>
-                        <ThemedText style={S.weeklyReviewMetricLabel}>
-                          Năng lượng
-                        </ThemedText>
-                      </View>
-                    </View>
-
-                    <View style={S.weeklyReviewRecommendations}>
-                      {weeklyReview.insights.recommendations.slice(0, 2).map((item) => (
-                        <View key={item} style={S.weeklyReviewRecommendationRow}>
-                          <View style={S.weeklyReviewRecommendationDot} />
-                          <ThemedText style={S.weeklyReviewRecommendationText}>
-                            {item}
-                          </ThemedText>
-                        </View>
-                      ))}
-                    </View>
-
-                    <View style={S.weeklyReviewFooter}>
-                      <ThemedText style={S.weeklyReviewFooterHint}>
-                        {weeklyReview.suggestedActions?.newTargetCalories
-                          ? `Gợi ý mục tiêu mới: ${Math.round(weeklyReview.suggestedActions.newTargetCalories).toLocaleString()} kcal`
-                          : 'Mở tab Tuần để xem tiến độ và giữ nhịp theo dõi.'}
-                      </ThemedText>
-                      <Pressable
-                        onPress={handleWeeklyReviewComplete}
-                        testID={TEST_IDS.stats.weeklyReviewDoneButton}
-                        style={[
-                          S.weeklyReviewButton,
-                          weeklyReviewAcknowledged && S.weeklyReviewButtonDone,
-                        ]}
-                      >
-                        <ThemedText style={S.weeklyReviewButtonText}>
-                          {weeklyReviewAcknowledged ? 'Đã xem' : 'Đánh dấu đã xem'}
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  </View>
-                </Tilt3DCard>
-              </Animated.View>
-            )}
 
             {/* ── VITALITY RING CARD ── */}
             <Animated.View entering={FadeInDown.delay(150).springify()}>
@@ -977,6 +901,19 @@ const StatsScreen = (): React.ReactElement => {
                   <ThemedText style={S.wkRingSub}>
                     Bạn đã đạt {Math.round(wkProgress * 100)}% mục tiêu tuần
                   </ThemedText>
+
+                  {/* Averages & Perfect Days */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+                    <View style={{ alignItems: 'center' }}>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 11, fontFamily: 'Inter_700Bold', letterSpacing: 0.5 }}>TRUNG BÌNH</ThemedText>
+                      <ThemedText style={{ color: P.onSurface, fontSize: 15, fontFamily: 'Inter_800ExtraBold', marginTop: 2 }}>{avgDailyCal} <ThemedText style={{ fontSize: 11, fontFamily: 'Inter_500Medium' }}>kcal/ngày</ThemedText></ThemedText>
+                    </View>
+                    <View style={{ width: 1, backgroundColor: P.glassBorder, height: '100%' }} />
+                    <View style={{ alignItems: 'center' }}>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 11, fontFamily: 'Inter_700Bold', letterSpacing: 0.5 }}>ĐẠT MỤC TIÊU</ThemedText>
+                      <ThemedText style={{ color: '#4BE277', fontSize: 15, fontFamily: 'Inter_800ExtraBold', marginTop: 2 }}>{daysOnTrack} <ThemedText style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: '#4BE277' }}>ngày</ThemedText></ThemedText>
+                    </View>
+                  </View>
                 </View>
               </Tilt3DCard>
             </Animated.View>
@@ -1088,28 +1025,31 @@ const StatsScreen = (): React.ReactElement => {
                     style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
-                    <View style={S.wkProteinIcon}>
-                      <Ionicons name="egg" size={16} color={P.secondary} />
+                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                      <Ionicons name="flash" size={16} color="#ef4444" />
                     </View>
-                    <ThemedText style={S.wkProteinTitle}>Đạm (Protein)</ThemedText>
+                    <ThemedText style={S.wkProteinTitle}>Đạm</ThemedText>
                   </View>
                   <View style={S.wkProteinBottom}>
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                         <ThemedText style={S.wkProteinVal}>
-                          {' ' + Math.round(weekSummary.totalProtein)}
+                          {Math.round(weekSummary.totalProtein)}
                         </ThemedText>
                         <ThemedText style={S.wkProteinTarget}>
                           {' '}/ {Math.round(wkTargetProtein)}g
                         </ThemedText>
                       </View>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                        Trung bình: {avgDailyProtein} g/ngày
+                      </ThemedText>
                     </View>
                     <View style={S.wkProteinBarTrack}>
                       <LinearGradient
-                        colors={[P.secondary, P.secondaryFixed]}
+                        colors={['#ef4444', '#fca5a5']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={[S.wkProteinBarFill, { width: `${Math.round(wkProteinPct * 100)}%` as any }]}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkProteinPct * 100)}%` as any, shadowColor: '#ef4444' }]}
                       />
                     </View>
                   </View>
@@ -1135,8 +1075,8 @@ const StatsScreen = (): React.ReactElement => {
                     style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
-                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(255,139,124,0.15)' }]}>
-                      <Ionicons name="fast-food" size={16} color={P.tertiaryContainer} />
+                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                      <Ionicons name="leaf" size={16} color="#3b82f6" />
                     </View>
                     <ThemedText style={S.wkProteinTitle}>Tinh bột</ThemedText>
                   </View>
@@ -1144,19 +1084,22 @@ const StatsScreen = (): React.ReactElement => {
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                         <ThemedText style={S.wkProteinVal}>
-                          {' ' + Math.round(weekSummary.totalCarbs)}
+                          {Math.round(weekSummary.totalCarbs)}
                         </ThemedText>
                         <ThemedText style={S.wkProteinTarget}>
                           {' '}/ {Math.round(wkTargetCarbs)}g
                         </ThemedText>
                       </View>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                        Trung bình: {avgDailyCarbs} g/ngày
+                      </ThemedText>
                     </View>
                     <View style={S.wkProteinBarTrack}>
                       <LinearGradient
-                        colors={[P.tertiaryContainer, '#ffb4ab']}
+                        colors={['#3b82f6', '#93c5fd']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={[S.wkProteinBarFill, { width: `${Math.round(wkCarbsPct * 100)}%` as any, shadowColor: P.tertiaryContainer }]}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkCarbsPct * 100)}%` as any, shadowColor: '#3b82f6' }]}
                       />
                     </View>
                   </View>
@@ -1182,8 +1125,8 @@ const StatsScreen = (): React.ReactElement => {
                     style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
-                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(88,185,255,0.15)' }]}>
-                      <Ionicons name="water" size={16} color="#58B9FF" />
+                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
+                      <Ionicons name="water" size={16} color="#fbbf24" />
                     </View>
                     <ThemedText style={S.wkProteinTitle}>Chất béo</ThemedText>
                   </View>
@@ -1191,19 +1134,72 @@ const StatsScreen = (): React.ReactElement => {
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                         <ThemedText style={S.wkProteinVal}>
-                          {' ' + Math.round(weekSummary.totalFat)}
+                          {Math.round(weekSummary.totalFat)}
                         </ThemedText>
                         <ThemedText style={S.wkProteinTarget}>
                           {' '}/ {Math.round(wkTargetFat)}g
                         </ThemedText>
                       </View>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                        Trung bình: {avgDailyFat} g/ngày
+                      </ThemedText>
                     </View>
                     <View style={S.wkProteinBarTrack}>
                       <LinearGradient
-                        colors={['#58B9FF', '#a8d5ff']}
+                        colors={['#fbbf24', '#fde047']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={[S.wkProteinBarFill, { width: `${Math.round(wkFatPct * 100)}%` as any, shadowColor: '#58B9FF' }]}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkFatPct * 100)}%` as any, shadowColor: '#fbbf24' }]}
+                      />
+                    </View>
+                  </View>
+                </View>
+              </Tilt3DCard>
+            </Animated.View>
+
+            {/* ── WEEKLY WATER ── */}
+            <Animated.View entering={FadeInUp.delay(500).springify()}>
+              <Tilt3DCard
+                width={cardW}
+                height={130}
+                maxTilt={4}
+                showReflection={false}
+                useDeviceMotion
+                activeTouch={false}
+              >
+                <View style={S.wkProteinCard}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
+                  />
+                  <View style={S.wkProteinHead}>
+                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(14,165,233,0.15)' }]}>
+                      <Ionicons name="water" size={16} color="#0EA5E9" />
+                    </View>
+                    <ThemedText style={S.wkProteinTitle}>Lượng nước</ThemedText>
+                  </View>
+                  <View style={S.wkProteinBottom}>
+                    <View>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                        <ThemedText style={S.wkProteinVal}>
+                          {((weeklyWaterData?.totalMl ?? 0) / 1000).toFixed(1)}
+                        </ThemedText>
+                        <ThemedText style={S.wkProteinTarget}>
+                          {' '}/ {(((weeklyWaterData?.targetMl ?? 2000) * 7) / 1000).toFixed(1)}L
+                        </ThemedText>
+                      </View>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                        Trung bình: {((weeklyWaterData?.averageMl ?? 0) / 1000).toFixed(1)} L/ngày
+                      </ThemedText>
+                    </View>
+                    <View style={S.wkProteinBarTrack}>
+                      <LinearGradient
+                        colors={['#0EA5E9', '#7dd3fc']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[S.wkProteinBarFill, { width: `${Math.min(100, Math.round(((weeklyWaterData?.totalMl ?? 0) / ((weeklyWaterData?.targetMl ?? 2000) * 7)) * 100))}%` as any, shadowColor: '#0EA5E9' }]}
                       />
                     </View>
                   </View>
@@ -2386,9 +2382,10 @@ const S = StyleSheet.create({
   },
   wkProteinVal: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: P.onSurface,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
+    marginLeft: -4, // Bù lại padding để không bị lệch quá xa
   },
   wkProteinTarget: {
     fontSize: 12,

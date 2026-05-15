@@ -93,6 +93,24 @@ export const waterService = {
       logger.warn('[waterService] setCustomWaterTarget failed', e);
     }
   },
+
+  /** Lấy tổng hợp nước uống theo tuần từ backend */
+  async getWeeklyWaterIntake(startDate: string, endDate: string): Promise<WeeklyWaterData> {
+    try {
+      const { data } = await apiClient.get<WeeklyWaterData>('/api/water-intake/weekly', {
+        params: { startDate, endDate },
+      });
+      const customTarget = await this.getCustomWaterTarget();
+      if (customTarget !== null) {
+        data.targetMl = customTarget;
+      }
+      return data;
+    } catch (error) {
+      logger.warn('[waterService] Weekly water fetch failed', error);
+      const customTarget = await this.getCustomWaterTarget();
+      return { startDate, endDate, totalMl: 0, averageMl: 0, daysWithData: 0, targetMl: customTarget !== null ? customTarget : 2000 };
+    }
+  },
 };
 
 export interface MonthlyWaterData {
@@ -103,3 +121,11 @@ export interface MonthlyWaterData {
   daysWithData: number;
 }
 
+export interface WeeklyWaterData {
+  startDate: string;
+  endDate: string;
+  totalMl: number;
+  averageMl: number;
+  daysWithData: number;
+  targetMl: number;
+}
