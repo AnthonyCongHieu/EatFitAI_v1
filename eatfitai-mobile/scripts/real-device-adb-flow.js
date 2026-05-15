@@ -4,6 +4,7 @@ const { spawn, spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
 const { buildAsciiKeyEventArgs } = require('./lib/adb-text');
 const { logcatContainsAppCrash, redactLogcatText } = require('./lib/device-logcat');
+const { toBusinessDateOnly } = require('./lib/business-date');
 const {
   VISUAL_AUDIT_FLOWS,
   buildVisualBugMatrix,
@@ -491,9 +492,7 @@ function summarizeLoginBody(body) {
 }
 
 function toLocalDateOnly(date = new Date()) {
-  const local = new Date(date);
-  local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
-  return local.toISOString().slice(0, 10);
+  return toBusinessDateOnly(date);
 }
 
 function buildSmokeMarker(flowName) {

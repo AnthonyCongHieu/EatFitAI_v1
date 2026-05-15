@@ -26,19 +26,22 @@ namespace EatFitAI.API.Controllers
         private readonly ILogger<NutritionController> _logger;
         private readonly IAiLogService _aiLog;
         private readonly EatFitAIDbContext _db;
+        private readonly IBusinessDateService _businessDateService;
 
         public NutritionController(
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             ILogger<NutritionController> logger,
             IAiLogService aiLog, 
-            EatFitAIDbContext db)
+            EatFitAIDbContext db,
+            IBusinessDateService businessDateService)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
             _aiLog = aiLog;
             _db = db;
+            _businessDateService = businessDateService;
         }
 
         private Guid GetUserIdFromToken()
@@ -190,7 +193,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new { message = "Mục tiêu dinh dưỡng không hợp lệ." });
                 }
 
-                var eff = req.EffectiveFrom ?? DateOnly.FromDateTime(DateTime.UtcNow.Date);
+                var eff = req.EffectiveFrom ?? await _businessDateService.GetTodayAsync(userId, HttpContext.RequestAborted);
 
                 var entity = new NutritionTarget
                 {
@@ -231,7 +234,7 @@ namespace EatFitAI.API.Controllers
         public async Task<IActionResult> GetCurrent()
         {
             var userId = GetUserIdFromToken();
-            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var today = await _businessDateService.GetTodayAsync(userId, HttpContext.RequestAborted);
             var current = await _db.NutritionTargets
                 .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
                 .OrderByDescending(t => t.EffectiveFrom)

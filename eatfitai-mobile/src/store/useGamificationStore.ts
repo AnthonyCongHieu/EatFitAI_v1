@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import { diaryService } from '../services/diaryService';
+import { addDaysToDateOnly, daysBetweenDateOnly, formatBusinessDate } from '../utils/businessDate';
 
 export const GAMIFICATION_STORAGE_KEY = 'gamification-storage';
 
@@ -251,15 +252,12 @@ export const useGamificationStore = create<GamificationState>()(
             return;
           }
 
-          const today = new Date();
-          const todayStr = today.toISOString().split('T')[0] ?? '';
+          const todayStr = formatBusinessDate();
           const summary = await diaryService.getWeekSummary(todayStr);
 
           const logs: boolean[] = [];
           for (let i = 6; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0] ?? '';
+            const dateStr = addDaysToDateOnly(todayStr, -i);
             // Nếu có calories > 0 thì coi là đã log
             const hasLog = (summary.dailyCalories[dateStr] ?? 0) > 0;
             logs.push(hasLog);
@@ -273,8 +271,7 @@ export const useGamificationStore = create<GamificationState>()(
 
       checkStreak: async () => {
         try {
-          const today = new Date();
-          const todayStr = today.toISOString().split('T')[0] ?? '';
+          const todayStr = formatBusinessDate();
           const state = get();
 
           let newStreak = state.currentStreak;
@@ -290,18 +287,14 @@ export const useGamificationStore = create<GamificationState>()(
           // Cập nhật danh sách 7 ngày gần nhất cho UI
           const weeklyLogs: boolean[] = [];
           for (let i = 6; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0] ?? '';
+            const dateStr = addDaysToDateOnly(todayStr, -i);
             const hasLog = (summary.dailyCalories[dateStr] ?? 0) > 0;
             weeklyLogs.push(hasLog);
           }
 
           // Quét 14 ngày từ summary để bổ sung vào lịch sử tổng (nếu thiếu)
           for (let i = 0; i < 14; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0] ?? '';
+            const dateStr = addDaysToDateOnly(todayStr, -i);
             if ((summary.dailyCalories[dateStr] ?? 0) > 0) {
               loggedDatesSet.add(dateStr);
             }
@@ -341,9 +334,7 @@ export const useGamificationStore = create<GamificationState>()(
                 }, 1000);
              } else {
                 // Kiểm tra hết hạn phục hồi (Quá 2 ngày kể từ ngày đứt chuỗi)
-                const brokenDateObj = new Date(newBrokenStreakDate);
-                const diffTime = today.getTime() - brokenDateObj.getTime();
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = daysBetweenDateOnly(newBrokenStreakDate, todayStr);
 
                 if (diffDays >= 3) {
                    // Quá thời hạn 2 ngày
@@ -361,9 +352,7 @@ export const useGamificationStore = create<GamificationState>()(
             // Đã log hôm nay
             if (newLastLogDate !== todayStr) {
               // Hôm nay là lần đầu tiên log -> Tính toán tăng chuỗi
-              const yesterday = new Date(today);
-              yesterday.setDate(today.getDate() - 1);
-              const yesterdayStr = yesterday.toISOString().split('T')[0] ?? '';
+              const yesterdayStr = addDaysToDateOnly(todayStr, -1);
 
               if (newLastLogDate === yesterdayStr) {
                 // Đã log ngày hôm qua -> Tăng chuỗi
@@ -378,20 +367,14 @@ export const useGamificationStore = create<GamificationState>()(
           } else {
             // Chưa log hôm nay
             // Nếu lastLogDate trước ngày hôm qua -> CHUỖI ĐÃ BỊ ĐỨT
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0] ?? '';
+            const yesterdayStr = addDaysToDateOnly(todayStr, -1);
 
             if (newLastLogDate !== null && newLastLogDate !== todayStr && newLastLogDate !== yesterdayStr) {
               // Chuỗi bị đứt!
               // Kiểm tra xem có thể khôi phục không
-              const lastLogDateObj = new Date(newLastLogDate);
-              const firstMissedDate = new Date(lastLogDateObj);
-              firstMissedDate.setDate(firstMissedDate.getDate() + 1);
-              const firstMissedStr = firstMissedDate.toISOString().split('T')[0] ?? '';
+              const firstMissedStr = addDaysToDateOnly(newLastLogDate, 1);
 
-              const diffTime = today.getTime() - firstMissedDate.getTime();
-              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              const diffDays = daysBetweenDateOnly(firstMissedStr, todayStr);
 
               if (newStreak > 0 && diffDays <= 2 && newStreakRecoveriesLeft > 0) {
                  // Kích hoạt trạng thái chờ khôi phục
@@ -489,7 +472,7 @@ export const useGamificationStore = create<GamificationState>()(
       },
 
       claimDailyQuest: (questId: string, xp: number) => {
-        const todayStr = new Date().toISOString().split('T')[0]!;
+        const todayStr = formatBusinessDate();
         set((state) => {
           const lastClaimed = state.dailyQuestsClaimed?.[questId];
           if (lastClaimed === todayStr) return state; // Already claimed today

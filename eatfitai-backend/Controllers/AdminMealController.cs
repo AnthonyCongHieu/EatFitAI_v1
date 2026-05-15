@@ -5,6 +5,7 @@ using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Security;
+using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,17 +22,20 @@ public class AdminMealController : ControllerBase
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
     private readonly IMediaUrlResolver _mediaUrlResolver;
+    private readonly IBusinessDateService _businessDateService;
 
     public AdminMealController(
         ApplicationDbContext context,
         IAdminRealtimeEventBus eventBus,
         IAdminAuditService auditService,
-        IMediaUrlResolver mediaUrlResolver)
+        IMediaUrlResolver mediaUrlResolver,
+        IBusinessDateService businessDateService)
     {
         _context = context;
         _eventBus = eventBus;
         _auditService = auditService;
         _mediaUrlResolver = mediaUrlResolver;
+        _businessDateService = businessDateService;
     }
 
     [HttpGet]
@@ -110,7 +114,7 @@ public class AdminMealController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> GetMealStats()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = _businessDateService.ToDateOnly(DateTimeOffset.UtcNow, BusinessTimeZone.DefaultTimeZoneId);
         var weekAgo = today.AddDays(-7);
 
         var allMeals = _context.MealDiaries.Where(m => !m.IsDeleted);

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { UserPreference } from '../app/types';
 import { profileService } from '../services/profileService';
+import { getDeviceTimeZone } from '../utils/businessDate';
 
 interface UserPreferenceState {
   preferences: UserPreference | null;
@@ -29,8 +30,12 @@ export const useUserPreferenceStore = create<UserPreferenceState>((set) => ({
   updatePreferences: async (prefs) => {
     set({ isLoading: true, error: null });
     try {
-      await profileService.updateUserPreferences(prefs);
-      set({ preferences: prefs, isLoading: false });
+      const nextPreferences = {
+        ...prefs,
+        timeZoneId: prefs.timeZoneId ?? getDeviceTimeZone(),
+      };
+      await profileService.updateUserPreferences(nextPreferences);
+      set({ preferences: nextPreferences, isLoading: false });
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;

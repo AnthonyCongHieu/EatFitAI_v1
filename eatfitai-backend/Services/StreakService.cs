@@ -24,10 +24,14 @@ namespace EatFitAI.API.Services
     public class StreakService : IStreakService
     {
         private readonly EatFitAIDbContext _context;
+        private readonly IBusinessDateService _businessDateService;
 
-        public StreakService(EatFitAIDbContext context)
+        public StreakService(
+            EatFitAIDbContext context,
+            IBusinessDateService businessDateService)
         {
             _context = context;
+            _businessDateService = businessDateService;
         }
 
         /// <summary>
@@ -43,13 +47,15 @@ namespace EatFitAI.API.Services
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return;
 
-            var today = DateTime.UtcNow.Date;
-            var lastLog = user.LastLogDate?.Date;
+            var today = await _businessDateService.GetTodayAsync(userId);
+            var lastLog = user.LastLogDate.HasValue
+                ? DateOnly.FromDateTime(user.LastLogDate.Value)
+                : (DateOnly?)null;
 
             var todayMeals = await _context.MealDiaries
                 .AsNoTracking()
                 .Where(meal => meal.UserId == userId
-                    && meal.EatenDate == DateOnly.FromDateTime(today)
+                    && meal.EatenDate == today
                     && !meal.IsDeleted)
                 .Select(meal => new { meal.MealTypeId, meal.Calories })
                 .ToListAsync();
@@ -84,7 +90,7 @@ namespace EatFitAI.API.Services
             }
 
             // Cập nhật ngày log cuối cùng
-            user.LastLogDate = today;
+            user.LastLogDate = today.ToDateTime(TimeOnly.MinValue);
 
             await _context.SaveChangesAsync();
         }
@@ -98,8 +104,10 @@ namespace EatFitAI.API.Services
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return (0, 0);
 
-            var today = DateTime.UtcNow.Date;
-            var lastLog = user.LastLogDate?.Date;
+            var today = await _businessDateService.GetTodayAsync(userId);
+            var lastLog = user.LastLogDate.HasValue
+                ? DateOnly.FromDateTime(user.LastLogDate.Value)
+                : (DateOnly?)null;
 
             // Kiểm tra streak còn valid không
             // Streak valid nếu lastLog là hôm nay hoặc hôm qua

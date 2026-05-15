@@ -21,7 +21,10 @@ public sealed class NutritionInsightServiceBranchBTests : IDisposable
             .Options;
 
         _context = new EatFitAIDbContext(options);
-        _service = new NutritionInsightService(_context, NullLogger<NutritionInsightService>.Instance);
+        _service = new NutritionInsightService(
+            _context,
+            NullLogger<NutritionInsightService>.Instance,
+            new FixedBusinessDateService(DateOnly.FromDateTime(DateTime.UtcNow)));
 
         _context.Users.Add(new User
         {
@@ -109,5 +112,30 @@ public sealed class NutritionInsightServiceBranchBTests : IDisposable
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         });
+    }
+
+    private sealed class FixedBusinessDateService : IBusinessDateService
+    {
+        private readonly DateOnly _today;
+
+        public FixedBusinessDateService(DateOnly today)
+        {
+            _today = today;
+        }
+
+        public Task<DateOnly> GetTodayAsync(Guid userId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_today);
+
+        public Task<string> GetUserTimeZoneIdAsync(Guid userId, CancellationToken cancellationToken = default)
+            => Task.FromResult(BusinessTimeZone.DefaultTimeZoneId);
+
+        public DateOnly ToDateOnly(DateTime value, string? timeZoneId = null)
+            => DateOnly.FromDateTime(value);
+
+        public DateOnly ToDateOnly(DateTimeOffset instant, string? timeZoneId = null)
+            => DateOnly.FromDateTime(instant.UtcDateTime);
+
+        public (DateTime StartUtc, DateTime EndUtc) GetUtcRange(DateOnly localDate, string? timeZoneId = null)
+            => (localDate.ToDateTime(TimeOnly.MinValue), localDate.AddDays(1).ToDateTime(TimeOnly.MinValue));
     }
 }

@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
+import { formatBusinessDate } from '../../utils/businessDate';
 
 interface DayData {
   date: string;
@@ -86,7 +87,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
 
   const handleDayPress = (date: Date, calories: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onDayPress?.(date.toISOString().split('T')[0]!, calories);
+    onDayPress?.(formatBusinessDate(date), calories);
   };
 
   const styles = StyleSheet.create({
@@ -158,9 +159,9 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
             return <View key={`empty-${index}`} style={styles.cell} />;
           }
 
-          const dateStr = date.toISOString().split('T')[0]!;
+          const dateStr = formatBusinessDate(date);
           const calories = dataMap[dateStr] || 0;
-          const isToday = dateStr === new Date().toISOString().split('T')[0];
+          const isToday = dateStr === formatBusinessDate();
 
           return (
             <Pressable

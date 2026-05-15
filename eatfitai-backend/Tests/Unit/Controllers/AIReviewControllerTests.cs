@@ -29,8 +29,18 @@ public class AIReviewControllerTests : IDisposable
             .Options;
         _appDb = new ApplicationDbContext(appDbOptions);
 
-        var reviewService = new AIReviewService(_appDb, NullLogger<AIReviewService>.Instance);
-        var nutritionService = new NutritionInsightService(_db, NullLogger<NutritionInsightService>.Instance);
+        var businessDateService = new BusinessDateService(
+            _appDb,
+            TimeProvider.System,
+            NullLogger<BusinessDateService>.Instance);
+        var reviewService = new AIReviewService(
+            _appDb,
+            NullLogger<AIReviewService>.Instance,
+            businessDateService);
+        var nutritionService = new NutritionInsightService(
+            _db,
+            NullLogger<NutritionInsightService>.Instance,
+            businessDateService);
 
         _controller = new AIReviewController(
             reviewService,

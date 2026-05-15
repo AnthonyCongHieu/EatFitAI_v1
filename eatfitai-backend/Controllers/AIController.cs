@@ -340,7 +340,8 @@ namespace EatFitAI.API.Controllers
         var userId = GetUserIdFromToken();
         using var scope = HttpContext.RequestServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
-        var today = DateTimeHelper.GetVietnamToday();
+        var businessDateService = scope.ServiceProvider.GetRequiredService<IBusinessDateService>();
+        var today = await businessDateService.GetTodayAsync(userId, HttpContext.RequestAborted);
         var current = await db.NutritionTargets
             .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
             .OrderByDescending(t => t.EffectiveFrom)
@@ -1305,4 +1306,3 @@ namespace EatFitAI.API.Controllers
         }
     }
 }
-

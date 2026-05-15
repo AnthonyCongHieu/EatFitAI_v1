@@ -47,6 +47,7 @@ public class UserPreferenceServiceTests : IDisposable
         Assert.Equal(3, result.PreferredMealsPerDay);
         Assert.Empty(result.DietaryRestrictions ?? []);
         Assert.Empty(result.Allergies ?? []);
+        Assert.Equal("Asia/Ho_Chi_Minh", result.TimeZoneId);
     }
 
     [Fact]
@@ -67,7 +68,8 @@ public class UserPreferenceServiceTests : IDisposable
             DietaryRestrictions = new List<string> { "vegetarian" },
             Allergies = new List<string> { "peanut" },
             PreferredMealsPerDay = 4,
-            PreferredCuisine = "vietnamese"
+            PreferredCuisine = "vietnamese",
+            TimeZoneId = "America/New_York"
         });
 
         var result = await _service.GetUserPreferenceAsync(_userId);
@@ -76,6 +78,18 @@ public class UserPreferenceServiceTests : IDisposable
         Assert.Contains("vegetarian", result.DietaryRestrictions ?? []);
         Assert.Contains("peanut", result.Allergies ?? []);
         Assert.Equal("vietnamese", result.PreferredCuisine);
+        Assert.Equal("America/New_York", result.TimeZoneId);
+    }
+
+    [Fact]
+    public async Task UpdateUserPreferenceAsync_WithInvalidTimeZone_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.UpdateUserPreferenceAsync(_userId, new UserPreferenceDto
+            {
+                PreferredMealsPerDay = 3,
+                TimeZoneId = "Not/A_Timezone"
+            }));
     }
 
     private sealed class FakeHostEnvironment : IHostEnvironment

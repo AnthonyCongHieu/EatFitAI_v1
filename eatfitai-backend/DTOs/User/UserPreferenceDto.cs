@@ -8,5 +8,6 @@ namespace EatFitAI.API.DTOs.User
         public List<string>? Allergies { get; set; }
         public int PreferredMealsPerDay { get; set; }
         public string? PreferredCuisine { get; set; }
+        public string? TimeZoneId { get; set; }
     }
 }

@@ -581,6 +581,9 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.DietaryRestrictions).IsUnicode(true);
             entity.Property(e => e.Allergies).IsUnicode(true);
             entity.Property(e => e.PreferredCuisine).HasMaxLength(100);
+            entity.Property(e => e.TimeZoneId)
+                .HasMaxLength(100)
+                .HasDefaultValue("Asia/Ho_Chi_Minh");
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)

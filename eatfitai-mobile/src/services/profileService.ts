@@ -3,6 +3,7 @@
 
 import apiClient from './apiClient';
 import { loadWithOfflineFallback, offlineCache } from './offlineCache';
+import { formatBusinessDate, getDeviceTimeZone, setBusinessTimeZoneId } from '../utils/businessDate';
 
 const PROFILE_CACHE_KEY = '@eatfit_cache:profile';
 const BODY_METRICS_HISTORY_CACHE_PREFIX = '@eatfit_cache:body-metrics:';
@@ -132,7 +133,7 @@ export const profileService = {
     const req: any = {
       heightCm: payload.heightCm ?? null,
       weightKg: payload.weightKg ?? null,
-      measuredDate: payload.measuredDate ?? new Date().toISOString(),
+      measuredDate: payload.measuredDate ?? formatBusinessDate(),
       note: payload.note ?? null,
     };
     await apiClient.post('/api/body-metrics', req);
@@ -156,10 +157,18 @@ export const profileService = {
 
   async getUserPreferences(): Promise<any> {
     const response = await apiClient.get('/api/user/preferences');
-    return response.data;
+    const timeZoneId = setBusinessTimeZoneId(response.data?.timeZoneId ?? getDeviceTimeZone());
+    return {
+      ...response.data,
+      timeZoneId,
+    };
   },
 
   async updateUserPreferences(prefs: any): Promise<void> {
-    await apiClient.post('/api/user/preferences', prefs);
+    const timeZoneId = setBusinessTimeZoneId(prefs?.timeZoneId ?? getDeviceTimeZone());
+    await apiClient.post('/api/user/preferences', {
+      ...prefs,
+      timeZoneId,
+    });
   },
 };

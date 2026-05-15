@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import {
   RouteProp,
@@ -23,7 +17,6 @@ import Animated, {
   FadeInUp,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withSequence,
   withSpring,
   withTiming,
@@ -41,8 +34,6 @@ import { useVoiceStore } from '../../store/useVoiceStore';
 import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
-import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
-import type { MoChiPetEventType } from '../../features/mochi/mochiPoseCatalog';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -72,10 +63,14 @@ const P = {
 /* ═══════════════════════════════════════════════
    Quick Command Chips
    ═══════════════════════════════════════════════ */
-const QUICK_COMMANDS = [
-  'Hôm nay ăn bao nhiêu calo?',
-  'Thêm 200g cơm vào bữa trưa',
-  'Cân nặng 65 kg',
+const QUICK_COMMANDS: Array<{
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  text: string;
+}> = [
+  { icon: 'restaurant-outline', label: 'Thêm món', text: 'Thêm 1 bát phở bữa trưa' },
+  { icon: 'flame-outline', label: 'Calo', text: 'Hôm nay ăn bao nhiêu calo?' },
+  { icon: 'scale-outline', label: 'Cân nặng', text: 'Cân nặng 65 kg' },
 ];
 
 /* ═══════════════════════════════════════════════
@@ -124,7 +119,8 @@ const VoiceScreen = (): React.ReactElement => {
     (inputMode: 'microphone' | 'text' | 'quick_command' | 'auto_start') => {
       Toast.show({
         type: 'info',
-        text1: isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title,
+        text1:
+          isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title,
         text2:
           voiceAvailability.message ??
           'Bạn vẫn có thể nhập nhật ký thủ công trong lúc chờ AI sẵn sàng.',
@@ -209,13 +205,6 @@ const VoiceScreen = (): React.ReactElement => {
   const ring1Opacity = useSharedValue(0.2);
   const buttonScale = useSharedValue(1);
 
-  // Wave bar animations
-  const waveBar1 = useSharedValue(1);
-  const waveBar2 = useSharedValue(1);
-  const waveBar3 = useSharedValue(1);
-  const waveBar4 = useSharedValue(1);
-  const waveBar5 = useSharedValue(1);
-
   useEffect(() => {
     if (isRecording && amplitude > 0.1) {
       const scale = 1 + amplitude * 0.5;
@@ -223,13 +212,6 @@ const VoiceScreen = (): React.ReactElement => {
       ring2Scale.value = withSpring(scale * 1.15, { damping: 12 });
       ring3Scale.value = withSpring(scale * 1.3, { damping: 14 });
       ring1Opacity.value = withTiming(0.3 + amplitude * 0.3);
-
-      // Wave bars react to amplitude
-      waveBar1.value = withSpring(1 + amplitude * 2, { damping: 8 });
-      waveBar2.value = withSpring(1 + amplitude * 1.5, { damping: 10 });
-      waveBar3.value = withSpring(1 + amplitude * 2.5, { damping: 6 });
-      waveBar4.value = withSpring(1 + amplitude * 1.8, { damping: 9 });
-      waveBar5.value = withSpring(1 + amplitude * 2.2, { damping: 7 });
       return;
     }
 
@@ -238,12 +220,6 @@ const VoiceScreen = (): React.ReactElement => {
       ring2Scale.value = withSpring(1.1);
       ring3Scale.value = withSpring(1.15);
       ring1Opacity.value = withTiming(0.15);
-      // Idle breathing waves
-      waveBar1.value = withRepeat(withTiming(1.3, { duration: 800 }), -1, true);
-      waveBar2.value = withRepeat(withTiming(1.5, { duration: 1000 }), -1, true);
-      waveBar3.value = withRepeat(withTiming(1.2, { duration: 700 }), -1, true);
-      waveBar4.value = withRepeat(withTiming(1.4, { duration: 900 }), -1, true);
-      waveBar5.value = withRepeat(withTiming(1.3, { duration: 850 }), -1, true);
       return;
     }
 
@@ -251,13 +227,7 @@ const VoiceScreen = (): React.ReactElement => {
     ring2Scale.value = withSpring(1);
     ring3Scale.value = withSpring(1);
     ring1Opacity.value = withTiming(0.2);
-    waveBar1.value = withTiming(1);
-    waveBar2.value = withTiming(1);
-    waveBar3.value = withTiming(1);
-    waveBar4.value = withTiming(1);
-    waveBar5.value = withTiming(1);
-  }, [amplitude, isRecording, ring1Opacity, ring1Scale, ring2Scale, ring3Scale,
-    waveBar1, waveBar2, waveBar3, waveBar4, waveBar5]);
+  }, [amplitude, isRecording, ring1Opacity, ring1Scale, ring2Scale, ring3Scale]);
 
   const ring1Style = useAnimatedStyle(() => ({
     transform: [{ scale: ring1Scale.value }],
@@ -441,27 +411,27 @@ const VoiceScreen = (): React.ReactElement => {
   const getStatusLabel = (): string => {
     switch (status) {
       case 'listening':
-        return 'LISTENING...';
+        return 'Đang nghe';
       case 'processing':
-        return 'Đang xử lý giọng nói...';
+        return 'Đang xử lý';
       case 'parsing':
-        return 'AI đang phân tích...';
+        return 'Đang phân tích';
       case 'review':
-        return 'Kiểm tra trước khi lưu';
+        return 'Cần xác nhận';
       case 'executing':
-        return 'Đang thực hiện...';
+        return 'Đang lưu';
       case 'success':
-        return 'Hoàn thành!';
+        return 'Đã lưu';
       case 'error':
-        return 'Có lỗi xảy ra';
+        return 'Lỗi';
       default:
-        return 'Chạm để bắt đầu';
+        return 'Chạm để nói';
     }
   };
 
   /* ═══ Build chat messages from state ═══ */
   const chatMessages: ChatMessage[] = [];
-  if (recognizedText) {
+  if (recognizedText && status !== 'idle') {
     chatMessages.push({ id: 'user-1', type: 'user', text: recognizedText });
   }
   if (executedData?.details) {
@@ -474,35 +444,40 @@ const VoiceScreen = (): React.ReactElement => {
   /* ═══════════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════════ */
-  const voiceMoChiEvent: MoChiPetEventType =
-    isVoiceAiBlocked ? 'app_offline'
-    : error || status === 'error' ? 'voice_error'
-    : status === 'success' ? 'voice_success'
-    : status === 'review' ? 'voice_review'
-    : isRecording || status === 'listening' || status === 'processing' || status === 'parsing'
-      ? 'voice_listening'
-      : 'voice_idle';
+  const hasTypedCommand = recognizedText.trim().length > 0;
+  const isBusy =
+    status === 'processing' || status === 'parsing' || status === 'executing';
+  const micTitle = isRecording
+    ? 'Đang nghe'
+    : isVoiceAiBlocked
+      ? 'Tạm dừng'
+      : isBusy
+        ? getStatusLabel()
+        : 'Sẵn sàng';
+  const micHint = isRecording
+    ? 'Chạm để dừng'
+    : isVoiceAiBlocked
+      ? 'AI chưa khả dụng'
+      : 'Nói món, cân nặng hoặc câu hỏi calo';
 
   return (
-    <View style={[S.container, { paddingTop: insets.top }]} testID={TEST_IDS.voice.screen}>
-
-
-      {/* ═══ GLASS HEADER ═══ */}
+    <View
+      style={[S.container, { paddingTop: insets.top }]}
+      testID={TEST_IDS.voice.screen}
+    >
       <Animated.View entering={FadeInDown.delay(50).duration(400)} style={S.header}>
         <View style={S.headerInner}>
-          <Pressable
-            style={S.headerBtn}
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-          >
-            <Ionicons name="arrow-back" size={22} color={P.primary} />
+          <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+            <Ionicons name="chevron-back" size={22} color={P.primary} />
           </Pressable>
           <ThemedText style={S.headerTitle}>Trợ lý AI</ThemedText>
-          <View style={S.headerBtn} />
+          <View style={S.headerState}>
+            <View style={S.headerStateDot} />
+            <ThemedText style={S.headerStateText}>AI</ThemedText>
+          </View>
         </View>
       </Animated.View>
 
-      {/* ═══ MAIN CONTENT ═══ */}
       <ScrollView
         ref={chatScrollRef}
         style={S.scrollView}
@@ -510,8 +485,6 @@ const VoiceScreen = (): React.ReactElement => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-
-
         {isVoiceAiBlocked && !isRecording && (
           <Animated.View
             entering={FadeInUp.delay(80)}
@@ -520,7 +493,9 @@ const VoiceScreen = (): React.ReactElement => {
             <Ionicons name="cloud-offline-outline" size={18} color={P.primary} />
             <View style={{ flex: 1 }}>
               <ThemedText style={S.availabilityTitle}>
-                {isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title}
+                {isAiStatusLoading && !aiStatus
+                  ? 'AI đang kiểm tra'
+                  : voiceAvailability.title}
               </ThemedText>
               <ThemedText style={S.availabilityText}>
                 {voiceAvailability.message ??
@@ -530,10 +505,171 @@ const VoiceScreen = (): React.ReactElement => {
           </Animated.View>
         )}
 
-        {/* ═══ CHAT HISTORY ═══ */}
+        <Animated.View entering={FadeInUp.delay(90)} style={S.voicePanel}>
+          <LinearGradient
+            colors={['rgba(30, 36, 52, 0.96)', 'rgba(14, 19, 34, 0.98)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={S.voicePanelGradient}
+          >
+            <View style={S.voicePanelHeader}>
+              <View style={S.voicePanelCopy}>
+                <ThemedText style={S.voicePanelTitle}>{micTitle}</ThemedText>
+                <ThemedText style={S.voicePanelHint}>{micHint}</ThemedText>
+              </View>
+              <View style={[S.voiceStatePill, isRecording && S.voiceStatePillActive]}>
+                <View style={[S.voiceStateDot, isRecording && S.voiceStateDotActive]} />
+                <ThemedText
+                  style={[S.voiceStateText, isRecording && S.voiceStateTextActive]}
+                >
+                  {isRecording ? 'Ghi âm' : 'Sẵn sàng'}
+                </ThemedText>
+              </View>
+            </View>
+
+            <View style={S.voiceSection}>
+              <Animated.View style={[S.ring, S.ring3, ring3Style]} />
+              <Animated.View style={[S.ring, S.ring2, ring2Style]} />
+              <Animated.View style={[S.ring, S.ring1, ring1Style]} />
+
+              <AnimatedPressable
+                onPress={handleToggleRecording}
+                style={[
+                  S.micBtnOuter,
+                  buttonAnimatedStyle,
+                  isVoiceAiBlocked && !isRecording && S.disabledControl,
+                ]}
+                testID="voice-mic-button"
+              >
+                <View style={S.micBtnGlassWrap}>
+                  <LinearGradient
+                    colors={
+                      isRecording
+                        ? ['#ef4444', '#dc2626']
+                        : [P.primary, P.primaryContainer]
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={S.micBtnInner}
+                  >
+                    {isRecording ? (
+                      <ThemedText style={S.durationText}>
+                        {formatDuration(duration)}
+                      </ThemedText>
+                    ) : (
+                      <Ionicons name="mic" size={32} color="#fff" />
+                    )}
+                  </LinearGradient>
+                </View>
+              </AnimatedPressable>
+
+              <ThemedText
+                style={[S.listeningLabel, isRecording && S.listeningLabelActive]}
+              >
+                {getStatusLabel()}
+              </ThemedText>
+
+              {isRecording && (
+                <Animated.View entering={FadeIn.delay(160)}>
+                  <Pressable style={S.cancelBtn} onPress={handleCancelRecording}>
+                    <Ionicons name="close" size={16} color={P.onSurfaceVariant} />
+                    <ThemedText style={S.cancelBtnText}>Hủy</ThemedText>
+                  </Pressable>
+                </Animated.View>
+              )}
+            </View>
+
+            {isRecording && recognizedText !== '' && (
+              <Animated.View entering={FadeIn.delay(160)} style={S.transcriptWrap}>
+                <ThemedText style={S.transcriptText} numberOfLines={3}>
+                  {recognizedText}
+                </ThemedText>
+              </Animated.View>
+            )}
+          </LinearGradient>
+        </Animated.View>
+
         {!isRecording && (
-          <Animated.View entering={FadeInUp.delay(90)} style={S.moChiNotice}>
-            <MoChiInlineNotice mochiEvent={voiceMoChiEvent} compact />
+          <Animated.View entering={FadeInUp.delay(140)} style={S.commandDock}>
+            <View style={S.commandBar}>
+              <Ionicons name="sparkles" size={18} color={P.primary} />
+              <TextInput
+                style={S.textInput}
+                placeholder="Nhập lệnh..."
+                placeholderTextColor={P.onSurfaceVariant + '70'}
+                value={recognizedText}
+                onChangeText={setRecognizedText}
+                multiline
+                numberOfLines={1}
+                testID={TEST_IDS.voice.textInput}
+              />
+              <Pressable
+                onPress={handleSendText}
+                disabled={!hasTypedCommand || status === 'parsing' || isVoiceAiBlocked}
+                style={[
+                  S.sendBtn,
+                  (!hasTypedCommand || status === 'parsing' || isVoiceAiBlocked) &&
+                    S.sendBtnDisabled,
+                ]}
+              >
+                <Ionicons name="arrow-up" size={18} color="#003915" />
+              </Pressable>
+            </View>
+
+            <View style={S.quickCommandRow}>
+              {QUICK_COMMANDS.map((cmd) => (
+                <Pressable
+                  key={cmd.label}
+                  style={[S.quickCommand, isVoiceAiBlocked && S.disabledControl]}
+                  onPress={() => handleQuickCommand(cmd.text)}
+                >
+                  <Ionicons name={cmd.icon} size={15} color={P.primary} />
+                  <ThemedText style={S.quickCommandText}>{cmd.label}</ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
+        {!isRecording && hasTypedCommand && (
+          <Animated.View entering={FadeInUp.delay(180)} style={S.actionsRow}>
+            <Pressable
+              onPress={() => {
+                reset();
+                setRecognizedText('');
+              }}
+              style={S.resetBtn}
+              testID={TEST_IDS.voice.resetButton}
+            >
+              <Ionicons name="close" size={17} color={P.onSurfaceVariant} />
+              <ThemedText style={S.resetBtnText}>Xóa</ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={handleSendText}
+              disabled={!hasTypedCommand || status === 'parsing' || isVoiceAiBlocked}
+              style={[
+                S.analyzeBtn,
+                {
+                  opacity:
+                    !hasTypedCommand || status === 'parsing' || isVoiceAiBlocked
+                      ? 0.5
+                      : 1,
+                },
+              ]}
+              testID={TEST_IDS.voice.processButton}
+            >
+              <LinearGradient
+                colors={[P.primary, P.primaryDim]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={S.analyzeBtnGrad}
+              >
+                <Ionicons name="sparkles" size={17} color="#003915" />
+                <ThemedText style={S.analyzeBtnText}>
+                  {status === 'parsing' ? 'Đang phân tích' : 'Phân tích'}
+                </ThemedText>
+              </LinearGradient>
+            </Pressable>
           </Animated.View>
         )}
 
@@ -552,12 +688,7 @@ const VoiceScreen = (): React.ReactElement => {
                     <Ionicons name="hardware-chip" size={16} color={P.primary} />
                   </View>
                 )}
-                <View
-                  style={[
-                    S.bubble,
-                    msg.type === 'user' ? S.bubbleUser : S.bubbleAi,
-                  ]}
-                >
+                <View style={[S.bubble, msg.type === 'user' ? S.bubbleUser : S.bubbleAi]}>
                   <ThemedText style={S.bubbleText}>{msg.text}</ThemedText>
                 </View>
               </View>
@@ -565,7 +696,6 @@ const VoiceScreen = (): React.ReactElement => {
           </Animated.View>
         )}
 
-        {/* ═══ VOICE RESULT CARD (parsed command) ═══ */}
         {!isRecording && parsedCommand && parsedCommand.intent !== 'UNKNOWN' && (
           <View style={S.resultSection}>
             <VoiceResultCard
@@ -578,296 +708,85 @@ const VoiceScreen = (): React.ReactElement => {
           </View>
         )}
 
-        {/* ═══ STATUS CARD ═══ */}
         {!isRecording && status !== 'idle' && status !== 'error' && !error && (
           <Animated.View entering={FadeInUp.delay(200)} style={S.statusCard}>
             <View style={S.statusDot} />
             <ThemedText style={S.statusText}>{getStatusLabel()}</ThemedText>
           </Animated.View>
         )}
-
-        {/* ═══ TEXT INPUT SECTION ═══ */}
-        {!isRecording && (
-          <Animated.View entering={FadeInUp.delay(300)} style={S.inputSection}>
-            <ThemedText style={S.inputLabel}>Hoặc gõ lệnh trực tiếp</ThemedText>
-            <View style={S.inputRow}>
-              <View style={S.inputWrapper}>
-                <TextInput
-                  style={S.textInput}
-                  placeholder="Ví dụ: Ghi 1 bát phở vào bữa trưa"
-                  placeholderTextColor={P.onSurfaceVariant + '60'}
-                  value={recognizedText}
-                  onChangeText={setRecognizedText}
-                  multiline
-                  numberOfLines={2}
-                  testID={TEST_IDS.voice.textInput}
-                />
-              </View>
-              <Pressable
-                onPress={handleSendText}
-                disabled={!recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked}
-                style={[
-                  S.sendBtn,
-                  {
-                    opacity:
-                      !recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked
-                        ? 0.4
-                        : 1,
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={[P.primary, P.primaryDim]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={S.sendBtnGrad}
-                >
-                  <Ionicons name="send" size={18} color="#003915" />
-                </LinearGradient>
-              </Pressable>
-            </View>
-          </Animated.View>
-        )}
-
-        {/* ═══ QUICK COMMAND CHIPS ═══ */}
-        {!isRecording && (
-          <Animated.View entering={FadeInUp.delay(350)}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={S.chipRow}
-            >
-              {QUICK_COMMANDS.map((cmd) => (
-                <Pressable
-                  key={cmd}
-                  style={[S.chip, isVoiceAiBlocked && S.disabledControl]}
-                  onPress={() => handleQuickCommand(cmd)}
-                >
-                  <ThemedText style={S.chipText}>{cmd}</ThemedText>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </Animated.View>
-        )}
-
-        {/* ═══ REAL-TIME TRANSCRIPT ═══ */}
-        {isRecording && recognizedText !== '' && (
-          <Animated.View entering={FadeIn.delay(200)} style={S.transcriptWrap}>
-            <View style={S.transcriptPill}>
-              <ThemedText style={S.transcriptText}>
-                "{recognizedText}"
-              </ThemedText>
-            </View>
-          </Animated.View>
-        )}
-
-        {/* ═══ CENTRAL VOICE UI ═══ */}
-        <Animated.View
-          entering={FadeInUp.delay(400)}
-          style={S.voiceSection}
-        >
-
-
-          {/* Pulsing rings */}
-          <Animated.View style={[S.ring, S.ring3, ring3Style]} />
-          <Animated.View style={[S.ring, S.ring2, ring2Style]} />
-          <Animated.View style={[S.ring, S.ring1, ring1Style]} />
-
-          {/* Main mic button */}
-          <AnimatedPressable
-            onPress={handleToggleRecording}
-            style={[
-              S.micBtnOuter,
-              buttonAnimatedStyle,
-              isVoiceAiBlocked && !isRecording && S.disabledControl,
-            ]}
-            testID="voice-mic-button"
-          >
-            <View style={S.micBtnGlassWrap}>
-
-
-              {/* Inner gradient circle */}
-              <LinearGradient
-                colors={
-                  isRecording
-                    ? ['#ef4444', '#dc2626']
-                    : [P.primary, P.primaryContainer]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={S.micBtnInner}
-              >
-                {isRecording ? (
-                  <ThemedText style={S.durationText}>
-                    {formatDuration(duration)}
-                  </ThemedText>
-                ) : (
-                  <Ionicons name="mic" size={36} color="#fff" />
-                )}
-              </LinearGradient>
-            </View>
-          </AnimatedPressable>
-
-          {/* Status label */}
-          <ThemedText style={[
-            S.listeningLabel,
-            isRecording && { color: P.primary },
-          ]}>
-            {isRecording ? 'LISTENING...' : getStatusLabel()}
-          </ThemedText>
-
-          {/* Cancel button when recording */}
-          {isRecording && (
-            <Animated.View entering={FadeIn.delay(300)}>
-              <Pressable style={S.cancelBtn} onPress={handleCancelRecording}>
-                <ThemedText style={S.cancelBtnText}>Hủy ghi âm</ThemedText>
-              </Pressable>
-            </Animated.View>
-          )}
-        </Animated.View>
-
-        {/* ═══ VOICE GUIDE ═══ */}
-        {!isRecording && status === 'idle' && (
-          <Animated.View entering={FadeInUp.delay(500)} style={S.guideCard}>
-            <ThemedText style={S.guideTitle}>💡 Bạn có thể nói:</ThemedText>
-            <View style={S.guideList}>
-              <ThemedText style={S.guideItem}>
-                • <ThemedText style={S.guideBold}>Thêm món</ThemedText>: "Thêm 1 bát phở bữa trưa"
-              </ThemedText>
-              <ThemedText style={S.guideItem}>
-                • <ThemedText style={S.guideBold}>Ghi cân nặng</ThemedText>: "Cân nặng 65 kg"
-              </ThemedText>
-              <ThemedText style={S.guideItem}>
-                • <ThemedText style={S.guideBold}>Hỏi calo</ThemedText>: "Hôm nay ăn bao nhiêu calo?"
-              </ThemedText>
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Actions row */}
-        {!isRecording && recognizedText.trim() && (
-          <Animated.View entering={FadeInUp.delay(350)} style={S.actionsRow}>
-            <Pressable
-              onPress={() => {
-                reset();
-                setRecognizedText('');
-              }}
-              style={S.resetBtn}
-              testID={TEST_IDS.voice.resetButton}
-            >
-              <Ionicons name="refresh" size={18} color={P.onSurfaceVariant} />
-              <ThemedText style={S.resetBtnText}>Đặt lại</ThemedText>
-            </Pressable>
-            <Pressable
-              onPress={handleSendText}
-              disabled={!recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked}
-              style={[
-                S.analyzeBtn,
-                {
-                  opacity:
-                    !recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked
-                      ? 0.5
-                      : 1,
-                },
-              ]}
-              testID={TEST_IDS.voice.processButton}
-            >
-              <LinearGradient
-                colors={[P.primary, P.primaryDim]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={S.analyzeBtnGrad}
-              >
-                <Ionicons name="sparkles" size={18} color="#003915" />
-                <ThemedText style={S.analyzeBtnText}>
-                  {status === 'parsing' ? 'Đang xử lý...' : 'Phân tích'}
-                </ThemedText>
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
-        )}
       </ScrollView>
-
-      {/* Right edge accent */}
-      <View style={S.edgeAccent} pointerEvents="none" />
     </View>
   );
 };
 
 /* ═══════════════════════════════════════════════
-   Styles — Emerald Nebula 3D Voice UI
+   Styles — Voice Assistant redesign
    ═══════════════════════════════════════════════ */
 const S = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: P.surface,
   },
-  glowBg: {
-    position: 'absolute',
-    top: '40%',
-    left: '50%',
-    width: 300,
-    height: 300,
-    marginLeft: -150,
-    marginTop: -150,
-    borderRadius: 150,
-    backgroundColor: P.glow,
-    opacity: 0.4,
-  },
-
-  /* ═══ HEADER ═══ */
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     backgroundColor: '#0E1322', // Solid — tránh lỗi 2 màu trên Android
     borderBottomWidth: 1,
-    borderBottomColor: P.glassBorder,
+    borderBottomColor: 'rgba(75, 226, 119, 0.08)',
   },
   headerInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
   },
   headerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   headerTitle: {
+    flex: 1,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#ffffff',
     letterSpacing: -0.3,
+    textAlign: 'center',
   },
-
-  /* ═══ SCROLL ═══ */
+  headerState: {
+    minWidth: 42,
+    height: 30,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(75, 226, 119, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.16)',
+  },
+  headerStateDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: P.primary,
+  },
+  headerStateText: {
+    fontSize: 11,
+    fontFamily: 'Inter_800ExtraBold',
+    color: P.primary,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
+    paddingTop: 14,
   },
-
-  /* ═══ SUBTITLE ═══ */
-  subtitle: {
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: '600',
-    color: P.onSurfaceVariant + '80',
-    letterSpacing: 3,
-    marginTop: 16,
-    marginBottom: 24,
-    textTransform: 'uppercase',
-  },
-
-  /* ═══ CHAT ═══ */
   chatArea: {
-    gap: 16,
-    marginBottom: 20,
-  },
-  moChiNotice: {
+    gap: 12,
     marginBottom: 16,
   },
   bubbleRow: {
@@ -882,9 +801,9 @@ const S = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   aiAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: P.primaryContainer + '30',
     alignItems: 'center',
     justifyContent: 'center',
@@ -894,11 +813,13 @@ const S = StyleSheet.create({
     maxWidth: '82%',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    borderWidth: 1,
   },
   bubbleUser: {
-    backgroundColor: P.surfaceContainerHighest + '70',
+    backgroundColor: 'rgba(75, 226, 119, 0.12)',
     borderRadius: 18,
     borderTopRightRadius: 4,
+    borderColor: 'rgba(75, 226, 119, 0.18)',
   },
   bubbleAi: {
     backgroundColor: P.surfaceContainerHigh + '90',
@@ -906,25 +827,24 @@ const S = StyleSheet.create({
     borderBottomLeftRadius: 4,
     borderLeftWidth: 3,
     borderLeftColor: P.primary + '80',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   bubbleText: {
     fontSize: 14,
-    fontWeight: '400',
+    fontFamily: 'Inter_500Medium',
     color: P.onSurface,
     lineHeight: 20,
   },
-
-  /* ═══ STATUS CARD ═══ */
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 14,
-    backgroundColor: P.surfaceContainerHigh + '60',
+    borderRadius: 16,
+    backgroundColor: 'rgba(75, 226, 119, 0.08)',
     borderWidth: 1,
-    borderColor: P.primary + '30',
+    borderColor: 'rgba(75, 226, 119, 0.18)',
     marginBottom: 16,
   },
   statusDot: {
@@ -935,7 +855,7 @@ const S = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Inter_700Bold',
     color: P.primary,
   },
   availabilityCard: {
@@ -945,113 +865,176 @@ const S = StyleSheet.create({
   },
   availabilityTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Inter_800ExtraBold',
     color: P.primary,
     marginBottom: 2,
   },
   availabilityText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     color: P.onSurfaceVariant,
     lineHeight: 17,
   },
-
-  /* ═══ TEXT INPUT ═══ */
-  inputSection: {
-    marginBottom: 16,
+  resultSection: {
+    marginBottom: 14,
   },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: P.onSurfaceVariant,
-    marginBottom: 8,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 10,
-  },
-  inputWrapper: {
-    flex: 1,
-    borderRadius: 18,
+  commandDock: {
+    marginBottom: 14,
+    padding: 10,
+    borderRadius: 22,
+    backgroundColor: 'rgba(22, 27, 43, 0.78)',
     borderWidth: 1,
-    borderColor: P.outlineVariant + '40',
-    backgroundColor: P.surfaceContainerLow,
-    overflow: 'hidden',
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  commandBar: {
+    minHeight: 52,
+    borderRadius: 18,
+    paddingLeft: 14,
+    paddingRight: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(7, 11, 20, 0.48)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.12)',
   },
   textInput: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontFamily: 'Inter_500Medium',
     color: P.onSurface,
-    minHeight: 48,
-    textAlignVertical: 'top',
+    minHeight: 42,
+    maxHeight: 76,
+    textAlignVertical: 'center',
   },
   sendBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  sendBtnGrad: {
-    flex: 1,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: P.primary,
   },
-
-  /* ═══ QUICK COMMANDS ═══ */
-  chipRow: {
+  sendBtnDisabled: {
+    opacity: 0.35,
+  },
+  quickCommandRow: {
     flexDirection: 'row',
-    gap: 10,
-    paddingBottom: 16,
-    paddingRight: 20,
+    gap: 8,
+    marginTop: 10,
   },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: P.surfaceContainerHighest + '50',
-    borderWidth: 1,
-    borderColor: P.outlineVariant + '18',
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: P.primary,
-  },
-
-  /* ═══ TRANSCRIPT ═══ */
-  transcriptWrap: {
+  quickCommand: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  transcriptPill: {
-    backgroundColor: P.surfaceContainerLow + '60',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  quickCommandText: {
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
+    color: P.onSurface,
+    lineHeight: 15,
+  },
+  transcriptWrap: {
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: 'rgba(7, 11, 20, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.14)',
   },
   transcriptText: {
     fontSize: 14,
-    fontStyle: 'italic',
-    color: 'rgba(255,255,255,0.8)',
+    fontFamily: 'Inter_600SemiBold',
+    color: P.onSurface,
+    lineHeight: 20,
   },
-
-  /* ═══ MIC SECTION ═══ */
+  voicePanel: {
+    marginBottom: 14,
+    borderRadius: 26,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.18)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.24,
+    shadowRadius: 22,
+    elevation: 8,
+  },
+  voicePanelGradient: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
+  },
+  voicePanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  voicePanelCopy: {
+    flex: 1,
+  },
+  voicePanelTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_800ExtraBold',
+    color: P.onSurface,
+    lineHeight: 23,
+    letterSpacing: -0.2,
+  },
+  voicePanelHint: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: P.onSurfaceVariant,
+    lineHeight: 17,
+  },
+  voiceStatePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  voiceStatePillActive: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderColor: 'rgba(239, 68, 68, 0.24)',
+  },
+  voiceStateDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: P.primary,
+  },
+  voiceStateDotActive: {
+    backgroundColor: '#ef4444',
+  },
+  voiceStateText: {
+    fontSize: 11,
+    fontFamily: 'Inter_800ExtraBold',
+    color: P.primary,
+  },
+  voiceStateTextActive: {
+    color: '#fecaca',
+  },
   voiceSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 32,
-    minHeight: 300,
-  },
-  micGlow: {
-    position: 'absolute',
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: P.primary + '18',
+    paddingTop: 18,
+    paddingBottom: 2,
+    minHeight: 188,
   },
   ring: {
     position: 'absolute',
@@ -1059,38 +1042,36 @@ const S = StyleSheet.create({
     borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
   },
   ring1: {
-    width: 150,
-    height: 150,
+    width: 122,
+    height: 122,
     borderWidth: 2,
-    borderColor: P.primary + '40',
+    borderColor: 'rgba(75, 226, 119, 0.36)',
   },
   ring2: {
-    width: 195,
-    height: 195,
+    width: 154,
+    height: 154,
     borderWidth: 1.5,
-    borderColor: P.primary + '25',
+    borderColor: 'rgba(75, 226, 119, 0.2)',
   },
   ring3: {
-    width: 250,
-    height: 250,
+    width: 184,
+    height: 184,
     borderWidth: 1,
-    borderColor: P.primary + '12',
+    borderColor: 'rgba(75, 226, 119, 0.1)',
     borderStyle: 'solid', // Android: dotted+borderRadius không hoạt động, dùng solid
   },
-
-  /* Mic button */
   micBtnOuter: {
-    width: 120,
-    height: 120,
+    width: 96,
+    height: 96,
     zIndex: 10,
   },
   micBtnGlassWrap: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: P.surfaceContainerHigh + 'CC',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(15, 23, 42, 0.82)',
     borderWidth: 1,
-    borderColor: P.primary + '30',
+    borderColor: 'rgba(75, 226, 119, 0.24)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: P.primary,
@@ -1100,9 +1081,9 @@ const S = StyleSheet.create({
     elevation: 12,
   },
   micBtnInner: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: P.primary,
@@ -1112,123 +1093,47 @@ const S = StyleSheet.create({
     elevation: 10,
   },
   durationText: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 19,
+    fontFamily: 'Inter_800ExtraBold',
     color: '#ffffff',
   },
-
-  /* Wave bars */
-  waveBarsContainer: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  waveBar: {
-    position: 'absolute',
-    width: 3,
-    height: 12,
-    borderRadius: 2,
-    backgroundColor: P.primary,
-  },
-  waveBarTop: {
-    top: -2,
-    left: '50%',
-    marginLeft: -1.5,
-  },
-  waveBarTopRight: {
-    top: 14,
-    right: 14,
-    transform: [{ rotate: '45deg' }],
-  },
-  waveBarRight: {
-    right: -2,
-    top: '50%',
-    marginTop: -6,
-    height: 16,
-  },
-  waveBarBottomRight: {
-    bottom: 14,
-    right: 14,
-    transform: [{ rotate: '-45deg' }],
-  },
-  waveBarBottom: {
-    bottom: -2,
-    left: '50%',
-    marginLeft: -1.5,
-  },
-
-  /* Status label */
   listeningLabel: {
-    marginTop: 20,
-    fontSize: 13,
-    fontWeight: '700',
+    marginTop: 12,
+    fontSize: 12,
+    fontFamily: 'Inter_800ExtraBold',
     color: P.onSurfaceVariant,
-    letterSpacing: 3,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
-
-  /* Cancel */
+  listeningLabelActive: {
+    color: '#fecaca',
+  },
   cancelBtn: {
-    marginTop: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   cancelBtnText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: P.onSurfaceVariant,
-  },
-
-  /* ═══ VOICE GUIDE ═══ */
-  guideCard: {
-    padding: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: P.glassBorder,
-    backgroundColor: P.surfaceContainerLow,
-    marginBottom: 20,
-  },
-  guideTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: P.onSurfaceVariant,
-    marginBottom: 12,
-  },
-  guideList: {
-    gap: 8,
-  },
-  guideItem: {
     fontSize: 12,
-    fontWeight: '400',
-    color: P.onSurfaceVariant + 'AA',
-    lineHeight: 18,
+    fontFamily: 'Inter_700Bold',
+    color: P.onSurfaceVariant,
   },
-  guideBold: {
-    fontWeight: '600',
-    color: P.onSurface,
-  },
-
-  /* ═══ RESULT ═══ */
-  resultSection: {
-    marginBottom: 20,
-  },
-
-  /* ═══ ACTIONS ROW ═══ */
   actionsRow: {
     flexDirection: 'row',
-    gap: 14,
-    marginBottom: 20,
+    gap: 12,
+    marginBottom: 14,
   },
   resetBtn: {
     flex: 1,
-    height: 52,
-    borderRadius: 18,
+    height: 44,
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1238,14 +1143,14 @@ const S = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   resetBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
     color: P.onSurfaceVariant,
   },
   analyzeBtn: {
     flex: 1,
-    height: 52,
-    borderRadius: 18,
+    height: 44,
+    borderRadius: 15,
     overflow: 'hidden',
   },
   analyzeBtnGrad: {
@@ -1256,27 +1161,9 @@ const S = StyleSheet.create({
     gap: 8,
   },
   analyzeBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontFamily: 'Inter_800ExtraBold',
     color: '#003915',
-  },
-
-  /* ═══ EDGE ACCENT ═══ */
-  edgeAccent: {
-    position: 'absolute',
-    right: -1,
-    top: '50%',
-    width: 3,
-    height: 48,
-    borderTopLeftRadius: 3,
-    borderBottomLeftRadius: 3,
-    backgroundColor: P.primary,
-    marginTop: -24,
-    shadowColor: P.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 4,
   },
   disabledControl: {
     opacity: 0.55,

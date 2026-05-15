@@ -13,6 +13,7 @@ public class SupabaseSchemaBootstrapperTests
         Assert.Contains("\"Allergies\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"PreferredMealsPerDay\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"PreferredCuisine\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
+        Assert.Contains("\"TimeZoneId\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"AILog\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"InputJson\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"OutputJson\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);

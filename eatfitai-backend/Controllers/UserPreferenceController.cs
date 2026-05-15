@@ -43,8 +43,15 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty) return Unauthorized();
 
-            await _prefService.UpdateUserPreferenceAsync(userId, dto);
-            return Ok(new { message = "Đã cập nhật tùy chọn thành công" });
+            try
+            {
+                await _prefService.UpdateUserPreferenceAsync(userId, dto);
+                return Ok(new { message = "Đã cập nhật tùy chọn thành công" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

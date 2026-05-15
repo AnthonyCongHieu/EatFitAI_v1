@@ -13,6 +13,7 @@ import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 import { rankVietnameseFoodName } from '../utils/vietnameseFoodSearch';
 import { enqueueFoodWrite } from './localFoodQueue';
 import { offlineCache } from './offlineCache';
+import { formatBusinessDate } from '../utils/businessDate';
 
 const toNumber = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) {
@@ -157,8 +158,7 @@ export type CommonMealTemplateDetail = CommonMealTemplate & {
 };
 
 const getDefaultEatenDate = (): string => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return formatBusinessDate();
 };
 
 const RECENT_FOODS_CACHE_KEY = '@eatfitai_recent_foods';

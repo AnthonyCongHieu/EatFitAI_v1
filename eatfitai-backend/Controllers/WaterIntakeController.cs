@@ -2,6 +2,7 @@ using System.Security.Claims;
 using EatFitAI.API.Data;
 using EatFitAI.API.Helpers;
 using EatFitAI.API.Models;
+using EatFitAI.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,14 @@ namespace EatFitAI.API.Controllers
     public class WaterIntakeController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
+        private readonly IBusinessDateService _businessDateService;
 
-        public WaterIntakeController(ApplicationDbContext db)
+        public WaterIntakeController(
+            ApplicationDbContext db,
+            IBusinessDateService businessDateService)
         {
             _db = db;
+            _businessDateService = businessDateService;
         }
 
         /// <summary>
@@ -31,8 +36,8 @@ namespace EatFitAI.API.Controllers
             {
                 var userId = GetUserIdFromToken();
                 var targetDate = date.HasValue
-                    ? DateTimeHelper.ToVietnamDateOnly(date.Value)
-                    : DateTimeHelper.GetVietnamToday();
+                    ? _businessDateService.ToDateOnly(date.Value)
+                    : await _businessDateService.GetTodayAsync(userId);
                 var targetMl = await GetDailyTargetMlAsync(userId);
 
                 var record = await _db.WaterIntakes
@@ -68,7 +73,7 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 var targetDate = request?.Date != null
                     ? DateOnly.Parse(request.Date)
-                    : DateTimeHelper.GetVietnamToday();
+                    : await _businessDateService.GetTodayAsync(userId);
                 var targetMl = await GetDailyTargetMlAsync(userId);
 
                 await _db.Database.ExecuteSqlInterpolatedAsync($@"
@@ -114,7 +119,7 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 var targetDate = request?.Date != null
                     ? DateOnly.Parse(request.Date)
-                    : DateTimeHelper.GetVietnamToday();
+                    : await _businessDateService.GetTodayAsync(userId);
                 var targetMl = await GetDailyTargetMlAsync(userId);
 
                 var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"

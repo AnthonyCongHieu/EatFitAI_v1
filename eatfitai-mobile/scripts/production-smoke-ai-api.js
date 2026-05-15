@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   buildNoonUtcIsoForDateOnly,
+  toBusinessDateOnly,
   toVietnamDateOnly,
 } = require('./lib/ai-smoke-dates');
 const { shouldStopVisionFixtureSweep } = require('./lib/ai-smoke-timeouts');
@@ -1348,7 +1349,7 @@ async function main() {
       protein: Number(nutritionSuggest.protein ?? nutritionSuggest.Protein ?? 0) || 50,
       carb: Number(nutritionSuggest.carbs ?? nutritionSuggest.Carb ?? 0) || 250,
       fat: Number(nutritionSuggest.fat ?? nutritionSuggest.Fat ?? 0) || 65,
-      effectiveFrom: new Date().toISOString().slice(0, 10),
+      effectiveFrom: toBusinessDateOnly(),
     };
     const nutritionApplyResponse = await requestJson(`${backendUrl}/api/ai/nutrition/apply`, {
       method: 'POST',

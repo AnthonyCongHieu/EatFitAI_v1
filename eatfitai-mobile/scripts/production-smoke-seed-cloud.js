@@ -7,6 +7,7 @@ const {
   getErrorReason,
   isEmailUnverifiedLogin,
 } = require('./lib/seed-verification');
+const { addDaysToDateOnly, toBusinessDateOnly } = require('./lib/business-date');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -604,13 +605,11 @@ function writeJson(filePath, value) {
 }
 
 function normalizeDate(date) {
-  return date.toISOString().slice(0, 10);
+  return toBusinessDateOnly(date);
 }
 
 function shiftDate(daysAgo) {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() - Number(daysAgo || 0));
-  return normalizeDate(date);
+  return addDaysToDateOnly(toBusinessDateOnly(), -Number(daysAgo || 0));
 }
 
 function wait(ms) {

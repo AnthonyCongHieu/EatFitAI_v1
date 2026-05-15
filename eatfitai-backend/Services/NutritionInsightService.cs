@@ -19,13 +19,16 @@ namespace EatFitAI.API.Services
     {
         private readonly EatFitAIDbContext _db;
         private readonly ILogger<NutritionInsightService> _logger;
+        private readonly IBusinessDateService _businessDateService;
 
         public NutritionInsightService(
             EatFitAIDbContext db,
-            ILogger<NutritionInsightService> logger)
+            ILogger<NutritionInsightService> logger,
+            IBusinessDateService businessDateService)
         {
             _db = db;
             _logger = logger;
+            _businessDateService = businessDateService;
         }
 
         // Helper class for daily nutrition statistics
@@ -46,8 +49,8 @@ namespace EatFitAI.API.Services
         {
             _logger.LogInformation("Generating personalized nutrition insights for user {UserId}", userId);
 
-            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-request.AnalysisDays));
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = await _businessDateService.GetTodayAsync(userId, cancellationToken);
+            var startDate = today.AddDays(-request.AnalysisDays);
 
             // Get user's meal history
             var mealHistory = await _db.MealDiaries
@@ -142,8 +145,8 @@ namespace EatFitAI.API.Services
         {
             _logger.LogInformation("Calculating adaptive nutrition target for user {UserId}", userId);
 
-            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-request.AnalysisDays));
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = await _businessDateService.GetTodayAsync(userId, cancellationToken);
+            var startDate = today.AddDays(-request.AnalysisDays);
 
             // Get current target
             var currentTarget = await _db.NutritionTargets
@@ -250,7 +253,7 @@ namespace EatFitAI.API.Services
             NutritionTargetDto newTarget,
             CancellationToken cancellationToken = default)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = await _businessDateService.GetTodayAsync(userId, cancellationToken);
 
             // Close current target
             var currentTarget = await _db.NutritionTargets
@@ -631,4 +634,3 @@ namespace EatFitAI.API.Services
         #endregion
     }
 }
-

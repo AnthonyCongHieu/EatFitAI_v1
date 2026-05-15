@@ -279,7 +279,8 @@ CREATE INDEX "IX_AiCorrectionEvent_Label_CreatedAt" ON "AiCorrectionEvent" ("Lab
 CREATE INDEX "IX_AiCorrectionEvent_Source_CreatedAt" ON "AiCorrectionEvent" ("Source", "CreatedAt");
 
 ALTER TABLE IF EXISTS "UserPreference"
-    ADD COLUMN IF NOT EXISTS "Allergies" TEXT NULL;
+    ADD COLUMN IF NOT EXISTS "Allergies" TEXT NULL,
+    ADD COLUMN IF NOT EXISTS "TimeZoneId" VARCHAR(100) NOT NULL DEFAULT 'Asia/Ho_Chi_Minh';
 
 ALTER TABLE IF EXISTS "AILog"
     ADD COLUMN IF NOT EXISTS "DurationMs" INTEGER NULL;
@@ -370,6 +371,7 @@ CREATE TABLE IF NOT EXISTS "UserPreference" (
     "MealReminderEnabled" BOOLEAN       NOT NULL DEFAULT FALSE,
     "WeightUnit"        VARCHAR(5)      NULL DEFAULT 'kg',
     "HeightUnit"        VARCHAR(5)      NULL DEFAULT 'cm',
+    "TimeZoneId"        VARCHAR(100)    NOT NULL DEFAULT 'Asia/Ho_Chi_Minh',
     "CreatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
     "UpdatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
     CONSTRAINT "PK_UserPreference" PRIMARY KEY ("UserPreferenceId"),

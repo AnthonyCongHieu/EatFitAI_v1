@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.Services;
 using Microsoft.EntityFrameworkCore;
 using AppModel = EatFitAI.API.Models;
 using Db = EatFitAI.API.DbScaffold.Models;
@@ -122,7 +123,7 @@ public static class ScanDemoReliabilitySeeder
         var logger = serviceProvider.GetRequiredService<ILoggerFactory>()
             .CreateLogger("ScanDemoReliabilitySeeder");
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var today = GetDefaultBusinessToday();
         var moderateActivity = await db.ActivityLevels
             .FirstOrDefaultAsync(level => level.Name == "Moderately Active", cancellationToken)
             ?? throw new InvalidOperationException("Missing ActivityLevel 'Moderately Active'.");
@@ -158,7 +159,7 @@ public static class ScanDemoReliabilitySeeder
         user.TargetWeightKg = 68m;
         user.CurrentStreak = 7;
         user.LongestStreak = Math.Max(user.LongestStreak, 14);
-        user.LastLogDate = DateTime.UtcNow.Date;
+        user.LastLogDate = today.ToDateTime(TimeOnly.MinValue);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -431,5 +432,11 @@ public static class ScanDemoReliabilitySeeder
             PasswordKeySize);
 
         return $"PBKDF2${PasswordHashIterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
+    }
+
+    private static DateOnly GetDefaultBusinessToday()
+    {
+        var localNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, BusinessTimeZone.DefaultTimeZone);
+        return DateOnly.FromDateTime(localNow.DateTime);
     }
 }

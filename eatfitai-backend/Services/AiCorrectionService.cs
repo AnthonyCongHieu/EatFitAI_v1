@@ -17,10 +17,14 @@ public interface IAiCorrectionService
 public sealed class AiCorrectionService : IAiCorrectionService
 {
     private readonly EatFitAIDbContext _db;
+    private readonly IBusinessDateService _businessDateService;
 
-    public AiCorrectionService(EatFitAIDbContext db)
+    public AiCorrectionService(
+        EatFitAIDbContext db,
+        IBusinessDateService businessDateService)
     {
         _db = db;
+        _businessDateService = businessDateService;
     }
 
     public Task<int> LogCorrectionAsync(
@@ -59,14 +63,17 @@ public sealed class AiCorrectionService : IAiCorrectionService
 
     public async Task<AiCorrectionStatsDto> GetStatsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var todayStartUtc = DateTime.UtcNow.Date;
+        var today = await _businessDateService.GetTodayAsync(userId, cancellationToken);
+        var todayRange = _businessDateService.GetUtcRange(
+            today,
+            await _businessDateService.GetUserTimeZoneIdAsync(userId, cancellationToken));
         var baseQuery = _db.AiCorrectionEvents
             .AsNoTracking()
             .Where(x => x.UserId == userId);
 
         var totalCorrections = await baseQuery.CountAsync(cancellationToken);
         var todayCorrections = await baseQuery.CountAsync(
-            x => x.CreatedAt >= todayStartUtc,
+            x => x.CreatedAt >= todayRange.StartUtc && x.CreatedAt < todayRange.EndUtc,
             cancellationToken);
 
         var topSources = await baseQuery

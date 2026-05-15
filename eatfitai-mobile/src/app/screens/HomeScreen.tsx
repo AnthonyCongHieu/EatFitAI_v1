@@ -45,6 +45,7 @@ import { waterService, type WaterIntakeData } from '../../services/waterService'
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
+import { formatBusinessDate } from '../../utils/businessDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -103,8 +104,7 @@ const getFoodEmoji = (foodName: string): string => {
 const VIET_DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
 const isToday = (d: Date): boolean => {
-  const now = new Date();
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  return formatBusinessDate(d) === formatBusinessDate();
 };
 
 const isSameDay = (a: Date, b: Date): boolean =>
@@ -268,7 +268,7 @@ const HomeScreen = (): React.ReactElement => {
     queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
       amountMl: (old?.amountMl ?? 0) + 200,
       targetMl: old?.targetMl ?? 2000,
-      date: old?.date ?? new Date().toISOString().split('T')[0]!,
+      date: old?.date ?? formatBusinessDate(),
     }));
 
     try {
@@ -291,7 +291,7 @@ const HomeScreen = (): React.ReactElement => {
     queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
       amountMl: newAmount,
       targetMl: old?.targetMl ?? 2000,
-      date: old?.date ?? new Date().toISOString().split('T')[0]!,
+      date: old?.date ?? formatBusinessDate(),
     }));
 
     try {
@@ -658,8 +658,8 @@ const HomeScreen = (): React.ReactElement => {
           <WeekDayStrip selectedDate={selectedDate} onSelectDate={(d) => {
             setSelectedDate(d);
             // Refetch diary for the selected date
-            const dateStr = d.toISOString().split('T')[0];
-            const today = new Date().toISOString().split('T')[0];
+            const dateStr = formatBusinessDate(d);
+            const today = formatBusinessDate();
             if (dateStr === today) {
               fetchSummary();
             } else {

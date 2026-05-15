@@ -16,13 +16,16 @@ namespace EatFitAI.API.Controllers
     {
         private readonly IMealDiaryService _mealDiaryService;
         private readonly IDayCompletenessService _dayCompletenessService;
+        private readonly IBusinessDateService _businessDateService;
 
         public MealDiaryController(
             IMealDiaryService mealDiaryService,
-            IDayCompletenessService dayCompletenessService)
+            IDayCompletenessService dayCompletenessService,
+            IBusinessDateService businessDateService)
         {
             _mealDiaryService = mealDiaryService;
             _dayCompletenessService = dayCompletenessService;
+            _businessDateService = businessDateService;
         }
 
         [HttpGet]
@@ -50,7 +53,9 @@ namespace EatFitAI.API.Controllers
             try
             {
                 var userId = GetUserIdFromToken();
-                var localDate = DateOnly.FromDateTime(date ?? DateTime.UtcNow);
+                var localDate = date.HasValue
+                    ? _businessDateService.ToDateOnly(date.Value)
+                    : await _businessDateService.GetTodayAsync(userId);
                 var dayState = await _dayCompletenessService.GetDayCompletenessAsync(userId, localDate);
                 return Ok(dayState);
             }

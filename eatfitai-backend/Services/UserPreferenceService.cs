@@ -44,7 +44,8 @@ namespace EatFitAI.API.Services
                     DietaryRestrictions = new List<string>(),
                     Allergies = new List<string>(),
                     PreferredMealsPerDay = 3,
-                    PreferredCuisine = null
+                    PreferredCuisine = null,
+                    TimeZoneId = BusinessTimeZone.DefaultTimeZoneId
                 };
             }
 
@@ -53,7 +54,8 @@ namespace EatFitAI.API.Services
                 DietaryRestrictions = DeserializeList(pref.DietaryRestrictions),
                 Allergies = DeserializeList(pref.Allergies),
                 PreferredMealsPerDay = pref.PreferredMealsPerDay,
-                PreferredCuisine = pref.PreferredCuisine
+                PreferredCuisine = pref.PreferredCuisine,
+                TimeZoneId = BusinessTimeZone.NormalizeOrDefault(pref.TimeZoneId)
             };
         }
 
@@ -78,6 +80,7 @@ namespace EatFitAI.API.Services
             pref.Allergies = SerializeList(dto.Allergies);
             pref.PreferredMealsPerDay = dto.PreferredMealsPerDay;
             pref.PreferredCuisine = dto.PreferredCuisine;
+            pref.TimeZoneId = NormalizeRequestedTimeZone(dto.TimeZoneId);
             pref.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -105,6 +108,22 @@ namespace EatFitAI.API.Services
         {
             if (list == null || !list.Any()) return "[]";
             return JsonSerializer.Serialize(list);
+        }
+
+        private static string NormalizeRequestedTimeZone(string? timeZoneId)
+        {
+            if (string.IsNullOrWhiteSpace(timeZoneId))
+            {
+                return BusinessTimeZone.DefaultTimeZoneId;
+            }
+
+            var normalized = BusinessTimeZone.NormalizeOrDefault(timeZoneId);
+            if (!BusinessTimeZone.TryResolve(timeZoneId, out _))
+            {
+                throw new ArgumentException("Múi giờ không hợp lệ.", nameof(timeZoneId));
+            }
+
+            return normalized;
         }
     }
 }

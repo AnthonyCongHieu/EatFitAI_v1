@@ -8,6 +8,7 @@ using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Security;
+using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -155,6 +156,7 @@ public class AdminController : ControllerBase
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
     private readonly IMediaUrlResolver _mediaUrlResolver;
+    private readonly IBusinessDateService _businessDateService;
 
     public AdminController(
         ApplicationDbContext context,
@@ -162,7 +164,8 @@ public class AdminController : ControllerBase
         IAdminRuntimeSnapshotCache runtimeSnapshotCache,
         IAdminRealtimeEventBus eventBus,
         IAdminAuditService auditService,
-        IMediaUrlResolver mediaUrlResolver)
+        IMediaUrlResolver mediaUrlResolver,
+        IBusinessDateService businessDateService)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
@@ -170,6 +173,7 @@ public class AdminController : ControllerBase
         _eventBus = eventBus;
         _auditService = auditService;
         _mediaUrlResolver = mediaUrlResolver;
+        _businessDateService = businessDateService;
     }
 
     [HttpGet("session")]
@@ -259,8 +263,10 @@ public class AdminController : ControllerBase
             int totalFoods = 0;
             try { totalFoods = await _context.FoodItems.CountAsync(); } catch { }
 
-            var today = DateTime.UtcNow.Date;
-            var newUsersToday = await _context.Users.CountAsync(u => u.CreatedAt >= today);
+            var today = _businessDateService.ToDateOnly(DateTimeOffset.UtcNow, BusinessTimeZone.DefaultTimeZoneId);
+            var todayRange = _businessDateService.GetUtcRange(today, BusinessTimeZone.DefaultTimeZoneId);
+            var newUsersToday = await _context.Users.CountAsync(
+                u => u.CreatedAt >= todayRange.StartUtc && u.CreatedAt < todayRange.EndUtc);
 
             var stats = new AdminDashboardStatsDto
             {

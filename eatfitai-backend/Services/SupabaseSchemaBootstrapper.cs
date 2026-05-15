@@ -33,6 +33,7 @@ public sealed class SupabaseSchemaBootstrapper
             ADD COLUMN IF NOT EXISTS "Allergies" text NULL,
             ADD COLUMN IF NOT EXISTS "PreferredMealsPerDay" integer NOT NULL DEFAULT 3,
             ADD COLUMN IF NOT EXISTS "PreferredCuisine" character varying(100) NULL,
+            ADD COLUMN IF NOT EXISTS "TimeZoneId" character varying(100) NOT NULL DEFAULT 'Asia/Ho_Chi_Minh',
             ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp(3) with time zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
             ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp(3) with time zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC');
 

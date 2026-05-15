@@ -27,6 +27,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { profileService } from '../../../services/profileService';
+import { formatBusinessDate } from '../../../utils/businessDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_HEIGHT = 200;
@@ -52,7 +53,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
       // Map backend data to WeightRecord format and sort by date ascending (oldest first)
       const mapped = data.map(
         (item): WeightRecord => ({
-          date: item.measuredDate || new Date().toISOString(),
+          date: item.measuredDate || formatBusinessDate(),
           weight: item.weightKg || 0,
           note: item.note || undefined,
         }),

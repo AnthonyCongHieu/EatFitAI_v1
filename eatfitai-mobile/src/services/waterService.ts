@@ -2,6 +2,7 @@ import apiClient from './apiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../utils/logger';
 import { useAuthStore } from '../store/useAuthStore';
+import { formatBusinessDate } from '../utils/businessDate';
 
 export interface WaterIntakeData {
   date: string;
@@ -10,10 +11,7 @@ export interface WaterIntakeData {
 }
 
 const formatDateForApi = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = `${date.getMonth() + 1}`.padStart(2, '0');
-  const d = `${date.getDate()}`.padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return formatBusinessDate(date);
 };
 
 export const BASE_WATER_TARGET_KEY = '@eatfitai_water_target_ml';

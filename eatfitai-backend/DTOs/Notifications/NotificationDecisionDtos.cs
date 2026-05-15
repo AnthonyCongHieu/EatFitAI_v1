@@ -1,3 +1,5 @@
+using EatFitAI.API.Services;
+
 namespace EatFitAI.API.DTOs.Notifications;
 
 public static class NotificationSuppressReason
@@ -10,13 +12,18 @@ public static class NotificationSuppressReason
 
 public sealed class NotificationDecisionRequestDto
 {
-    public DateOnly LocalDate { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
-    public TimeOnly LocalTime { get; set; } = TimeOnly.FromDateTime(DateTime.UtcNow);
+    public DateOnly LocalDate { get; set; } = DateOnly.FromDateTime(GetDefaultBusinessNow());
+    public TimeOnly LocalTime { get; set; } = TimeOnly.FromDateTime(GetDefaultBusinessNow());
     public TimeOnly QuietHoursStart { get; set; } = new(21, 30);
     public TimeOnly QuietHoursEnd { get; set; } = new(7, 0);
     public string NudgeType { get; set; } = "meal";
     public DateTimeOffset? LastNudgedAt { get; set; }
     public int CooldownMinutes { get; set; } = 180;
+
+    private static DateTime GetDefaultBusinessNow()
+    {
+        return TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, BusinessTimeZone.DefaultTimeZone).DateTime;
+    }
 }
 
 public sealed class NotificationDecisionDto

@@ -1,7 +1,7 @@
+const { toBusinessDateOnly } = require('./business-date');
+
 function toVietnamDateOnly(date = new Date()) {
-  const local = new Date(date);
-  local.setUTCHours(local.getUTCHours() + 7);
-  return local.toISOString().slice(0, 10);
+  return toBusinessDateOnly(date);
 }
 
 function buildNoonUtcIsoForDateOnly(dateOnly) {
@@ -15,5 +15,6 @@ function buildNoonUtcIsoForDateOnly(dateOnly) {
 
 module.exports = {
   buildNoonUtcIsoForDateOnly,
+  toBusinessDateOnly,
   toVietnamDateOnly,
 };

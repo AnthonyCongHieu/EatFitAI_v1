@@ -63,4 +63,5 @@ export interface UserPreference {
   allergies: string[];
   preferredMealsPerDay: number;
   preferredCuisine: string | null;
+  timeZoneId?: string;
 }

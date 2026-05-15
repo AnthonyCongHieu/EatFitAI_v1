@@ -5,6 +5,7 @@ const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { isFallbackSource } = require('./lib/primary-path-readiness');
 const { runMediaEgressGuard } = require('./lib/media-egress-guard');
 const { requestVisionDetectFromFile } = require('./lib/media-upload-smoke');
+const { toBusinessDateOnly } = require('./lib/business-date');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -447,7 +448,7 @@ function collectExpectedVoiceFoods(voiceCase, parseBody) {
 async function readVoiceDiaryEntry(backendUrl, token, parseBody, voiceCase) {
   const entities = parseBody?.entities || {};
   const rawDate = trim(
-    voiceCase.readbackDate || entities.date || new Date().toISOString(),
+    voiceCase.readbackDate || entities.date || toBusinessDateOnly(),
   );
   const dateOnly = rawDate.includes('T') ? rawDate.slice(0, 10) : rawDate.slice(0, 10);
   const expectedMealType = normalizeMealTypeName(

@@ -33,6 +33,7 @@ namespace EatFitAI.API.Services
         private readonly IHostEnvironment _environment;
         private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
         private readonly ILogger<UserService> _logger;
+        private readonly IBusinessDateService _businessDateService;
 
         public UserService(
             IUserRepository userRepository,
@@ -44,7 +45,8 @@ namespace EatFitAI.API.Services
             IMediaUrlResolver mediaUrlResolver,
             IHostEnvironment environment,
             SupabaseSchemaBootstrapper schemaBootstrapper,
-            ILogger<UserService> logger)
+            ILogger<UserService> logger,
+            IBusinessDateService businessDateService)
         {
             _userRepository = userRepository;
             _context = context;
@@ -56,6 +58,7 @@ namespace EatFitAI.API.Services
             _environment = environment;
             _schemaBootstrapper = schemaBootstrapper;
             _logger = logger;
+            _businessDateService = businessDateService;
         }
 
         public async Task<UserDto> GetUserByIdAsync(Guid userId)
@@ -221,7 +224,7 @@ namespace EatFitAI.API.Services
                         UserId = userId,
                         HeightCm = newHeight,
                         WeightKg = newWeight,
-                        MeasuredDate = DateTimeHelper.GetVietnamToday(),
+                        MeasuredDate = await _businessDateService.GetTodayAsync(userId),
                         Note = "Cập nhật từ Hồ sơ"
                     };
                     await _context.BodyMetrics.AddAsync(newMetric);

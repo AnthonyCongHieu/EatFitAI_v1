@@ -13,10 +13,14 @@ namespace EatFitAI.API.Controllers;
 public sealed class LapseController : ControllerBase
 {
     private readonly ILapseRecoveryService _lapseRecoveryService;
+    private readonly IBusinessDateService _businessDateService;
 
-    public LapseController(ILapseRecoveryService lapseRecoveryService)
+    public LapseController(
+        ILapseRecoveryService lapseRecoveryService,
+        IBusinessDateService businessDateService)
     {
         _lapseRecoveryService = lapseRecoveryService;
+        _businessDateService = businessDateService;
     }
 
     [HttpGet("recovery")]
@@ -26,9 +30,12 @@ public sealed class LapseController : ControllerBase
     {
         try
         {
-            var date = DateOnly.FromDateTime(localDate ?? DateTime.UtcNow);
+            var userId = GetUserId();
+            var date = localDate.HasValue
+                ? _businessDateService.ToDateOnly(localDate.Value)
+                : await _businessDateService.GetTodayAsync(userId, cancellationToken);
             var result = await _lapseRecoveryService.GetRecoveryAsync(
-                GetUserId(),
+                userId,
                 date,
                 cancellationToken);
 

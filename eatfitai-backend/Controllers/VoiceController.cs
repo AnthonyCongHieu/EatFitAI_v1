@@ -35,6 +35,7 @@ namespace EatFitAI.API.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<VoiceController> _logger;
+        private readonly IBusinessDateService _businessDateService;
         private const double VoiceReviewConfidenceThreshold = 0.75;
         private static readonly HashSet<string> AllowedVoiceAudioExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -61,7 +62,8 @@ namespace EatFitAI.API.Controllers
             IAnalyticsService analyticsService,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            ILogger<VoiceController> logger)
+            ILogger<VoiceController> logger,
+            IBusinessDateService businessDateService)
         {
             _voiceService = voiceService;
             _foodService = foodService;
@@ -71,6 +73,7 @@ namespace EatFitAI.API.Controllers
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
+            _businessDateService = businessDateService;
         }
 
         private Guid GetUserId()
@@ -687,7 +690,8 @@ namespace EatFitAI.API.Controllers
                         // Query DaySummary để lấy cả calo và mục tiêu
                         try
                         {
-                            var today = command.Entities.Date ?? DateTimeHelper.GetVietnamNow().Date;
+                            var today = command.Entities.Date
+                                ?? (await _businessDateService.GetTodayAsync(userId)).ToDateTime(TimeOnly.MinValue);
                             var daySummary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, today);
                             var totalCalories = daySummary.TotalCalories;
                             var targetCalories = daySummary.TargetCalories ?? 2000;
@@ -750,7 +754,7 @@ namespace EatFitAI.API.Controllers
                 var bodyMetric = new EatFitAI.API.DTOs.User.BodyMetricDto
                 {
                     WeightKg = request.NewWeight,
-                    MeasuredDate = DateTimeHelper.GetVietnamNow()
+                    MeasuredDate = await GetBusinessNowAsync(userId)
                 };
                 await _userService.RecordBodyMetricsAsync(userId, bodyMetric);
                 
@@ -766,7 +770,7 @@ namespace EatFitAI.API.Controllers
                         Data = new Dictionary<string, object>
                         {
                             ["savedWeight"] = request.NewWeight,
-                            ["savedAt"] = DateTimeHelper.GetVietnamNow().ToString("yyyy-MM-dd HH:mm")
+                            ["savedAt"] = (await GetBusinessNowAsync(userId)).ToString("yyyy-MM-dd HH:mm")
                         }
                     }
                 });
@@ -787,7 +791,8 @@ namespace EatFitAI.API.Controllers
             try
             {
                 var mealTypeId = ParseMealTypeEnum(command.Entities.MealType);
-                var eatenDate = command.Entities.Date ?? DateTime.UtcNow;
+                var eatenDate = command.Entities.Date
+                    ?? (await _businessDateService.GetTodayAsync(userId)).ToDateTime(TimeOnly.MinValue);
                 var addedFoods = new List<string>();
                 decimal totalCalories = 0;
 
@@ -940,6 +945,14 @@ namespace EatFitAI.API.Controllers
                 MealType.Snack => "Bữa phụ",
                 _ => "Bữa ăn"
             };
+        }
+
+        private async Task<DateTime> GetBusinessNowAsync(Guid userId)
+        {
+            var timeZoneId = await _businessDateService.GetUserTimeZoneIdAsync(userId);
+            return BusinessTimeZone.TryResolve(timeZoneId, out var timeZone)
+                ? TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, timeZone).DateTime
+                : TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, BusinessTimeZone.DefaultTimeZone).DateTime;
         }
     }
 }

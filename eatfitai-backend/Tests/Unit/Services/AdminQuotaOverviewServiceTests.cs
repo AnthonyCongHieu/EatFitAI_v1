@@ -42,6 +42,7 @@ public class AdminQuotaOverviewServiceTests
     [Fact]
     public async Task GetOverviewAsync_WithGeminiRuntimeSnapshot_UsesRealQuotaWindows()
     {
+        var telemetryCompletedAt = DateTime.UtcNow.AddDays(-1);
         var cache = new Mock<IAdminRuntimeSnapshotCache>();
         cache
             .Setup(service => service.GetLatestAsync(It.IsAny<CancellationToken>()))
@@ -68,7 +69,7 @@ public class AdminQuotaOverviewServiceTests
                         RpdRemaining = 84,
                         TotalRequests = 16,
                         TotalTokens = 3_000,
-                        LastUsedAt = "2026-05-08T01:00:00Z",
+                        LastUsedAt = telemetryCompletedAt.ToString("O"),
                     },
                 ],
             });
@@ -97,7 +98,7 @@ public class AdminQuotaOverviewServiceTests
                     RuntimeProjectId = "eatfit-primary",
                     ProjectAlias = "EatFit Primary",
                     Model = "gemini-2.0-flash",
-                    CompletedAt = new DateTime(2026, 5, 8, 1, 0, 0, DateTimeKind.Utc),
+                    CompletedAt = telemetryCompletedAt,
                     Outcome = "success",
                     UsageMetadataJson = "{\"promptTokenCount\":1000,\"candidatesTokenCount\":2000,\"totalTokenCount\":3000}",
                 },

@@ -3,6 +3,11 @@ const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { buildUserApiSmokeNames } = require('./lib/user-smoke-data');
 const { runMediaEgressGuard } = require('./lib/media-egress-guard');
+const {
+  DEFAULT_BUSINESS_TIME_ZONE,
+  addDaysToDateOnly,
+  toBusinessDateOnly,
+} = require('./lib/business-date');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -27,6 +32,7 @@ const DEFAULT_PREFERENCES = {
   allergies: ['peanuts'],
   preferredMealsPerDay: 4,
   preferredCuisine: 'vietnamese',
+  timeZoneId: DEFAULT_BUSINESS_TIME_ZONE,
 };
 const BODY_METRICS = [
   { offsetDays: 14, heightCm: 171, weightKg: 70.2, note: 'Smoke lane history seed' },
@@ -78,16 +84,11 @@ function sleep(ms) {
 }
 
 function toLocalDateOnly(date = new Date()) {
-  const local = new Date(date);
-  local.setUTCHours(local.getUTCHours() + 7);
-  return local.toISOString().slice(0, 10);
+  return toBusinessDateOnly(date);
 }
 
 function shiftLocalDate(daysOffset) {
-  const date = new Date();
-  date.setUTCHours(date.getUTCHours() + 7);
-  date.setUTCDate(date.getUTCDate() + Number(daysOffset || 0));
-  return date.toISOString().slice(0, 10);
+  return addDaysToDateOnly(toLocalDateOnly(), Number(daysOffset || 0));
 }
 
 function guessMimeType(filePath) {

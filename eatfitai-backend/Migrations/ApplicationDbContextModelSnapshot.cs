@@ -898,6 +898,12 @@ namespace EatFitAI.API.Migrations
                     b.Property<int>("PreferredMealsPerDay")
                         .HasColumnType("integer");
 
+                    b.Property<string>("TimeZoneId")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("Asia/Ho_Chi_Minh");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(3)

@@ -77,7 +77,11 @@ namespace EatFitAI.API.Tests.Unit.Services
                     new ConfigurationBuilder().Build(),
                     _environmentMock.Object,
                     NullLogger<SupabaseSchemaBootstrapper>.Instance),
-                _loggerMock.Object);
+                _loggerMock.Object,
+                new BusinessDateService(
+                    _adminContext,
+                    TimeProvider.System,
+                    NullLogger<BusinessDateService>.Instance));
 
             SeedTestData();
         }

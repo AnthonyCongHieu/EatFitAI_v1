@@ -2,6 +2,7 @@ using System.Security.Claims;
 using EatFitAI.API.DTOs;
 using EatFitAI.API.DTOs.Analytics;
 using EatFitAI.API.Helpers;
+using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +15,14 @@ namespace EatFitAI.API.Controllers
     public class AnalyticsController : ControllerBase
     {
         private readonly IAnalyticsService _analyticsService;
+        private readonly IBusinessDateService _businessDateService;
 
-        public AnalyticsController(IAnalyticsService analyticsService)
+        public AnalyticsController(
+            IAnalyticsService analyticsService,
+            IBusinessDateService businessDateService)
         {
             _analyticsService = analyticsService;
+            _businessDateService = businessDateService;
         }
 
         [HttpGet("nutrition-summary")]
@@ -30,17 +35,19 @@ namespace EatFitAI.API.Controllers
                 return BadRequest(new { message = "startDate là bắt buộc và phải là ngày hợp lệ." });
             }
 
-            var normalizedStartDate = startDate.Date;
-            var effectiveEndDate = (endDate ?? DateTime.UtcNow.Date).Date;
-
-            if (effectiveEndDate < normalizedStartDate)
-            {
-                return BadRequest(new { message = "endDate phải lớn hơn hoặc bằng startDate." });
-            }
-
             try
             {
                 var userId = GetUserIdFromToken();
+                var normalizedStartDate = startDate.Date;
+                var effectiveEndDate = endDate.HasValue
+                    ? endDate.Value.Date
+                    : (await _businessDateService.GetTodayAsync(userId, HttpContext.RequestAborted)).ToDateTime(TimeOnly.MinValue);
+
+                if (effectiveEndDate < normalizedStartDate)
+                {
+                    return BadRequest(new { message = "endDate phải lớn hơn hoặc bằng startDate." });
+                }
+
                 var summary = await _analyticsService.GetNutritionSummaryAsync(userId, normalizedStartDate, effectiveEndDate);
                 return Ok(summary);
             }

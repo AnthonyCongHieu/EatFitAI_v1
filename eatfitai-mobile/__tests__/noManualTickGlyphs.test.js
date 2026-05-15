@@ -4,7 +4,7 @@ const path = require('path');
 
 const mobileRoot = path.resolve(__dirname, '..');
 const sourceRoot = path.join(mobileRoot, 'src');
-const manualTickGlyphPattern = /[\u2705\u2713\u2714\u2611]/u;
+const manualTickGlyphPattern = /[\u2705\u2713\u2714\u2611\u2612\u2717\u2718\u2715\u274c]/u;
 
 function collectSourceFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

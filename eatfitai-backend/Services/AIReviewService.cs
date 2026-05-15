@@ -13,11 +13,16 @@ public class AIReviewService
 {
     private readonly ApplicationDbContext _db;
     private readonly ILogger<AIReviewService> _logger;
+    private readonly IBusinessDateService _businessDateService;
 
-    public AIReviewService(ApplicationDbContext db, ILogger<AIReviewService> logger)
+    public AIReviewService(
+        ApplicationDbContext db,
+        ILogger<AIReviewService> logger,
+        IBusinessDateService businessDateService)
     {
         _db = db;
         _logger = logger;
+        _businessDateService = businessDateService;
     }
 
     /// <summary>
@@ -77,7 +82,10 @@ public class AIReviewService
         // Level 3: Bi-weekly (14+ days since last review)
         if (lastReviewDate != null)
         {
-            var daysSinceLastReview = (DateTime.UtcNow - lastReviewDate.Value).Days;
+            var timeZoneId = await _businessDateService.GetUserTimeZoneIdAsync(userId);
+            var today = await _businessDateService.GetTodayAsync(userId);
+            var lastReviewLocalDate = _businessDateService.ToDateOnly(EnsureUtc(lastReviewDate.Value), timeZoneId);
+            var daysSinceLastReview = today.DayNumber - lastReviewLocalDate.DayNumber;
             
             if (daysSinceLastReview >= 14 && daysLogged >= 10)
             {
@@ -178,7 +186,7 @@ public class AIReviewService
             return new WeeklyReviewDto
             {
                 Status = "CONTINUE",
-                Message = $"✅ Giảm cân ổn ({Math.Abs(weightChange):F1}kg/tuần). Tiếp tục!",
+                Message = $"Giảm cân ổn ({Math.Abs(weightChange):F1}kg/tuần). Tiếp tục!",
                 Confidence = 0.9m,
                 DataQuality = quality,
                 Insights = CreateInsights(data, "improving")
@@ -260,7 +268,7 @@ public class AIReviewService
             return new WeeklyReviewDto
             {
                 Status = "CONTINUE",
-                Message = $"✅ Tăng cân tốt (+{weightChange:F1}kg)!",
+                Message = $"Tăng cân tốt (+{weightChange:F1}kg)!",
                 Confidence = 0.9m,
                 DataQuality = quality,
                 Insights = CreateInsights(data, "improving")
@@ -296,7 +304,7 @@ public class AIReviewService
             return new WeeklyReviewDto
             {
                 Status = "CONTINUE",
-                Message = "✅ Cân nặng ổn định. Duy trì tốt!",
+                Message = "Cân nặng ổn định. Duy trì tốt!",
                 Confidence = 0.9m,
                 DataQuality = quality,
                 Insights = CreateInsights(data, "stable")
@@ -365,10 +373,13 @@ public class AIReviewService
         var user = await _db.Users.FindAsync(userId);
         if (user == null) throw new Exception("Không tìm thấy người dùng");
         
-        var daysSinceStart = (DateTime.UtcNow - user.CreatedAt).Days;
+        var timeZoneId = await _businessDateService.GetUserTimeZoneIdAsync(userId);
+        var today = await _businessDateService.GetTodayAsync(userId);
+        var createdDate = _businessDateService.ToDateOnly(EnsureUtc(user.CreatedAt), timeZoneId);
+        var daysSinceStart = today.DayNumber - createdDate.DayNumber;
         
         // Get meal diary data (last 7 days)
-        var weekAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7));
+        var weekAgo = today.AddDays(-7);
         var recentMeals = await _db.MealDiaries
             .Where(m => m.UserId == userId && m.EatenDate >= weekAgo && !m.IsDeleted)
             .Select(m => new
@@ -464,6 +475,12 @@ public class AIReviewService
         return DateTime.UtcNow.AddDays(Math.Max(daysNeeded, 0));
     }
 
+    private static DateTime EnsureUtc(DateTime value)
+    {
+        return value.Kind == DateTimeKind.Utc
+            ? value
+            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+    }
+
     #endregion
 }
-

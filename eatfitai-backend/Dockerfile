@@ -3,6 +3,7 @@
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS base
 WORKDIR /app
+RUN apk add --no-cache tzdata
 # Render.com mặc định dùng port 10000
 EXPOSE 10000
 
@@ -25,6 +26,7 @@ COPY --from=build /app/publish .
 # Cấu hình cho production trên Render
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:10000
+ENV APP_DEFAULT_TIME_ZONE=Asia/Ho_Chi_Minh
 ENV DOTNET_hostBuilder__reloadConfigOnChange=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 

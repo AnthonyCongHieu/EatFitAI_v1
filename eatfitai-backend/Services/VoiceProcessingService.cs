@@ -145,7 +145,6 @@ namespace EatFitAI.Services
                         FoodName = foodName,
                         Quantity = quantity,
                         MealType = mealType,
-                        Date = DateTimeHelper.GetVietnamNow().Date,
                     },
                     SuggestedAction = $"Thêm {quantity} {foodName} vào {GetMealLabel(mealType)}",
                 };
@@ -175,7 +174,6 @@ namespace EatFitAI.Services
                     Entities = new VoiceCommandEntities
                     {
                         Weight = weight,
-                        Date = DateTimeHelper.GetVietnamNow().Date,
                     },
                     SuggestedAction = $"Ghi cân nặng {weight} kg",
                 };
@@ -204,7 +202,6 @@ namespace EatFitAI.Services
                     Confidence = 0.85,
                     Entities = new VoiceCommandEntities
                     {
-                        Date = DateTimeHelper.GetVietnamNow().Date,
                     },
                     SuggestedAction = "Xem tổng calories hôm nay",
                 };

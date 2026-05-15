@@ -3,6 +3,7 @@ import { loadWithOfflineFallback, offlineCache } from './offlineCache';
 import type { MealDiaryDto, MealTypeId } from '../types';
 import { MEAL_TYPE_LABELS } from '../types';
 import logger from '../utils/logger';
+import { formatBusinessDate } from '../utils/businessDate';
 
 const DAY_SUMMARY_CACHE_PREFIX = '@eatfit_cache:diary:summary:';
 const DAY_COMBINED_CACHE_PREFIX = '@eatfit_cache:diary:combined:';
@@ -122,7 +123,7 @@ const normalizeMeal = (data: any): DiaryMealGroup => {
 };
 
 const normalizeSummary = (data: any): DaySummary => ({
-  date: data?.date ?? data?.mealDate ?? new Date().toISOString(),
+  date: data?.date ?? data?.mealDate ?? formatBusinessDate(),
   totalCalories: toNumberOrNull(data?.totalCalories),
   targetCalories: toNumberOrNull(data?.targetCalories),
   protein: toNumberOrNull(data?.totalProtein ?? data?.protein),
@@ -147,11 +148,7 @@ const normalizeWeekSummary = (data: any): WeekSummary => {
 };
 
 const todayDate = (): string => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = `${d.getMonth() + 1}`.padStart(2, '0');
-  const day = `${d.getDate()}`.padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return formatBusinessDate();
 };
 
 const groupByMeal = (entries: DiaryEntry[]): DiaryMealGroup[] => {

@@ -30,6 +30,11 @@ namespace EatFitAI.API.Models
         /// Ẩm thực ưa thích: "vietnamese", "western", "asian"
         /// </summary>
         public string? PreferredCuisine { get; set; }
+
+        /// <summary>
+        /// IANA timezone dùng để tính ngày nghiệp vụ, ví dụ "Asia/Ho_Chi_Minh".
+        /// </summary>
+        public string? TimeZoneId { get; set; } = "Asia/Ho_Chi_Minh";
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         

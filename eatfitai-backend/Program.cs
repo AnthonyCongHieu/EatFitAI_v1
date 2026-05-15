@@ -850,6 +850,7 @@ builder.Services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
 builder.Services.AddScoped<IUserFoodItemRepository, UserFoodItemRepository>();
 
 // Add Services
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMealDiaryService, MealDiaryService>();
@@ -863,6 +864,7 @@ builder.Services.AddSingleton<IAiHealthService, AiHealthService>();
 builder.Services.AddSingleton<VisionDetectConcurrencyGate>();
 builder.Services.AddHostedService<AiHealthBackgroundService>();
 builder.Services.AddScoped<IUserPreferenceService, UserPreferenceService>();
+builder.Services.AddScoped<IBusinessDateService, BusinessDateService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
 builder.Services.AddScoped<AIReviewService>(); // AI Weekly Review

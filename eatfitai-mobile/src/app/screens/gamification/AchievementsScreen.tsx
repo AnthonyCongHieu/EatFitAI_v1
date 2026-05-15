@@ -13,6 +13,7 @@ import { useDiaryStore } from '../../../store/useDiaryStore';
 import { waterService, WaterIntakeData } from '../../../services/waterService';
 import { shareService } from '../../../services/shareService';
 import type { RootStackParamList } from '../../types';
+import { formatBusinessDate } from '../../../utils/businessDate';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -127,7 +128,7 @@ const AchievementsScreen = (): React.ReactElement => {
 
   // Auto-claim daily quests
   useEffect(() => {
-    const todayStr = new Date().toISOString().split('T')[0]!;
+    const todayStr = formatBusinessDate();
     dailyQuests.forEach(q => {
       if (q.completed && dailyQuestsClaimed?.[q.id] !== todayStr) {
         claimDailyQuest(q.id, parseInt(q.reward.replace(/[^0-9]/g, ''), 10));

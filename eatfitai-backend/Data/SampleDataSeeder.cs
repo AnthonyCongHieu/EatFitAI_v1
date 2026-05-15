@@ -1,5 +1,6 @@
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 
@@ -79,11 +80,12 @@ namespace EatFitAI.API.Data
             if (!users.Any()) return;
 
             var bodyMetrics = new List<BodyMetric>();
+            var today = GetDefaultBusinessToday();
 
             foreach (var user in users)
             {
                 // Add multiple body metrics for each user over time
-                var baseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+                var baseDate = today.AddDays(-30);
 
                 for (int i = 0; i < 4; i++)
                 {
@@ -146,13 +148,14 @@ namespace EatFitAI.API.Data
 
             var mealDiaries = new List<MealDiary>();
             var random = new Random();
+            var today = GetDefaultBusinessToday();
 
             foreach (var user in users)
             {
                 // Create meal entries for the last 7 days
                 for (int dayOffset = 0; dayOffset < 7; dayOffset++)
                 {
-                    var eatenDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-dayOffset));
+                    var eatenDate = today.AddDays(-dayOffset);
 
                     // Breakfast
                     var breakfastFoods = new[] { "Egg", "Greek Yogurt", "Banana" };
@@ -335,6 +338,12 @@ namespace EatFitAI.API.Data
                 keySize);
 
             return $"PBKDF2${iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
+        }
+
+        private static DateOnly GetDefaultBusinessToday()
+        {
+            var localNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, BusinessTimeZone.DefaultTimeZone);
+            return DateOnly.FromDateTime(localNow.DateTime);
         }
     }
 }

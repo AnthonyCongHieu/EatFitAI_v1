@@ -135,7 +135,7 @@ export const initializeApiClient = async (): Promise<boolean> => {
       }
     }
 
-    logger.error('[APIClient] ❌ Không tìm thấy backend!');
+    logger.error('[APIClient] Không tìm thấy backend!');
     return false;
   } catch (error) {
     logger.error('[APIClient] Init error:', error);
