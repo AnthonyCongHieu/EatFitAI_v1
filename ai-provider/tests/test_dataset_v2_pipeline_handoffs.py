@@ -75,6 +75,31 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
             self.assertFalse(summary["hard_gate_passed"])
             self.assertIn({"empty_splits": ["train", "valid", "test"]}, summary["warnings"])
 
+    def test_validate_supports_image_first_yolo_layout_from_data_yaml(self):
+        from PIL import Image  # type: ignore
+
+        with tempfile.TemporaryDirectory() as tmp:
+            dataset = Path(tmp) / "clean_dataset"
+            for split in ("train", "valid", "test"):
+                image_dir = dataset / "images" / split
+                label_dir = dataset / "labels" / split
+                image_dir.mkdir(parents=True)
+                label_dir.mkdir(parents=True)
+                color = {"train": (255, 0, 0), "valid": (0, 255, 0), "test": (0, 0, 255)}[split]
+                Image.new("RGB", (64, 64), color=color).save(image_dir / f"{split}.jpg")
+                (label_dir / f"{split}.txt").write_text("0 0.500000 0.500000 0.500000 0.500000\n", encoding="utf-8")
+            (dataset / "data.yaml").write_text(
+                "path: .\ntrain: images/train\nval: images/valid\ntest: images/test\nnames:\n  0: banh_mi\n",
+                encoding="utf-8",
+            )
+
+            summary = validate(dataset)
+
+            self.assertTrue(summary["hard_gate_passed"], summary)
+            self.assertEqual(summary["splits"]["train"], {"images": 1, "labels": 1})
+            self.assertEqual(summary["splits"]["valid"], {"images": 1, "labels": 1})
+            self.assertEqual(summary["splits"]["test"], {"images": 1, "labels": 1})
+
     def test_training_package_requires_passing_final_audit(self):
         with tempfile.TemporaryDirectory() as tmp:
             reports = Path(tmp) / "reports"

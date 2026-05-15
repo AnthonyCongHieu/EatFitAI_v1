@@ -338,6 +338,23 @@ def collect_source_records(
     return [], [{"source_slug": policy_row["source_slug"], "issue": "unsupported_build_adapter", "audit_mode": audit_mode}]
 
 
+def sanitize_label_rows(rows: list[tuple[int, list[float]]]) -> tuple[list[tuple[int, list[float]]], dict[str, int]]:
+    clean_rows: list[tuple[int, list[float]]] = []
+    seen: set[str] = set()
+    stats = {"bbox_out_of_bounds_rows": 0, "duplicate_exact_label_rows": 0}
+    for class_id, bbox in rows:
+        if len(bbox) != 4 or any(value < 0 or value > 1 for value in bbox) or bbox[2] <= 0 or bbox[3] <= 0:
+            stats["bbox_out_of_bounds_rows"] += 1
+            continue
+        key = f"{class_id} " + " ".join(f"{value:.6f}" for value in bbox)
+        if key in seen:
+            stats["duplicate_exact_label_rows"] += 1
+            continue
+        seen.add(key)
+        clean_rows.append((class_id, bbox))
+    return clean_rows, stats
+
+
 def copy_records(records: list[dict[str, Any]], classes: list[str], out_dataset: Path) -> dict[str, Any]:
     if out_dataset.exists():
         shutil.rmtree(out_dataset)
@@ -346,7 +363,19 @@ def copy_records(records: list[dict[str, Any]], classes: list[str], out_dataset:
         (out_dataset / "labels" / split).mkdir(parents=True, exist_ok=True)
     class_counts: Counter[str] = Counter()
     source_counts: Counter[str] = Counter()
+    sanitized = {
+        "bbox_out_of_bounds_rows": 0,
+        "duplicate_exact_label_rows": 0,
+        "skipped_empty_after_sanitize": 0,
+    }
+    copied = 0
     for index, record in enumerate(records):
+        rows, row_stats = sanitize_label_rows(record["rows"])
+        sanitized["bbox_out_of_bounds_rows"] += row_stats["bbox_out_of_bounds_rows"]
+        sanitized["duplicate_exact_label_rows"] += row_stats["duplicate_exact_label_rows"]
+        if not rows:
+            sanitized["skipped_empty_after_sanitize"] += 1
+            continue
         split = record["split"]
         src = Path(record["image_path"])
         name = f"{record['source_slug']}_{index:07d}{src.suffix.lower() or '.jpg'}"
@@ -354,11 +383,12 @@ def copy_records(records: list[dict[str, Any]], classes: list[str], out_dataset:
         dst_label = out_dataset / "labels" / split / Path(name).with_suffix(".txt").name
         shutil.copy2(src, dst_image)
         lines = []
-        for class_id, bbox in record["rows"]:
+        for class_id, bbox in rows:
             class_counts[classes[class_id]] += 1
             lines.append(f"{class_id} " + " ".join(f"{value:.6f}" for value in bbox))
         dst_label.write_text("\n".join(lines) + "\n", encoding="utf-8")
         source_counts[record["source_slug"]] += 1
+        copied += 1
     dump_yaml(
         out_dataset / "data.yaml",
         {
@@ -370,10 +400,11 @@ def copy_records(records: list[dict[str, Any]], classes: list[str], out_dataset:
         },
     )
     return {
-        "image_count": len(records),
+        "image_count": copied,
         "class_count": len(classes),
         "class_instance_counts": dict(class_counts),
         "source_image_counts": dict(source_counts),
+        "sanitized": sanitized,
     }
 
 

@@ -418,6 +418,43 @@ Decision:
 - Validation: `python -m pytest ai-provider/tests/test_dataset_v2_clean_v4_candidate_mining.py ai-provider/tests/test_dataset_v2_v4_source_audit.py -q`
   passed with 32 tests and 5 subtests.
 
+2026-05-15 clean-build V4 completion and YOLO11m train handoff:
+
+- Clean-build kernel `hiuinhcng/eatfitai-dataset-v2-clean-build-v4-class-expansion`
+  completed after the validator/layout and label-sanitization fixes.
+- Final CPU hard gate:
+  - Images: 208,640.
+  - Classes: 310.
+  - Train/valid/test images: 177,433 / 20,785 / 10,422.
+  - Validation hard counters: all zero.
+  - `validation.hard_gate_passed`: `true`.
+- Sanitization performed before final validation:
+  - Dropped 110 out-of-bounds bbox rows.
+  - Dropped 299 duplicate exact label rows.
+  - Skipped 78 images that became empty after sanitization.
+- Local pipeline fixes now preserve:
+  - `data.yaml` image-first split layout support in
+    `validate_clean_dataset.py`.
+  - V4 label sanitization in
+    `build_clean_dataset_v4_from_kaggle_sources.py`.
+- Created V4 train handoff:
+  - `kaggle_yolo11m_clean_v4_class_expansion_train.py`.
+  - `kaggle_yolo11m_clean_v4_class_expansion_train_metadata.json`.
+  - The train script uses the mounted clean-build output directory directly
+    and creates a writable `/tmp` symlink view so YOLO can build caches without
+    copying the 17GB dataset.
+  - Fine-tune mode remains the default from
+    `hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint`.
+- Validation:
+  `.\ai-provider\.venv\Scripts\python.exe -m unittest ai-provider\tests\test_dataset_v2_pipeline_handoffs.py ai-provider\tests\test_dataset_v2_v4_source_audit.py ai-provider\tests\test_dataset_v2_yolo11m_train_handoff.py`
+  passed with 72 tests.
+- Pushed GPU train kernel:
+  `hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion`.
+  - Version: 1.
+  - Initial status after push: `RUNNING`.
+  - Follow-up automation `v4-yolo11m-train-follow-up` checks status, downloads
+    only compact artifacts/logs, and gates promotion on golden/runtime eval.
+
 ## Source Links
 
 - Food-101 / ETH Zurich via Hugging Face:

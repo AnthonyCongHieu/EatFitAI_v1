@@ -9,6 +9,24 @@ from typing import Any
 from common import image_opens, list_images, load_yaml, read_label_rows, sha256_file, write_json
 
 
+def split_image_dir(dataset: Path, data: dict[str, Any], split: str) -> Path:
+    yaml_key = "val" if split == "valid" else split
+    configured = Path(str(data.get(yaml_key, "")))
+    if configured and not configured.is_absolute():
+        configured = dataset / configured
+    if configured.exists():
+        return configured
+    return dataset / split / "images"
+
+
+def split_label_dir(dataset: Path, image_dir: Path, split: str) -> Path:
+    image_parts = image_dir.parts
+    if "images" in image_parts:
+        index = len(image_parts) - 1 - image_parts[::-1].index("images")
+        return Path(*image_parts[:index], "labels", *image_parts[index + 1 :])
+    return dataset / split / "labels"
+
+
 def validate(dataset: Path) -> dict[str, Any]:
     data_yaml = dataset / "data.yaml"
     data = load_yaml(data_yaml)
@@ -38,8 +56,8 @@ def validate(dataset: Path) -> dict[str, Any]:
     valid_class_counts: Counter[int] = Counter()
 
     for split in ("train", "valid", "test"):
-        image_dir = dataset / split / "images"
-        label_dir = dataset / split / "labels"
+        image_dir = split_image_dir(dataset, data, split)
+        label_dir = split_label_dir(dataset, image_dir, split)
         images = list_images(image_dir) if image_dir.exists() else []
         labels = sorted(label_dir.glob("*.txt")) if label_dir.exists() else []
         image_stems = {image.stem for image in images}

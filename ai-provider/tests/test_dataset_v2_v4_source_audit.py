@@ -14,6 +14,8 @@ if str(DATASET_V2_DIR) not in sys.path:
     sys.path.insert(0, str(DATASET_V2_DIR))
 
 import kaggle_v4_source_audit_kernel as audit_kernel  # noqa: E402
+from build_clean_dataset_v4_from_kaggle_sources import copy_records, sanitize_label_rows  # noqa: E402
+from validate_clean_dataset import validate  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +23,53 @@ DATASET_DIR = ROOT / "ai-provider" / "dataset_v2"
 
 
 class DatasetV2V4SourceAuditTests(unittest.TestCase):
+    def test_v4_clean_build_sanitizes_invalid_and_duplicate_label_rows(self):
+        rows, stats = sanitize_label_rows(
+            [
+                (0, [0.5, 0.5, 0.4, 0.4]),
+                (0, [0.5, 0.5, 0.4, 0.4]),
+                (0, [1.1, 0.5, 0.4, 0.4]),
+                (0, [0.5, 0.5, 0.0, 0.4]),
+                (0, [0.25, 0.25, 0.2, 0.2]),
+            ]
+        )
+
+        self.assertEqual(rows, [(0, [0.5, 0.5, 0.4, 0.4]), (0, [0.25, 0.25, 0.2, 0.2])])
+        self.assertEqual(stats["duplicate_exact_label_rows"], 1)
+        self.assertEqual(stats["bbox_out_of_bounds_rows"], 2)
+
+    def test_v4_copy_records_outputs_validator_clean_dataset_after_sanitize(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "source"
+            source_dir.mkdir()
+            records = []
+            colors = {"train": (255, 0, 0), "valid": (0, 255, 0), "test": (0, 0, 255)}
+            for split, color in colors.items():
+                image_path = source_dir / f"{split}.jpg"
+                Image.new("RGB", (64, 64), color=color).save(image_path)
+                records.append(
+                    {
+                        "split": split,
+                        "source_slug": "fixture",
+                        "image_path": image_path.as_posix(),
+                        "rows": [
+                            (0, [0.5, 0.5, 0.4, 0.4]),
+                            (0, [0.5, 0.5, 0.4, 0.4]),
+                            (0, [1.1, 0.5, 0.4, 0.4]),
+                        ],
+                    }
+                )
+
+            out_dataset = root / "clean"
+            build_summary = copy_records(records, ["banh_mi"], out_dataset)
+            validation_summary = validate(out_dataset)
+
+            self.assertEqual(build_summary["image_count"], 3)
+            self.assertEqual(build_summary["sanitized"]["duplicate_exact_label_rows"], 3)
+            self.assertEqual(build_summary["sanitized"]["bbox_out_of_bounds_rows"], 3)
+            self.assertTrue(validation_summary["hard_gate_passed"], validation_summary)
+
     def test_classification_imagefolder_audit_counts_classes_and_splits(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

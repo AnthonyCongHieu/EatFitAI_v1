@@ -330,6 +330,37 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
         self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build-v3", train_metadata["kernel_sources"])
         self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
 
+    def test_clean_v4_class_expansion_train_kernel_uses_mounted_output_and_finetune_train(self):
+        import kaggle_yolo11m_clean_v4_class_expansion_train as v4_train
+
+        train_source = (DATASET_V2_DIR / "kaggle_yolo11m_clean_v4_class_expansion_train.py").read_text(encoding="utf-8")
+        train_metadata = json.loads(
+            (DATASET_V2_DIR / "kaggle_yolo11m_clean_v4_class_expansion_train_metadata.json").read_text(encoding="utf-8")
+        )
+
+        self.assertNotIn("kaggle_yolo11m_train", train_source)
+        self.assertIn("find_mounted_dataset_dir", train_source)
+        self.assertIn("eatfitai_dataset_v2_clean_v4_class_expansion_candidate", train_source)
+        self.assertIn("eatfitai_clean_v4_class_expansion", train_source)
+        self.assertIn("yolo11m-eatfitai-clean-v4-class-expansion", train_source)
+        self.assertEqual(train_metadata["code_file"], "kaggle_yolo11m_clean_v4_class_expansion_train.py")
+        self.assertEqual(train_metadata["id"], "hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion")
+        self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build-v4-class-expansion", train_metadata["kernel_sources"])
+        self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
+        self.assertEqual(v4_train.RUN_NAME, "yolo11m-eatfitai-clean-v4-class-expansion")
+
+    def test_clean_v4_train_finds_mounted_clean_build_directory(self):
+        import kaggle_yolo11m_clean_v4_class_expansion_train as v4_train
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            dataset = root / "kernel-output" / "eatfitai_dataset_v2_clean_v4_class_expansion_candidate"
+            (dataset / "images" / "train").mkdir(parents=True)
+            (dataset / "labels" / "train").mkdir(parents=True)
+            (dataset / "data.yaml").write_text("path: .\ntrain: images/train\nval: images/valid\ntest: images/test\n", encoding="utf-8")
+
+            self.assertEqual(v4_train.find_mounted_dataset_dir(root), dataset)
+
 
 if __name__ == "__main__":
     unittest.main()
