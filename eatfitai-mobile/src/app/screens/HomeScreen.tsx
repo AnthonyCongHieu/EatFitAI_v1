@@ -674,9 +674,10 @@ const HomeScreen = (): React.ReactElement => {
               </View>
             ) : todayEntries.length > 0 ? (
               <View style={{ gap: 0 }}>
-                {todayEntries.map((entry, index) => {
+                {todayEntries.slice(0, 5).map((entry, index) => {
                   const emoji = getFoodEmoji(entry.foodName);
-                  const isLast = index === todayEntries.length - 1;
+                  const displayedCount = Math.min(todayEntries.length, 5);
+                  const isLast = index === displayedCount - 1;
 
                   // Định dạng thời gian theo múi giờ Hà Nội (UTC+7)
                   let timeStr = '';
