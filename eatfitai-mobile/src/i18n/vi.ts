@@ -1,4 +1,4 @@
-﻿export const vi = {
+export const vi = {
   common: {
     close: 'Đóng',
     loading: 'Đang tải...',
@@ -635,7 +635,7 @@
     protein_label: 'Protein (g)',
     carbs_label: 'Carbs (g)',
     fat_label: 'Fat (g)',
-    ai_section_title: 'AI Đề xuất (Adaptive)',
+    ai_section_title: 'AI Đề xuất',
     ai_section_subtitle:
       'Tự động tính toán dựa trên chỉ số cơ thể và mức độ vận động của bạn.',
     ai_desc:

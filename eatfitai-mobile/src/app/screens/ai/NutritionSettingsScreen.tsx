@@ -34,7 +34,6 @@ import type { RootStackParamList } from '../../types';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
 import { AIExplanationCard } from '../../../components/ai/AIExplanationCard';
-import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
 import { useAiStatus } from '../../../hooks/useAiStatus';
 import { TEST_IDS } from '../../../testing/testIds';
 
@@ -486,13 +485,13 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
               <View style={styles.row}>
                 <View style={styles.col}>
-                  {renderMacroDisplay('Protein', currentTarget?.protein ?? 0)}
+                  {renderMacroDisplay('Đạm', currentTarget?.protein ?? 0)}
                 </View>
                 <View style={styles.col}>
-                  {renderMacroDisplay('Carbs', currentTarget?.carbs ?? 0)}
+                  {renderMacroDisplay('Tinh bột', currentTarget?.carbs ?? 0)}
                 </View>
                 <View style={styles.col}>
-                  {renderMacroDisplay('Fat', currentTarget?.fat ?? 0)}
+                  {renderMacroDisplay('Chất béo', currentTarget?.fat ?? 0)}
                 </View>
               </View>
             </Animated.View>
@@ -609,21 +608,31 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
         {/* AI Suggestion Section */}
         <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
-          <ThemedText variant="h3" style={{ marginBottom: theme.spacing.sm }}>
-            {t('nutrition_settings.ai_section_title')}
-          </ThemedText>
-          <ThemedText
-            variant="bodySmall"
-            color="textSecondary"
-            style={{ marginBottom: theme.spacing.md }}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: theme.spacing.sm,
+            }}
           >
-            {t('nutrition_settings.ai_section_subtitle')}
-          </ThemedText>
-          <AiStatusBadge
-            status={aiStatus}
-            loading={isAiStatusLoading}
-            testID={TEST_IDS.nutritionSettings.statusBadge}
-          />
+            <ThemedText variant="h3">
+              {t('nutrition_settings.ai_section_title')}
+            </ThemedText>
+            <View
+              testID={TEST_IDS.nutritionSettings.statusBadge}
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: isAiStatusLoading
+                  ? '#9AA4B2'
+                  : isAiDown
+                    ? '#EF4444'
+                    : '#22C55E',
+              }}
+            />
+          </View>
 
           {!suggestedTarget ? (
             <View>
@@ -669,7 +678,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
               >
                 <View>
                   <ThemedText variant="caption" color="textSecondary">
-                    Calories
+                    Calo
                   </ThemedText>
                   <ThemedText variant="h2">
                     {Math.round(suggestedTarget.calories)}
@@ -697,19 +706,19 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
               <View style={styles.row}>
                 <View style={styles.col}>
-                  <ThemedText variant="caption">Protein</ThemedText>
+                  <ThemedText variant="caption">Đạm</ThemedText>
                   <ThemedText variant="h4">
                     {Math.round(suggestedTarget.protein)}g
                   </ThemedText>
                 </View>
                 <View style={styles.col}>
-                  <ThemedText variant="caption">Carbs</ThemedText>
+                  <ThemedText variant="caption">Tinh bột</ThemedText>
                   <ThemedText variant="h4">
                     {Math.round(suggestedTarget.carbs)}g
                   </ThemedText>
                 </View>
                 <View style={styles.col}>
-                  <ThemedText variant="caption">Fat</ThemedText>
+                  <ThemedText variant="caption">Chất béo</ThemedText>
                   <ThemedText variant="h4">{Math.round(suggestedTarget.fat)}g</ThemedText>
                 </View>
               </View>
