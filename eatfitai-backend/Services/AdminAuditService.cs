@@ -56,7 +56,7 @@ public class AdminAuditService : IAdminAuditService
             ON "AdminAuditEvent" ("CorrelationId");
             """;
 
-        await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+        await _context.Database.ExecuteSqlRawAsync(sql, Array.Empty<object>(), cancellationToken);
     }
 
     public async Task WriteAsync(HttpContext httpContext, AdminAuditWriteRequest request, CancellationToken cancellationToken = default)

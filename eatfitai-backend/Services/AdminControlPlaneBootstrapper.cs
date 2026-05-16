@@ -227,7 +227,7 @@ public sealed class AdminControlPlaneBootstrapper
                 return;
             }
 
-            await _context.Database.ExecuteSqlRawAsync(SchemaSql, cancellationToken);
+            await _context.Database.ExecuteSqlRawAsync(SchemaSql, Array.Empty<object>(), cancellationToken);
             _schemaInitialized = true;
         }
         catch (Exception ex)
