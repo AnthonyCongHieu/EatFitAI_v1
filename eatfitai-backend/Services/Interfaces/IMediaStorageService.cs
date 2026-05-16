@@ -14,6 +14,11 @@ namespace EatFitAI.API.Services.Interfaces
             string contentType,
             TimeSpan expiresIn,
             CancellationToken cancellationToken = default);
+
+        Task<MediaObjectMetadata?> GetObjectMetadataAsync(
+            string bucket,
+            string objectPath,
+            CancellationToken cancellationToken = default);
     }
 
     public sealed class MediaUploadObject
@@ -23,5 +28,11 @@ namespace EatFitAI.API.Services.Interfaces
         public required byte[] Bytes { get; init; }
         public required string ContentType { get; init; }
         public string CacheControl { get; init; } = "public, max-age=31536000, immutable";
+    }
+
+    public sealed class MediaObjectMetadata
+    {
+        public required string ContentType { get; init; }
+        public required long ContentLength { get; init; }
     }
 }

@@ -69,6 +69,63 @@ public class StorageControllerTests : IClassFixture<WebApplicationFactory<Progra
         Assert.Null(storage.LastBucket);
     }
 
+    [Fact]
+    public async Task VerifyUpload_ReturnsOkForScopedVisionObject()
+    {
+        var userId = Guid.NewGuid();
+        var storage = new FakeMediaStorageService
+        {
+            VerifyContentType = "image/jpeg",
+            VerifyContentLength = 123_456
+        };
+
+        using var factory = CreateFactory(storage);
+        using var client = CreateAuthorizedClient(factory, userId);
+
+        using var response = await client.PostAsJsonAsync("/api/v1/storage/verify-upload", new
+        {
+            objectKey = $"vision/{userId:N}/2026/05/16/photo.jpg",
+            contentType = "image/jpeg",
+            purpose = "vision"
+        });
+
+        response.EnsureSuccessStatusCode();
+
+        Assert.Equal("vision", storage.LastVerifyBucket);
+        Assert.Equal($"{userId:N}/2026/05/16/photo.jpg", storage.LastVerifyObjectPath);
+        Assert.Equal("image/jpeg", storage.LastVerifyContentType);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("verified").GetBoolean());
+        Assert.Equal(123_456, body.GetProperty("sizeBytes").GetInt64());
+        Assert.Equal("image/jpeg", body.GetProperty("contentType").GetString());
+    }
+
+    [Fact]
+    public async Task VerifyUpload_RejectsObjectKeyForDifferentUserBeforeStorageLookup()
+    {
+        var userId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var storage = new FakeMediaStorageService
+        {
+            VerifyContentType = "image/jpeg",
+            VerifyContentLength = 123_456
+        };
+
+        using var factory = CreateFactory(storage);
+        using var client = CreateAuthorizedClient(factory, userId);
+
+        using var response = await client.PostAsJsonAsync("/api/v1/storage/verify-upload", new
+        {
+            objectKey = $"vision/{otherUserId:N}/2026/05/16/photo.jpg",
+            contentType = "image/jpeg",
+            purpose = "vision"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Null(storage.LastVerifyBucket);
+    }
+
     private WebApplicationFactory<Program> CreateFactory(FakeMediaStorageService storage)
     {
         return _factory.WithWebHostBuilder(builder =>
@@ -99,6 +156,11 @@ public class StorageControllerTests : IClassFixture<WebApplicationFactory<Progra
         public string? LastBucket { get; private set; }
         public string? LastObjectPath { get; private set; }
         public string? LastContentType { get; private set; }
+        public string? LastVerifyBucket { get; private set; }
+        public string? LastVerifyObjectPath { get; private set; }
+        public string? LastVerifyContentType { get; private set; }
+        public string? VerifyContentType { get; init; }
+        public long VerifyContentLength { get; init; }
 
         public Task<string> UploadAsync(MediaUploadObject upload, CancellationToken cancellationToken = default)
         {
@@ -119,6 +181,22 @@ public class StorageControllerTests : IClassFixture<WebApplicationFactory<Progra
             return Task.FromResult((
                 "https://upload.example.test",
                 $"https://media.example.test/{bucket}/{objectPath}"));
+        }
+
+        public Task<MediaObjectMetadata?> GetObjectMetadataAsync(
+            string bucket,
+            string objectPath,
+            CancellationToken cancellationToken = default)
+        {
+            LastVerifyBucket = bucket;
+            LastVerifyObjectPath = objectPath;
+            LastVerifyContentType = VerifyContentType;
+
+            return Task.FromResult<MediaObjectMetadata?>(new MediaObjectMetadata
+            {
+                ContentType = VerifyContentType ?? "application/octet-stream",
+                ContentLength = VerifyContentLength
+            });
         }
     }
 }

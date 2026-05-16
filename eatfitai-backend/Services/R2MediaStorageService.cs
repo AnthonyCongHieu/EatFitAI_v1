@@ -104,6 +104,40 @@ namespace EatFitAI.API.Services
             return Task.FromResult((url, publicUrl));
         }
 
+        public async Task<MediaObjectMetadata?> GetObjectMetadataAsync(
+            string bucket,
+            string objectPath,
+            CancellationToken cancellationToken = default)
+        {
+            if (!IsConfigured)
+            {
+                throw new InvalidOperationException("Cloudflare R2 media storage is not configured.");
+            }
+
+            var objectKey = BuildObjectKey(bucket, objectPath);
+            var client = _s3Client.Value;
+            var request = new GetObjectMetadataRequest
+            {
+                BucketName = _r2Options.Bucket,
+                Key = objectKey
+            };
+
+            try
+            {
+                var response = await client.GetObjectMetadataAsync(request, cancellationToken);
+                return new MediaObjectMetadata
+                {
+                    ContentType = response.Headers.ContentType ?? string.Empty,
+                    ContentLength = response.Headers.ContentLength
+                };
+            }
+            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("R2 media object not found during verification. Key={Key}", objectKey);
+                return null;
+            }
+        }
+
         protected virtual IAmazonS3 CreateClient()
         {
             var credentials = new BasicAWSCredentials(

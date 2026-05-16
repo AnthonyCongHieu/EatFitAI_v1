@@ -11,6 +11,13 @@ export interface PresignedUrlResponse {
   expiresInSeconds: number;
 }
 
+export interface UploadVerificationResponse {
+  verified: boolean;
+  objectKey: string;
+  contentType?: string;
+  sizeBytes?: number;
+}
+
 export const storageService = {
   /**
    * Request a presigned URL from the backend
@@ -59,6 +66,32 @@ export const storageService = {
     }
   },
 
+  async verifyUploadedObject(
+    objectKey: string,
+    contentType: string,
+    purpose: UploadPurpose = 'vision',
+  ): Promise<UploadVerificationResponse> {
+    try {
+      const response = await apiClient.post<UploadVerificationResponse>(
+        '/api/v1/storage/verify-upload',
+        {
+          objectKey,
+          contentType,
+          purpose,
+        },
+      );
+
+      if (!response.data?.verified) {
+        throw new Error('Upload verification returned an unverified result.');
+      }
+
+      return response.data;
+    } catch (error) {
+      captureError(error, 'storageService.verifyUploadedObject', { objectKey, purpose });
+      throw new Error('Không thể xác minh file đã tải lên. Vui lòng thử lại.');
+    }
+  },
+
   /**
    * Orchestrator to handle both requesting presigned url and uploading
    * Returns the upload metadata
@@ -71,6 +104,7 @@ export const storageService = {
   ): Promise<PresignedUrlResponse> {
     const upload = await this.getPresignedUrl(fileName, contentType, purpose);
     await this.uploadFileToR2(upload.presignedUrl, fileUri, contentType);
+    await this.verifyUploadedObject(upload.objectKey, contentType, purpose);
     return upload;
   },
 

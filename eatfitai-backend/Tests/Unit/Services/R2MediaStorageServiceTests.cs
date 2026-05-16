@@ -78,6 +78,87 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.True(capturedRequest.DisableDefaultChecksumValidation);
         }
 
+        [Fact]
+        public async Task GetObjectMetadataAsync_UsesHeadObjectAndReturnsContentMetadata()
+        {
+            GetObjectMetadataRequest? capturedRequest = null;
+            var s3Client = new Mock<IAmazonS3>();
+            s3Client
+                .Setup(client => client.GetObjectMetadataAsync(
+                    It.IsAny<GetObjectMetadataRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<GetObjectMetadataRequest, CancellationToken>((request, _) => capturedRequest = request)
+                .ReturnsAsync(() =>
+                {
+                    var response = new GetObjectMetadataResponse
+                    {
+                        HttpStatusCode = HttpStatusCode.OK
+                    };
+                    response.Headers.ContentType = "image/jpeg";
+                    response.Headers.ContentLength = 123_456;
+                    return response;
+                });
+
+            var service = new TestR2MediaStorageService(
+                OptionsFactory.Create(new MediaOptions
+                {
+                    PublicBaseUrl = "https://media.example.com"
+                }),
+                OptionsFactory.Create(new R2Options
+                {
+                    AccountId = "account",
+                    Bucket = "eatfitai-media",
+                    AccessKeyId = "access",
+                    SecretAccessKey = "secret"
+                }),
+                s3Client.Object);
+
+            var metadata = await service.GetObjectMetadataAsync(
+                "vision",
+                "user/2026/05/16/photo.jpg");
+
+            Assert.NotNull(metadata);
+            Assert.Equal("image/jpeg", metadata.ContentType);
+            Assert.Equal(123_456, metadata.ContentLength);
+            Assert.NotNull(capturedRequest);
+            Assert.Equal("eatfitai-media", capturedRequest.BucketName);
+            Assert.Equal("vision/user/2026/05/16/photo.jpg", capturedRequest.Key);
+        }
+
+        [Fact]
+        public async Task GetObjectMetadataAsync_ReturnsNullWhenObjectDoesNotExist()
+        {
+            var s3Client = new Mock<IAmazonS3>();
+            s3Client
+                .Setup(client => client.GetObjectMetadataAsync(
+                    It.IsAny<GetObjectMetadataRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new AmazonS3Exception("not found")
+                {
+                    StatusCode = HttpStatusCode.NotFound
+                });
+
+            var service = new TestR2MediaStorageService(
+                OptionsFactory.Create(new MediaOptions
+                {
+                    PublicBaseUrl = "https://media.example.com"
+                }),
+                OptionsFactory.Create(new R2Options
+                {
+                    AccountId = "account",
+                    Bucket = "eatfitai-media",
+                    AccessKeyId = "access",
+                    SecretAccessKey = "secret"
+                }),
+                s3Client.Object);
+
+            var metadata = await service.GetObjectMetadataAsync(
+                "vision",
+                "user/2026/05/16/missing.jpg");
+
+            Assert.Null(metadata);
+        }
+
         private sealed class TestR2MediaStorageService : R2MediaStorageService
         {
             private readonly IAmazonS3 _client;

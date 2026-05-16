@@ -35,5 +35,13 @@ namespace EatFitAI.API.Services
         {
             throw new NotSupportedException("Presigned URLs are currently only supported via R2 storage provider.");
         }
+
+        public Task<MediaObjectMetadata?> GetObjectMetadataAsync(
+            string bucket,
+            string objectPath,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException("Object metadata verification is currently only supported via R2 storage provider.");
+        }
     }
 }
