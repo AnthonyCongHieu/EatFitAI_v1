@@ -31,7 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../ThemedText';
-import { EN } from '../../theme/emeraldNebula';
+import { useEN } from '../../theme/emeraldNebula';
 
 interface SubScreenLayoutProps {
   /** Screen title displayed in the center of the header */
@@ -73,6 +73,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
 }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const EN = useEN();
 
   const paddingTop = Math.max(
     insets.top,
@@ -81,7 +82,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
 
   /* ─── Header — mirrors ProfileScreen S.header exactly ─── */
   const header = (
-    <View style={[styles.headerOuter, { paddingTop }]}>
+    <View style={[styles.headerOuter, { paddingTop, backgroundColor: EN.bg }]}>
       <View style={styles.header}>
         {/* Back button — same 40×40 circle as ProfileScreen S.headerBtn */}
         <Pressable
@@ -147,7 +148,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
 
   /* ─── Render ─── */
   return (
-    <View style={styles.container} testID={testID}>
+    <View style={[styles.container, { backgroundColor: EN.bg }]} testID={testID}>
       {header}
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
 
   /* ── Header (matches ProfileScreen S.header) ── */
   headerOuter: {
-    backgroundColor: '#0E1322', // Solid color — tránh lỗi 2 màu trên Android
+    // backgroundColor set dynamically via EN.bg
   },
   header: {
     flexDirection: 'row',

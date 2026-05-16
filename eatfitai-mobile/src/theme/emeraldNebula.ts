@@ -9,14 +9,17 @@
  * to avoid visual mismatch between main and sub-screens.
  *
  * Usage:
- *   import { EN } from '../../theme/emeraldNebula';
+ *   import { useEN } from '../../theme/emeraldNebula';
+ *   const EN = useEN();
  *   backgroundColor: EN.bg
  */
 
 import { StyleSheet, ViewStyle } from 'react-native';
+import { useAppTheme } from './ThemeProvider';
 
 /* ─────────────────────────────────────────────────────
-   Color Palette — Synced with ProfileScreen `P` constants
+   Color Palette — DARK mode
+   Synced with ProfileScreen `P` constants
    ───────────────────────────────────────────────────── */
 export const EN = {
   // Backgrounds — darkest to brightest
@@ -56,6 +59,57 @@ export const EN = {
   warning: '#fbbf24',
   info: '#2dd4bf',
 } as const;
+
+/* ─────────────────────────────────────────────────────
+   Color Palette — LIGHT mode
+   ───────────────────────────────────────────────────── */
+export const EN_LIGHT = {
+  // Backgrounds — brightest to slightly tinted
+  bg: '#F8FBF7',
+  surfaceLow: '#F0F5EE',
+  surface: '#FFFFFF',
+  surfaceHigh: '#EEF8F0',
+  surfaceHighest: '#E6F0E8',
+
+  // Primary — Emerald Green (darker for light bg contrast)
+  primary: '#16A34A',
+  primaryContainer: '#22c55e',
+  primaryGlow: 'rgba(22, 163, 74, 0.15)',
+
+  // Accent
+  cyan: '#0891B2',
+  amber: '#D97706',
+
+  // Text
+  onSurface: '#0F172A',
+  onSurfaceVariant: '#475569',
+  textMuted: '#94A3B8',
+
+  // Borders & Glass
+  outline: 'rgba(0,0,0,0.06)',
+  outlineVariant: 'rgba(34, 197, 94, 0.14)',
+  glassBg: 'rgba(255, 255, 255, 0.88)',
+  glassBorder: 'rgba(34, 197, 94, 0.10)',
+
+  // Semantic
+  danger: '#EF4444',
+  dangerContainer: 'rgba(239, 68, 68, 0.1)',
+  error: '#DC2626',
+  errorContainer: 'rgba(239, 68, 68, 0.1)',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  info: '#0F766E',
+} as const;
+
+/* ─────────────────────────────────────────────────────
+   useEN() — Hook that returns correct palette for current mode
+   ───────────────────────────────────────────────────── */
+export type ENPalette = typeof EN;
+
+export const useEN = (): ENPalette => {
+  const { mode } = useAppTheme();
+  return mode === 'dark' ? EN : (EN_LIGHT as unknown as ENPalette);
+};
 
 /* ─────────────────────────────────────────────────────
    Reusable Style Presets — Mirrors ProfileScreen patterns

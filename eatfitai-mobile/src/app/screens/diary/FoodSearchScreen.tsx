@@ -44,6 +44,7 @@ import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { TEST_IDS } from '../../../testing/testIds';
 import type { MealTypeId } from '../../../types';
+import { useEN } from '../../../theme/emeraldNebula';
 
 const PAGE_SIZE = 20;
 const RECENT_SEARCHES_KEY_PREFIX = '@eatfit_recent_searches_';
@@ -55,7 +56,7 @@ const getFoodItemKey = (item: { id: string; source?: 'catalog' | 'user' }) =>
   `${item.source ?? 'catalog'}:${item.id}`;
 
 /* ═══ Palette ═══ */
-const P = {
+const P_STATIC = {
   primary: '#4be277',
   primaryDark: '#22c55e',
   surface: '#0e1322',
@@ -79,6 +80,20 @@ const FoodSearchScreen = (): React.ReactElement => {
   const route = useRoute<FoodSearchRouteProp>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const EN = useEN();
+  const P = {
+    ...P_STATIC,
+    primary: EN.primary,
+    primaryDark: EN.primaryContainer,
+    surface: EN.bg,
+    surfaceContainer: EN.surfaceLow,
+    surfaceContainerHigh: EN.surfaceHigh,
+    surfaceContainerHighest: EN.surfaceHighest,
+    onSurface: EN.onSurface,
+    onSurfaceVariant: EN.onSurfaceVariant,
+    glassBg: EN.glassBg,
+    glassBorder: EN.glassBorder,
+  };
   const preferences = useUserPreferenceStore((s) => s.preferences);
   const fetchPreferences = useUserPreferenceStore((s) => s.fetchPreferences);
   const userId = useAuthStore((s) => s.user?.id) || 'guest';
@@ -580,7 +595,7 @@ const FoodSearchScreen = (): React.ReactElement => {
 
   return (
     <View
-      style={[S.container, { paddingTop: insets.top }]}
+      style={[S.container, { paddingTop: insets.top, backgroundColor: P.surface }]}
       testID={TEST_IDS.foodSearch.screen}
       nativeID={TEST_IDS.foodSearch.screen}
       accessibilityLabel={TEST_IDS.foodSearch.screen}

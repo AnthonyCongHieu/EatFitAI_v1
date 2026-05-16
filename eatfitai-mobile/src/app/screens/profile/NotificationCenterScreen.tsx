@@ -8,10 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../../../components/ThemedText';
 import { getScheduledNotifications } from '../../../services/notificationService';
 import type { RootStackParamList } from '../../types';
+import { useEN } from '../../../theme/emeraldNebula';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const P = {
+const P_STATIC = {
   primary: '#4be277',
   surface: '#0e1322',
   surfaceContainer: '#1a1f2f',
@@ -74,6 +75,7 @@ const buildNotificationPreviews = (scheduled: any[]): NotificationPreview[] => {
 const NotificationCenterScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const P = { ...P_STATIC, ...useEN() };
   const [scheduled, setScheduled] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -97,7 +99,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
   );
 
   return (
-    <View style={[S.container, { paddingTop: insets.top }]}>
+    <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]}>
       <View style={S.header}>
         <Pressable
           style={S.headerButton}

@@ -47,11 +47,12 @@ import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import { formatBusinessDate } from '../../utils/businessDate';
+import { useEN } from '../../theme/emeraldNebula';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-/* ─── Emerald Nebula palette ─── */
-const C = {
+/* ─── Emerald Nebula palette (static fallback for WeekDayStrip/weekStyles) ─── */
+const C_STATIC = {
   bg: '#0a0e1a',
   surfaceLow: '#111827',
   surface: '#1a1f2f',
@@ -161,11 +162,11 @@ const weekStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: C.surfaceLow,
+    backgroundColor: C_STATIC.surfaceLow,
     borderRadius: 16,
     padding: 6,
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: C_STATIC.outline,
   },
   dayBtn: {
     flex: 1,
@@ -177,11 +178,11 @@ const weekStyles = StyleSheet.create({
   dayLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     textTransform: 'uppercase',
   },
   dayLabelSelected: {
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
     fontWeight: '700',
   },
   dayNumContainer: {
@@ -194,13 +195,13 @@ const weekStyles = StyleSheet.create({
   },
   dayNumContainerSelected: {
     borderRadius: 999,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     overflow: 'hidden',
   },
   dayNum: {
     fontSize: 15,
     fontWeight: '700',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
   },
   dayNumSelected: {
     color: '#003915',
@@ -209,7 +210,7 @@ const weekStyles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     marginTop: -2,
   },
 });
@@ -234,6 +235,24 @@ const WaterGlassIcon = ({ isPlus }: { isPlus: boolean }) => {
 
 const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
+  const EN = useEN();
+  const isDark = theme.mode === 'dark';
+  // Dynamic palette based on theme
+  const C = {
+    bg: EN.bg,
+    surfaceLow: EN.surfaceLow,
+    surface: EN.surface,
+    surfaceHigh: EN.surfaceHigh,
+    surfaceHighest: EN.surfaceHighest,
+    primary: EN.primary,
+    primaryDark: EN.primaryContainer,
+    cyan: EN.cyan,
+    amber: EN.amber,
+    onSurface: EN.onSurface,
+    textMuted: EN.textMuted,
+    outline: EN.outline,
+    danger: EN.danger,
+  };
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<AppTabsParamList, 'HomeTab'>>();
   const screenScrollRef = useRef<ScrollView>(null);
@@ -482,7 +501,7 @@ const HomeScreen = (): React.ReactElement => {
     <View style={styles.screenBg}>
       {/* Background gradient */}
       <LinearGradient
-        colors={[C.surfaceLow, C.bg, C.bg]}
+        colors={[C.surfaceLow, C.bg, C.bg] as readonly [string, string, string]}
         locations={[0, 0.3, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -856,7 +875,7 @@ const HomeScreen = (): React.ReactElement => {
 const styles = StyleSheet.create({
   screenBg: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: C_STATIC.bg,
   },
 
   /* Error */
@@ -869,11 +888,11 @@ const styles = StyleSheet.create({
 
   /* ─── Dashboard Card ─── */
   dashboardCard: {
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: C_STATIC.surfaceHigh,
     borderRadius: 28,
     padding: 18,
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: C_STATIC.outline,
     overflow: 'hidden',
   },
   dashGlow: {
@@ -907,14 +926,14 @@ const styles = StyleSheet.create({
   ringValue: {
     fontSize: 26,
     fontWeight: '700',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
     lineHeight: 30,
     textAlign: 'center',
   },
   ringLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     textAlign: 'center',
@@ -933,14 +952,14 @@ const styles = StyleSheet.create({
   macroTitle: {
     fontSize: 10,
     fontWeight: '700',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   macroTarget: {
     fontSize: 13,
     fontWeight: '700',
-    color: C.primary,
+    color: C_STATIC.primary,
     marginBottom: 10,
   },
   macroRow: {
@@ -953,16 +972,16 @@ const styles = StyleSheet.create({
   macroName: {
     fontSize: 14,
     fontWeight: '700',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
   },
   macroValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
   },
   macroTrack: {
     height: 6,
-    backgroundColor: C.surfaceHighest,
+    backgroundColor: C_STATIC.surfaceHighest,
     borderRadius: 3,
     overflow: 'hidden',
     marginTop: 2,
@@ -983,13 +1002,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
     letterSpacing: -0.3,
   },
   seeAll: {
     fontSize: 12,
     fontWeight: '700',
-    color: C.primary,
+    color: C_STATIC.primary,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
@@ -1001,11 +1020,11 @@ const styles = StyleSheet.create({
 
   /* Each meal row as a distinct chip/card */
   diaryEntryCard: {
-    backgroundColor: C.surfaceLow,
+    backgroundColor: C_STATIC.surfaceLow,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: C_STATIC.outline,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
@@ -1040,19 +1059,19 @@ const styles = StyleSheet.create({
   entryMealLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: C.primary,
+    color: C_STATIC.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   entryCalories: {
     fontSize: 14,
     fontWeight: '700',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
   },
   entryFoodName: {
     fontSize: 16,
     fontWeight: '700',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
   },
   entryMacros: {
     flexDirection: 'row',
@@ -1066,7 +1085,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: C.surfaceHighest,
+    backgroundColor: C_STATIC.surfaceHighest,
   },
   entryMacroTextV2: {
     fontSize: 11,
@@ -1084,12 +1103,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -1112,13 +1131,13 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: C_STATIC.surfaceHigh,
     borderWidth: 2,
     borderColor: 'rgba(75, 226, 119, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
     // Glow
-    shadowColor: C.primary,
+    shadowColor: C_STATIC.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -1175,7 +1194,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     opacity: 0.6,
   },
   fabDot: {
@@ -1183,9 +1202,9 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     borderWidth: 2,
-    borderColor: C.bg,
+    borderColor: C_STATIC.bg,
   },
   /* ── Water Tracking ── */
   waterCard: {

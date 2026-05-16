@@ -35,6 +35,7 @@ import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
+import { useEN } from '../../theme/emeraldNebula';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -44,7 +45,7 @@ type VoiceRouteProp = RouteProp<AppTabsParamList, 'VoiceTab'>;
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette
    ═══════════════════════════════════════════════ */
-const P = {
+const P_STATIC = {
   primary: '#4be277',
   primaryDim: '#3DB860',
   primaryContainer: '#22c55e',
@@ -85,6 +86,21 @@ interface ChatMessage {
 
 const VoiceScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
+  const EN = useEN();
+  const P = {
+    ...P_STATIC,
+    primary: EN.primary,
+    primaryContainer: EN.primaryContainer,
+    surface: EN.bg,
+    surfaceContainer: EN.surface,
+    surfaceContainerLow: EN.surfaceLow,
+    surfaceContainerHigh: EN.surfaceHigh,
+    surfaceContainerHighest: EN.surfaceHighest,
+    onSurface: EN.onSurface,
+    onSurfaceVariant: EN.onSurfaceVariant,
+    outlineVariant: EN.outlineVariant,
+    glassBorder: EN.glassBorder,
+  };
   const queryClient = useQueryClient();
   const navigation = useNavigation<VoiceNavigationProp>();
   const route = useRoute<VoiceRouteProp>();
@@ -531,7 +547,7 @@ const VoiceScreen = (): React.ReactElement => {
 
   return (
     <View
-      style={[S.container, { paddingTop: insets.top }]}
+      style={[S.container, { paddingTop: insets.top, backgroundColor: P.surface }]}
       testID={TEST_IDS.voice.screen}
     >
       <MoChiIslandSpacer />
@@ -803,7 +819,7 @@ const VoiceScreen = (): React.ReactElement => {
 const S = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: P.surface,
+    backgroundColor: P_STATIC.surface,
   },
   header: {
     paddingHorizontal: 16,

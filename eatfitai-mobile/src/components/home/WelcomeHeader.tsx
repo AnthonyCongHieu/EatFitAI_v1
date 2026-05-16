@@ -8,8 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { TEST_IDS } from '../../testing/testIds';
+import { useEN } from '../../theme/emeraldNebula';
 
-const C = {
+const C_STATIC = {
   bg: '#0a0e1a',
   surfaceHigh: '#1e2435',
   primary: '#4be277',
@@ -63,6 +64,16 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
 }) => {
   const { user } = useAuthStore();
   const { profile } = useProfileStore();
+  const EN = useEN();
+  const C = {
+    ...C_STATIC,
+    bg: EN.bg,
+    surfaceHigh: EN.surfaceHigh,
+    primary: EN.primary,
+    onSurface: EN.onSurface,
+    textMuted: EN.textMuted,
+    danger: EN.danger,
+  };
 
   const displayName = profile?.fullName || user?.name || user?.email?.split('@')[0] || 'Bạn';
   const initials = displayName.charAt(0).toUpperCase();

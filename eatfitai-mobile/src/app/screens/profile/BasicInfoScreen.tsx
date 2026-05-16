@@ -21,9 +21,10 @@ import {
   showSuccess,
   handleApiErrorWithCustomMessage,
 } from '../../../utils/errorHandler';
+import { useEN } from '../../../theme/emeraldNebula';
 
 /* ═══ Emerald Nebula Palette ═══ */
-const P = {
+const P_STATIC = {
   surface: '#0e1322',
   surfaceContainerHigh: '#25293a',
   surfaceContainerLow: '#161b2b',
@@ -156,6 +157,7 @@ const GenderModal = ({
 const BasicInfoScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const P = { ...P_STATIC, ...useEN() };
 
   const { profile, updateProfile } = useProfileStore((s) => ({
     profile: s.profile,
@@ -229,7 +231,7 @@ const BasicInfoScreen = (): React.ReactElement => {
   };
 
   return (
-    <View style={[S.container, { paddingTop: insets.top }]}>
+    <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]}>
       {/* Header */}
       <View style={S.header}>
         <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>

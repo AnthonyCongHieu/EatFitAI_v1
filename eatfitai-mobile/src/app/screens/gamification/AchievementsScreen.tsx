@@ -14,11 +14,12 @@ import { waterService, WaterIntakeData } from '../../../services/waterService';
 import { shareService } from '../../../services/shareService';
 import type { RootStackParamList } from '../../types';
 import { formatBusinessDate } from '../../../utils/businessDate';
+import { useEN } from '../../../theme/emeraldNebula';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /* ═══ Palette ═══ */
-const P = {
+const P_STATIC = {
   bg: '#0e1322', surfaceLowest: '#090e1c', surfaceLow: '#161b2b',
   surface: '#1a1f2f', surfaceHigh: '#25293a', surfaceHighest: '#2f3445',
   primary: '#22c55e', primaryLight: '#4be277',
@@ -80,6 +81,7 @@ const AchievementsScreen = (): React.ReactElement => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const viewRef = useRef(null);
+  const P = { ...P_STATIC, ...useEN() };
   const { achievements, currentStreak, totalXP, checkStreak, syncAchievementProgress, dailyQuestsClaimed, claimDailyQuest } = useGamificationStore();
   const summary = useDiaryStore((s) => s.summary);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,7 +141,7 @@ const AchievementsScreen = (): React.ReactElement => {
   const getBadge = (id: string) => BADGE_CONFIG[id] ?? { icon: 'trophy-outline', color: P.textMuted, bgColor: 'rgba(148,163,184,0.1)' };
 
   return (
-    <View style={S.container}>
+    <View style={[S.container, { backgroundColor: P.bg }]}>
       <View style={[S.header, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, width: 44 }}>
           <Ionicons name="arrow-back" size={26} color={P.primary} />

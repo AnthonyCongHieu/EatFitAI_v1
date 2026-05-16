@@ -19,13 +19,14 @@ import { ThemedText } from '../../../components/ThemedText';
 import { useProfileStore } from '../../../store/useProfileStore';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import type { RootStackParamList } from '../../types';
+import { useEN } from '../../../theme/emeraldNebula';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette
    ═══════════════════════════════════════════════ */
-const P = {
+const P_STATIC = {
   primary: '#4be277',
   primaryContainer: '#22c55e',
   surface: '#0e1322',
@@ -124,6 +125,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  const P = { ...P_STATIC, ...useEN() };
 
   const profile = useProfileStore((s) => s.profile);
   const fetchProfile = useProfileStore((s) => s.fetchProfile);
@@ -159,7 +161,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
   }, [profile, summary?.targetCalories]);
 
   return (
-    <View style={[S.container, { paddingTop: insets.top }]}>
+    <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]}>
       {/* ═══ HEADER ═══ */}
       <View style={S.header}>
         <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
