@@ -88,7 +88,10 @@ module.exports = ({ config }) => {
 
   if (productionLike) {
     assertRequiredProductionEnv('EXPO_PUBLIC_API_BASE_URL', explicitApiBaseUrl);
-    assertRequiredProductionEnv('EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL', explicitMediaPublicBaseUrl);
+    assertRequiredProductionEnv(
+      'EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL',
+      explicitMediaPublicBaseUrl,
+    );
     assertRequiredProductionEnv(
       'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
       readTrimmedEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
@@ -128,12 +131,17 @@ module.exports = ({ config }) => {
 
   return {
     ...config,
+    owner: productionLike ? config.owner : undefined,
+    updates: productionLike ? config.updates : undefined,
+    runtimeVersion: productionLike ? config.runtimeVersion : undefined,
     extra: {
       ...existingExtra,
-      eas: {
-        ...existingEas,
-        projectId: easProjectId,
-      },
+      eas: productionLike
+        ? {
+            ...existingEas,
+            projectId: easProjectId,
+          }
+        : undefined,
       apiHost: resolvedApiHost || undefined,
       apiPort: resolvedApiPort || undefined,
       apiScheme: resolvedApiScheme || undefined,

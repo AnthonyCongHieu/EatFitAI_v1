@@ -119,10 +119,12 @@ data_chunks/
 artifacts-device-latest.png
 codesign-*.html
 
-# Firebase config — chứa API key, không track trong git
+# Firebase runtime config must stay local/provider-managed.
 google-services.json
-!eatfitai-mobile/android/app/google-services.json
+eatfitai-mobile/android/app/google-services.json
 
+# Generated mascot review/crop intermediates.
+tools/mascot/candidates/
 
 # Temporary migrations
 MigrateToR2/

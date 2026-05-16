@@ -1,0 +1,19 @@
+# Keep text normalization deterministic across Windows/macOS/Linux.
+* text=auto eol=lf
+
+# Windows launchers stay CRLF-friendly.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.mp4 binary
+*.wav binary
+*.onnx binary
+*.pt binary
