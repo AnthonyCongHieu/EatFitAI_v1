@@ -52,7 +52,7 @@ export const BODY_SHAMING_MARKERS = [
   'cân nặng của bạn tệ',
 ];
 
-const EVENT_STATE: Partial<Record<
+const _EVENT_STATE: Partial<Record<
   MoChiPetEventType,
   Omit<MoChiPetState, 'eventType' | 'poseKey'>
 >> = {

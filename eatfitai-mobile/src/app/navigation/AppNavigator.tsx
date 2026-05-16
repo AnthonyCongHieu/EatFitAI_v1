@@ -120,6 +120,9 @@ const getDietaryRestrictionsScreen = lazyScreen(() =>
 const getBasicInfoScreen = lazyScreen(() =>
   require('../screens/profile/BasicInfoScreen'),
 );
+const getMoChiPoseGalleryScreen = lazyScreen(() =>
+  require('../screens/profile/MoChiPoseGalleryScreen'),
+);
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const AppNavigator = (): React.ReactElement => {
@@ -368,10 +371,17 @@ const AppNavigator = (): React.ReactElement => {
                 getComponent={getBasicInfoScreen}
                 options={{ headerShown: false }}
               />
+              <Stack.Screen
+                name="MoChiPoseGallery"
+                getComponent={getMoChiPoseGalleryScreen}
+                options={{ headerShown: false }}
+              />
               </Stack.Group>
           )}
             </Stack.Navigator>
-            {!isInAuthFlow && <MoChiIslandHost currentRouteName={currentRouteName} />}
+            {!isInAuthFlow && currentRouteName !== 'MoChiPoseGallery' && (
+              <MoChiIslandHost currentRouteName={currentRouteName} />
+            )}
           </>
         )}
       </NavigationContainer>

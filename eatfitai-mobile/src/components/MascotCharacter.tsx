@@ -95,7 +95,6 @@ const MascotCharacter = ({
     transform: [{ rotate: `${rotate.value}deg` }],
   }));
 
-  const stageSize = size * 1.24;
   const spriteSize = size * 1.36;
 
   return (

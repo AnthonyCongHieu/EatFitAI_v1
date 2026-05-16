@@ -22,7 +22,7 @@ describe('MoChi island engine', () => {
     expect(getMoChiIslandState(baseInput)).toMatchObject({
       mode: 'compact',
       eventType: 'companion_rest',
-      poseKey: 'faceCheerful',
+      poseKey: 'islandAvatar',
       message: null,
       confirmationAction: null,
       presentation: {
@@ -30,6 +30,16 @@ describe('MoChi island engine', () => {
         reservedHeight: 58,
         spriteVariant: 'face',
         spriteSize: 34,
+      },
+    });
+  });
+
+  it('uses a dedicated compact island avatar sprite', () => {
+    expect(getMoChiIslandState(baseInput)).toMatchObject({
+      mode: 'compact',
+      poseKey: 'islandAvatar',
+      presentation: {
+        spriteVariant: 'face',
       },
     });
   });
@@ -53,7 +63,7 @@ describe('MoChi island engine', () => {
       presentation: {
         height: 132,
         reservedHeight: 152,
-        spriteVariant: 'notice',
+        spriteVariant: 'full',
         spriteSize: 64,
         maxLines: 4,
       },
@@ -73,9 +83,9 @@ describe('MoChi island engine', () => {
     expect(voiceReviewState).toMatchObject({
       mode: 'confirm',
       eventType: 'voice_review',
-      poseKey: 'tabletLog',
+      poseKey: 'mealPortionNotice',
       presentation: {
-        spriteVariant: 'full',
+        spriteVariant: 'notice',
       },
     });
 
@@ -89,7 +99,7 @@ describe('MoChi island engine', () => {
     expect(statsNudgeState).toMatchObject({
       mode: 'confirm',
       eventType: 'stats_low_data',
-      poseKey: 'reportReview',
+      poseKey: 'weeklyReportNotice',
     });
     expect(statsNudgeState.presentation.spriteVariant).not.toBe('face');
     expect(statsNudgeState.presentation.height).toBeGreaterThan(108);
@@ -117,7 +127,7 @@ describe('MoChi island engine', () => {
     ).toMatchObject({
       mode: 'live',
       eventType: 'voice_listening',
-      poseKey: 'analyzing',
+      poseKey: 'listeningNotice',
       message: 'MoChi đang nghe món, lượng và bữa.',
       confirmationAction: null,
     });
@@ -159,6 +169,33 @@ describe('MoChi island engine', () => {
     });
   });
 
+  it('auto-hides confirm nudges and leaves live task states active', () => {
+    expect(
+      getMoChiIslandState({
+        ...baseInput,
+        now: new Date('2026-05-16T16:00:00+07:00'),
+        waterAmountMl: 300,
+        waterTargetMl: 2000,
+      }),
+    ).toMatchObject({
+      mode: 'confirm',
+      eventType: 'water_reminder',
+      autoHideMs: 8000,
+      cooldownKey: 'water_reminder',
+    });
+
+    expect(
+      getMoChiIslandState({
+        ...baseInput,
+        activeEvent: 'scan_processing',
+      }),
+    ).toMatchObject({
+      mode: 'live',
+      autoHideMs: null,
+      cooldownKey: null,
+    });
+  });
+
   it('keeps scan processing live before lower-priority reminders', () => {
     expect(
       getMoChiIslandState({
@@ -177,7 +214,7 @@ describe('MoChi island engine', () => {
     ).toMatchObject({
       mode: 'live',
       eventType: 'scan_processing',
-      poseKey: 'analyzing',
+      poseKey: 'scanThinkingFull',
       confirmationAction: null,
     });
   });

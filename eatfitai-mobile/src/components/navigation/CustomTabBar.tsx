@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { TEST_IDS } from '../../testing/testIds';
+import { navigateRoot } from '../../app/navigation/navigationRef';
 import { resolveBottomTabSafePadding } from './tabBarSafeArea';
 
 const C = {
@@ -163,12 +164,8 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
       return;
     }
 
-    const parentNavigation = navigation.getParent();
-    const navigateStack = parentNavigation?.navigate as
-      | ((name: string, params?: unknown) => void)
-      | undefined;
     if (command.target === 'FoodSearch') {
-      navigateStack?.(
+      const didNavigate = navigateRoot(
         'FoodSearch',
         {
           autoFocus: true,
@@ -176,10 +173,16 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
           returnToDiaryOnSave: true,
         },
       );
+      if (!didNavigate) {
+        console.warn('[navigation] Root navigator is not ready for FoodSearch command.');
+      }
       return;
     }
 
-    navigateStack?.(command.target);
+    const didNavigate = navigateRoot('AiCamera');
+    if (!didNavigate) {
+      console.warn('[navigation] Root navigator is not ready for AI scan command.');
+    }
   };
 
   return (

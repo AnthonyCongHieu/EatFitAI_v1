@@ -70,9 +70,9 @@ type ScanResultNotice = {
 const SCAN_IMAGE_UPLOAD_WIDTH = 1024;
 const SCAN_IMAGE_UPLOAD_QUALITY = 0.85;
 const AI_PROCESSING_MESSAGES = [
-  'Đang tối ưu ảnh...',
-  'AI đang nhận diện món ăn...',
-  'Đang ghép món với dữ liệu dinh dưỡng...',
+  'Đang nhận diện món ăn...',
+  'Đang đối chiếu dữ liệu dinh dưỡng...',
+  'Sắp có kết quả, bạn kiểm tra lại trước khi lưu.',
 ];
 const isUsableVisionItem = (item: MappedFoodItem): boolean =>
   Boolean(item.isMatched || item.foodItemId || item.foodName || item.detectedLabelVi) ||
@@ -100,6 +100,16 @@ const P = {
 };
 
 const SCANNER_SIZE = SW * 0.72;
+
+const ScanProgressCard = ({ message }: { message: string }): React.ReactElement => (
+  <Animated.View entering={FadeIn.duration(300)} style={S.scanProgressCard}>
+    <ActivityIndicator size="small" color={P.primary} />
+    <View style={S.scanProgressCopy}>
+      <ThemedText style={S.scanProgressEyebrow}>Đang phân tích</ThemedText>
+      <ThemedText style={S.scanProgressText}>{message}</ThemedText>
+    </View>
+  </Animated.View>
+);
 
 const AIScanScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -572,7 +582,8 @@ const AIScanScreen: React.FC = () => {
   const hasDetectedItems = distinctResultItems.length > 0;
   const hasMultipleDetectedItems = distinctResultItems.length > 1;
   const topItem = distinctResultItems[0] ?? null;
-  const processingText = AI_PROCESSING_MESSAGES[processingMessageIndex];
+  const processingText =
+    AI_PROCESSING_MESSAGES[processingMessageIndex] ?? AI_PROCESSING_MESSAGES[0]!;
 
   const mealMacroTotals = calculateVisionDefaultMacroTotals(distinctResultItems);
   const useMealMacroTotals = hasMultipleDetectedItems;
@@ -599,6 +610,7 @@ const AIScanScreen: React.FC = () => {
     : topItem
       ? Math.round((topItem.fatPer100g ?? 0) * ratio)
       : 0;
+  const hasMacroData = computedProtein + computedCarbs + computedFat > 0;
 
   /* ═══════════════════════════════════════════════
      Permission screens
@@ -759,16 +771,8 @@ const AIScanScreen: React.FC = () => {
             </Animated.View>
           )}
 
-          {/* Inline processing banner */}
           {showProcessingBanner && mode === 'preview' && (
-            <Animated.View entering={FadeIn.duration(300)} style={S.inlineBanner}>
-              <ActivityIndicator size="small" color={P.primary} />
-              <ThemedText style={S.inlineBannerText}>{processingText}</ThemedText>
-            </Animated.View>
-          )}
-
-          {showProcessingBanner && mode === 'preview' && (
-            <MoChiInlineNotice mochiEvent="scan_processing" compact />
+            <ScanProgressCard message={processingText} />
           )}
 
           {/* AI status badge (camera mode only) */}
@@ -983,7 +987,9 @@ const AIScanScreen: React.FC = () => {
                       );
                       const statusLabel =
                         item.trustSummary?.label ??
-                        (item.isMatched ? 'Đã khớp dinh dưỡng' : 'Cần xác nhận');
+                        (item.isMatched && confidence >= 50
+                          ? 'Đã khớp dinh dưỡng'
+                          : 'Cần kiểm tra');
                       const key = `${item.source ?? 'vision'}-${item.userFoodItemId ?? item.foodItemId ?? item.label}-${index}`;
 
                       return (
@@ -1029,6 +1035,7 @@ const AIScanScreen: React.FC = () => {
                 </View>
 
                 {/* Macro visualization */}
+                {hasMacroData && (
                 <View style={S.macroRow}>
                   <View style={S.macroCard}>
                     <ThemedText style={S.macroLabel}>PROTEIN</ThemedText>
@@ -1085,6 +1092,7 @@ const AIScanScreen: React.FC = () => {
                     </View>
                   </View>
                 </View>
+                )}
 
                 {/* Action buttons row */}
                 <View style={S.actionBtnRow}>
@@ -1097,7 +1105,7 @@ const AIScanScreen: React.FC = () => {
                     <ThemedText style={S.retakeBtnText}>Chụp lại</ThemedText>
                   </Pressable>
 
-                  {/* Add to diary */}
+                  {/* Review before saving */}
                   <Pressable
                     onPress={handleAddToDiary}
                     style={S.addBtn}
@@ -1109,7 +1117,7 @@ const AIScanScreen: React.FC = () => {
                       end={{ x: 1, y: 0 }}
                       style={S.addBtnGradient}
                     >
-                      <ThemedText style={S.addBtnText}>Thêm vào Nhật ký</ThemedText>
+                      <ThemedText style={S.addBtnText}>Kiểm tra & lưu bữa</ThemedText>
                     </LinearGradient>
                   </Pressable>
                 </View>
@@ -1481,23 +1489,37 @@ const S = StyleSheet.create({
     fontWeight: '600',
     color: P.onSurface,
   },
-  inlineBanner: {
+  scanProgressCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     alignSelf: 'center',
-    backgroundColor: P.glass,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
+    backgroundColor: 'rgba(22, 27, 43, 0.82)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: P.glassBorder,
+    borderColor: 'rgba(75, 226, 119, 0.22)',
     marginTop: 12,
+    maxWidth: SW - 48,
   },
-  inlineBannerText: {
+  scanProgressCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  scanProgressEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: P.primary,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  scanProgressText: {
     fontSize: 13,
     fontWeight: '600',
     color: P.onSurface,
+    lineHeight: 18,
   },
   holdSteadyWrap: {
     flexDirection: 'row',

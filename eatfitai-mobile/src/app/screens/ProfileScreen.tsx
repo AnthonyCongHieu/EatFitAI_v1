@@ -123,7 +123,6 @@ const ProfileScreen = (): React.ReactElement => {
   }));
 
   const [refreshing, setRefreshing] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
@@ -200,24 +199,8 @@ const ProfileScreen = (): React.ReactElement => {
 
   const handlePickAvatarSource = useCallback((source: 'library' | 'camera') => {
     setAvatarMenuOpen(false);
-    setAccountMenuOpen(false);
     void pickAvatar(source);
   }, [pickAvatar]);
-
-  const handleEditProfile = useCallback(() => {
-    setAccountMenuOpen(false);
-    navigation.navigate('EditProfile' as any);
-  }, [navigation]);
-
-  const handleNotificationSettings = useCallback(() => {
-    setAccountMenuOpen(false);
-    navigation.navigate('NotificationsSettings' as any);
-  }, [navigation]);
-
-  const handleSheetLogout = useCallback(() => {
-    setAccountMenuOpen(false);
-    handleLogout();
-  }, [handleLogout]);
 
   const handleProPress = useCallback(() => {
     Toast.show({
@@ -247,15 +230,7 @@ const ProfileScreen = (): React.ReactElement => {
       <View style={S.header}>
         <View style={S.headerBtn} />
         <ThemedText style={S.headerTitle}>Hồ sơ</ThemedText>
-        <Pressable
-          style={({ pressed }) => [S.headerBtn, S.headerActionBtn, pressed && { opacity: 0.72 }]}
-          onPress={() => setAccountMenuOpen(true)}
-          testID={TEST_IDS.profile.accountActionsButton}
-          accessibilityRole="button"
-          accessibilityLabel="Mở tuỳ chọn tài khoản"
-        >
-          <Ionicons name="settings-outline" size={21} color={P.onSurface} />
-        </Pressable>
+        <View style={S.headerBtn} />
       </View>
 
       <ScrollView
@@ -390,6 +365,11 @@ const ProfileScreen = (): React.ReactElement => {
         {/* ═══ MENU GROUP 2 — About + PRO ═══ */}
         <Animated.View entering={FadeInUp.delay(400).duration(400)} style={[S.menuGroup, { marginTop: 16 }]}>
           <MenuRow
+            icon="images-outline"
+            label="Phòng MoChi"
+            onPress={() => navigation.navigate('MoChiPoseGallery')}
+          />
+          <MenuRow
             icon="information-circle-outline"
             label="Về EatFit AI"
             onPress={() => navigation.navigate('About' as any)}
@@ -402,6 +382,16 @@ const ProfileScreen = (): React.ReactElement => {
             iconColor={P.primary}
             chevronColor={P.primary + '80'}
             onPress={handleProPress}
+          />
+          <MenuRow
+            icon="log-out-outline"
+            label="Đăng xuất"
+            labelColor={P.error}
+            iconBg={P.errorContainer}
+            iconColor={P.error}
+            showChevron={false}
+            onPress={handleLogout}
+            testID={TEST_IDS.profile.logoutButton}
           />
         </Animated.View>
 
@@ -483,113 +473,6 @@ const ProfileScreen = (): React.ReactElement => {
                 </View>
                 <ThemedText style={S.sheetActionLabel}>Chụp ảnh mới</ThemedText>
                 <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
-              </Pressable>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={accountMenuOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setAccountMenuOpen(false)}
-      >
-        <View style={S.actionOverlay}>
-          <Pressable
-            style={S.actionBackdrop}
-            onPress={() => setAccountMenuOpen(false)}
-            accessibilityRole="button"
-            accessibilityLabel="Đóng tuỳ chọn tài khoản"
-          />
-          <Animated.View
-            entering={FadeInUp.duration(180)}
-            style={[S.accountSheet, { paddingBottom: insets.bottom + 14 }]}
-            testID={TEST_IDS.profile.accountActionsSheet}
-          >
-            <View style={S.sheetHandle} />
-            <View style={S.sheetHeader}>
-              <View style={S.sheetAvatar}>
-                {profile?.avatarUrl ? (
-                  <Image source={{ uri: profile.avatarUrl }} style={S.sheetAvatarImage} />
-                ) : (
-                  <Ionicons name="person" size={22} color={P.primary} />
-                )}
-              </View>
-              <View style={S.sheetTitleWrap}>
-                <ThemedText style={S.sheetTitle} numberOfLines={1}>{displayName}</ThemedText>
-                <ThemedText style={S.sheetSubtitle} numberOfLines={1}>
-                  Tài khoản & cài đặt
-                </ThemedText>
-              </View>
-            </View>
-
-            <View style={S.sheetActions}>
-              <Pressable
-                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
-                onPress={handleEditProfile}
-                testID={TEST_IDS.profile.editButton}
-                accessibilityRole="button"
-              >
-                <View style={S.sheetActionIcon}>
-                  <Ionicons name="create-outline" size={20} color={P.primary} />
-                </View>
-                <ThemedText style={S.sheetActionLabel}>Chỉnh sửa hồ sơ</ThemedText>
-                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
-                onPress={() => {
-                  setAccountMenuOpen(false);
-                  navigation.navigate('BodyMetrics' as any);
-                }}
-                accessibilityRole="button"
-              >
-                <View style={S.sheetActionIcon}>
-                  <Ionicons name="person-outline" size={20} color={P.primary} />
-                </View>
-                <ThemedText style={S.sheetActionLabel}>Hồ sơ thể chất</ThemedText>
-                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
-                onPress={() => {
-                  setAccountMenuOpen(false);
-                  navigation.navigate('NutritionSettings');
-                }}
-                accessibilityRole="button"
-              >
-                <View style={S.sheetActionIcon}>
-                  <Ionicons name="nutrition-outline" size={20} color={P.primary} />
-                </View>
-                <ThemedText style={S.sheetActionLabel}>Cài đặt dinh dưỡng</ThemedText>
-                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
-                onPress={handleNotificationSettings}
-                accessibilityRole="button"
-              >
-                <View style={S.sheetActionIcon}>
-                  <Ionicons name="notifications-outline" size={20} color={P.primary} />
-                </View>
-                <ThemedText style={S.sheetActionLabel}>Tùy chỉnh thông báo</ThemedText>
-                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [S.sheetAction, S.sheetDangerAction, pressed && { opacity: 0.76 }]}
-                onPress={handleSheetLogout}
-                testID={TEST_IDS.profile.logoutButton}
-                accessibilityRole="button"
-              >
-                <View style={[S.sheetActionIcon, S.sheetDangerIcon]}>
-                  <Ionicons name="log-out-outline" size={20} color={P.error} />
-                </View>
-                <ThemedText style={[S.sheetActionLabel, { color: P.error }]}>Đăng xuất</ThemedText>
               </Pressable>
             </View>
           </Animated.View>

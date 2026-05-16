@@ -1,9 +1,3 @@
-declare const __dirname: string;
-declare const require: (moduleName: string) => any;
-
-const fs = require('fs');
-const path = require('path');
-
 import {
   MOCHI_REQUIRED_EVENT_POSES,
   MOCHI_SPRITE_CATALOG,
@@ -11,6 +5,12 @@ import {
   getMoChiPoseForEvent,
 } from '../src/features/mochi/mochiPoseCatalog';
 import { MOCHI_SPRITES, MOCHI_SPRITE_METADATA } from '../src/assets/mascot/mochi/mochiAssets';
+
+declare const __dirname: string;
+declare const require: (moduleName: string) => any;
+
+const fs = require('fs');
+const path = require('path');
 
 describe('MoChi sprite catalog', () => {
   it('defines the required event poses from the source sprite sheets', () => {
@@ -23,23 +23,25 @@ describe('MoChi sprite catalog', () => {
       expect(pose.key).toBe(poseKey);
       expect(pose.accessibilityLabel).toContain('MoChi');
       expect(MOCHI_SPRITES[poseKey]).toBeDefined();
-      expect(MOCHI_SPRITE_METADATA[poseKey].sourceSheet).toMatch(/^mochi-source-[12]\.png$/);
+      expect(MOCHI_SPRITE_METADATA[poseKey].sourceSheet).toMatch(
+        /^(mochi-source-[12]|hieukax970-2)\.png$/,
+      );
     }
   });
 
   it('maps pet events to explicit semantic poses', () => {
     expect(getMoChiPoseForEvent('app_idle')).toBe('idle');
-    expect(getMoChiPoseForEvent('meal_reminder')).toBe('foodPhone');
-    expect(getMoChiPoseForEvent('water_reminder')).toBe('hydrate');
-    expect(getMoChiPoseForEvent('scan_processing')).toBe('analyzing');
-    expect(getMoChiPoseForEvent('scan_success')).toBe('sparkleSuccess');
-    expect(getMoChiPoseForEvent('scan_empty')).toBe('confused');
-    expect(getMoChiPoseForEvent('scan_error')).toBe('sadCry');
+    expect(getMoChiPoseForEvent('meal_reminder')).toBe('mealCoachFull');
+    expect(getMoChiPoseForEvent('water_reminder')).toBe('waterCoachFull');
+    expect(getMoChiPoseForEvent('scan_processing')).toBe('scanThinkingFull');
+    expect(getMoChiPoseForEvent('scan_success')).toBe('scanSuccessFull');
+    expect(getMoChiPoseForEvent('scan_empty')).toBe('scanUncertainNotice');
+    expect(getMoChiPoseForEvent('scan_error')).toBe('scanErrorFull');
     expect(getMoChiPoseForEvent('meal_logged')).toBe('saladSuccess');
-    expect(getMoChiPoseForEvent('water_added')).toBe('waterGlass');
+    expect(getMoChiPoseForEvent('water_added')).toBe('waterCoachFull');
     expect(getMoChiPoseForEvent('streak_unlocked')).toBe('celebrate');
-    expect(getMoChiPoseForEvent('calorie_caution')).toBe('cakeConcern');
-    expect(getMoChiPoseForEvent('report_ready')).toBe('reportReview');
+    expect(getMoChiPoseForEvent('calorie_caution')).toBe('nutritionCoachNotice');
+    expect(getMoChiPoseForEvent('report_ready')).toBe('weeklyReportNotice');
   });
 
   it('ships optimized runtime sprites without importing the large source sheets', () => {

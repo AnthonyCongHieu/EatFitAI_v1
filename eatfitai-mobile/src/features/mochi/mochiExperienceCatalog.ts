@@ -18,8 +18,32 @@ export type MoChiExperienceDomain =
   | 'system'
   | 'companion';
 
+export type MoChiPoseRoleKey =
+  | 'pose_angry'
+  | 'pose_sad_cry'
+  | 'pose_confused'
+  | 'pose_calm'
+  | 'pose_analyzing'
+  | 'pose_hydrate'
+  | 'pose_face_surprised'
+  | 'pose_face_sad'
+  | 'pose_face_tired'
+  | 'pose_face_thinking'
+  | 'pose_face_calm'
+  | 'pose_food_scale'
+  | 'pose_cake_concern'
+  | 'pose_tablet_meal'
+  | 'pose_carb_explain'
+  | 'pose_spin_choice'
+  | 'pose_logout_notice'
+  | 'pose_scan_success_face'
+  | 'pose_scan_uncertain_face'
+  | 'pose_secure_face';
+
+export type MoChiExperienceCatalogKey = MoChiPetEventType | MoChiPoseRoleKey;
+
 export type MoChiExperienceEntry = {
-  eventType: MoChiPetEventType;
+  eventType: MoChiExperienceCatalogKey;
   poseKey: MoChiPoseKey;
   domain: MoChiExperienceDomain;
   mood: MoChiPetMood;
@@ -37,6 +61,16 @@ const entry = (
 ): MoChiExperienceEntry => ({
   eventType,
   poseKey: MOCHI_EVENT_TO_POSE[eventType],
+  ...options,
+});
+
+const roleEntry = (
+  eventType: MoChiPoseRoleKey,
+  poseKey: MoChiPoseKey,
+  options: Omit<MoChiExperienceEntry, 'eventType' | 'poseKey'>,
+): MoChiExperienceEntry => ({
+  eventType,
+  poseKey,
   ...options,
 });
 
@@ -74,7 +108,7 @@ export const REQUIRED_MOCHI_CONTEXT_EVENTS: MoChiPetEventType[] = [
   'generic_error',
 ];
 
-export const MOCHI_EXPERIENCE_CATALOG: Record<MoChiPetEventType, MoChiExperienceEntry> = {
+export const MOCHI_EXPERIENCE_CATALOG: Record<MoChiExperienceCatalogKey, MoChiExperienceEntry> = {
   app_idle: entry('app_idle', {
     domain: 'companion',
     mood: 'idle',
@@ -615,15 +649,190 @@ export const MOCHI_EXPERIENCE_CATALOG: Record<MoChiPetEventType, MoChiExperience
     priority: 4,
     shouldBubble: true,
   }),
+  pose_angry: roleEntry('pose_angry', 'angry', {
+    domain: 'system',
+    mood: 'concerned',
+    title: 'Cảnh báo rõ ràng',
+    dialogue: 'Dành cho trạng thái cần ngắt thao tác nguy hiểm và nhắc người dùng kiểm tra lại.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_sad_cry: roleEntry('pose_sad_cry', 'sadCry', {
+    domain: 'system',
+    mood: 'error',
+    title: 'Lỗi cần xin lỗi',
+    dialogue: 'Dành cho lỗi xử lý làm người dùng phải thử lại, với giọng mềm thay vì gây hoảng.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_confused: roleEntry('pose_confused', 'confused', {
+    domain: 'scan',
+    mood: 'confused',
+    title: 'Chưa chắc kết quả',
+    dialogue: 'Dành cho tình huống MoChi cần hỏi lại trước khi đưa ra gợi ý dinh dưỡng.',
+    primaryAction: 'scanFood',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_calm: roleEntry('pose_calm', 'calm', {
+    domain: 'companion',
+    mood: 'idle',
+    title: 'Nghỉ nhẹ',
+    dialogue: 'Dành cho khoảnh khắc không có việc gấp nhưng vẫn muốn MoChi hiện diện dịu mắt.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_analyzing: roleEntry('pose_analyzing', 'analyzing', {
+    domain: 'scan',
+    mood: 'thinking',
+    title: 'Đang xử lý nền',
+    dialogue: 'Dành cho trạng thái phân tích cũ khi cần giữ tương thích với sprite hiện có.',
+    primaryAction: 'scanFood',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_hydrate: roleEntry('pose_hydrate', 'hydrate', {
+    domain: 'health',
+    mood: 'thirsty',
+    title: 'Nhắc nước gọn',
+    dialogue: 'Dành cho lời nhắc uống nước dạng nhỏ, không chiếm nhiều không gian màn hình.',
+    primaryAction: 'water',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_face_surprised: roleEntry('pose_face_surprised', 'faceSurprised', {
+    domain: 'voice',
+    mood: 'thinking',
+    title: 'Nghe thấy tín hiệu',
+    dialogue: 'Dành cho phản hồi nhanh khi người dùng vừa bắt đầu nói hoặc đưa dữ liệu mới.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_face_sad: roleEntry('pose_face_sad', 'faceSad', {
+    domain: 'companion',
+    mood: 'error',
+    title: 'Tiếc nhẹ',
+    dialogue: 'Dành cho trạng thái lỗi nhỏ khi MoChi cần nhận lỗi mà không làm nặng trải nghiệm.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_face_tired: roleEntry('pose_face_tired', 'faceTired', {
+    domain: 'system',
+    mood: 'concerned',
+    title: 'Mạng chưa ổn',
+    dialogue: 'Dành cho trạng thái chờ mạng hoặc tác vụ chậm cần thông báo một cách bình tĩnh.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_face_thinking: roleEntry('pose_face_thinking', 'faceThinking', {
+    domain: 'logging',
+    mood: 'thinking',
+    title: 'Đang cân nhắc',
+    dialogue: 'Dành cho bước cần người dùng xác nhận khẩu phần, món ăn hoặc lựa chọn tiếp theo.',
+    primaryAction: 'addMeal',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_face_calm: roleEntry('pose_face_calm', 'faceCalm', {
+    domain: 'companion',
+    mood: 'idle',
+    title: 'Bình tĩnh',
+    dialogue: 'Dành cho các màn hình cần sự yên tâm, ít chuyển động và ít tạo áp lực.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_food_scale: roleEntry('pose_food_scale', 'foodScale', {
+    domain: 'health',
+    mood: 'thinking',
+    title: 'Cân bằng dinh dưỡng',
+    dialogue: 'Dành cho phần giải thích mục tiêu dinh dưỡng hoặc điều chỉnh khẩu phần.',
+    primaryAction: 'addMeal',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_cake_concern: roleEntry('pose_cake_concern', 'cakeConcern', {
+    domain: 'health',
+    mood: 'concerned',
+    title: 'Cẩn thận calo',
+    dialogue: 'Dành cho lời nhắc nhẹ khi bữa ăn có thể lệch khỏi mục tiêu trong ngày.',
+    primaryAction: 'addMeal',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_tablet_meal: roleEntry('pose_tablet_meal', 'tabletMeal', {
+    domain: 'logging',
+    mood: 'hungry',
+    title: 'Xem lại bữa',
+    dialogue: 'Dành cho màn hình rà soát nhật ký hoặc chỉnh lại thông tin bữa ăn đã ghi.',
+    primaryAction: 'viewDiary',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_carb_explain: roleEntry('pose_carb_explain', 'carbExplain', {
+    domain: 'health',
+    mood: 'thinking',
+    title: 'Giải thích macro',
+    dialogue: 'Dành cho phần hướng dẫn protein, carb và fat bằng ngôn ngữ dễ hiểu.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_spin_choice: roleEntry('pose_spin_choice', 'spinChoice', {
+    domain: 'logging',
+    mood: 'thinking',
+    title: 'Chọn nhanh',
+    dialogue: 'Dành cho trạng thái gợi ý nhiều lựa chọn khi người dùng chưa biết ghi món nào.',
+    primaryAction: 'addMeal',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_logout_notice: roleEntry('pose_logout_notice', 'logoutNotice', {
+    domain: 'profile',
+    mood: 'idle',
+    title: 'Xác nhận tài khoản',
+    dialogue: 'Dành cho thao tác đăng xuất hoặc đổi thiết lập tài khoản cần xác nhận rõ ràng.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_scan_success_face: roleEntry('pose_scan_success_face', 'scanSuccessFace', {
+    domain: 'scan',
+    mood: 'happy',
+    title: 'Scan ổn',
+    dialogue: 'Dành cho phản hồi nhỏ khi kết quả scan đủ tốt và người dùng chỉ cần kiểm tra lại.',
+    primaryAction: 'addMeal',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_scan_uncertain_face: roleEntry('pose_scan_uncertain_face', 'scanUncertainFace', {
+    domain: 'scan',
+    mood: 'confused',
+    title: 'Scan chưa chắc',
+    dialogue: 'Dành cho phản hồi nhỏ khi MoChi cần người dùng xác nhận món hoặc khẩu phần.',
+    primaryAction: 'scanFood',
+    priority: 1,
+    shouldBubble: false,
+  }),
+  pose_secure_face: roleEntry('pose_secure_face', 'secureFace', {
+    domain: 'profile',
+    mood: 'concerned',
+    title: 'Bảo mật nhẹ',
+    dialogue: 'Dành cho thông báo tài khoản cần sự cẩn trọng nhưng không làm người dùng lo lắng.',
+    primaryAction: 'dismiss',
+    priority: 1,
+    shouldBubble: false,
+  }),
 };
 
 export const MOCHI_CONTEXT_EVENT_TO_POSE: Record<MoChiPetEventType, MoChiPoseKey> =
-  Object.fromEntries(
-    Object.entries(MOCHI_EXPERIENCE_CATALOG).map(([eventType, entryValue]) => [
-      eventType,
-      entryValue.poseKey,
-    ]),
-  ) as Record<MoChiPetEventType, MoChiPoseKey>;
+  MOCHI_EVENT_TO_POSE;
 
 export const getMoChiExperience = (eventType: MoChiPetEventType): MoChiExperienceEntry =>
   MOCHI_EXPERIENCE_CATALOG[eventType] ?? MOCHI_EXPERIENCE_CATALOG.app_idle;

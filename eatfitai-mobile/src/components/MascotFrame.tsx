@@ -13,17 +13,8 @@
  *   MASCOT_FRAME_SIZE.card     = 64  (small card/achievement)
  */
 
-import React, { useEffect } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import React from 'react';
+import { View, type ViewStyle } from 'react-native';
 
 // ─── Size presets ─────────────────────────────────────────────
 export const MASCOT_FRAME_SIZE = {
@@ -60,8 +51,6 @@ const C = {
 // ─── Component ───────────────────────────────────────────────
 const MascotFrame = ({
   size,
-  animated = true,
-  pulseDuration = 2800,
   showNotificationDot = false,
   style,
   children,

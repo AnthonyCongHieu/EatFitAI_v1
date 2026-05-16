@@ -873,9 +873,9 @@ const OnboardingScreen = (): React.ReactElement => {
                     <ThemedText
                       variant="h2"
                       weight="700"
-                      style={{ 
-                        color: C.primary, 
-                        fontSize: 32, 
+                      style={{
+                        color: C.primary,
+                        fontSize: 32,
                         lineHeight: 40,
                         includeFontPadding: false,
                         paddingTop: 2,
@@ -886,8 +886,8 @@ const OnboardingScreen = (): React.ReactElement => {
                     <ThemedText
                       variant="bodySmall"
                       weight="600"
-                      style={{ 
-                        color: C.onSurfaceVariant, 
+                      style={{
+                        color: C.onSurfaceVariant,
                         marginLeft: 6,
                         includeFontPadding: false,
                       }}

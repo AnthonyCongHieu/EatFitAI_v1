@@ -176,7 +176,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
   const handleGoogleLogin = useCallback(() => {
     logger.info('[WelcomeScreen] Google button PRESSED');
     setIsGoogleLoading(true);
-    
+
     signInWithGoogle()
       .then((result) => {
         logger.info('[WelcomeScreen] Google Sign-In success:', result);

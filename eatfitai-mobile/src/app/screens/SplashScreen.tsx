@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, StyleSheet, Dimensions, Image } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import Animated, {
@@ -138,10 +138,10 @@ const SplashScreen = (): React.ReactElement => {
 
         {/* ─── Hero Section ─── */}
         <ParallaxLayer depth={0.8} style={styles.heroSection}>
-          <Animated.Image 
-            source={require('../../assets/adaptive-icon.png')} 
-            style={[styles.logo, { transform: [{ scale: interpolate(progress.value, [0, 1], [0.95, 1], Extrapolation.CLAMP) }] }]} 
-            resizeMode="contain" 
+          <Animated.Image
+            source={require('../../assets/adaptive-icon.png')}
+            style={[styles.logo, { transform: [{ scale: interpolate(progress.value, [0, 1], [0.95, 1], Extrapolation.CLAMP) }] }]}
+            resizeMode="contain"
           />
         </ParallaxLayer>
       </Tilt3DCard>

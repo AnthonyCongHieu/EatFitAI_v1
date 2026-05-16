@@ -71,6 +71,8 @@ export type MoChiIslandState = {
   presentation: MoChiIslandPresentation;
 };
 
+const CONFIRM_AUTO_HIDE_MS = 8000;
+
 const COMPACT_PRESENTATION: MoChiIslandPresentation = {
   height: 42,
   reservedHeight: 58,
@@ -83,7 +85,7 @@ const COMPACT_STATE: MoChiIslandState = {
   eventType: 'companion_rest',
   mode: 'compact',
   mood: 'idle',
-  poseKey: 'faceCheerful',
+  poseKey: 'islandAvatar',
   message: null,
   ctaLabel: null,
   confirmationAction: null,
@@ -253,7 +255,7 @@ const resolveMode = (eventType: MoChiPetEventType): MoChiIslandMode => {
 
 const resolveAutoHideMs = (mode: MoChiIslandMode): number | null => {
   if (mode === 'message') return 4200;
-  if (mode === 'confirm') return null;
+  if (mode === 'confirm') return CONFIRM_AUTO_HIDE_MS;
   if (mode === 'live') return null;
   return null;
 };
@@ -265,15 +267,16 @@ const getMessage = (eventType: MoChiPetEventType, mode: MoChiIslandMode): string
 
 const EXPANDED_FACE_POSE_FALLBACK: Partial<Record<MoChiPetEventType, MoChiPoseKey>> = {
   voice_idle: 'idle',
-  voice_listening: 'analyzing',
-  voice_review: 'tabletLog',
-  voice_error: 'sadCry',
+  voice_listening: 'listeningNotice',
+  voice_review: 'mealPortionNotice',
+  voice_error: 'scanErrorFull',
   food_search_empty: 'mealChoice',
-  food_search_error: 'sadCry',
-  stats_low_data: 'reportReview',
-  profile_incomplete: 'tabletLog',
+  food_search_error: 'scanErrorFull',
+  stats_low_data: 'weeklyReportNotice',
+  profile_incomplete: 'secureAccountFull',
   favorite_saved: 'thumbsUp',
-  app_offline: 'calm',
+  app_offline: 'secureAccountFull',
+  generic_error: 'scanErrorFull',
   companion_love: 'heartLove',
   companion_determined: 'thumbsUp',
   companion_surprised: 'confused',
@@ -286,7 +289,7 @@ const getDisplayPoseKey = (
   mode: MoChiIslandMode,
 ): MoChiPoseKey => {
   if (mode === 'compact') {
-    return 'faceCheerful';
+    return 'islandAvatar';
   }
 
   const poseKey = getMoChiPoseForEvent(eventType);

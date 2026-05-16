@@ -18,6 +18,15 @@ describe('Task-first bottom command bar', () => {
     expect(source).not.toContain("label: 'Cá nhân'");
   });
 
+  it('uses the root navigation helper for stack commands to avoid parent navigator crashes', () => {
+    const source = readSource('src/components/navigation/CustomTabBar.tsx');
+
+    expect(source).toContain('navigateRoot');
+    expect(source).toMatch(/navigateRoot\(\s*'FoodSearch'/);
+    expect(source).toContain("navigateRoot('AiCamera'");
+    expect(source).not.toContain('navigation.getParent()');
+  });
+
   it('uses a shared MoChi island host instead of the old floating mascot overlay', () => {
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
 

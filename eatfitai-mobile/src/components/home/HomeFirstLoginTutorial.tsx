@@ -23,7 +23,7 @@ type TutorialStep = {
   poseKey?: MoChiPoseKey;
 };
 
-const TUTORIAL_STEPS: TutorialStep[] = [
+const _TUTORIAL_STEPS: TutorialStep[] = [
   {
     title: 'Chào mừng bạn đến với EatFitAI',
     description: 'Mochi sẽ đồng hành cùng bạn trong các thao tác ghi món, quét ảnh và theo dõi mục tiêu mỗi ngày.',

@@ -30,16 +30,16 @@ describe('Profile and top account actions IA', () => {
     expect(typesSource).toContain('NotificationCenter: undefined');
   });
 
-  it('separates avatar actions from account settings and keeps logout in one place', () => {
+  it('keeps profile settings in rows, removes the duplicate profile gear, and exposes logout as a row', () => {
     const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
 
     expect(profileSource).toContain('avatarMenuOpen');
     expect(profileSource).toContain('setAvatarMenuOpen(true)');
     expect(profileSource).toContain('avatarActionsSheet');
     expect(profileSource).toContain('TEST_IDS.profile.avatarActionsSheet');
-    expect(profileSource).toContain('accountMenuOpen');
-    expect(profileSource).toContain('Tài khoản & cài đặt');
-    expect(profileSource).not.toContain('label="Đăng xuất"');
+    expect(profileSource).not.toContain('accountMenuOpen');
+    expect(profileSource).not.toContain('settings-outline');
+    expect(profileSource).toContain('label="Đăng xuất"');
     expect(profileSource).toContain('testID={TEST_IDS.profile.logoutButton}');
     expect(profileSource).toContain('testID={`${TEST_IDS.profile.logoutButton}-confirm`}');
   });

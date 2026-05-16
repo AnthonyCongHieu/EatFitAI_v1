@@ -26,6 +26,7 @@ export type MoChiPoseKey =
   | 'faceCalm'
   | 'faceLove'
   | 'faceDetermined'
+  | 'islandAvatar'
   | 'faceCheerful'
   | 'faceStrained'
   | 'foodScale'
@@ -47,12 +48,30 @@ export type MoChiPoseKey =
   | 'dietWarning'
   | 'cookingPrep'
   | 'spinChoice'
-  | 'boxIdle';
+  | 'boxIdle'
+  | 'scanThinkingFull'
+  | 'scanSuccessFull'
+  | 'scanErrorFull'
+  | 'mealCoachFull'
+  | 'waterCoachFull'
+  | 'sleepyIdleFull'
+  | 'secureAccountFull'
+  | 'nutritionCoachNotice'
+  | 'scanUncertainNotice'
+  | 'listeningNotice'
+  | 'weeklyReportNotice'
+  | 'portionAdjustNotice'
+  | 'mealPortionNotice'
+  | 'logoutNotice'
+  | 'scanSuccessFace'
+  | 'scanUncertainFace'
+  | 'softSorryFace'
+  | 'secureFace';
 
 export type MoChiSpriteMeta = {
   key: MoChiPoseKey;
   fileName: string;
-  sourceSheet: 'mochi-source-1.png' | 'mochi-source-2.png';
+  sourceSheet: 'mochi-source-1.png' | 'mochi-source-2.png' | 'hieukax970-2.png';
   includeComponents: number[];
   variant: MoChiSpriteVariant;
   labelVi: string;
@@ -81,6 +100,7 @@ export const MOCHI_SPRITES: Record<MoChiPoseKey, ImageSourcePropType> = {
   faceCalm: require('./sprites/19_face_calm.png'),
   faceLove: require('./sprites/20_face_love.png'),
   faceDetermined: require('./sprites/21_face_determined.png'),
+  islandAvatar: require('./sprites/44_island_avatar.png'),
   faceCheerful: require('./sprites/22_face_cheerful.png'),
   faceStrained: require('./sprites/23_face_strained.png'),
   foodScale: require('./sprites/24_food_scale.png'),
@@ -103,6 +123,24 @@ export const MOCHI_SPRITES: Record<MoChiPoseKey, ImageSourcePropType> = {
   cookingPrep: require('./sprites/41_cooking_prep.png'),
   spinChoice: require('./sprites/42_spin_choice.png'),
   boxIdle: require('./sprites/43_box_idle.png'),
+  scanThinkingFull: require('./sprites/45_scan_thinking_full.png'),
+  scanSuccessFull: require('./sprites/46_scan_success_full.png'),
+  scanErrorFull: require('./sprites/47_scan_error_full.png'),
+  mealCoachFull: require('./sprites/48_meal_coach_full.png'),
+  waterCoachFull: require('./sprites/49_water_coach_full.png'),
+  sleepyIdleFull: require('./sprites/50_sleepy_idle_full.png'),
+  secureAccountFull: require('./sprites/51_secure_account_full.png'),
+  nutritionCoachNotice: require('./sprites/52_nutrition_coach_notice.png'),
+  scanUncertainNotice: require('./sprites/53_scan_uncertain_notice.png'),
+  listeningNotice: require('./sprites/54_listening_notice.png'),
+  weeklyReportNotice: require('./sprites/55_weekly_report_notice.png'),
+  portionAdjustNotice: require('./sprites/56_portion_adjust_notice.png'),
+  mealPortionNotice: require('./sprites/57_meal_portion_notice.png'),
+  logoutNotice: require('./sprites/58_logout_notice.png'),
+  scanSuccessFace: require('./sprites/59_scan_success_face.png'),
+  scanUncertainFace: require('./sprites/60_scan_uncertain_face.png'),
+  softSorryFace: require('./sprites/61_soft_sorry_face.png'),
+  secureFace: require('./sprites/62_secure_face.png'),
 };
 
 export const MOCHI_SPRITE_METADATA: Record<MoChiPoseKey, MoChiSpriteMeta> = {
@@ -127,6 +165,7 @@ export const MOCHI_SPRITE_METADATA: Record<MoChiPoseKey, MoChiSpriteMeta> = {
   faceCalm: { key: 'faceCalm', fileName: '19_face_calm.png', sourceSheet: 'mochi-source-1.png', includeComponents: [22], variant: 'face', labelVi: 'Điềm tĩnh', accessibilityLabel: 'MoChi điềm tĩnh' },
   faceLove: { key: 'faceLove', fileName: '20_face_love.png', sourceSheet: 'mochi-source-1.png', includeComponents: [23], variant: 'face', labelVi: 'Yêu thích', accessibilityLabel: 'MoChi yêu thích' },
   faceDetermined: { key: 'faceDetermined', fileName: '21_face_determined.png', sourceSheet: 'mochi-source-1.png', includeComponents: [24], variant: 'face', labelVi: 'Quyết tâm', accessibilityLabel: 'MoChi quyết tâm' },
+  islandAvatar: { key: 'islandAvatar', fileName: '44_island_avatar.png', sourceSheet: 'hieukax970-2.png', includeComponents: [23], variant: 'face', labelVi: 'Đại diện MoChi', accessibilityLabel: 'MoChi đang theo dõi ngữ cảnh' },
   faceCheerful: { key: 'faceCheerful', fileName: '22_face_cheerful.png', sourceSheet: 'mochi-source-1.png', includeComponents: [25], variant: 'face', labelVi: 'Tươi tỉnh', accessibilityLabel: 'MoChi tươi tỉnh' },
   faceStrained: { key: 'faceStrained', fileName: '23_face_strained.png', sourceSheet: 'mochi-source-1.png', includeComponents: [26], variant: 'face', labelVi: 'Khó chịu', accessibilityLabel: 'MoChi khó chịu' },
   foodScale: { key: 'foodScale', fileName: '24_food_scale.png', sourceSheet: 'mochi-source-2.png', includeComponents: [4], variant: 'full', labelVi: 'Cân món ăn', accessibilityLabel: 'MoChi cân món ăn' },
@@ -149,4 +188,22 @@ export const MOCHI_SPRITE_METADATA: Record<MoChiPoseKey, MoChiSpriteMeta> = {
   cookingPrep: { key: 'cookingPrep', fileName: '41_cooking_prep.png', sourceSheet: 'mochi-source-2.png', includeComponents: [27], variant: 'notice', labelVi: 'Chuẩn bị nấu', accessibilityLabel: 'MoChi chuẩn bị nấu' },
   spinChoice: { key: 'spinChoice', fileName: '42_spin_choice.png', sourceSheet: 'mochi-source-2.png', includeComponents: [28], variant: 'full', labelVi: 'Vòng chọn món', accessibilityLabel: 'MoChi quay vòng chọn món' },
   boxIdle: { key: 'boxIdle', fileName: '43_box_idle.png', sourceSheet: 'mochi-source-2.png', includeComponents: [24], variant: 'full', labelVi: 'Đứng trên bục', accessibilityLabel: 'MoChi đứng trên bục' },
+  scanThinkingFull: { key: 'scanThinkingFull', fileName: '45_scan_thinking_full.png', sourceSheet: 'hieukax970-2.png', includeComponents: [1], variant: 'full', labelVi: 'Soi món ăn', accessibilityLabel: 'MoChi đang soi món ăn' },
+  scanSuccessFull: { key: 'scanSuccessFull', fileName: '46_scan_success_full.png', sourceSheet: 'hieukax970-2.png', includeComponents: [2], variant: 'full', labelVi: 'Scan thành công', accessibilityLabel: 'MoChi báo scan thành công' },
+  scanErrorFull: { key: 'scanErrorFull', fileName: '47_scan_error_full.png', sourceSheet: 'hieukax970-2.png', includeComponents: [3], variant: 'full', labelVi: 'Scan cần thử lại', accessibilityLabel: 'MoChi báo scan cần thử lại' },
+  mealCoachFull: { key: 'mealCoachFull', fileName: '48_meal_coach_full.png', sourceSheet: 'hieukax970-2.png', includeComponents: [4], variant: 'full', labelVi: 'Nhắc bữa ăn', accessibilityLabel: 'MoChi nhắc ghi bữa ăn' },
+  waterCoachFull: { key: 'waterCoachFull', fileName: '49_water_coach_full.png', sourceSheet: 'hieukax970-2.png', includeComponents: [5], variant: 'full', labelVi: 'Nhắc uống nước', accessibilityLabel: 'MoChi nhắc uống nước' },
+  sleepyIdleFull: { key: 'sleepyIdleFull', fileName: '50_sleepy_idle_full.png', sourceSheet: 'hieukax970-2.png', includeComponents: [7], variant: 'full', labelVi: 'Nghỉ một nhịp', accessibilityLabel: 'MoChi nhắc nghỉ một nhịp' },
+  secureAccountFull: { key: 'secureAccountFull', fileName: '51_secure_account_full.png', sourceSheet: 'hieukax970-2.png', includeComponents: [8], variant: 'full', labelVi: 'Bảo mật tài khoản', accessibilityLabel: 'MoChi nhắc bảo mật tài khoản' },
+  nutritionCoachNotice: { key: 'nutritionCoachNotice', fileName: '52_nutrition_coach_notice.png', sourceSheet: 'hieukax970-2.png', includeComponents: [9], variant: 'notice', labelVi: 'Kiểm tra dinh dưỡng', accessibilityLabel: 'MoChi kiểm tra dinh dưỡng' },
+  scanUncertainNotice: { key: 'scanUncertainNotice', fileName: '53_scan_uncertain_notice.png', sourceSheet: 'hieukax970-2.png', includeComponents: [10], variant: 'notice', labelVi: 'Kết quả cần kiểm tra', accessibilityLabel: 'MoChi báo kết quả cần kiểm tra' },
+  listeningNotice: { key: 'listeningNotice', fileName: '54_listening_notice.png', sourceSheet: 'hieukax970-2.png', includeComponents: [11], variant: 'notice', labelVi: 'Đang nghe', accessibilityLabel: 'MoChi đang nghe' },
+  weeklyReportNotice: { key: 'weeklyReportNotice', fileName: '55_weekly_report_notice.png', sourceSheet: 'hieukax970-2.png', includeComponents: [13], variant: 'notice', labelVi: 'Xem báo cáo', accessibilityLabel: 'MoChi xem báo cáo' },
+  portionAdjustNotice: { key: 'portionAdjustNotice', fileName: '56_portion_adjust_notice.png', sourceSheet: 'hieukax970-2.png', includeComponents: [14], variant: 'notice', labelVi: 'Chỉnh khẩu phần', accessibilityLabel: 'MoChi nhắc chỉnh khẩu phần' },
+  mealPortionNotice: { key: 'mealPortionNotice', fileName: '57_meal_portion_notice.png', sourceSheet: 'hieukax970-2.png', includeComponents: [15], variant: 'notice', labelVi: 'Kiểm tra khẩu phần', accessibilityLabel: 'MoChi kiểm tra khẩu phần bữa ăn' },
+  logoutNotice: { key: 'logoutNotice', fileName: '58_logout_notice.png', sourceSheet: 'hieukax970-2.png', includeComponents: [16], variant: 'notice', labelVi: 'Tài khoản', accessibilityLabel: 'MoChi hỗ trợ thao tác tài khoản' },
+  scanSuccessFace: { key: 'scanSuccessFace', fileName: '59_scan_success_face.png', sourceSheet: 'hieukax970-2.png', includeComponents: [17], variant: 'face', labelVi: 'Scan ổn rồi', accessibilityLabel: 'MoChi vui vì scan thành công' },
+  scanUncertainFace: { key: 'scanUncertainFace', fileName: '60_scan_uncertain_face.png', sourceSheet: 'hieukax970-2.png', includeComponents: [18], variant: 'face', labelVi: 'Scan chưa chắc', accessibilityLabel: 'MoChi chưa chắc về kết quả scan' },
+  softSorryFace: { key: 'softSorryFace', fileName: '61_soft_sorry_face.png', sourceSheet: 'hieukax970-2.png', includeComponents: [19], variant: 'face', labelVi: 'Xin lỗi nhẹ', accessibilityLabel: 'MoChi xin lỗi nhẹ nhàng' },
+  secureFace: { key: 'secureFace', fileName: '62_secure_face.png', sourceSheet: 'hieukax970-2.png', includeComponents: [21], variant: 'face', labelVi: 'Cẩn trọng', accessibilityLabel: 'MoChi nhắc cẩn trọng' },
 };

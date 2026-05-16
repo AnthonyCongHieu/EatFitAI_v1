@@ -228,7 +228,6 @@ const StatsScreen = (): React.ReactElement => {
 
   const [activeTab, setActiveTab] = useState<TabOption>('today');
   const [hasTrackedWeeklyReviewOpen, setHasTrackedWeeklyReviewOpen] = useState(false);
-  const [weeklyReviewAcknowledged, setWeeklyReviewAcknowledged] = useState(false);
   const [pendingWeeklyReviewFocus, setPendingWeeklyReviewFocus] = useState(focusWeeklyReview);
   const [isWeeklyReviewFocused, setIsWeeklyReviewFocused] = useState(focusWeeklyReview);
 
@@ -484,22 +483,6 @@ const StatsScreen = (): React.ReactElement => {
     },
     [navigation],
   );
-
-  const handleWeeklyReviewComplete = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setWeeklyReviewAcknowledged(true);
-    trackEvent('weekly_review_complete', {
-      category: 'product',
-      flow: 'retention',
-      step: 'weekly_review',
-      status: 'completed',
-      screen: 'StatsScreen',
-      metadata: {
-        source: weeklyReviewSource,
-        reviewStatus: weeklyReview?.status ?? null,
-      },
-    });
-  }, [weeklyReview?.status, weeklyReviewSource]);
 
   const isLoading =
     activeTab === 'month'

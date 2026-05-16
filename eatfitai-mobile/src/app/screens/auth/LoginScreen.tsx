@@ -26,9 +26,10 @@ import Screen from '../../../components/Screen';
 import { trackEvent } from '../../../services/analytics';
 import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
-import { handleApiError } from '../../../utils/errorHandler';
+import { handleApiError, handleApiErrorSilent } from '../../../utils/errorHandler';
 import { TEST_IDS } from '../../../testing/testIds';
 import logger from '../../../utils/logger';
+import { t } from '../../../i18n/vi';
 
 const LoginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -119,7 +120,17 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
             message: e?.message,
           },
         });
-        handleApiError(e);
+        const apiError = handleApiErrorSilent(e);
+        if (apiError.type === 'unauthorized') {
+          Toast.show({
+            type: 'error',
+            text1: t('auth.loginFailed'),
+            text2: apiError.message || t('auth.invalidCredentials'),
+            visibilityTime: 4000,
+          });
+        } else {
+          handleApiError(e);
+        }
       } finally {
         setLoading(false);
       }
@@ -239,7 +250,12 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
           </Animated.View>
 
           {/* ─── Login Card (3D tilt interaction) ─── */}
-          <Tilt3DCard maxTilt={6} perspective={900} useDeviceMotion={true} showReflection={false}>
+          <Tilt3DCard
+            maxTilt={6}
+            perspective={900}
+            useDeviceMotion={true}
+            showReflection={false}
+          >
             <Animated.View
               entering={FadeInDown.delay(200).springify()}
               style={[

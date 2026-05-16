@@ -58,6 +58,7 @@ POSES: list[PoseDefinition] = [
     PoseDefinition("faceCalm", "19_face_calm.png", "mochi-source-1.png", (22,), "face", "Điềm tĩnh", "MoChi điềm tĩnh"),
     PoseDefinition("faceLove", "20_face_love.png", "mochi-source-1.png", (23,), "face", "Yêu thích", "MoChi yêu thích"),
     PoseDefinition("faceDetermined", "21_face_determined.png", "mochi-source-1.png", (24,), "face", "Quyết tâm", "MoChi quyết tâm"),
+    PoseDefinition("islandAvatar", "44_island_avatar.png", "mochi-source-1.png", (25,), "face", "Đại diện MoChi", "MoChi đang theo dõi ngữ cảnh"),
     PoseDefinition("faceCheerful", "22_face_cheerful.png", "mochi-source-1.png", (25,), "face", "Tươi tỉnh", "MoChi tươi tỉnh"),
     PoseDefinition("faceStrained", "23_face_strained.png", "mochi-source-1.png", (26,), "face", "Khó chịu", "MoChi khó chịu"),
     PoseDefinition("foodScale", "24_food_scale.png", "mochi-source-2.png", (4,), "full", "Cân món ăn", "MoChi cân món ăn"),

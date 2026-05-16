@@ -64,11 +64,11 @@ const P = {
 /* ═══════════════════════════════════════════════
    Quick Command Chips
    ═══════════════════════════════════════════════ */
-const QUICK_COMMANDS: Array<{
+const QUICK_COMMANDS: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   text: string;
-}> = [
+}[] = [
   { icon: 'restaurant-outline', label: 'Thêm món', text: 'Thêm 1 bát phở bữa trưa' },
   { icon: 'flame-outline', label: 'Calo', text: 'Hôm nay ăn bao nhiêu calo?' },
   { icon: 'scale-outline', label: 'Cân nặng', text: 'Cân nặng 65 kg' },

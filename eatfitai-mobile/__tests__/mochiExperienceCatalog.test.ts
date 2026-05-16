@@ -1,4 +1,8 @@
 import {
+  getMoChiIslandState,
+  type MoChiIslandInput,
+} from '../src/features/mochi/mochiIslandEngine';
+import {
   MOCHI_CONTEXT_EVENT_TO_POSE,
   MOCHI_EXPERIENCE_CATALOG,
   REQUIRED_MOCHI_CONTEXT_EVENTS,
@@ -9,9 +13,18 @@ import type { MoChiPoseKey } from '../src/assets/mascot/mochi/mochiAssets';
 
 describe('MoChi contextual experience catalog', () => {
   it('represents every shipped MoChi sprite with a contextual role', () => {
+    const compactIslandInput: MoChiIslandInput = {
+      routeName: 'HomeTab',
+      reminders: [],
+      currentStreak: 0,
+      totalXP: 0,
+      unlockedAchievementIds: [],
+      now: new Date('2026-05-16T10:00:00+07:00'),
+    };
     const catalogPoseKeys = new Set(
       Object.values(MOCHI_EXPERIENCE_CATALOG).map((entry) => entry.poseKey),
     );
+    catalogPoseKeys.add(getMoChiIslandState(compactIslandInput).poseKey);
 
     for (const poseKey of MOCHI_SPRITE_ORDER) {
       expect(catalogPoseKeys.has(poseKey)).toBe(true);

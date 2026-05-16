@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +28,7 @@ type MoChiIslandHostProps = {
 };
 
 const MAIN_TAB_ROUTES = new Set(['HomeTab', 'VoiceTab', 'StatsTab', 'ProfileTab']);
+const REMINDER_COOLDOWN_MS = 20 * 60 * 1000;
 
 const runHaptic = () => {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -40,7 +41,10 @@ const MoChiIslandHost = ({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { setIslandLayout } = useMoChiIslandLayoutController();
-  const [dismissedEvent, setDismissedEvent] = useState<string | null>(null);
+  const [dismissedEvent, setDismissedEvent] = useState<{
+    eventType: string;
+    dismissedAt: number;
+  } | null>(null);
   const { reminders } = useSmartReminders();
   const summary = useDiaryStore((s) => s.summary);
   const currentStreak = useGamificationStore((s) => s.currentStreak);
@@ -69,7 +73,10 @@ const MoChiIslandHost = ({
           .filter((achievement) => Boolean(achievement.unlockedAt))
           .map((achievement) => achievement.id),
         voiceStatus,
-        dismissedEventType: dismissedEvent as any,
+        dismissedEventType:
+          dismissedEvent && Date.now() - dismissedEvent.dismissedAt < REMINDER_COOLDOWN_MS
+            ? (dismissedEvent.eventType as any)
+            : null,
       }),
     [
       achievements,
@@ -84,17 +91,21 @@ const MoChiIslandHost = ({
     ],
   );
 
+  const dismissIslandEvent = useCallback((eventType: string) => {
+    setDismissedEvent({ eventType, dismissedAt: Date.now() });
+  }, []);
+
   useEffect(() => {
     if (!islandState.autoHideMs) {
       return;
     }
 
     const timer = setTimeout(() => {
-      setDismissedEvent(islandState.eventType);
+      dismissIslandEvent(islandState.eventType);
     }, islandState.autoHideMs);
 
     return () => clearTimeout(timer);
-  }, [islandState.autoHideMs, islandState.eventType]);
+  }, [dismissIslandEvent, islandState.autoHideMs, islandState.eventType]);
 
   const isVisible = Boolean(currentRouteName && MAIN_TAB_ROUTES.has(currentRouteName));
   const isCompact = islandState.mode === 'compact';
@@ -161,7 +172,7 @@ const MoChiIslandHost = ({
       return;
     }
 
-    setDismissedEvent(islandState.eventType);
+    dismissIslandEvent(islandState.eventType);
   };
 
   const maxWidth = Math.min(width - 24, 388);
@@ -198,10 +209,10 @@ const MoChiIslandHost = ({
             }
             if (!isCompact) {
               runHaptic();
-              setDismissedEvent(islandState.eventType);
+              dismissIslandEvent(islandState.eventType);
             }
           }}
-          onLongPress={() => setDismissedEvent(islandState.eventType)}
+          onLongPress={() => dismissIslandEvent(islandState.eventType)}
           style={[styles.islandContent, isCompact && styles.compactContent]}
         >
           <MoChiSprite

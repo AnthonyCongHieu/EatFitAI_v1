@@ -70,6 +70,11 @@ jest.mock('react-native-reanimated', () => {
     default: {
       View: AnimatedView,
     },
+    Easing: {
+      ease: jest.fn(),
+      inOut: jest.fn((easing) => easing),
+      out: jest.fn((easing) => easing),
+    },
     FadeIn: {
       delay: () => ({
         springify: () => ({}),
@@ -85,6 +90,11 @@ jest.mock('react-native-reanimated', () => {
         springify: () => ({}),
       }),
     },
+    useAnimatedStyle: (factory: () => Record<string, unknown>) => factory(),
+    useSharedValue: (value: unknown) => ({ value }),
+    withRepeat: (value: unknown) => value,
+    withSequence: (...values: unknown[]) => values[values.length - 1],
+    withTiming: (value: unknown) => value,
   };
 });
 

@@ -329,12 +329,12 @@ const HomeScreen = (): React.ReactElement => {
     // the water card hasn't laid out yet (e.g., navigating from another tab)
     const timers: ReturnType<typeof setTimeout>[] = [];
     const tryScroll = (delay: number) => {
-      const t = setTimeout(() => {
+      const timer = setTimeout(() => {
         if (waterCardY != null) {
           screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
         }
       }, delay);
-      timers.push(t);
+      timers.push(timer);
     };
 
     tryScroll(300);

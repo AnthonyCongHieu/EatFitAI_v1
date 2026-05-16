@@ -39,6 +39,7 @@ describe('MoChi virtual pet experience', () => {
     expect(islandSource).toContain('getMoChiIslandState');
     expect(islandSource).toContain('setIslandLayout');
     expect(islandSource).toContain("variant={isCompact ? 'face' : islandState.presentation.spriteVariant}");
+    expect(engineSource).toContain("poseKey: 'islandAvatar'");
     expect(islandSource).toContain('Math.min(width - 24, 388)');
     expect(islandSource).toContain('isLongExpandedMessage');
     expect(islandSource).toContain('longIslandCta');
@@ -68,14 +69,15 @@ describe('MoChi virtual pet experience', () => {
   it('uses themed Profile account controls instead of the native logout alert', () => {
     const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
 
-    expect(profileSource).toContain('settings-outline');
     expect(profileSource).toContain('logoutConfirmOpen');
+    expect(profileSource).toContain('label="Đăng xuất"');
+    expect(profileSource).not.toContain('settings-outline');
     expect(profileSource).toContain('Đăng xuất khỏi EatFitAI?');
     expect(profileSource).not.toContain('ellipsis-horizontal');
     expect(profileSource).not.toContain('Alert.alert(t(\'common.logout\')');
   });
 
-  it('removes the old MoChi room route and profile entry', () => {
+  it('keeps the old MoChi room removed and exposes the temporary pose gallery from profile', () => {
     const typeSource = readSource('src/app/types/index.ts');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
@@ -84,7 +86,9 @@ describe('MoChi virtual pet experience', () => {
     expect(typeSource).not.toContain('MochiPreview');
     expect(navigatorSource).not.toContain('getMochiPreviewScreen');
     expect(navigatorSource).not.toContain('MochiPreview');
-    expect(profileSource).not.toContain('Phòng Mochi');
+    expect(typeSource).toContain('MoChiPoseGallery');
+    expect(navigatorSource).toContain('getMoChiPoseGalleryScreen');
+    expect(profileSource).toContain('Phòng MoChi');
     expect(profileSource).not.toContain('mochiPreviewButton');
     expect(testIdsSource).not.toContain('mochiPreviewButton');
     expect(testIdsSource).not.toContain('mochiPreviewScreen');
@@ -101,7 +105,7 @@ describe('MoChi virtual pet experience', () => {
     expect(tutorialSource).toContain("mascotState: 'thinking'");
     expect(homeSource).toContain('HomeFirstLoginTutorial');
     expect(homeSource).toContain("mochiEvent=\"water_added\"");
-    expect(scanSource).toContain("mochiEvent=\"scan_processing\"");
+    expect(scanSource).toContain('ScanProgressCard');
     expect(scanSource).toContain("mochiEvent=\"scan_empty\"");
     expect(scanSource).toContain("mochiEvent=\"scan_error\"");
     expect(visionReviewSource).toContain("mochiEvent=\"meal_logged\"");

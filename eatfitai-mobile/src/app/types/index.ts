@@ -57,6 +57,7 @@ export type RootStackParamList = {
   NotificationsSettings: undefined;
   DietaryRestrictions: undefined;
   BasicInfo: undefined;
+  MoChiPoseGallery: undefined;
 };
 
 export interface UserPreference {
