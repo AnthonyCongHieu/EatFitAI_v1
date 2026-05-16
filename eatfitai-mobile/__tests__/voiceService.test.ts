@@ -112,5 +112,94 @@ describe('voiceService', () => {
     expect(result.source).toBe('ai-provider-proxy');
   });
 
+  it('reviewCommand sends parsed write commands to the backend review endpoint', async () => {
+    mockedPost.mockResolvedValue({
+      data: {
+        intent: 'ADD_FOOD',
+        rawText: 'thêm 1 bát phở bữa trưa',
+        canSave: true,
+        items: [
+          {
+            clientId: 'item-1',
+            foodName: 'phở',
+            grams: 100,
+            selectedCandidate: {
+              id: 10,
+              source: 'catalog',
+              name: 'phở',
+              caloriesPer100: 450,
+            },
+            candidates: [],
+            warnings: [],
+          },
+        ],
+        totals: { calories: 450, protein: 20, carbs: 50, fat: 12 },
+        warnings: [],
+      },
+    });
+
+    const command = {
+      intent: 'ADD_FOOD' as const,
+      entities: { foodName: 'phở', quantity: 1, unit: 'bát', mealType: 'lunch' as const },
+      confidence: 0.91,
+      rawText: 'thêm 1 bát phở bữa trưa',
+      reviewRequired: true,
+    };
+
+    const result = await voiceService.reviewCommand(command);
+
+    expect(mockedPost).toHaveBeenCalledWith('/api/voice/review', command);
+    expect(result.canSave).toBe(true);
+    expect(result.items[0]!.selectedCandidate?.id).toBe(10);
+  });
+
+  it('commitReview sends the edited draft to the backend commit endpoint', async () => {
+    const draft = {
+      intent: 'ADD_FOOD' as const,
+      rawText: 'thêm 150g cơm gà bữa trưa',
+      confidence: 0.9,
+      reviewRequired: true,
+      mealType: 'lunch' as const,
+      date: '2026-05-16',
+      items: [
+        {
+          clientId: 'item-1',
+          heardText: 'cơm gà',
+          foodName: 'cơm gà',
+          grams: 150,
+          selectedCandidate: {
+            id: 11,
+            source: 'catalog' as const,
+            name: 'cơm gà',
+            caloriesPer100: 210,
+            proteinPer100: 12,
+            carbsPer100: 32,
+            fatPer100: 6,
+            matchScore: 1,
+          },
+          candidates: [],
+          warnings: [],
+        },
+      ],
+      totals: { calories: 315, protein: 18, carbs: 48, fat: 9 },
+      warnings: [],
+      canSave: true,
+    };
+    mockedPost.mockResolvedValue({
+      data: {
+        success: true,
+        executedAction: {
+          type: 'ADD_FOOD',
+          details: 'Đã thêm cơm gà',
+        },
+      },
+    });
+
+    const result = await voiceService.commitReview(draft);
+
+    expect(mockedPost).toHaveBeenCalledWith('/api/voice/commit', draft);
+    expect(result.success).toBe(true);
+  });
+
   // parseWithOllama test đã xóa — method deprecated
 });

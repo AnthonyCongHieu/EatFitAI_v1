@@ -31,6 +31,7 @@ import VoiceResultCard from '../../components/voice/VoiceResultCard';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
 import { useAiStatus } from '../../hooks/useAiStatus';
 import { useVoiceStore } from '../../store/useVoiceStore';
+import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
@@ -94,12 +95,14 @@ const VoiceScreen = (): React.ReactElement => {
     status,
     recognizedText,
     parsedCommand,
+    reviewDraft,
     error,
     executedData,
     setRecognizedText,
+    setReviewDraft,
     processText,
     executeCommand,
-    confirmWeight,
+    commitReviewDraft,
     reset,
   } = useVoiceStore();
 
@@ -339,6 +342,68 @@ const VoiceScreen = (): React.ReactElement => {
     }
   };
 
+  const handleCommitReview = async () => {
+    trackEvent('voice_execute_submit', {
+      flow: 'voice',
+      step: 'commit_review',
+      status: 'submitted',
+      metadata: {
+        intent: reviewDraft?.intent ?? parsedCommand?.intent,
+        itemCount: reviewDraft?.items?.length ?? 0,
+      },
+    });
+
+    await commitReviewDraft();
+    const {
+      status: newStatus,
+      lastExecutedAction,
+      error: commitError,
+      executedData: committedData,
+    } = useVoiceStore.getState();
+
+    if (newStatus === 'success') {
+      Toast.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: lastExecutedAction || 'Đã lưu bản nháp.',
+        visibilityTime: 3000,
+      });
+      trackEvent('voice_execute_success', {
+        flow: 'voice',
+        step: 'commit_review',
+        status: 'success',
+        metadata: {
+          intent: reviewDraft?.intent ?? parsedCommand?.intent,
+          action: committedData?.type,
+        },
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+
+      setTimeout(() => reset(), 2000);
+      return;
+    }
+
+    if (newStatus === 'error' && commitError) {
+      trackEvent('voice_execute_failure', {
+        category: 'error',
+        flow: 'voice',
+        step: 'commit_review',
+        status: 'failure',
+        metadata: {
+          intent: reviewDraft?.intent ?? parsedCommand?.intent,
+          message: commitError,
+        },
+      });
+      Toast.show({
+        type: 'error',
+        text1: 'Chưa lưu được',
+        text2: commitError,
+      });
+    }
+  };
+
   const handleQuickCommand = (text: string) => {
     if (!guardVoiceAiReady('quick_command')) {
       return;
@@ -419,6 +484,7 @@ const VoiceScreen = (): React.ReactElement => {
       case 'review':
         return 'Cần xác nhận';
       case 'executing':
+      case 'committing':
         return 'Đang lưu';
       case 'success':
         return 'Đã lưu';
@@ -446,7 +512,10 @@ const VoiceScreen = (): React.ReactElement => {
      ═══════════════════════════════════════════════ */
   const hasTypedCommand = recognizedText.trim().length > 0;
   const isBusy =
-    status === 'processing' || status === 'parsing' || status === 'executing';
+    status === 'processing' ||
+    status === 'parsing' ||
+    status === 'executing' ||
+    status === 'committing';
   const micTitle = isRecording
     ? 'Đang nghe'
     : isVoiceAiBlocked
@@ -465,6 +534,8 @@ const VoiceScreen = (): React.ReactElement => {
       style={[S.container, { paddingTop: insets.top }]}
       testID={TEST_IDS.voice.screen}
     >
+      <MoChiIslandSpacer />
+
       <Animated.View entering={FadeInDown.delay(50).duration(400)} style={S.header}>
         <View style={S.headerInner}>
           <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
@@ -701,14 +772,21 @@ const VoiceScreen = (): React.ReactElement => {
             <VoiceResultCard
               command={parsedCommand}
               onExecute={handleExecute}
-              onConfirmWeight={confirmWeight}
+              onCommit={handleCommitReview}
+              onDraftChange={setReviewDraft}
               isExecuting={status === 'executing'}
+              isCommitting={status === 'committing'}
               executedData={executedData}
+              reviewDraft={reviewDraft}
             />
           </View>
         )}
 
-        {!isRecording && status !== 'idle' && status !== 'error' && !error && (
+        {!isRecording &&
+          status !== 'idle' &&
+          status !== 'error' &&
+          status !== 'review' &&
+          !error && (
           <Animated.View entering={FadeInUp.delay(200)} style={S.statusCard}>
             <View style={S.statusDot} />
             <ThemedText style={S.statusText}>{getStatusLabel()}</ThemedText>
@@ -1030,32 +1108,43 @@ const S = StyleSheet.create({
     color: '#fecaca',
   },
   voiceSection: {
+    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 18,
     paddingBottom: 2,
     minHeight: 188,
+    alignSelf: 'center',
+    width: '100%',
   },
   ring: {
     position: 'absolute',
+    top: '50%',
+    left: '50%',
     borderRadius: 999,
     borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
   },
   ring1: {
     width: 122,
     height: 122,
+    marginLeft: -61,
+    marginTop: -61,
     borderWidth: 2,
     borderColor: 'rgba(75, 226, 119, 0.36)',
   },
   ring2: {
     width: 154,
     height: 154,
+    marginLeft: -77,
+    marginTop: -77,
     borderWidth: 1.5,
     borderColor: 'rgba(75, 226, 119, 0.2)',
   },
   ring3: {
     width: 184,
     height: 184,
+    marginLeft: -92,
+    marginTop: -92,
     borderWidth: 1,
     borderColor: 'rgba(75, 226, 119, 0.1)',
     borderStyle: 'solid', // Android: dotted+borderRadius không hoạt động, dùng solid
@@ -1064,14 +1153,16 @@ const S = StyleSheet.create({
     width: 96,
     height: 96,
     zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   micBtnGlassWrap: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    backgroundColor: 'rgba(15, 23, 42, 0.9)',
     borderWidth: 1,
-    borderColor: 'rgba(75, 226, 119, 0.24)',
+    borderColor: 'rgba(75, 226, 119, 0.32)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: P.primary,

@@ -53,6 +53,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
+import MoChiIslandSpacer from '../../../features/mochi/MoChiIslandSpacer';
 import type { RootStackParamList } from '../../types';
 import { waterService, type WaterIntakeData, type MonthlyWaterData, type WeeklyWaterData } from '../../../services/waterService';
 import { profileService } from '../../../services/profileService';
@@ -516,6 +517,8 @@ const StatsScreen = (): React.ReactElement => {
       testID={TEST_IDS.stats.screen}
     >
       <StatusBar barStyle="light-content" backgroundColor={P.bg} />
+
+      <MoChiIslandSpacer />
 
       {/* ══════ FIXED HEADER ══════ */}
       <View style={S.headerBar}>
@@ -1401,7 +1404,7 @@ const StatsScreen = (): React.ReactElement => {
                                 style={{
                                   width: (cardW - 48) / 7 - 8,
                                   aspectRatio: 1,
-                                  borderRadius: 8,
+                                  borderRadius: 999,
                                   backgroundColor: isRealDay ? bgColor : 'transparent',
                                   margin: 4,
                                   alignItems: 'center',

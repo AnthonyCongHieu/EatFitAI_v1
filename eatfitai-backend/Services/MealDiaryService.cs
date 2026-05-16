@@ -548,7 +548,9 @@ namespace EatFitAI.API.Services
                     mealDiary.Protein = Math.Round(userFoodItem.ProteinPer100 * factor, 2);
                     mealDiary.Carb = Math.Round(userFoodItem.CarbPer100 * factor, 2);
                     mealDiary.Fat = Math.Round(userFoodItem.FatPer100 * factor, 2);
-                    mealDiary.SourceMethod = "user";
+                    mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
+                        ? "user"
+                        : mealDiary.SourceMethod;
                     return;
                 }
 
@@ -570,7 +572,9 @@ namespace EatFitAI.API.Services
                     mealDiary.Protein = Math.Round(foodItem.ProteinPer100g * factor, 2);
                     mealDiary.Carb = Math.Round(foodItem.CarbPer100g * factor, 2);
                     mealDiary.Fat = Math.Round(foodItem.FatPer100g * factor, 2);
-                    mealDiary.SourceMethod = "catalog";
+                    mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
+                        ? "catalog"
+                        : mealDiary.SourceMethod;
                     return;
                 }
 
@@ -628,7 +632,9 @@ namespace EatFitAI.API.Services
                     mealDiary.Protein = Math.Round(totalProtein * scaleFactor, 2);
                     mealDiary.Carb = Math.Round(totalCarb * scaleFactor, 2);
                     mealDiary.Fat = Math.Round(totalFat * scaleFactor, 2);
-                    mealDiary.SourceMethod = "user_dish";
+                    mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
+                        ? "user_dish"
+                        : mealDiary.SourceMethod;
                     return;
                 }
 
@@ -683,7 +689,9 @@ namespace EatFitAI.API.Services
                     mealDiary.Protein = Math.Round(totalProtein * scaleFactor, 2);
                     mealDiary.Carb = Math.Round(totalCarb * scaleFactor, 2);
                     mealDiary.Fat = Math.Round(totalFat * scaleFactor, 2);
-                    mealDiary.SourceMethod = "recipe";
+                    mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
+                        ? "recipe"
+                        : mealDiary.SourceMethod;
                     return;
                 }
             }

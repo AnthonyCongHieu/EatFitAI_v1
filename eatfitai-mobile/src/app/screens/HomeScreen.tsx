@@ -45,6 +45,7 @@ import { waterService, type WaterIntakeData } from '../../services/waterService'
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
+import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import { formatBusinessDate } from '../../utils/businessDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -184,14 +185,17 @@ const weekStyles = StyleSheet.create({
     fontWeight: '700',
   },
   dayNumContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   dayNumContainerSelected: {
+    borderRadius: 999,
     backgroundColor: C.primary,
+    overflow: 'hidden',
   },
   dayNum: {
     fontSize: 15,
@@ -503,10 +507,13 @@ const HomeScreen = (): React.ReactElement => {
           />
         }
       >
+        <MoChiIslandSpacer />
+
         {/* ══════════ HEADER ══════════ */}
         <WelcomeHeader
           streakCount={currentStreak}
-          onNotificationPress={() => navigation.navigate('NotificationsSettings')}
+          onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}
+          onNotificationPress={() => navigation.navigate('NotificationCenter')}
           onStreakPress={() => navigation.navigate('Achievements')}
         />
 

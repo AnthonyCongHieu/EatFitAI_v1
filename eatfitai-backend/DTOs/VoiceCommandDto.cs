@@ -116,4 +116,61 @@ namespace EatFitAI.DTOs
     {
         public decimal NewWeight { get; set; }
     }
+
+    public class VoiceFoodCandidate
+    {
+        public int Id { get; set; }
+        public string Source { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public decimal CaloriesPer100 { get; set; }
+        public decimal ProteinPer100 { get; set; }
+        public decimal CarbPer100 { get; set; }
+        public decimal FatPer100 { get; set; }
+        public decimal MatchScore { get; set; }
+    }
+
+    public class VoiceNutritionTotals
+    {
+        public decimal Calories { get; set; }
+        public decimal Protein { get; set; }
+        public decimal Carb { get; set; }
+        public decimal Fat { get; set; }
+    }
+
+    public class VoiceReviewItem
+    {
+        public string ClientId { get; set; } = string.Empty;
+        public string HeardText { get; set; } = string.Empty;
+        public string FoodName { get; set; } = string.Empty;
+        public decimal Grams { get; set; }
+        public decimal? Quantity { get; set; }
+        public string? Unit { get; set; }
+        public VoiceFoodCandidate? SelectedCandidate { get; set; }
+        public List<VoiceFoodCandidate> Candidates { get; set; } = new();
+        public List<string> Warnings { get; set; } = new();
+    }
+
+    public class VoiceWeightReview
+    {
+        public decimal? CurrentWeight { get; set; }
+        public decimal NewWeight { get; set; }
+    }
+
+    public class VoiceReviewDraft
+    {
+        public VoiceIntent Intent { get; set; }
+        public string RawText { get; set; } = string.Empty;
+        public string? Source { get; set; }
+        public double Confidence { get; set; }
+        public bool ReviewRequired { get; set; }
+        public string? ReviewReason { get; set; }
+        public MealType? MealType { get; set; }
+        public DateTime? Date { get; set; }
+        public List<VoiceReviewItem> Items { get; set; } = new();
+        public VoiceWeightReview? Weight { get; set; }
+        public VoiceNutritionTotals Totals { get; set; } = new();
+        public List<string> Warnings { get; set; } = new();
+        public bool CanSave { get; set; }
+        public string? BlockingReason { get; set; }
+    }
 }

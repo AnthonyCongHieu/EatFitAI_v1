@@ -113,9 +113,10 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     },
     dayInner: {
       flex: 1,
-      borderRadius: 8,
+      borderRadius: 999,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
     },
     legend: {
       flexDirection: 'row',

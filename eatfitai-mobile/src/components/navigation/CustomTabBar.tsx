@@ -1,13 +1,16 @@
 /**
- * CustomTabBar - Emerald Nebula bottom navigation
- * All 5 tabs in a single flat row (no elevated center button)
+ * CustomTabBar - Emerald Nebula task-first bottom command bar.
+ *
+ * Navigation destinations stay in tabs, while high-frequency logging actions
+ * are exposed as direct commands instead of hiding behind a floating mascot.
  */
 import React from 'react';
-import { View, Pressable, StyleSheet, Text, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+
 import { TEST_IDS } from '../../testing/testIds';
 import { resolveBottomTabSafePadding } from './tabBarSafeArea';
 
@@ -18,74 +21,126 @@ const C = {
   onPrimary: '#003915',
   textMuted: '#64748b',
   onSurface: '#dee1f7',
+  surfaceHigh: '#1e2435',
 };
 
-type TabItem = {
-  name: string;
+type CommandTarget = 'HomeTab' | 'FoodSearch' | 'AiCamera' | 'VoiceTab' | 'StatsTab';
+
+type CommandItem = {
+  target: CommandTarget;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconFocused: keyof typeof Ionicons.glyphMap;
+  testID: string;
+  kind: 'tab' | 'stack';
+  isPrimary?: boolean;
 };
 
-const ALL_TABS: TabItem[] = [
-  { name: 'HomeTab', label: 'Trang chủ', icon: 'home-outline', iconFocused: 'home' },
-  { name: 'VoiceTab', label: 'Giọng nói', icon: 'mic-outline', iconFocused: 'mic' },
-  { name: 'AIScanTab', label: 'Quét AI', icon: 'scan-outline', iconFocused: 'scan' },
-  { name: 'StatsTab', label: 'Thống kê', icon: 'bar-chart-outline', iconFocused: 'bar-chart' },
-  { name: 'ProfileTab', label: 'Cá nhân', icon: 'person-outline', iconFocused: 'person' },
+const COMMAND_ITEMS: CommandItem[] = [
+  {
+    target: 'HomeTab',
+    label: 'Trang chủ',
+    icon: 'home-outline',
+    iconFocused: 'home',
+    testID: TEST_IDS.navigation.homeTabButton,
+    kind: 'tab',
+  },
+  {
+    target: 'FoodSearch',
+    label: 'Thêm bữa',
+    icon: 'restaurant-outline',
+    iconFocused: 'restaurant',
+    testID: TEST_IDS.navigation.addMealCommandButton,
+    kind: 'stack',
+  },
+  {
+    target: 'AiCamera',
+    label: 'Scan',
+    icon: 'scan-outline',
+    iconFocused: 'scan',
+    testID: TEST_IDS.navigation.aiScanTabButton,
+    kind: 'stack',
+    isPrimary: true,
+  },
+  {
+    target: 'VoiceTab',
+    label: 'Giọng nói',
+    icon: 'mic-outline',
+    iconFocused: 'mic',
+    testID: TEST_IDS.navigation.voiceTabButton,
+    kind: 'tab',
+  },
+  {
+    target: 'StatsTab',
+    label: 'Thống kê',
+    icon: 'bar-chart-outline',
+    iconFocused: 'bar-chart',
+    testID: TEST_IDS.navigation.statsTabButton,
+    kind: 'tab',
+  },
 ];
 
-const TAB_BAR_HEIGHT = 56;
-const TAB_TEST_IDS: Record<string, string> = {
-  HomeTab: TEST_IDS.navigation.homeTabButton,
-  VoiceTab: TEST_IDS.navigation.voiceTabButton,
-  AIScanTab: TEST_IDS.navigation.aiScanTabButton,
-  StatsTab: TEST_IDS.navigation.statsTabButton,
-  ProfileTab: TEST_IDS.navigation.profileTabButton,
-};
+const TAB_BAR_HEIGHT = 60;
 
-const TabBtn = ({
-  tab, isFocused, onPress, isCenter,
-}: { tab: TabItem; isFocused: boolean; onPress: () => void; isCenter?: boolean }) => {
+const CommandButton = ({
+  command,
+  isFocused,
+  onPress,
+}: {
+  command: CommandItem;
+  isFocused: boolean;
+  onPress: () => void;
+}) => {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-  const iconColor = isFocused ? C.primary : C.textMuted;
-  const testID = TAB_TEST_IDS[tab.name];
-
-  if (isCenter) {
-    return (
-      <View style={styles.centerTabWrapper} pointerEvents="box-none">
-        <Pressable
-          onPress={onPress}
-          hitSlop={12}
-          onPressIn={() => { scale.value = withSpring(0.88, { damping: 15, stiffness: 400 }); }}
-          onPressOut={() => { scale.value = withSpring(1,    { damping: 15, stiffness: 400 }); }}
-          accessibilityRole="tab"
-          accessibilityLabel={tab.label}
-          testID={testID}
-        >
-          <Animated.View style={[styles.centerIconWrap, anim]}>
-            <Ionicons name="scan" size={26} color={C.onPrimary} />
-          </Animated.View>
-        </Pressable>
-      </View>
-    );
-  }
+  const iconColor = command.isPrimary
+    ? C.onPrimary
+    : isFocused
+      ? C.primary
+      : C.textMuted;
 
   return (
     <Pressable
-      style={styles.tabButton}
+      style={styles.commandButton}
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.85, { damping: 15, stiffness: 400 }); }}
-      onPressOut={() => { scale.value = withSpring(1,    { damping: 15, stiffness: 400 }); }}
-      accessibilityRole="tab"
-      accessibilityLabel={tab.label}
-      testID={testID}
+      onPressIn={() => {
+        scale.value = withSpring(0.9, { damping: 15, stiffness: 400 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+      }}
+      accessibilityRole={command.kind === 'tab' ? 'tab' : 'button'}
+      accessibilityLabel={command.label}
+      testID={command.testID}
+      nativeID={command.testID}
     >
-      <Animated.View style={[styles.tabInner, anim]}>
-        <Ionicons name={isFocused ? tab.iconFocused : tab.icon} size={22} color={iconColor} />
-        <Text style={[styles.tabLabel, { color: isFocused ? C.primary : C.textMuted }]}>{tab.label}</Text>
+      <Animated.View
+        style={[
+          styles.commandInner,
+          command.isPrimary && styles.primaryCommand,
+          anim,
+        ]}
+      >
+        <Ionicons
+          name={isFocused ? command.iconFocused : command.icon}
+          size={command.isPrimary ? 25 : 22}
+          color={iconColor}
+        />
+        <Text
+          style={[
+            styles.commandLabel,
+            {
+              color: command.isPrimary
+                ? C.onPrimary
+                : isFocused
+                  ? C.primary
+                  : C.textMuted,
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {command.label}
+        </Text>
       </Animated.View>
     </Pressable>
   );
@@ -94,40 +149,52 @@ const TabBtn = ({
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
   const safeBottom = resolveBottomTabSafePadding(Platform.OS, insets.bottom);
-  const navigateTo = (name: string) => navigation.navigate(name);
   const current = state.routes[state.index]?.name ?? '';
-  const centerTab = ALL_TABS[2]!;
+  const navigateTab = navigation.navigate as unknown as (name: string, params?: unknown) => void;
+
+  const runCommand = (command: CommandItem) => {
+    if (command.kind === 'tab') {
+      if (command.target === 'VoiceTab') {
+        navigateTab('VoiceTab', { source: 'command-bar' });
+        return;
+      }
+
+      navigateTab(command.target);
+      return;
+    }
+
+    const parentNavigation = navigation.getParent();
+    const navigateStack = parentNavigation?.navigate as
+      | ((name: string, params?: unknown) => void)
+      | undefined;
+    if (command.target === 'FoodSearch') {
+      navigateStack?.(
+        'FoodSearch',
+        {
+          autoFocus: true,
+          showQuickSuggestions: true,
+          returnToDiaryOnSave: true,
+        },
+      );
+      return;
+    }
+
+    navigateStack?.(command.target);
+  };
 
   return (
     <View style={styles.outerWrapper} pointerEvents="box-none">
       <View style={[styles.bar, { paddingBottom: safeBottom }]}>
         <View style={styles.row}>
-          {ALL_TABS.map((tab, index) => {
-            const isCenter = index === 2;
-            if (isCenter) {
-              return (
-                <View key={tab.name} style={styles.centerSpacer} pointerEvents="none" />
-              );
-            }
-            return (
-              <TabBtn
-                key={tab.name}
-                tab={tab}
-                isFocused={current === tab.name}
-                onPress={() => navigateTo(tab.name)}
-              />
-            );
-          })}
+          {COMMAND_ITEMS.map((command) => (
+            <CommandButton
+              key={command.target}
+              command={command}
+              isFocused={command.kind === 'tab' && current === command.target}
+              onPress={() => runCommand(command)}
+            />
+          ))}
         </View>
-      </View>
-      {/* Absolute positioning for the center button to make it float */}
-      <View style={[styles.absoluteCenterBtn, { bottom: TAB_BAR_HEIGHT / 2 + safeBottom - 24 }]} pointerEvents="box-none">
-        <TabBtn
-          tab={centerTab}
-          isFocused={current === centerTab.name}
-          onPress={() => navigateTo(centerTab.name)}
-          isCenter={true}
-        />
       </View>
     </View>
   );
@@ -142,8 +209,6 @@ const styles = StyleSheet.create({
   },
   bar: {
     backgroundColor: C.bg,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
@@ -157,54 +222,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: TAB_BAR_HEIGHT,
   },
-  tabButton: {
+  commandButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     height: TAB_BAR_HEIGHT,
   },
-  tabInner: {
+  commandInner: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
+    minWidth: 54,
+    minHeight: 50,
   },
-  tabLabel: {
+  primaryCommand: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: C.primary,
+    shadowColor: C.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.34,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  commandLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.2,
     textAlign: 'center',
     textTransform: 'uppercase',
-  },
-  centerSpacer: {
-    width: TAB_BAR_HEIGHT,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  absoluteCenterBtn: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 30,
-    elevation: 30,
-  },
-  centerTabWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: C.primaryDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
   },
 });
 

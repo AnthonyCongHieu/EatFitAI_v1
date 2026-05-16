@@ -3,13 +3,18 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Tests.Integration;
 using EatFitAI.DTOs;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
+using DbFoodItem = EatFitAI.API.DbScaffold.Models.FoodItem;
+using VoiceMealType = EatFitAI.DTOs.MealType;
 
 namespace EatFitAI.API.Tests.Integration.Controllers;
 
@@ -279,6 +284,185 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
         Assert.Contains("AI provider lỗi 502", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task Review_AddFood_ReturnsEditableDraftWithCandidate_WithoutSaving()
+    {
+        var userId = Guid.NewGuid();
+        using var client = CreateAuthorizedClient(_factory, userId);
+        await IntegrationTestHost.EnsureAppUserAsync(
+            _factory.Services,
+            userId,
+            $"voice_review_{userId:N}@example.com",
+            "Voice Review User");
+        var foodId = await SeedCatalogFoodAsync("Phở bò kiểm thử voice", 450m, 24m, 55m, 12m);
+
+        var response = await client.PostAsJsonAsync("/api/voice/review", new ParsedVoiceCommand
+        {
+            Intent = VoiceIntent.ADD_FOOD,
+            RawText = "Thêm 1 bát phở bò bữa trưa",
+            Confidence = 0.92,
+            ReviewRequired = true,
+            Source = "ai-provider-proxy",
+            Entities = new VoiceCommandEntities
+            {
+                FoodName = "Phở bò kiểm thử voice",
+                Quantity = 1,
+                Unit = "bát",
+                MealType = VoiceMealType.Lunch
+            }
+        });
+
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ADD_FOOD", body.GetProperty("intent").GetString());
+        Assert.True(body.GetProperty("canSave").GetBoolean());
+        Assert.Equal("Lunch", body.GetProperty("mealType").GetString());
+
+        var item = body.GetProperty("items")[0];
+        Assert.Equal("Phở bò kiểm thử voice", item.GetProperty("foodName").GetString());
+        Assert.Equal(100m, item.GetProperty("grams").GetDecimal());
+        Assert.Equal(foodId, item.GetProperty("selectedCandidate").GetProperty("id").GetInt32());
+        Assert.Equal("catalog", item.GetProperty("selectedCandidate").GetProperty("source").GetString());
+        Assert.Equal(450m, body.GetProperty("totals").GetProperty("calories").GetDecimal());
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        Assert.False(await context.MealDiaries.AnyAsync(entry => entry.UserId == userId));
+    }
+
+    [Fact]
+    public async Task Commit_AddFood_RevalidatesDraftAndSavesDiaryEntry()
+    {
+        var userId = Guid.NewGuid();
+        using var client = CreateAuthorizedClient(_factory, userId);
+        await IntegrationTestHost.EnsureAppUserAsync(
+            _factory.Services,
+            userId,
+            $"voice_commit_{userId:N}@example.com",
+            "Voice Commit User");
+        var foodId = await SeedCatalogFoodAsync("Cơm gà kiểm thử voice", 210m, 12m, 32m, 6m);
+
+        var response = await client.PostAsJsonAsync("/api/voice/commit", new
+        {
+            intent = "ADD_FOOD",
+            rawText = "Thêm 150g cơm gà bữa trưa",
+            source = "ai-provider-proxy",
+            confidence = 0.91,
+            mealType = "Lunch",
+            date = "2026-05-16",
+            items = new[]
+            {
+                new
+                {
+                    clientId = "item-1",
+                    heardText = "cơm gà kiểm thử voice",
+                    foodName = "Cơm gà kiểm thử voice",
+                    grams = 150,
+                    selectedCandidate = new
+                    {
+                        id = foodId,
+                        source = "catalog",
+                        name = "Cơm gà kiểm thử voice",
+                        caloriesPer100 = 999,
+                        proteinPer100 = 999,
+                        carbPer100 = 999,
+                        fatPer100 = 999,
+                        matchScore = 1
+                    }
+                }
+            }
+        });
+
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("success").GetBoolean());
+        Assert.Equal("ADD_FOOD", body.GetProperty("executedAction").GetProperty("type").GetString());
+
+        var readback = await client.GetFromJsonAsync<List<MealDiaryDto>>("/api/meal-diary?date=2026-05-16");
+        var entry = Assert.Single(readback!);
+        Assert.Equal(foodId, entry.FoodItemId);
+        Assert.Equal(150m, entry.Grams);
+        Assert.Equal(315m, entry.Calories);
+        Assert.Equal(18m, entry.Protein);
+        Assert.Equal("voice", entry.SourceMethod);
+    }
+
+    [Fact]
+    public async Task Commit_AddFood_RejectsInvalidGramWithoutSaving()
+    {
+        var userId = Guid.NewGuid();
+        using var client = CreateAuthorizedClient(_factory, userId);
+        await IntegrationTestHost.EnsureAppUserAsync(
+            _factory.Services,
+            userId,
+            $"voice_invalid_{userId:N}@example.com",
+            "Voice Invalid User");
+        var foodId = await SeedCatalogFoodAsync("Bún kiểm thử voice", 190m, 7m, 38m, 3m);
+
+        var response = await client.PostAsJsonAsync("/api/voice/commit", new
+        {
+            intent = "ADD_FOOD",
+            rawText = "Thêm bún",
+            mealType = "Lunch",
+            date = "2026-05-16",
+            items = new[]
+            {
+                new
+                {
+                    clientId = "item-1",
+                    foodName = "Bún kiểm thử voice",
+                    grams = 0,
+                    selectedCandidate = new
+                    {
+                        id = foodId,
+                        source = "catalog",
+                        name = "Bún kiểm thử voice"
+                    }
+                }
+            }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        Assert.False(await context.MealDiaries.AnyAsync(entry => entry.UserId == userId));
+    }
+
+    [Fact]
+    public async Task Review_LogWeight_ReturnsDraftAndCommitSavesAfterConfirmation()
+    {
+        var userId = Guid.NewGuid();
+        using var client = CreateAuthorizedClient(_factory, userId);
+        await IntegrationTestHost.EnsureAppUserAsync(
+            _factory.Services,
+            userId,
+            $"voice_weight_{userId:N}@example.com",
+            "Voice Weight User");
+
+        var reviewResponse = await client.PostAsJsonAsync("/api/voice/review", new ParsedVoiceCommand
+        {
+            Intent = VoiceIntent.LOG_WEIGHT,
+            RawText = "Cân nặng 70 kg",
+            Confidence = 0.93,
+            ReviewRequired = true,
+            Entities = new VoiceCommandEntities
+            {
+                Weight = 70
+            }
+        });
+
+        reviewResponse.EnsureSuccessStatusCode();
+        var review = await reviewResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(review.GetProperty("canSave").GetBoolean());
+        Assert.Equal(70m, review.GetProperty("weight").GetProperty("newWeight").GetDecimal());
+
+        var commitResponse = await client.PostAsJsonAsync("/api/voice/commit", review);
+        commitResponse.EnsureSuccessStatusCode();
+        var commit = await commitResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(commit.GetProperty("success").GetBoolean());
+        Assert.Equal("LOG_WEIGHT", commit.GetProperty("executedAction").GetProperty("type").GetString());
+    }
+
     private WebApplicationFactory<Program> CreateFactoryWithHttpClient(
         Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
     {
@@ -319,6 +503,34 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
             "Voice User");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;
+    }
+
+    private async Task<int> SeedCatalogFoodAsync(
+        string foodName,
+        decimal caloriesPer100,
+        decimal proteinPer100,
+        decimal carbPer100,
+        decimal fatPer100)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var food = new DbFoodItem
+        {
+            FoodName = foodName,
+            FoodNameUnsigned = foodName,
+            CaloriesPer100g = caloriesPer100,
+            ProteinPer100g = proteinPer100,
+            CarbPer100g = carbPer100,
+            FatPer100g = fatPer100,
+            IsActive = true,
+            IsDeleted = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            NutrientCompletenessScore = 100
+        };
+        await context.FoodItems.AddAsync(food);
+        await context.SaveChangesAsync();
+        return food.FoodItemId;
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory

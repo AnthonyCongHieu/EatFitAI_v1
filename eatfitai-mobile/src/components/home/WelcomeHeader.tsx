@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
+import { TEST_IDS } from '../../testing/testIds';
 
 const C = {
   bg: '#0a0e1a',
@@ -21,6 +22,7 @@ interface WelcomeHeaderProps {
   streakCount?: number;
   onNotificationPress?: () => void;
   onAvatarPress?: () => void;
+  onSettingsPress?: () => void;
   onStreakPress?: () => void;
 }
 
@@ -56,6 +58,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   streakCount = 0,
   onNotificationPress,
   onAvatarPress,
+  onSettingsPress,
   onStreakPress,
 }) => {
   const { user } = useAuthStore();
@@ -108,7 +111,25 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
             <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
           </Pressable>
         )}
-        <Pressable style={styles.bell} onPress={onNotificationPress} hitSlop={10}>
+        <Pressable
+          style={styles.iconButton}
+          onPress={onSettingsPress}
+          disabled={!onSettingsPress}
+          hitSlop={10}
+          testID={TEST_IDS.home.settingsButton}
+          accessibilityRole="button"
+          accessibilityLabel="Mở hồ sơ và cài đặt"
+        >
+          <Ionicons name="settings-outline" size={21} color={C.textMuted} />
+        </Pressable>
+        <Pressable
+          style={styles.bell}
+          onPress={onNotificationPress}
+          hitSlop={10}
+          testID={TEST_IDS.home.notificationsButton}
+          accessibilityRole="button"
+          accessibilityLabel="Xem thông báo"
+        >
           <Ionicons name="notifications-outline" size={22} color={C.textMuted} />
           <View style={styles.bellDot} />
         </Pressable>
@@ -207,13 +228,27 @@ const styles = StyleSheet.create({
     color: C.onSurface,
   },
 
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.surfaceHigh,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+
   bell: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    backgroundColor: C.surfaceHigh,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   bellDot: {
     position: 'absolute',

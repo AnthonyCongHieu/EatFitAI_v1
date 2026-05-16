@@ -15,7 +15,8 @@ import IntroCarouselScreen from '../screens/auth/IntroCarouselScreen';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import SplashScreen from '../screens/SplashScreen';
-import MascotOverlay from '../../components/MascotOverlay';
+import MoChiIslandHost from '../../features/mochi/MoChiIslandHost';
+import { MoChiIslandLayoutProvider } from '../../features/mochi/MoChiIslandLayoutContext';
 import { t } from '../../i18n/vi';
 import { getActiveRouteName, navigationRef } from './navigationRef';
 
@@ -110,6 +111,9 @@ const getPrivacyPolicyScreen = lazyScreen(() =>
 const getNotificationsScreen = lazyScreen(() =>
   require('../screens/profile/NotificationsScreen'),
 );
+const getNotificationCenterScreen = lazyScreen(() =>
+  require('../screens/profile/NotificationCenterScreen'),
+);
 const getDietaryRestrictionsScreen = lazyScreen(() =>
   require('../screens/ai/DietaryRestrictionsScreen'),
 );
@@ -148,51 +152,52 @@ const AppNavigator = (): React.ReactElement => {
   }, [init]);
 
   return (
-    <NavigationContainer
-      key={navigatorKey}
-      ref={navigationRef}
-      theme={navigationTheme}
-      onReady={() => {
-        flushPendingNotificationNavigation();
-        const routeName = getActiveRouteName();
-        lastRouteNameRef.current = routeName;
-        setCurrentRouteName(routeName);
-        if (routeName) {
+    <MoChiIslandLayoutProvider>
+      <NavigationContainer
+        key={navigatorKey}
+        ref={navigationRef}
+        theme={navigationTheme}
+        onReady={() => {
+          flushPendingNotificationNavigation();
+          const routeName = getActiveRouteName();
+          lastRouteNameRef.current = routeName;
+          setCurrentRouteName(routeName);
+          if (routeName) {
+            trackScreen(routeName, {
+              flow: inferScreenFlow(routeName),
+              step: routeName,
+              status: 'viewed',
+            });
+          }
+        }}
+        onStateChange={() => {
+          flushPendingNotificationNavigation();
+          const routeName = getActiveRouteName();
+          if (!routeName || routeName === lastRouteNameRef.current) {
+            return;
+          }
+
+          lastRouteNameRef.current = routeName;
+          setCurrentRouteName(routeName);
           trackScreen(routeName, {
             flow: inferScreenFlow(routeName),
             step: routeName,
             status: 'viewed',
           });
-        }
-      }}
-      onStateChange={() => {
-        flushPendingNotificationNavigation();
-        const routeName = getActiveRouteName();
-        if (!routeName || routeName === lastRouteNameRef.current) {
-          return;
-        }
-
-        lastRouteNameRef.current = routeName;
-        setCurrentRouteName(routeName);
-        trackScreen(routeName, {
-          flow: inferScreenFlow(routeName),
-          step: routeName,
-          status: 'viewed',
-        });
-      }}
-    >
-      {isInitializing ? (
-        <SplashScreen />
-      ) : (
-        <>
-          <Stack.Navigator
-            key={navigatorKey}
-            initialRouteName={initialRouteName}
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: theme.colors.background },
-            }}
-          >
+        }}
+      >
+        {isInitializing ? (
+          <SplashScreen />
+        ) : (
+          <>
+            <Stack.Navigator
+              key={navigatorKey}
+              initialRouteName={initialRouteName}
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: theme.colors.background },
+              }}
+            >
           {isInAuthFlow ? (
             <Stack.Group navigationKey="auth-flow">
               {!E2E_AUTOMATION_ENABLED && (
@@ -349,6 +354,11 @@ const AppNavigator = (): React.ReactElement => {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
+                name="NotificationCenter"
+                getComponent={getNotificationCenterScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="NotificationsSettings"
                 getComponent={getNotificationsScreen}
                 options={{ headerShown: false }}
@@ -360,11 +370,12 @@ const AppNavigator = (): React.ReactElement => {
               />
               </Stack.Group>
           )}
-          </Stack.Navigator>
-          {!isInAuthFlow && currentRouteName !== 'AiCamera' && <MascotOverlay />}
-        </>
-      )}
-    </NavigationContainer>
+            </Stack.Navigator>
+            {!isInAuthFlow && <MoChiIslandHost currentRouteName={currentRouteName} />}
+          </>
+        )}
+      </NavigationContainer>
+    </MoChiIslandLayoutProvider>
   );
 };
 

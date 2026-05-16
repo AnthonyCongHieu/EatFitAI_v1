@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -26,6 +27,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
+import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
 import { TEST_IDS } from '../../testing/testIds';
@@ -121,6 +123,10 @@ const ProfileScreen = (): React.ReactElement => {
   }));
 
   const [refreshing, setRefreshing] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
 
   useEffect(() => {
     fetchProfile().catch((error: any) => {
@@ -131,10 +137,12 @@ const ProfileScreen = (): React.ReactElement => {
   }, [fetchProfile]);
 
   const handleLogout = useCallback(() => {
-    Alert.alert(t('common.logout'), t('common.logout_confirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.logout'), style: 'destructive', onPress: () => logout() },
-    ]);
+    setLogoutConfirmOpen(true);
+  }, []);
+
+  const handleConfirmLogout = useCallback(() => {
+    setLogoutConfirmOpen(false);
+    void logout();
   }, [logout]);
 
   const handleRefresh = useCallback(async () => {
@@ -146,6 +154,7 @@ const ProfileScreen = (): React.ReactElement => {
   /* ═══ Avatar picker ═══ */
   const pickAvatar = useCallback(async (source: 'library' | 'camera') => {
     try {
+      setIsAvatarUploading(true);
       let result: ImagePicker.ImagePickerResult;
       if (source === 'camera') {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -180,16 +189,35 @@ const ProfileScreen = (): React.ReactElement => {
       }
     } catch (e: any) {
       Toast.show({ type: 'error', text1: 'Lỗi', text2: e?.message || 'Không thể cập nhật avatar' });
+    } finally {
+      setIsAvatarUploading(false);
     }
   }, [fetchProfile]);
 
   const handleAvatarPress = useCallback(() => {
-    Alert.alert('Đổi ảnh đại diện', 'Chọn nguồn ảnh', [
-      { text: 'Chọn ảnh từ thư viện', onPress: () => pickAvatar('library') },
-      { text: 'Chụp ảnh', onPress: () => pickAvatar('camera') },
-      { text: 'Hủy', style: 'cancel' },
-    ]);
+    setAvatarMenuOpen(true);
+  }, []);
+
+  const handlePickAvatarSource = useCallback((source: 'library' | 'camera') => {
+    setAvatarMenuOpen(false);
+    setAccountMenuOpen(false);
+    void pickAvatar(source);
   }, [pickAvatar]);
+
+  const handleEditProfile = useCallback(() => {
+    setAccountMenuOpen(false);
+    navigation.navigate('EditProfile' as any);
+  }, [navigation]);
+
+  const handleNotificationSettings = useCallback(() => {
+    setAccountMenuOpen(false);
+    navigation.navigate('NotificationsSettings' as any);
+  }, [navigation]);
+
+  const handleSheetLogout = useCallback(() => {
+    setAccountMenuOpen(false);
+    handleLogout();
+  }, [handleLogout]);
 
   const handleProPress = useCallback(() => {
     Toast.show({
@@ -213,12 +241,21 @@ const ProfileScreen = (): React.ReactElement => {
 
   return (
     <View style={[S.container, { paddingTop: insets.top }]} testID={TEST_IDS.profile.screen}>
+      <MoChiIslandSpacer />
 
       {/* ═══ HEADER ═══ */}
       <View style={S.header}>
         <View style={S.headerBtn} />
         <ThemedText style={S.headerTitle}>Hồ sơ</ThemedText>
-        <View style={S.headerBtn} />
+        <Pressable
+          style={({ pressed }) => [S.headerBtn, S.headerActionBtn, pressed && { opacity: 0.72 }]}
+          onPress={() => setAccountMenuOpen(true)}
+          testID={TEST_IDS.profile.accountActionsButton}
+          accessibilityRole="button"
+          accessibilityLabel="Mở tuỳ chọn tài khoản"
+        >
+          <Ionicons name="settings-outline" size={21} color={P.onSurface} />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -239,6 +276,9 @@ const ProfileScreen = (): React.ReactElement => {
           <Pressable
             style={S.avatarContainer}
             onPress={handleAvatarPress}
+            testID={TEST_IDS.profile.avatarButton}
+            accessibilityRole="button"
+            accessibilityLabel="Đổi ảnh đại diện"
           >
             <LinearGradient
               colors={[P.primary, P.primaryContainer]}
@@ -256,7 +296,11 @@ const ProfileScreen = (): React.ReactElement => {
             </LinearGradient>
             {/* Camera badge */}
             <View style={S.cameraBadge}>
-              <Ionicons name="camera" size={14} color="#fff" />
+              {isAvatarUploading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="camera" size={14} color="#fff" />
+              )}
             </View>
           </Pressable>
 
@@ -343,7 +387,7 @@ const ProfileScreen = (): React.ReactElement => {
           />
         </Animated.View>
 
-        {/* ═══ MENU GROUP 2 — About + PRO + Logout ═══ */}
+        {/* ═══ MENU GROUP 2 — About + PRO ═══ */}
         <Animated.View entering={FadeInUp.delay(400).duration(400)} style={[S.menuGroup, { marginTop: 16 }]}>
           <MenuRow
             icon="information-circle-outline"
@@ -359,16 +403,6 @@ const ProfileScreen = (): React.ReactElement => {
             chevronColor={P.primary + '80'}
             onPress={handleProPress}
           />
-          <MenuRow
-            icon="log-out-outline"
-            label="Đăng xuất"
-            labelColor={P.error}
-            iconBg={P.errorContainer}
-            iconColor={P.error}
-            showChevron={false}
-            onPress={handleLogout}
-            testID={TEST_IDS.profile.logoutButton}
-          />
         </Animated.View>
 
         {/* ═══ FOOTER ═══ */}
@@ -378,6 +412,229 @@ const ProfileScreen = (): React.ReactElement => {
           </ThemedText>
         </Animated.View>
       </ScrollView>
+
+      <Modal
+        visible={avatarMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAvatarMenuOpen(false)}
+      >
+        <View style={S.actionOverlay}>
+          <Pressable
+            style={S.actionBackdrop}
+            onPress={() => setAvatarMenuOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Đóng tuỳ chọn ảnh đại diện"
+          />
+          <Animated.View
+            entering={FadeInUp.duration(180)}
+            style={[S.accountSheet, S.avatarActionsSheet, { paddingBottom: insets.bottom + 14 }]}
+            testID={TEST_IDS.profile.avatarActionsSheet}
+          >
+            <View style={S.sheetHandle} />
+            <View style={S.sheetHeader}>
+              <View style={S.sheetAvatar}>
+                {profile?.avatarUrl ? (
+                  <Image source={{ uri: profile.avatarUrl }} style={S.sheetAvatarImage} />
+                ) : (
+                  <Ionicons name="person" size={22} color={P.primary} />
+                )}
+              </View>
+              <View style={S.sheetTitleWrap}>
+                <ThemedText style={S.sheetTitle} numberOfLines={1}>Ảnh đại diện</ThemedText>
+                <ThemedText style={S.sheetSubtitle} numberOfLines={1}>
+                  Cập nhật hình đại diện tài khoản
+                </ThemedText>
+              </View>
+            </View>
+
+            <View style={S.sheetActions}>
+              <Pressable
+                style={({ pressed }) => [
+                  S.sheetAction,
+                  isAvatarUploading && S.sheetActionDisabled,
+                  pressed && !isAvatarUploading && { opacity: 0.76 },
+                ]}
+                onPress={() => handlePickAvatarSource('library')}
+                disabled={isAvatarUploading}
+                testID={TEST_IDS.profile.uploadAvatarLibraryButton}
+                accessibilityRole="button"
+              >
+                <View style={S.sheetActionIcon}>
+                  <Ionicons name="image-outline" size={20} color={P.primary} />
+                </View>
+                <ThemedText style={S.sheetActionLabel}>Chọn ảnh từ thư viện</ThemedText>
+                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  S.sheetAction,
+                  isAvatarUploading && S.sheetActionDisabled,
+                  pressed && !isAvatarUploading && { opacity: 0.76 },
+                ]}
+                onPress={() => handlePickAvatarSource('camera')}
+                disabled={isAvatarUploading}
+                testID={TEST_IDS.profile.uploadAvatarCameraButton}
+                accessibilityRole="button"
+              >
+                <View style={S.sheetActionIcon}>
+                  <Ionicons name="camera-outline" size={20} color={P.primary} />
+                </View>
+                <ThemedText style={S.sheetActionLabel}>Chụp ảnh mới</ThemedText>
+                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
+              </Pressable>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={accountMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAccountMenuOpen(false)}
+      >
+        <View style={S.actionOverlay}>
+          <Pressable
+            style={S.actionBackdrop}
+            onPress={() => setAccountMenuOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Đóng tuỳ chọn tài khoản"
+          />
+          <Animated.View
+            entering={FadeInUp.duration(180)}
+            style={[S.accountSheet, { paddingBottom: insets.bottom + 14 }]}
+            testID={TEST_IDS.profile.accountActionsSheet}
+          >
+            <View style={S.sheetHandle} />
+            <View style={S.sheetHeader}>
+              <View style={S.sheetAvatar}>
+                {profile?.avatarUrl ? (
+                  <Image source={{ uri: profile.avatarUrl }} style={S.sheetAvatarImage} />
+                ) : (
+                  <Ionicons name="person" size={22} color={P.primary} />
+                )}
+              </View>
+              <View style={S.sheetTitleWrap}>
+                <ThemedText style={S.sheetTitle} numberOfLines={1}>{displayName}</ThemedText>
+                <ThemedText style={S.sheetSubtitle} numberOfLines={1}>
+                  Tài khoản & cài đặt
+                </ThemedText>
+              </View>
+            </View>
+
+            <View style={S.sheetActions}>
+              <Pressable
+                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
+                onPress={handleEditProfile}
+                testID={TEST_IDS.profile.editButton}
+                accessibilityRole="button"
+              >
+                <View style={S.sheetActionIcon}>
+                  <Ionicons name="create-outline" size={20} color={P.primary} />
+                </View>
+                <ThemedText style={S.sheetActionLabel}>Chỉnh sửa hồ sơ</ThemedText>
+                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
+                onPress={() => {
+                  setAccountMenuOpen(false);
+                  navigation.navigate('BodyMetrics' as any);
+                }}
+                accessibilityRole="button"
+              >
+                <View style={S.sheetActionIcon}>
+                  <Ionicons name="person-outline" size={20} color={P.primary} />
+                </View>
+                <ThemedText style={S.sheetActionLabel}>Hồ sơ thể chất</ThemedText>
+                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
+                onPress={() => {
+                  setAccountMenuOpen(false);
+                  navigation.navigate('NutritionSettings');
+                }}
+                accessibilityRole="button"
+              >
+                <View style={S.sheetActionIcon}>
+                  <Ionicons name="nutrition-outline" size={20} color={P.primary} />
+                </View>
+                <ThemedText style={S.sheetActionLabel}>Cài đặt dinh dưỡng</ThemedText>
+                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [S.sheetAction, pressed && { opacity: 0.76 }]}
+                onPress={handleNotificationSettings}
+                accessibilityRole="button"
+              >
+                <View style={S.sheetActionIcon}>
+                  <Ionicons name="notifications-outline" size={20} color={P.primary} />
+                </View>
+                <ThemedText style={S.sheetActionLabel}>Tùy chỉnh thông báo</ThemedText>
+                <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [S.sheetAction, S.sheetDangerAction, pressed && { opacity: 0.76 }]}
+                onPress={handleSheetLogout}
+                testID={TEST_IDS.profile.logoutButton}
+                accessibilityRole="button"
+              >
+                <View style={[S.sheetActionIcon, S.sheetDangerIcon]}>
+                  <Ionicons name="log-out-outline" size={20} color={P.error} />
+                </View>
+                <ThemedText style={[S.sheetActionLabel, { color: P.error }]}>Đăng xuất</ThemedText>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={logoutConfirmOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutConfirmOpen(false)}
+      >
+        <View style={S.confirmOverlay}>
+          <Pressable
+            style={S.confirmBackdrop}
+            onPress={() => setLogoutConfirmOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Hủy đăng xuất"
+          />
+          <Animated.View entering={FadeInUp.duration(180)} style={S.logoutSheet}>
+            <View style={S.logoutIconWrap}>
+              <Ionicons name="log-out-outline" size={24} color={P.error} />
+            </View>
+            <ThemedText style={S.logoutTitle}>Đăng xuất khỏi EatFitAI?</ThemedText>
+            <ThemedText style={S.logoutBody}>
+              Bạn sẽ cần đăng nhập lại để đồng bộ nhật ký, mục tiêu và dữ liệu cá nhân.
+            </ThemedText>
+            <View style={S.logoutActions}>
+              <Pressable
+                style={({ pressed }) => [S.logoutCancelBtn, pressed && { opacity: 0.76 }]}
+                onPress={() => setLogoutConfirmOpen(false)}
+              >
+                <ThemedText style={S.logoutCancelText}>Hủy</ThemedText>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [S.logoutConfirmBtn, pressed && { opacity: 0.76 }]}
+                onPress={handleConfirmLogout}
+                testID={`${TEST_IDS.profile.logoutButton}-confirm`}
+              >
+                <ThemedText style={S.logoutConfirmText}>Đăng xuất</ThemedText>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -406,6 +663,11 @@ const S = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerActionBtn: {
+    backgroundColor: P.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
   },
   headerTitle: {
     fontSize: 17,
@@ -445,6 +707,192 @@ const S = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: P.surface,
+  },
+  actionOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  actionBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.54)',
+  },
+  accountSheet: {
+    marginHorizontal: 14,
+    marginBottom: 10,
+    borderRadius: 24,
+    backgroundColor: P.surfaceContainer,
+    borderWidth: 1,
+    borderColor: 'rgba(75,226,119,0.18)',
+    paddingTop: 10,
+    paddingHorizontal: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  avatarActionsSheet: {
+    borderColor: 'rgba(75,226,119,0.24)',
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 42,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginBottom: 14,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 4,
+    paddingBottom: 14,
+  },
+  sheetAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: P.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: P.primary + '40',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  sheetAvatarImage: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+  },
+  sheetTitleWrap: {
+    flex: 1,
+  },
+  sheetTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: P.onSurface,
+  },
+  sheetSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    color: P.onSurfaceVariant,
+  },
+  sheetActions: {
+    gap: 8,
+  },
+  sheetAction: {
+    minHeight: 54,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.045)',
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+  },
+  sheetActionDisabled: {
+    opacity: 0.54,
+  },
+  sheetActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: P.primary + '16',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetActionLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+  sheetDangerAction: {
+    backgroundColor: P.errorContainer,
+    borderColor: 'rgba(255,180,171,0.16)',
+  },
+  sheetDangerIcon: {
+    backgroundColor: 'rgba(255,180,171,0.12)',
+  },
+  confirmOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  confirmBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.62)',
+  },
+  logoutSheet: {
+    borderRadius: 24,
+    backgroundColor: P.surfaceContainer,
+    borderWidth: 1,
+    borderColor: 'rgba(255,180,171,0.18)',
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 18,
+  },
+  logoutIconWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: P.errorContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  logoutTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: P.onSurface,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  logoutBody: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: P.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: 18,
+  },
+  logoutActions: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  logoutCancelBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutConfirmBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 16,
+    backgroundColor: P.errorContainer,
+    borderWidth: 1,
+    borderColor: 'rgba(255,180,171,0.24)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutCancelText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: P.onSurface,
+  },
+  logoutConfirmText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: P.error,
   },
   avatarGradientRing: {
     width: 112,

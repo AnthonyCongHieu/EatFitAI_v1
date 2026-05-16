@@ -313,7 +313,8 @@ const MonthStatsScreen = (): React.ReactElement => {
       aspectRatio: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 8,
+      borderRadius: 999,
+      overflow: 'hidden',
       gap: 2,
     },
     summaryGrid: {

@@ -22,21 +22,57 @@ describe('MoChi virtual pet experience', () => {
     expect(spriteSource).toContain('resizeMode="contain"');
   });
 
-  it('uses a proactive pet overlay with rule-based state and quick actions', () => {
-    const overlaySource = readSource('src/components/MascotOverlay.tsx');
+  it('uses a shared MoChi island with rule-based state and narrow confirmations', () => {
+    const islandSource = readSource('src/features/mochi/MoChiIslandHost.tsx');
+    const engineSource = readSource('src/features/mochi/mochiIslandEngine.ts');
+    const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
+    const layoutContextSource = readSource('src/features/mochi/MoChiIslandLayoutContext.tsx');
+    const spacerSource = readSource('src/features/mochi/MoChiIslandSpacer.tsx');
+    const homeSource = readSource('src/app/screens/HomeScreen.tsx');
+    const statsSource = readSource('src/app/screens/stats/StatsScreen.tsx');
+    const voiceSource = readSource('src/app/screens/VoiceScreen.tsx');
+    const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
 
-    expect(overlaySource).toContain('getMoChiPetState');
-    expect(overlaySource).toContain('<MascotCharacter');
-    expect(overlaySource).toContain('shouldBubble');
-    expect(overlaySource).toContain("navigation.navigate('AiCamera')");
-    expect(overlaySource).toContain("navigation.navigate('FoodSearch'");
-    expect(overlaySource).toContain("screen: 'HomeTab'");
-    expect(overlaySource).toContain('focusWaterRequestId: Date.now()');
-    expect(overlaySource).toContain('setShowQuickActions(true);');
-    expect(overlaySource).toContain('accessibilityLabel="Mở gợi ý MoChi"');
-    expect(overlaySource).toContain('onLongPress={() => runPrimaryAction(petState.primaryAction)}');
-    expect(overlaySource).not.toContain("if (petState.primaryAction !== 'dismiss')");
-    expect(overlaySource).not.toContain('MochiRig');
+    expect(navigatorSource).toContain('MoChiIslandHost');
+    expect(navigatorSource).toContain('MoChiIslandLayoutProvider');
+    expect(navigatorSource).not.toContain('<MascotOverlay />');
+    expect(islandSource).toContain('getMoChiIslandState');
+    expect(islandSource).toContain('setIslandLayout');
+    expect(islandSource).toContain("variant={isCompact ? 'face' : islandState.presentation.spriteVariant}");
+    expect(islandSource).toContain('Math.min(width - 24, 388)');
+    expect(islandSource).toContain('isLongExpandedMessage');
+    expect(islandSource).toContain('longIslandCta');
+    expect(islandSource).toContain('confirmationAction');
+    expect(islandSource).toContain("navigation.navigate('AiCamera')");
+    expect(islandSource).toContain("navigation.navigate('FoodSearch'");
+    expect(islandSource).toContain("screen: 'HomeTab'");
+    expect(islandSource).toContain('focusWaterRequestId: Date.now()');
+    expect(islandSource).not.toContain('QuickActionsOverlay');
+    expect(layoutContextSource).toContain('MoChiIslandLayoutProvider');
+    expect(layoutContextSource).toContain('useMoChiIslandLayout');
+    expect(layoutContextSource).toContain('topOffset');
+    expect(spacerSource).toContain('useMoChiIslandLayout');
+    expect(layoutContextSource).toContain('topOffset: 58');
+    expect(homeSource).toContain('MoChiIslandSpacer');
+    expect(statsSource).toContain('MoChiIslandSpacer');
+    expect(voiceSource).toContain('MoChiIslandSpacer');
+    expect(voiceSource).toContain("top: '50%'");
+    expect(voiceSource).toContain('marginLeft: -61');
+    expect(homeSource).toContain('borderRadius: 999');
+    expect(homeSource).toContain("overflow: 'hidden'");
+    expect(profileSource).toContain('MoChiIslandSpacer');
+    expect(engineSource).toContain("export type MoChiIslandMode = 'compact' | 'message' | 'live' | 'confirm'");
+    expect(engineSource).not.toMatch(/body shaming|béo|mập|xấu/u);
+  });
+
+  it('uses themed Profile account controls instead of the native logout alert', () => {
+    const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
+
+    expect(profileSource).toContain('settings-outline');
+    expect(profileSource).toContain('logoutConfirmOpen');
+    expect(profileSource).toContain('Đăng xuất khỏi EatFitAI?');
+    expect(profileSource).not.toContain('ellipsis-horizontal');
+    expect(profileSource).not.toContain('Alert.alert(t(\'common.logout\')');
   });
 
   it('removes the old MoChi room route and profile entry', () => {
@@ -74,10 +110,11 @@ describe('MoChi virtual pet experience', () => {
   it('keeps touched mascot and quick-action UI text free from mojibake markers', () => {
     const source = [
       'src/components/MascotCharacter.tsx',
-      'src/components/MascotOverlay.tsx',
       'src/components/home/HomeFirstLoginTutorial.tsx',
       'src/components/home/QuickActionsOverlay.tsx',
       'src/features/mochi/MoChiSprite.tsx',
+      'src/features/mochi/MoChiIslandHost.tsx',
+      'src/features/mochi/mochiIslandEngine.ts',
       'src/features/mochi/mochiPoseCatalog.ts',
       'src/features/mochi/mochiPetEngine.ts',
       'src/assets/mascot/mochi/mochiAssets.ts',

@@ -53,6 +53,7 @@ export type RootStackParamList = {
   ChangePassword: undefined;
   About: undefined;
   PrivacyPolicy: undefined;
+  NotificationCenter: undefined;
   NotificationsSettings: undefined;
   DietaryRestrictions: undefined;
   BasicInfo: undefined;

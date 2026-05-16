@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 
 import { useProfileStore } from './useProfileStore';
-import voiceService, { ParsedVoiceCommand } from '../services/voiceService';
+import voiceService, {
+  ParsedVoiceCommand,
+  VoiceReviewDraft,
+} from '../services/voiceService';
 
 type VoiceStatus =
   | 'idle'
@@ -10,6 +13,7 @@ type VoiceStatus =
   | 'parsing'
   | 'review'
   | 'executing'
+  | 'committing'
   | 'success'
   | 'error';
 
@@ -18,6 +22,7 @@ interface VoiceState {
   isSheetOpen: boolean;
   recognizedText: string;
   parsedCommand: ParsedVoiceCommand | null;
+  reviewDraft: VoiceReviewDraft | null;
   error: string | null;
   lastExecutedAction: string | null;
   executedData: {
@@ -34,7 +39,9 @@ interface VoiceState {
   openSheet: () => void;
   closeSheet: () => void;
   setRecognizedText: (text: string) => void;
+  setReviewDraft: (draft: VoiceReviewDraft | null) => void;
   processText: (text: string) => Promise<void>;
+  commitReviewDraft: () => Promise<void>;
   executeCommand: () => Promise<void>;
   confirmWeight: (weight: number) => Promise<void>;
   reset: () => void;
@@ -45,10 +52,13 @@ const initialState = {
   isSheetOpen: false,
   recognizedText: '',
   parsedCommand: null,
+  reviewDraft: null,
   error: null,
   lastExecutedAction: null,
   executedData: null,
 };
+
+let voiceRequestSequence = 0;
 
 const refreshProfileAfterWeightUpdate = () => {
   const profileStore = useProfileStore.getState();
@@ -66,12 +76,15 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
   closeSheet: () => set({ isSheetOpen: false, status: 'idle' }),
 
   setRecognizedText: (text) => set({ recognizedText: text }),
+  setReviewDraft: (draft) => set({ reviewDraft: draft }),
 
   async processText(text) {
+    const requestId = ++voiceRequestSequence;
     set({
       status: 'parsing',
       recognizedText: text,
       parsedCommand: null,
+      reviewDraft: null,
       executedData: null,
       lastExecutedAction: null,
       error: null,
@@ -82,6 +95,9 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
       if (response.success && response.command) {
         const command = response.command;
+        if (requestId !== voiceRequestSequence) {
+          return;
+        }
 
         if (command.intent === 'ASK_CALORIES') {
           set({ status: 'executing', parsedCommand: command, error: null });
@@ -111,32 +127,32 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
           return;
         }
 
-        if (command.intent === 'LOG_WEIGHT') {
-          set({ status: 'executing', parsedCommand: command, error: null });
-
+        if (command.intent === 'ADD_FOOD' || command.intent === 'LOG_WEIGHT') {
           try {
-            const execResponse = await voiceService.executeCommand(command);
-            if (execResponse.success && execResponse.executedAction) {
-              set({
-                status: 'review',
-                parsedCommand: command,
-                lastExecutedAction:
-                  execResponse.executedAction.details ||
-                  'Kiểm tra trước khi lưu cân nặng.',
-                executedData: {
-                  type: execResponse.executedAction.type,
-                  details: execResponse.executedAction.details,
-                  ...execResponse.executedAction.data,
-                },
-              });
-            } else {
-              set({
-                status: 'error',
-                error: execResponse.error || 'Không thể lấy thông tin cân nặng.',
-              });
+            const reviewDraft = await voiceService.reviewCommand(command);
+            if (requestId !== voiceRequestSequence) {
+              return;
             }
-          } catch {
-            set({ status: 'error', error: 'Không thể lấy thông tin cân nặng.' });
+            set({
+              status: 'review',
+              parsedCommand: command,
+              reviewDraft,
+              lastExecutedAction: null,
+              executedData: null,
+              error: null,
+            });
+          } catch (error: any) {
+            if (requestId !== voiceRequestSequence) {
+              return;
+            }
+            set({
+              status: 'error',
+              parsedCommand: command,
+              reviewDraft: null,
+              error:
+                error?.message ||
+                'Không thể chuẩn bị bản nháp giọng nói. Vui lòng thử lại.',
+            });
           }
           return;
         }
@@ -144,6 +160,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         set({
           status: command.intent !== 'UNKNOWN' ? 'review' : 'idle',
           parsedCommand: command,
+          reviewDraft: null,
           lastExecutedAction: null,
           executedData: null,
           error:
@@ -157,6 +174,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       set({
         status: 'idle',
         parsedCommand: null,
+        reviewDraft: null,
         error: response.error || 'Không hiểu lệnh. Hãy thử lại.',
       });
     } catch (error: any) {
@@ -164,7 +182,53 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       set({
         status: 'error',
         parsedCommand: null,
+        reviewDraft: null,
         error: 'Không thể kết nối AI giọng nói. Vui lòng thử lại.',
+      });
+    }
+  },
+
+  async commitReviewDraft() {
+    const { reviewDraft } = get();
+    if (!reviewDraft || !reviewDraft.canSave) {
+      set({
+        error:
+          reviewDraft?.blockingReason ||
+          'Bản nháp chưa đủ thông tin để lưu.',
+      });
+      return;
+    }
+
+    set({ status: 'committing', error: null });
+
+    try {
+      const response = await voiceService.commitReview(reviewDraft);
+
+      if (response.success && response.executedAction) {
+        if (response.executedAction.type === 'LOG_WEIGHT') {
+          refreshProfileAfterWeightUpdate();
+        }
+
+        set({
+          status: 'success',
+          lastExecutedAction: response.executedAction.details || 'Đã thực hiện lệnh.',
+          executedData: {
+            type: response.executedAction.type,
+            details: response.executedAction.details,
+            ...response.executedAction.data,
+          },
+        });
+        return;
+      }
+
+      set({
+        status: 'error',
+        error: response.error || 'Không thể lưu bản nháp giọng nói.',
+      });
+    } catch (error: any) {
+      set({
+        status: 'error',
+        error: error?.message || 'Không thể lưu bản nháp giọng nói.',
       });
     }
   },

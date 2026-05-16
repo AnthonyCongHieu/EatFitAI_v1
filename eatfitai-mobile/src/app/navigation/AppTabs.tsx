@@ -14,11 +14,10 @@ export type AppTabsParamList = {
         source?: 'water-quick-action';
       }
     | undefined;
-  AIScanTab: undefined;
   VoiceTab:
     | {
         autoStart?: boolean;
-        source?: 'home-hub' | 'sheet-hub' | 'home-fab';
+        source?: 'home-hub' | 'sheet-hub' | 'home-fab' | 'command-bar';
       }
     | undefined;
   StatsTab:
@@ -40,7 +39,6 @@ const lazyScreen = (
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const getHomeScreen = lazyScreen(() => require('../screens/HomeScreen'));
-const getAIScanScreen = lazyScreen(() => require('../screens/ai/AIScanScreen'));
 const getVoiceScreen = lazyScreen(() => require('../screens/VoiceScreen'));
 const getStatsNavigator = lazyScreen(() => require('./StatsNavigator'));
 const getProfileScreen = lazyScreen(() => require('../screens/ProfileScreen'));
@@ -64,7 +62,6 @@ const AppTabs = (): React.ReactElement => {
       }}
     >
       <Tab.Screen name="HomeTab" getComponent={getHomeScreen} />
-      <Tab.Screen name="AIScanTab" getComponent={getAIScanScreen} />
       <Tab.Screen name="VoiceTab" getComponent={getVoiceScreen} />
       <Tab.Screen name="StatsTab" getComponent={getStatsNavigator} />
       <Tab.Screen name="ProfileTab" getComponent={getProfileScreen} />

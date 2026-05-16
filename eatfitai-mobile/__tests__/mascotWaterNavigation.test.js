@@ -6,7 +6,7 @@ const readSource = (relativePath) =>
 
 describe('Mascot water quick action navigation', () => {
   it('opens the home water controls instead of silently adding water', () => {
-    const source = readSource('src/components/MascotOverlay.tsx');
+    const source = readSource('src/features/mochi/MoChiIslandHost.tsx');
 
     expect(source).toContain("navigation.navigate('AppTabs', {");
     expect(source).toContain("screen: 'HomeTab'");

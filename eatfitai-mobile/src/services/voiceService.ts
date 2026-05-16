@@ -111,6 +111,60 @@ export interface VoiceProcessResponse {
   };
 }
 
+export interface VoiceFoodCandidate {
+  id: number;
+  source: 'catalog' | 'user' | string;
+  name: string;
+  caloriesPer100?: number;
+  proteinPer100?: number;
+  carbPer100?: number;
+  carbsPer100?: number;
+  fatPer100?: number;
+  matchScore?: number;
+}
+
+export interface VoiceReviewItem {
+  clientId: string;
+  heardText?: string;
+  foodName: string;
+  grams: number;
+  quantity?: number | null;
+  unit?: string | null;
+  selectedCandidate?: VoiceFoodCandidate | null;
+  candidates: VoiceFoodCandidate[];
+  warnings: string[];
+}
+
+export interface VoiceNutritionTotals {
+  calories?: number;
+  protein?: number;
+  carb?: number;
+  carbs?: number;
+  fat?: number;
+}
+
+export interface VoiceWeightReview {
+  currentWeight?: number | null;
+  newWeight: number;
+}
+
+export interface VoiceReviewDraft {
+  intent: VoiceIntent;
+  rawText: string;
+  source?: string;
+  confidence: number;
+  reviewRequired: boolean;
+  reviewReason?: string | null;
+  mealType?: MealType | string | null;
+  date?: string | null;
+  items: VoiceReviewItem[];
+  weight?: VoiceWeightReview | null;
+  totals: VoiceNutritionTotals;
+  warnings: string[];
+  canSave: boolean;
+  blockingReason?: string | null;
+}
+
 export const MEAL_TYPE_MAP: Record<MealType, number> = {
   breakfast: 1,
   lunch: 2,
@@ -248,6 +302,16 @@ export const voiceService = {
         error: getApiErrorMessage(error, 'Không thể thực hiện lệnh giọng nói.'),
       };
     }
+  },
+
+  async reviewCommand(command: ParsedVoiceCommand): Promise<VoiceReviewDraft> {
+    const response = await apiClient.post<VoiceReviewDraft>('/api/voice/review', command);
+    return response.data;
+  },
+
+  async commitReview(draft: VoiceReviewDraft): Promise<VoiceProcessResponse> {
+    const response = await apiClient.post<VoiceProcessResponse>('/api/voice/commit', draft);
+    return response.data;
   },
 
   async processVoiceText(request: { text: string }): Promise<VoiceProcessResponse> {

@@ -348,6 +348,8 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
         self.assertIn("hiuinhcng/eatfitai-v4-clean-train-artifact", train_metadata["kernel_sources"])
         self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
         self.assertEqual(v4_train.RUN_NAME, "yolo11m-eatfitai-clean-v4-class-expansion")
+        self.assertEqual(v4_train.TRAIN_EPOCHS, 6)
+        self.assertTrue(v4_train.SKIP_SMOKE_BY_DEFAULT)
 
     def test_clean_v4_train_finds_mounted_clean_build_directory(self):
         import kaggle_yolo11m_clean_v4_class_expansion_train as v4_train

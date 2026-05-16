@@ -1,33 +1,30 @@
 import fs from 'fs';
 import path from 'path';
 
-describe('Mascot reminder bubble animation', () => {
-  const sourcePath = path.join(__dirname, '..', 'src', 'components', 'MascotOverlay.tsx');
-  const source = fs.readFileSync(sourcePath, 'utf8');
+describe('MoChi island reminder behavior', () => {
+  const hostPath = path.join(__dirname, '..', 'src', 'features', 'mochi', 'MoChiIslandHost.tsx');
+  const enginePath = path.join(__dirname, '..', 'src', 'features', 'mochi', 'mochiIslandEngine.ts');
+  const hostSource = fs.readFileSync(hostPath, 'utf8');
+  const engineSource = fs.readFileSync(enginePath, 'utf8');
 
-  it('uses a non-spring entrance so the reminder does not shake on app open', () => {
-    expect(source).toMatch(/entering=\{SlideInRight\.delay\(\d+\)\s*\.duration\(\d+\)\s*\.easing\(/);
-    expect(source).not.toMatch(/entering=\{SlideInRight\.delay\(\d+\)\s*\.springify\(\)/);
+  it('uses a shared island host instead of the old floating reminder bubble', () => {
+    expect(hostSource).toContain('getMoChiIslandState');
+    expect(hostSource).toContain("MAIN_TAB_ROUTES = new Set(['HomeTab', 'VoiceTab', 'StatsTab', 'ProfileTab'])");
+    expect(hostSource).not.toContain('GestureDetector');
+    expect(hostSource).not.toContain('QuickActionsOverlay');
   });
 
-  it('keeps the periodic reminder nudge timing-based instead of springy', () => {
-    const bubbleBounceEffect = source.match(/bubbleBounce\.value = withRepeat[\s\S]*?const floatStyle/u)?.[0] ?? '';
-
-    expect(bubbleBounceEffect).toContain('withTiming(-2');
-    expect(bubbleBounceEffect).not.toContain('withSpring');
+  it('auto-hides result messages but keeps confirm and live states until handled', () => {
+    expect(engineSource).toContain("if (mode === 'message') return 4200");
+    expect(engineSource).toContain("if (mode === 'confirm') return null");
+    expect(engineSource).toContain("if (mode === 'live') return null");
+    expect(hostSource).toContain('setDismissedEvent(islandState.eventType)');
   });
 
-  it('auto-hides readable dialogue bubbles instead of leaving them on screen', () => {
-    expect(source).toContain('getDialogueVisibleMs(petState.dialogue)');
-    expect(source).toContain('setTimeout(() => {');
-    expect(source).toContain('setDismissedEvent(petState.eventType)');
-  });
-
-  it('clamps mascot dragging to the visible screen bounds', () => {
-    expect(source).toContain('useWindowDimensions');
-    expect(source).toContain('DRAG_EDGE_MARGIN');
-    expect(source).toContain('clampDragOffset');
-    expect(source).toContain('mascotOffsetX.value = clampDragOffset(');
-    expect(source).toContain('mascotOffsetY.value = clampDragOffset(');
+  it('keeps island interactions narrow instead of exposing a multi-action menu', () => {
+    expect(engineSource).toContain("export type MoChiIslandMode = 'compact' | 'message' | 'live' | 'confirm'");
+    expect(engineSource).toContain('confirmationAction');
+    expect(hostSource).toContain('runConfirmation(islandState.confirmationAction)');
+    expect(hostSource).not.toContain('showQuickActions');
   });
 });

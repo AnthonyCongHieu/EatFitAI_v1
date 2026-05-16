@@ -21,9 +21,10 @@ RUN_NAME = os.environ.get("EATFITAI_YOLO_RUN_NAME", "yolo11m-eatfitai-clean-v4-c
 CHECKPOINT_DIR = KAGGLE_WORKING / "_yolo11m_checkpoints"
 REQUIRE_T4X2 = os.environ.get("EATFITAI_REQUIRE_T4X2", "1").strip().lower() not in {"0", "false", "no"}
 MIN_FREE_BYTES_AFTER_EXTRACT = int(float(os.environ.get("EATFITAI_MIN_FREE_GB_AFTER_EXTRACT", "2")) * 1024**3)
-TRAIN_EPOCHS = int(os.environ.get("EATFITAI_YOLO11M_EPOCHS", "150"))
+TRAIN_EPOCHS = int(os.environ.get("EATFITAI_YOLO11M_EPOCHS", "6"))
 SAVE_PERIOD = int(os.environ.get("EATFITAI_SAVE_PERIOD", "-1"))
 SKIP_SMOKE_ON_RESUME = os.environ.get("EATFITAI_SKIP_SMOKE_ON_RESUME", "1").strip().lower() not in {"0", "false", "no"}
+SKIP_SMOKE_BY_DEFAULT = os.environ.get("EATFITAI_SKIP_SMOKE_BY_DEFAULT", "1").strip().lower() not in {"0", "false", "no"}
 PREFERRED_ARCHIVE_PATTERNS = (
     "**/eatfitai_dataset_v2_clean_v4_class_expansion_candidate.zip",
     "**/eatfitai_clean_v1.tar",
@@ -532,7 +533,7 @@ def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, s
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Kaggle YOLO11m train script for EatFitAI Clean V4 class-expansion dataset.")
-    parser.add_argument("--skip-smoke", action="store_true")
+    parser.add_argument("--skip-smoke", action="store_true", default=SKIP_SMOKE_BY_DEFAULT)
     parser.add_argument("--skip-full", action="store_true")
     args = parser.parse_args()
 

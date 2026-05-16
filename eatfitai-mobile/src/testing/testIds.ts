@@ -1,6 +1,7 @@
 export const TEST_IDS = {
   navigation: {
     homeTabButton: 'navigation-home-tab-button',
+    addMealCommandButton: 'navigation-add-meal-command-button',
     voiceTabButton: 'navigation-voice-tab-button',
     aiScanTabButton: 'navigation-ai-scan-tab-button',
     statsTabButton: 'navigation-stats-tab-button',
@@ -59,6 +60,8 @@ export const TEST_IDS = {
   },
   home: {
     screen: 'home-screen',
+    settingsButton: 'home-settings-button',
+    notificationsButton: 'home-notifications-button',
     searchButton: 'home-search-food-button',
     quickAddSearchButton: 'home-quick-add-search-button',
     quickAddScanButton: 'home-quick-add-scan-button',
@@ -125,6 +128,12 @@ export const TEST_IDS = {
   profile: {
     screen: 'profile-screen',
     editButton: 'profile-edit-button',
+    avatarButton: 'profile-avatar-button',
+    accountActionsButton: 'profile-account-actions-button',
+    accountActionsSheet: 'profile-account-actions-sheet',
+    avatarActionsSheet: 'profile-avatar-actions-sheet',
+    uploadAvatarLibraryButton: 'profile-upload-avatar-library-button',
+    uploadAvatarCameraButton: 'profile-upload-avatar-camera-button',
     bodyMetricsButton: 'profile-body-metrics-button',
     goalSettingsButton: 'profile-goal-settings-button',
     weightHistoryButton: 'profile-weight-history-button',

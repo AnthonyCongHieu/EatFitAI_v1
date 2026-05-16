@@ -217,7 +217,7 @@ const NotificationsScreen = (): React.ReactElement => {
           <Ionicons name="arrow-back" size={24} color={P.primary} />
         </Pressable>
         <View style={S.headerCenter}>
-          <ThemedText style={S.headerTitle}>Thông báo</ThemedText>
+          <ThemedText style={S.headerTitle}>Cài đặt thông báo</ThemedText>
         </View>
         <View style={{ width: 40 }} />
       </View>

@@ -158,7 +158,11 @@ const AchievementsScreen = (): React.ReactElement => {
           <ThemedText style={S.heroLabel}>TIẾN ĐỘ CỦA BẠN</ThemedText>
           <View style={S.streakRow}>
             <ThemedText style={[S.streakNumber, { color: getStreakColor(currentStreak) }]}>{currentStreak}</ThemedText>
-            <ThemedText style={S.streakText}>Ngày liên tiếp 🔥</ThemedText>
+            <View style={S.streakCopy}>
+              <ThemedText style={S.streakText}>Ngày liên tiếp</ThemedText>
+              <ThemedText style={S.streakSubtext}>Giữ nhịp hôm nay để tăng chuỗi</ThemedText>
+            </View>
+            <ThemedText style={S.streakFlame}>🔥</ThemedText>
           </View>
           <View style={S.statsRow}>
             <View style={S.statItem}>
@@ -292,30 +296,33 @@ const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 12 },
   headerTitle: { fontSize: 20, fontWeight: '800', color: P.primary, letterSpacing: -0.5, flex: 1, textAlign: 'center' },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120, gap: 24 },
-  heroBanner: { backgroundColor: P.glassBg, borderRadius: 24, padding: 26, borderWidth: 1, borderColor: P.glassBorder, shadowColor: P.primaryLight, shadowOpacity: 0.15, shadowRadius: 32, shadowOffset: { width: 0, height: 12 }, elevation: 8 },
-  heroLabel: { fontSize: 12, fontWeight: '800', color: P.primaryLight, letterSpacing: 2, opacity: 0.8, marginBottom: 8 },
-  streakRow: { flexDirection: 'row', alignItems: 'baseline', gap: 12, marginBottom: 22 },
-  streakNumber: { fontSize: 64, fontWeight: '800', color: P.primaryLight, lineHeight: 68, letterSpacing: -3 },
-  streakText: { fontSize: 20, fontWeight: '700', color: P.onSurface },
-  statsRow: { flexDirection: 'row', alignItems: 'center' },
+  scrollContent: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 64, gap: 22 },
+  heroBanner: { backgroundColor: P.surfaceLow, borderRadius: 22, padding: 24, borderWidth: 1, borderColor: 'rgba(75,226,119,0.18)', shadowColor: P.primaryLight, shadowOpacity: 0.12, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 6 },
+  heroLabel: { fontSize: 12, fontWeight: '800', color: P.primaryLight, letterSpacing: 2, opacity: 0.9, marginBottom: 10 },
+  streakRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 22 },
+  streakNumber: { fontSize: 62, fontWeight: '800', color: P.primaryLight, lineHeight: 66 },
+  streakCopy: { flex: 1, gap: 4 },
+  streakText: { fontSize: 20, fontWeight: '800', color: P.onSurface },
+  streakSubtext: { fontSize: 13, fontWeight: '600', color: P.textMuted },
+  streakFlame: { fontSize: 24, lineHeight: 28 },
+  statsRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(9,14,28,0.42)', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 4 },
   statItem: { flex: 1 },
   statValue: { fontSize: 24, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 11, fontWeight: '700', color: P.onSurfaceVariant, letterSpacing: 1.5, marginTop: 3 },
   statDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.08)', marginHorizontal: 12 },
-  levelCard: { backgroundColor: P.surfaceHigh, borderRadius: 24, padding: 22, overflow: 'hidden', position: 'relative' },
-  levelWatermark: { position: 'absolute', right: -10, top: -10, opacity: 0.06 },
-  levelHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 20 },
-  levelIconBox: { width: 52, height: 52, borderRadius: 18, backgroundColor: P.primary + '22', alignItems: 'center', justifyContent: 'center' },
-  levelTitle: { fontSize: 20, fontWeight: '800', color: '#fff', flex: 1 },
+  levelCard: { backgroundColor: P.surfaceHigh, borderRadius: 22, padding: 22, overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: P.outlineVariant },
+  levelWatermark: { position: 'absolute', right: -18, top: -18, opacity: 0.035 },
+  levelHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 22 },
+  levelIconBox: { width: 56, height: 56, borderRadius: 18, backgroundColor: P.primary + '24', alignItems: 'center', justifyContent: 'center' },
+  levelTitle: { fontSize: 19, fontWeight: '800', color: '#fff', flex: 1, lineHeight: 25 },
   levelProgressLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   levelProgressText: { fontSize: 15, fontWeight: '700', color: P.onSurface },
   levelProgressPercent: { fontSize: 15, fontWeight: '700', color: P.primary },
-  progressBarBg: { height: 12, borderRadius: 6, backgroundColor: P.surfaceLowest, overflow: 'hidden' },
-  progressBarFill: { height: '100%', borderRadius: 6 },
+  progressBarBg: { height: 12, borderRadius: 999, backgroundColor: P.surfaceLowest, overflow: 'hidden' },
+  progressBarFill: { height: '100%', borderRadius: 999 },
   levelHint: { fontSize: 14, color: P.textMuted, fontStyle: 'italic' },
   sectionLabel: { fontSize: 13, fontWeight: '800', color: P.slate500, letterSpacing: 1.5, paddingLeft: 4 },
-  activityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: P.glassBg, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: P.glassBorder },
+  activityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: P.surfaceLow, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: P.outlineVariant },
   activityIconBox: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   activityText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   activityTime: { fontSize: 13, color: P.textMuted, marginTop: 3 },

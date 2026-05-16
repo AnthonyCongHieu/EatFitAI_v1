@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EatFitAI.API.Helpers;
 using EatFitAI.DTOs;
+using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.Services;
 using EatFitAI.API.Services;
@@ -37,6 +38,10 @@ namespace EatFitAI.API.Controllers
         private readonly ILogger<VoiceController> _logger;
         private readonly IBusinessDateService _businessDateService;
         private const double VoiceReviewConfidenceThreshold = 0.75;
+        private const decimal MinVoiceFoodGrams = 1m;
+        private const decimal MaxVoiceFoodGrams = 5000m;
+        private const decimal MinVoiceWeightKg = 20m;
+        private const decimal MaxVoiceWeightKg = 300m;
         private static readonly HashSet<string> AllowedVoiceAudioExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".aac",
@@ -615,6 +620,524 @@ namespace EatFitAI.API.Controllers
             });
         }
 
+        [HttpPost("review")]
+        public async Task<ActionResult<VoiceReviewDraft>> ReviewCommand([FromBody] ParsedVoiceCommand command)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized(new { error = "Bạn chưa đăng nhập" });
+            }
+
+            try
+            {
+                var preparedCommand = PrepareParsedCommand(
+                    command,
+                    command.RawText,
+                    command.Source ?? "voice-review");
+
+                var draft = preparedCommand.Intent switch
+                {
+                    VoiceIntent.ADD_FOOD => await BuildAddFoodReviewDraftAsync(userId, preparedCommand),
+                    VoiceIntent.LOG_WEIGHT => await BuildWeightReviewDraftAsync(userId, preparedCommand),
+                    VoiceIntent.ASK_CALORIES => await BuildAskCaloriesDraftAsync(userId, preparedCommand),
+                    _ => new VoiceReviewDraft
+                    {
+                        Intent = preparedCommand.Intent,
+                        RawText = preparedCommand.RawText,
+                        Source = preparedCommand.Source,
+                        Confidence = preparedCommand.Confidence,
+                        ReviewRequired = preparedCommand.ReviewRequired,
+                        ReviewReason = preparedCommand.ReviewReason,
+                        CanSave = false,
+                        BlockingReason = "Không hỗ trợ lệnh này."
+                    }
+                };
+
+                return Ok(draft);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error building voice review draft for user {UserId}", userId);
+                return StatusCode(500, new { error = "Không thể chuẩn bị bản nháp giọng nói." });
+            }
+        }
+
+        [HttpPost("commit")]
+        public async Task<ActionResult<VoiceProcessResponse>> CommitReview([FromBody] VoiceReviewDraft draft)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
+            }
+
+            try
+            {
+                return draft.Intent switch
+                {
+                    VoiceIntent.ADD_FOOD => await CommitAddFoodReviewAsync(userId, draft),
+                    VoiceIntent.LOG_WEIGHT => await CommitWeightReviewAsync(userId, draft),
+                    _ => BadRequest(new VoiceProcessResponse
+                    {
+                        Success = false,
+                        Error = "Không hỗ trợ lưu lệnh này."
+                    })
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error committing voice review draft for user {UserId}", userId);
+                return StatusCode(500, new VoiceProcessResponse
+                {
+                    Success = false,
+                    Error = "Không thể lưu bản nháp giọng nói."
+                });
+            }
+        }
+
+        private async Task<VoiceReviewDraft> BuildAddFoodReviewDraftAsync(
+            Guid userId,
+            ParsedVoiceCommand command)
+        {
+            var reviewDate = command.Entities.Date
+                ?? (await _businessDateService.GetTodayAsync(userId)).ToDateTime(TimeOnly.MinValue);
+            var mealType = command.Entities.MealType ?? MealType.Lunch;
+            var draft = CreateBaseReviewDraft(command);
+            draft.MealType = mealType;
+            draft.Date = reviewDate;
+
+            var foods = GetCommandFoodItems(command);
+            if (foods.Count == 0)
+            {
+                draft.Warnings.Add("Không tìm thấy tên món ăn trong lệnh.");
+            }
+
+            for (var index = 0; index < foods.Count; index++)
+            {
+                var food = foods[index];
+                var itemWarnings = new List<string>();
+                var grams = ResolveVoiceFoodGrams(food, itemWarnings);
+                var candidates = await SearchVoiceCandidatesAsync(userId, food.FoodName ?? string.Empty);
+                var selectedCandidate = candidates.FirstOrDefault();
+
+                if (string.IsNullOrWhiteSpace(food.FoodName))
+                {
+                    itemWarnings.Add("Thiếu tên món ăn.");
+                }
+
+                if (!IsValidFoodGrams(grams))
+                {
+                    itemWarnings.Add("Khẩu phần phải từ 1g đến 5000g.");
+                }
+
+                if (selectedCandidate is null)
+                {
+                    itemWarnings.Add("Không tìm thấy món phù hợp trong dữ liệu.");
+                }
+
+                var reviewItem = new VoiceReviewItem
+                {
+                    ClientId = $"item-{index + 1}",
+                    HeardText = food.FoodName ?? string.Empty,
+                    FoodName = food.FoodName ?? string.Empty,
+                    Grams = grams,
+                    Quantity = food.Quantity,
+                    Unit = food.Unit,
+                    SelectedCandidate = selectedCandidate,
+                    Candidates = candidates,
+                    Warnings = itemWarnings
+                };
+
+                draft.Items.Add(reviewItem);
+            }
+
+            draft.Totals = CalculateVoiceTotals(draft.Items);
+            ApplyDraftSaveState(draft);
+            return draft;
+        }
+
+        private async Task<VoiceReviewDraft> BuildWeightReviewDraftAsync(
+            Guid userId,
+            ParsedVoiceCommand command)
+        {
+            var draft = CreateBaseReviewDraft(command);
+            var newWeight = command.Entities.Weight ?? 0;
+            decimal? currentWeight = null;
+
+            try
+            {
+                currentWeight = (await _userService.GetUserProfileAsync(userId))?.CurrentWeightKg;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not load current weight for voice review user {UserId}", userId);
+                draft.Warnings.Add("Không thể lấy cân nặng hiện tại, nhưng vẫn có thể kiểm tra số mới.");
+            }
+
+            draft.Weight = new VoiceWeightReview
+            {
+                CurrentWeight = currentWeight,
+                NewWeight = newWeight
+            };
+
+            if (!IsValidWeight(newWeight))
+            {
+                draft.Warnings.Add("Cân nặng phải từ 20kg đến 300kg.");
+            }
+
+            ApplyDraftSaveState(draft);
+            return draft;
+        }
+
+        private async Task<VoiceReviewDraft> BuildAskCaloriesDraftAsync(
+            Guid userId,
+            ParsedVoiceCommand command)
+        {
+            var draft = CreateBaseReviewDraft(command);
+            var today = command.Entities.Date
+                ?? (await _businessDateService.GetTodayAsync(userId)).ToDateTime(TimeOnly.MinValue);
+            var daySummary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, today);
+
+            draft.Date = today;
+            draft.Totals = new VoiceNutritionTotals
+            {
+                Calories = daySummary.TotalCalories,
+            };
+            draft.CanSave = false;
+            draft.BlockingReason = null;
+            return draft;
+        }
+
+        private async Task<ActionResult<VoiceProcessResponse>> CommitAddFoodReviewAsync(
+            Guid userId,
+            VoiceReviewDraft draft)
+        {
+            if (draft.Items is null || draft.Items.Count == 0)
+            {
+                return BadRequest(new VoiceProcessResponse
+                {
+                    Success = false,
+                    Error = "Không có món ăn để lưu."
+                });
+            }
+
+            var mealTypeId = ParseMealTypeEnum(draft.MealType);
+            var eatenDate = draft.Date
+                ?? (await _businessDateService.GetTodayAsync(userId)).ToDateTime(TimeOnly.MinValue);
+            var addedFoods = new List<string>();
+            decimal totalCalories = 0;
+            decimal totalProtein = 0;
+            decimal totalCarb = 0;
+            decimal totalFat = 0;
+
+            foreach (var item in draft.Items)
+            {
+                if (!IsValidFoodGrams(item.Grams))
+                {
+                    return BadRequest(new VoiceProcessResponse
+                    {
+                        Success = false,
+                        Error = "Khẩu phần phải từ 1g đến 5000g."
+                    });
+                }
+
+                var candidate = await ResolveVoiceCandidateForCommitAsync(userId, item);
+                if (candidate is null)
+                {
+                    return BadRequest(new VoiceProcessResponse
+                    {
+                        Success = false,
+                        Error = $"Không tìm thấy món '{item.FoodName}' để lưu."
+                    });
+                }
+
+                var factor = item.Grams / 100m;
+                var calories = Math.Round(candidate.CaloriesPer100 * factor, 1);
+                var protein = Math.Round(candidate.ProteinPer100 * factor, 1);
+                var carb = Math.Round(candidate.CarbPer100 * factor, 1);
+                var fat = Math.Round(candidate.FatPer100 * factor, 1);
+
+                var createRequest = new CreateMealDiaryRequest
+                {
+                    EatenDate = eatenDate,
+                    MealTypeId = mealTypeId,
+                    FoodItemId = string.Equals(candidate.Source, "catalog", StringComparison.OrdinalIgnoreCase)
+                        ? candidate.Id
+                        : null,
+                    UserFoodItemId = string.Equals(candidate.Source, "user", StringComparison.OrdinalIgnoreCase)
+                        ? candidate.Id
+                        : null,
+                    Grams = item.Grams,
+                    Calories = calories,
+                    Protein = protein,
+                    Carb = carb,
+                    Fat = fat,
+                    Note = $"Voice AI: {draft.RawText}",
+                    SourceMethod = "voice"
+                };
+
+                await _mealDiaryService.CreateMealDiaryAsync(userId, createRequest);
+                addedFoods.Add($"{candidate.FoodName} ({item.Grams:g}g)");
+                totalCalories += calories;
+                totalProtein += protein;
+                totalCarb += carb;
+                totalFat += fat;
+            }
+
+            var details = addedFoods.Count == 1
+                ? $"Đã thêm {addedFoods[0]} ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(draft.MealType)}"
+                : $"Đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(draft.MealType)}: {string.Join(", ", addedFoods)}";
+
+            return Ok(new VoiceProcessResponse
+            {
+                Success = true,
+                ExecutedAction = new ExecutedAction
+                {
+                    Type = "ADD_FOOD",
+                    Details = details,
+                    Data = new Dictionary<string, object>
+                    {
+                        ["addedCount"] = addedFoods.Count,
+                        ["totalCalories"] = totalCalories,
+                        ["totalProtein"] = totalProtein,
+                        ["totalCarb"] = totalCarb,
+                        ["totalFat"] = totalFat,
+                        ["foods"] = addedFoods
+                    }
+                }
+            });
+        }
+
+        private async Task<ActionResult<VoiceProcessResponse>> CommitWeightReviewAsync(
+            Guid userId,
+            VoiceReviewDraft draft)
+        {
+            var newWeight = draft.Weight?.NewWeight ?? 0;
+            if (!IsValidWeight(newWeight))
+            {
+                return BadRequest(new VoiceProcessResponse
+                {
+                    Success = false,
+                    Error = "Cân nặng phải từ 20kg đến 300kg."
+                });
+            }
+
+            var measuredAt = await GetBusinessNowAsync(userId);
+            await _userService.RecordBodyMetricsAsync(userId, new EatFitAI.API.DTOs.User.BodyMetricDto
+            {
+                WeightKg = newWeight,
+                MeasuredDate = measuredAt
+            });
+
+            return Ok(new VoiceProcessResponse
+            {
+                Success = true,
+                ExecutedAction = new ExecutedAction
+                {
+                    Type = "LOG_WEIGHT",
+                    Details = $"Đã cập nhật cân nặng: {newWeight} kg",
+                    Data = new Dictionary<string, object>
+                    {
+                        ["savedWeight"] = newWeight,
+                        ["savedAt"] = measuredAt.ToString("yyyy-MM-dd HH:mm")
+                    }
+                }
+            });
+        }
+
+        private VoiceReviewDraft CreateBaseReviewDraft(ParsedVoiceCommand command)
+        {
+            return new VoiceReviewDraft
+            {
+                Intent = command.Intent,
+                RawText = command.RawText,
+                Source = command.Source,
+                Confidence = command.Confidence,
+                ReviewRequired = RequiresExplicitReview(command),
+                ReviewReason = ResolveReviewReason(command, command.ReviewReason)
+            };
+        }
+
+        private async Task<List<VoiceFoodCandidate>> SearchVoiceCandidatesAsync(
+            Guid userId,
+            string foodName)
+        {
+            if (string.IsNullOrWhiteSpace(foodName))
+            {
+                return new List<VoiceFoodCandidate>();
+            }
+
+            var results = await _foodService.SearchAllAsync(foodName, userId, 3);
+            return results
+                .Select(result => ToVoiceCandidate(result, foodName))
+                .ToList();
+        }
+
+        private async Task<FoodSearchResultDto?> ResolveVoiceCandidateForCommitAsync(
+            Guid userId,
+            VoiceReviewItem item)
+        {
+            var selected = item.SelectedCandidate;
+            if (selected is null || selected.Id <= 0 || string.IsNullOrWhiteSpace(selected.Source))
+            {
+                return null;
+            }
+
+            var searchTerms = new[]
+            {
+                selected.Name,
+                item.FoodName,
+                item.HeardText
+            }
+            .Where(term => !string.IsNullOrWhiteSpace(term))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var term in searchTerms)
+            {
+                var results = await _foodService.SearchAllAsync(term, userId, 10);
+                var match = results.FirstOrDefault(result =>
+                    result.Id == selected.Id &&
+                    string.Equals(result.Source, selected.Source, StringComparison.OrdinalIgnoreCase));
+                if (match is not null)
+                {
+                    return match;
+                }
+            }
+
+            return null;
+        }
+
+        private static VoiceFoodCandidate ToVoiceCandidate(
+            FoodSearchResultDto result,
+            string query)
+        {
+            return new VoiceFoodCandidate
+            {
+                Id = result.Id,
+                Source = result.Source,
+                Name = result.FoodName,
+                CaloriesPer100 = result.CaloriesPer100,
+                ProteinPer100 = result.ProteinPer100,
+                CarbPer100 = result.CarbPer100,
+                FatPer100 = result.FatPer100,
+                MatchScore = CalculateSimpleMatchScore(query, result.FoodName)
+            };
+        }
+
+        private static decimal CalculateSimpleMatchScore(string query, string candidateName)
+        {
+            if (string.Equals(query.Trim(), candidateName.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return 1m;
+            }
+
+            return candidateName.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase)
+                ? 0.85m
+                : 0.7m;
+        }
+
+        private static List<FoodItem> GetCommandFoodItems(ParsedVoiceCommand command)
+        {
+            if (command.Entities.Foods?.Count > 0)
+            {
+                return command.Entities.Foods;
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.Entities.FoodName))
+            {
+                return new List<FoodItem>
+                {
+                    new()
+                    {
+                        FoodName = command.Entities.FoodName,
+                        Quantity = command.Entities.Quantity,
+                        Unit = command.Entities.Unit,
+                        Weight = command.Entities.Weight
+                    }
+                };
+            }
+
+            return new List<FoodItem>();
+        }
+
+        private static decimal ResolveVoiceFoodGrams(FoodItem food, List<string> warnings)
+        {
+            if (food.Weight.HasValue)
+            {
+                return food.Weight.Value;
+            }
+
+            if (food.Quantity.HasValue && IsGramUnit(food.Unit))
+            {
+                return food.Quantity.Value;
+            }
+
+            if (food.Quantity.HasValue)
+            {
+                return food.Quantity.Value * 100m;
+            }
+
+            warnings.Add("Chưa có khẩu phần rõ ràng, tạm dùng 100g để bạn chỉnh lại.");
+            return 100m;
+        }
+
+        private static bool IsGramUnit(string? unit)
+        {
+            if (string.IsNullOrWhiteSpace(unit))
+            {
+                return false;
+            }
+
+            var normalized = unit.Trim().ToLowerInvariant();
+            return normalized is "g" or "gram" or "grams";
+        }
+
+        private static VoiceNutritionTotals CalculateVoiceTotals(IEnumerable<VoiceReviewItem> items)
+        {
+            var totals = new VoiceNutritionTotals();
+            foreach (var item in items)
+            {
+                if (item.SelectedCandidate is null || !IsValidFoodGrams(item.Grams))
+                {
+                    continue;
+                }
+
+                var factor = item.Grams / 100m;
+                totals.Calories += Math.Round(item.SelectedCandidate.CaloriesPer100 * factor, 1);
+                totals.Protein += Math.Round(item.SelectedCandidate.ProteinPer100 * factor, 1);
+                totals.Carb += Math.Round(item.SelectedCandidate.CarbPer100 * factor, 1);
+                totals.Fat += Math.Round(item.SelectedCandidate.FatPer100 * factor, 1);
+            }
+
+            return totals;
+        }
+
+        private static void ApplyDraftSaveState(VoiceReviewDraft draft)
+        {
+            var allWarnings = draft.Warnings
+                .Concat(draft.Items.SelectMany(item => item.Warnings))
+                .ToList();
+            var hasBlockingItem = draft.Intent == VoiceIntent.ADD_FOOD &&
+                (draft.Items.Count == 0 ||
+                 draft.Items.Any(item => item.SelectedCandidate is null || !IsValidFoodGrams(item.Grams)));
+            var hasBlockingWeight = draft.Intent == VoiceIntent.LOG_WEIGHT &&
+                (draft.Weight is null || !IsValidWeight(draft.Weight.NewWeight));
+
+            draft.CanSave = !hasBlockingItem && !hasBlockingWeight;
+            draft.BlockingReason = draft.CanSave ? null : allWarnings.FirstOrDefault() ?? "Cần kiểm tra lại dữ liệu trước khi lưu.";
+        }
+
+        private static bool IsValidFoodGrams(decimal grams)
+        {
+            return grams >= MinVoiceFoodGrams && grams <= MaxVoiceFoodGrams;
+        }
+
+        private static bool IsValidWeight(decimal weight)
+        {
+            return weight >= MinVoiceWeightKg && weight <= MaxVoiceWeightKg;
+        }
+
         /// <summary>
         /// Execute parsed voice command - actually saves to database
         /// </summary>
@@ -956,4 +1479,3 @@ namespace EatFitAI.API.Controllers
         }
     }
 }
-
