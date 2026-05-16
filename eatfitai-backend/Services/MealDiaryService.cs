@@ -1,4 +1,5 @@
 using AutoMapper;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.MealDiary;
@@ -63,6 +64,7 @@ namespace EatFitAI.API.Services
         {
             var mealDiary = _mapper.Map<MealDiary>(request);
             mealDiary.UserId = userId;
+            mealDiary.MealTypeId = await ResolveMealTypeIdAsync(request.MealTypeId);
             ApplyExclusiveSource(
                 mealDiary,
                 request.FoodItemId,
@@ -109,6 +111,7 @@ namespace EatFitAI.API.Services
 
                     var mealDiary = _mapper.Map<MealDiary>(item);
                     mealDiary.UserId = userId;
+                    mealDiary.MealTypeId = await ResolveMealTypeIdAsync(item.MealTypeId);
                     ApplyExclusiveSource(
                         mealDiary,
                         item.FoodItemId,
@@ -158,9 +161,13 @@ namespace EatFitAI.API.Services
                     !mealDiary.IsDeleted &&
                     mealDiary.EatenDate == sourceDate);
 
-            if (request.MealTypeId.HasValue)
+            var requestedMealTypeId = request.MealTypeId.HasValue
+                ? await ResolveMealTypeIdAsync(request.MealTypeId.Value)
+                : (int?)null;
+
+            if (requestedMealTypeId.HasValue)
             {
-                sourceQuery = sourceQuery.Where(mealDiary => mealDiary.MealTypeId == request.MealTypeId.Value);
+                sourceQuery = sourceQuery.Where(mealDiary => mealDiary.MealTypeId == requestedMealTypeId.Value);
             }
 
             var sourceEntries = await sourceQuery
@@ -178,9 +185,9 @@ namespace EatFitAI.API.Services
                 !mealDiary.IsDeleted &&
                 mealDiary.EatenDate == targetDate);
 
-            if (request.MealTypeId.HasValue)
+            if (requestedMealTypeId.HasValue)
             {
-                existingTargetQuery = existingTargetQuery.Where(mealDiary => mealDiary.MealTypeId == request.MealTypeId.Value);
+                existingTargetQuery = existingTargetQuery.Where(mealDiary => mealDiary.MealTypeId == requestedMealTypeId.Value);
             }
 
             if (await existingTargetQuery.AnyAsync())
@@ -219,7 +226,7 @@ namespace EatFitAI.API.Services
             if (request.EatenDate.HasValue)
                 mealDiary.EatenDate = DateOnly.FromDateTime(request.EatenDate.Value);
             if (request.MealTypeId.HasValue)
-                mealDiary.MealTypeId = request.MealTypeId.Value;
+                mealDiary.MealTypeId = await ResolveMealTypeIdAsync(request.MealTypeId.Value);
             if (request.FoodItemId.HasValue)
                 mealDiary.FoodItemId = request.FoodItemId.Value;
             if (request.UserFoodItemId.HasValue)
@@ -301,6 +308,35 @@ namespace EatFitAI.API.Services
                 || request.UserFoodItemId.HasValue
                 || request.UserDishId.HasValue
                 || request.RecipeId.HasValue;
+        }
+
+        private async Task<int> ResolveMealTypeIdAsync(int requestedMealTypeId)
+        {
+            if (requestedMealTypeId <= 0)
+            {
+                throw new ArgumentException("Meal type is invalid");
+            }
+
+            var mealTypes = await _context.MealTypes
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (CanonicalMasterData.TryGetMealTypeName(requestedMealTypeId, out var canonicalName))
+            {
+                var canonicalRow = mealTypes.FirstOrDefault(item =>
+                    string.Equals(item.Name, canonicalName, StringComparison.OrdinalIgnoreCase));
+                if (canonicalRow != null)
+                {
+                    return canonicalRow.MealTypeId;
+                }
+            }
+
+            if (mealTypes.Any(item => item.MealTypeId == requestedMealTypeId))
+            {
+                return requestedMealTypeId;
+            }
+
+            throw new ArgumentException("Meal type is invalid");
         }
 
         private static void ApplyExclusiveSource(

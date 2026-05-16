@@ -104,6 +104,54 @@ EOF
 cd "${APP_ROOT}/repo/eatfitai-backend"
 dotnet publish EatFitAI.API.csproj -c Release -o "${APP_ROOT}/backend-publish" --nologo
 
+sudo tee "${APP_ROOT}/run-backend-once.py" >/dev/null <<EOF
+#!/usr/bin/env python3
+import json
+import os
+import pathlib
+import sys
+
+APP_ROOT = pathlib.Path("${APP_ROOT}")
+BACKEND_DIR = APP_ROOT / "backend-publish"
+ENV_JSON = APP_ROOT / "backend.env.json"
+ENV_FILE = APP_ROOT / "backend.env"
+
+
+def load_env_file(path):
+    data = {}
+    if not path.exists():
+        return data
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if line.startswith("export "):
+            line = line[7:].strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+            value = value[1:-1]
+        data[key] = value
+    return data
+
+
+if ENV_JSON.exists():
+    env_data = json.loads(ENV_JSON.read_text(encoding="utf-8"))
+else:
+    env_data = load_env_file(ENV_FILE)
+
+for key, value in env_data.items():
+    if key and key.replace("_", "").isalnum() and not key[0].isdigit():
+        os.environ[str(key)] = "" if value is None else str(value)
+
+os.chdir(BACKEND_DIR)
+assembly = BACKEND_DIR / "EatFitAI.API.dll"
+os.execv("/usr/bin/dotnet", ["/usr/bin/dotnet", str(assembly), *sys.argv[1:]])
+EOF
+sudo chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "${APP_ROOT}/run-backend-once.py"
+sudo chmod 0750 "${APP_ROOT}/run-backend-once.py"
+
 sudo tee /etc/systemd/system/eatfitai-backend.service >/dev/null <<EOF
 [Unit]
 Description=EatFitAI Backend API
@@ -141,5 +189,14 @@ sleep 3
 systemctl is-active eatfitai-ai
 curl -fsS "http://${PRIVATE_IP}:5050/healthz" >/dev/null
 
+SCHEMA_REPORT="${APP_ROOT}/schema-bootstrap-$(date -u +%Y%m%dT%H%M%SZ).json"
+/usr/bin/python3 "${APP_ROOT}/run-backend-once.py" --schema-bootstrap --schema-bootstrap-report "${SCHEMA_REPORT}"
+echo "Schema bootstrap report written to ${SCHEMA_REPORT}."
+
+sudo systemctl restart eatfitai-backend
+sleep 5
+systemctl is-active eatfitai-backend
+curl -fsS "http://127.0.0.1:10000/health/ready" >/dev/null
+
 echo "AI provider deployed for ${RELEASE_SHA}."
-echo "Start backend test with: sudo systemctl restart eatfitai-backend"
+echo "Backend deployed and restarted for ${RELEASE_SHA}."

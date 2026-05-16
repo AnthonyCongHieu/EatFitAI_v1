@@ -9,6 +9,9 @@ public class SupabaseSchemaBootstrapperTests
     public void SchemaSql_IncludesRequiredDriftRepairs()
     {
         Assert.Contains("\"UserPreference\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
+        Assert.Contains("CREATE TABLE IF NOT EXISTS \"UserPreference\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
+        Assert.Contains("\"FK_UserPreference_User\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
+        Assert.Contains("\"IX_UserPreference_UserId\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"DietaryRestrictions\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"Allergies\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);
         Assert.Contains("\"PreferredMealsPerDay\"", SupabaseSchemaBootstrapper.SchemaSql, StringComparison.Ordinal);

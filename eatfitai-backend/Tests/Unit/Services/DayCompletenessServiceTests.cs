@@ -94,6 +94,23 @@ public sealed class DayCompletenessServiceTests : IDisposable
         Assert.Equal(new DateOnly(2026, 5, 6), day.Date);
     }
 
+    [Fact]
+    public async Task GetDayCompletenessAsync_DriftedMealTypeIds_UsesMealTypeNames()
+    {
+        var date = new DateOnly(2026, 5, 9);
+        _context.MealTypes.AddRange(
+            new MealType { MealTypeId = 20, Name = "Breakfast" },
+            new MealType { MealTypeId = 21, Name = "Lunch" });
+        AddMeal(date, mealTypeId: 20, calories: 450);
+        AddMeal(date, mealTypeId: 21, calories: 550);
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetDayCompletenessAsync(_userId, date);
+
+        Assert.True(result.IsComplete);
+        Assert.Equal(2, result.MainMealCount);
+    }
+
     private void AddMeal(DateOnly date, int mealTypeId, decimal calories)
     {
         _context.MealDiaries.Add(new MealDiary

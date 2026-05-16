@@ -73,6 +73,12 @@ namespace EatFitAI.API.Tests.Unit.Services
                 }
             );
 
+            _context.MealTypes.AddRange(
+                new MealType { MealTypeId = 1, Name = "Breakfast" },
+                new MealType { MealTypeId = 2, Name = "Lunch" },
+                new MealType { MealTypeId = 3, Name = "Dinner" },
+                new MealType { MealTypeId = 4, Name = "Snack" });
+
             _context.UserFoodItems.Add(new UserFoodItem
             {
                 UserFoodItemId = 1,
@@ -323,6 +329,46 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             Assert.NotNull(result);
             _mealDiaryRepositoryMock.Verify(r => r.AddAsync(It.IsAny<MealDiary>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateMealDiaryAsync_WithCanonicalMealTypeId_UsesDriftedMealTypeRow()
+        {
+            _context.MealTypes.RemoveRange(_context.MealTypes);
+            await _context.MealTypes.AddAsync(new MealType { MealTypeId = 12, Name = "Lunch" });
+            await _context.SaveChangesAsync();
+
+            var request = new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = 2,
+                FoodItemId = 1,
+                Grams = 200
+            };
+
+            var mappedDiary = new MealDiary
+            {
+                UserId = _testUserId,
+                EatenDate = DateOnly.FromDateTime(request.EatenDate),
+                MealTypeId = 2,
+                FoodItemId = 1,
+                Grams = 200
+            };
+
+            MealDiary? captured = null;
+            _mapperMock.Setup(m => m.Map<MealDiary>(request)).Returns(mappedDiary);
+            _mealDiaryRepositoryMock
+                .Setup(r => r.AddAsync(It.IsAny<MealDiary>()))
+                .Callback<MealDiary>(diary => captured = diary)
+                .Returns(Task.CompletedTask);
+            _mealDiaryRepositoryMock.Setup(r => r.GetByIdWithIncludesAsync(It.IsAny<int>())).ReturnsAsync(mappedDiary);
+            _mapperMock.Setup(m => m.Map<MealDiaryDto>(It.IsAny<MealDiary>()))
+                .Returns(new MealDiaryDto { MealDiaryId = 1, Calories = 260 });
+
+            await _mealDiaryService.CreateMealDiaryAsync(_testUserId, request);
+
+            Assert.NotNull(captured);
+            Assert.Equal(12, captured!.MealTypeId);
         }
 
         [Fact]

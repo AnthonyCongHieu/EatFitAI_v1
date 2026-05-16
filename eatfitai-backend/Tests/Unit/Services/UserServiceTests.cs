@@ -255,6 +255,32 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task UpdateUserProfileAsync_WithCanonicalActivityId_UsesDriftedActivityRow()
+        {
+            await _context.ActivityLevels.AddAsync(new ActivityLevel
+            {
+                ActivityLevelId = 13,
+                Name = "Moderately Active",
+                ActivityFactor = 1.55m,
+            });
+            await _context.SaveChangesAsync();
+
+            var trackedUser = await _context.Users.SingleAsync(u => u.UserId == _testUserId);
+            var updateDto = new UserProfileDto
+            {
+                ActivityLevelId = 3,
+            };
+
+            _userRepositoryMock.Setup(r => r.GetByIdAsync(_testUserId)).ReturnsAsync(trackedUser);
+            _mapperMock.Setup(m => m.Map<UserProfileDto>(It.IsAny<User>()))
+                .Returns(new UserProfileDto { ActivityLevelId = 13 });
+
+            await _userService.UpdateUserProfileAsync(_testUserId, updateDto);
+
+            Assert.Equal(13, trackedUser.ActivityLevelId);
+        }
+
+        [Fact]
         public async Task UpdateAvatarAsync_DevelopmentFallback_PersistsAvatarUrl()
         {
             var trackedUser = await _context.Users.SingleAsync(u => u.UserId == _testUserId);

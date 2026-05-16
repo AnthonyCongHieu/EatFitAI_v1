@@ -31,18 +31,42 @@ namespace EatFitAI.API.Data
 
         private static async Task SeedActivityLevelsAsync(EatFitAIDbContext context)
         {
-            if (await context.ActivityLevels.AnyAsync()) return;
-
-            var activityLevels = new[]
+            var existingRows = await context.ActivityLevels.ToListAsync();
+            foreach (var seed in CanonicalMasterData.ActivityLevels)
             {
-                new ActivityLevel { Name = "Sedentary", ActivityFactor = 1.2m },
-                new ActivityLevel { Name = "Lightly Active", ActivityFactor = 1.375m },
-                new ActivityLevel { Name = "Moderately Active", ActivityFactor = 1.55m },
-                new ActivityLevel { Name = "Very Active", ActivityFactor = 1.725m },
-                new ActivityLevel { Name = "Extremely Active", ActivityFactor = 1.9m }
-            };
+                var existingById = existingRows.FirstOrDefault(item => item.ActivityLevelId == seed.Id);
+                var existingByName = existingRows.FirstOrDefault(item =>
+                    string.Equals(item.Name, seed.Name, StringComparison.OrdinalIgnoreCase));
 
-            await context.ActivityLevels.AddRangeAsync(activityLevels);
+                if (existingById != null)
+                {
+                    if (existingByName != null && existingByName.ActivityLevelId != existingById.ActivityLevelId)
+                    {
+                        existingByName.ActivityFactor = seed.ActivityFactor;
+                        continue;
+                    }
+
+                    existingById.Name = seed.Name;
+                    existingById.ActivityFactor = seed.ActivityFactor;
+                    continue;
+                }
+
+                if (existingByName != null)
+                {
+                    existingByName.ActivityFactor = seed.ActivityFactor;
+                    continue;
+                }
+
+                var activityLevel = new ActivityLevel
+                {
+                    ActivityLevelId = seed.Id,
+                    Name = seed.Name,
+                    ActivityFactor = seed.ActivityFactor,
+                };
+                existingRows.Add(activityLevel);
+                await context.ActivityLevels.AddAsync(activityLevel);
+            }
+
             await context.SaveChangesAsync();
         }
 
@@ -69,17 +93,38 @@ namespace EatFitAI.API.Data
 
         private static async Task SeedMealTypesAsync(EatFitAIDbContext context)
         {
-            if (await context.MealTypes.AnyAsync()) return;
-
-            var mealTypes = new[]
+            var existingRows = await context.MealTypes.ToListAsync();
+            foreach (var seed in CanonicalMasterData.MealTypes)
             {
-                new MealType { Name = "Breakfast" },
-                new MealType { Name = "Lunch" },
-                new MealType { Name = "Dinner" },
-                new MealType { Name = "Snack" }
-            };
+                var existingById = existingRows.FirstOrDefault(item => item.MealTypeId == seed.Id);
+                var existingByName = existingRows.FirstOrDefault(item =>
+                    string.Equals(item.Name, seed.Name, StringComparison.OrdinalIgnoreCase));
 
-            await context.MealTypes.AddRangeAsync(mealTypes);
+                if (existingById != null)
+                {
+                    if (existingByName != null && existingByName.MealTypeId != existingById.MealTypeId)
+                    {
+                        continue;
+                    }
+
+                    existingById.Name = seed.Name;
+                    continue;
+                }
+
+                if (existingByName != null)
+                {
+                    continue;
+                }
+
+                var mealType = new MealType
+                {
+                    MealTypeId = seed.Id,
+                    Name = seed.Name,
+                };
+                existingRows.Add(mealType);
+                await context.MealTypes.AddAsync(mealType);
+            }
+
             await context.SaveChangesAsync();
         }
 

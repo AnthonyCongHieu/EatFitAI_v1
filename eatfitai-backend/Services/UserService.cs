@@ -188,7 +188,7 @@ namespace EatFitAI.API.Services
             if (userProfileDto.DateOfBirth.HasValue)
                 user.DateOfBirth = userProfileDto.DateOfBirth;
             if (userProfileDto.ActivityLevelId.HasValue)
-                user.ActivityLevelId = userProfileDto.ActivityLevelId;
+                user.ActivityLevelId = await ResolveActivityLevelIdAsync(userProfileDto.ActivityLevelId.Value);
             if (userProfileDto.Goal != null)
                 user.Goal = userProfileDto.Goal;
             
@@ -233,6 +233,35 @@ namespace EatFitAI.API.Services
 
             await _context.SaveChangesAsync();
             return await GetUserProfileAsync(userId);
+        }
+
+        private async Task<int> ResolveActivityLevelIdAsync(int requestedActivityLevelId)
+        {
+            if (requestedActivityLevelId <= 0)
+            {
+                throw new ArgumentException("Activity level is invalid");
+            }
+
+            var activityLevels = await _context.ActivityLevels
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (CanonicalMasterData.TryGetActivityLevelName(requestedActivityLevelId, out var canonicalName))
+            {
+                var canonicalRow = activityLevels.FirstOrDefault(item =>
+                    string.Equals(item.Name, canonicalName, StringComparison.OrdinalIgnoreCase));
+                if (canonicalRow != null)
+                {
+                    return canonicalRow.ActivityLevelId;
+                }
+            }
+
+            if (activityLevels.Any(item => item.ActivityLevelId == requestedActivityLevelId))
+            {
+                return requestedActivityLevelId;
+            }
+
+            throw new ArgumentException("Activity level is invalid");
         }
 
         public async Task<string> UpdateAvatarAsync(Guid userId, IFormFile file, string? uploadsRoot)

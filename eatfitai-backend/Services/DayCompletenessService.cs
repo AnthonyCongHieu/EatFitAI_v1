@@ -1,5 +1,6 @@
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Services;
@@ -23,12 +24,7 @@ public sealed class DayCompletenessService : IDayCompletenessService
     public const int RequiredMainMealCount = 2;
     public const decimal MinimumCompleteDayCalories = 800m;
 
-    private static readonly Dictionary<int, string> MainMealNames = new()
-    {
-        [1] = "breakfast",
-        [2] = "lunch",
-        [3] = "dinner",
-    };
+    private static readonly string[] RequiredMainMealKeys = ["breakfast", "lunch", "dinner"];
 
     private readonly EatFitAIDbContext _context;
 
@@ -49,6 +45,7 @@ public sealed class DayCompletenessService : IDayCompletenessService
                 && !meal.IsDeleted)
             .Select(meal => new DayMealProjection(
                 meal.MealTypeId,
+                meal.MealType != null ? meal.MealType.Name : null,
                 meal.Calories))
             .ToListAsync(cancellationToken);
 
@@ -76,6 +73,7 @@ public sealed class DayCompletenessService : IDayCompletenessService
             {
                 meal.EatenDate,
                 meal.MealTypeId,
+                MealTypeName = meal.MealType != null ? meal.MealType.Name : null,
                 meal.Calories
             })
             .ToListAsync(cancellationToken);
@@ -84,7 +82,10 @@ public sealed class DayCompletenessService : IDayCompletenessService
             .GroupBy(meal => meal.EatenDate)
             .Select(group => Build(
                 group.Key,
-                group.Select(meal => new DayMealProjection(meal.MealTypeId, meal.Calories))))
+                group.Select(meal => new DayMealProjection(
+                    meal.MealTypeId,
+                    meal.MealTypeName,
+                    meal.Calories))))
             .Where(day => day.IsComplete)
             .OrderBy(day => day.Date)
             .ToList();
@@ -95,7 +96,7 @@ public sealed class DayCompletenessService : IDayCompletenessService
     {
         return Build(
             DateOnly.MinValue,
-            meals.Select(meal => new DayMealProjection(meal.MealTypeId, meal.Calories)))
+            meals.Select(meal => new DayMealProjection(meal.MealTypeId, null, meal.Calories)))
             .IsComplete;
     }
 
@@ -105,13 +106,14 @@ public sealed class DayCompletenessService : IDayCompletenessService
     {
         var mealList = meals.ToList();
         var mealCount = mealList.Count;
-        var mainMealIds = mealList
-            .Where(meal => MainMealNames.ContainsKey(meal.MealTypeId))
-            .Select(meal => meal.MealTypeId)
+        var mainMealKeys = mealList
+            .Select(GetMainMealKey)
+            .Where(key => key != null)
+            .Select(key => key!)
             .Distinct()
             .ToList();
         var totalCalories = mealList.Sum(meal => meal.Calories);
-        var mainMealCount = mainMealIds.Count;
+        var mainMealCount = mainMealKeys.Count;
         var snackOnly = mealCount > 0 && mainMealCount == 0;
 
         var mealScore = Math.Min(1m, mainMealCount / (decimal)RequiredMainMealCount);
@@ -126,9 +128,8 @@ public sealed class DayCompletenessService : IDayCompletenessService
                 ? DayCompletenessStatus.Complete
                 : DayCompletenessStatus.Partial;
 
-        var missingMealTypes = MainMealNames
-            .Where(item => !mainMealIds.Contains(item.Key))
-            .Select(item => item.Value)
+        var missingMealTypes = RequiredMainMealKeys
+            .Where(key => !mainMealKeys.Contains(key))
             .ToList();
 
         return new DayCompletenessDto
@@ -147,5 +148,21 @@ public sealed class DayCompletenessService : IDayCompletenessService
         };
     }
 
-    private sealed record DayMealProjection(int MealTypeId, decimal Calories);
+    private static string? GetMainMealKey(DayMealProjection meal)
+    {
+        if (CanonicalMasterData.TryGetMainMealKey(meal.MealTypeName, out var key))
+        {
+            return key;
+        }
+
+        if (CanonicalMasterData.TryGetMealTypeName(meal.MealTypeId, out var canonicalName)
+            && CanonicalMasterData.TryGetMainMealKey(canonicalName, out key))
+        {
+            return key;
+        }
+
+        return null;
+    }
+
+    private sealed record DayMealProjection(int MealTypeId, string? MealTypeName, decimal Calories);
 }

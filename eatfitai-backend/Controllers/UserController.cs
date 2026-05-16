@@ -58,6 +58,10 @@ namespace EatFitAI.API.Controllers
             {
                 return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
+            catch (ArgumentException)
+            {
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu hồ sơ không hợp lệ", HttpContext));
+            }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, ErrorResponseHelper.SafeError(

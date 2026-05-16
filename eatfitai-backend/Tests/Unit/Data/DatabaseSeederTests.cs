@@ -1,5 +1,6 @@
 using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DbScaffold.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +41,74 @@ public class DatabaseSeederTests
         }
 
         Assert.DoesNotContain("apple", labels);
+    }
+
+    [Fact]
+    public async Task SeedAsync_SeedsStableMobileLookupIds()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var activityLevels = await context.ActivityLevels.ToDictionaryAsync(item => item.ActivityLevelId);
+        var mealTypes = await context.MealTypes.ToDictionaryAsync(item => item.MealTypeId);
+
+        Assert.Equal("Sedentary", activityLevels[1].Name);
+        Assert.Equal("Moderately Active", activityLevels[3].Name);
+        Assert.Equal("Breakfast", mealTypes[1].Name);
+        Assert.Equal("Snack", mealTypes[4].Name);
+    }
+
+    [Fact]
+    public async Task SeedAsync_RepairsPartialStableLookupRows()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            await context.ActivityLevels.AddAsync(new ActivityLevel
+            {
+                ActivityLevelId = 3,
+                Name = "Legacy Moderate",
+                ActivityFactor = 1.0m,
+            });
+            await context.MealTypes.AddAsync(new MealType
+            {
+                MealTypeId = 2,
+                Name = "Midday",
+            });
+            await context.SaveChangesAsync();
+        }
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var activityLevel = await context.ActivityLevels.SingleAsync(item => item.ActivityLevelId == 3);
+            var mealType = await context.MealTypes.SingleAsync(item => item.MealTypeId == 2);
+
+            Assert.Equal("Moderately Active", activityLevel.Name);
+            Assert.Equal(1.55m, activityLevel.ActivityFactor);
+            Assert.Equal("Lunch", mealType.Name);
+        }
     }
 
     [Fact]
