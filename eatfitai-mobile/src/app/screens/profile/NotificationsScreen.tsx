@@ -14,6 +14,7 @@ import {
   requestNotificationPermissions,
   cancelAllMealNotifications,
 } from '../../../services/notificationService';
+import { useEN } from '../../../theme/emeraldNebula';
 
 // Storage key
 const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
@@ -62,7 +63,7 @@ const defaultSettings: NotificationSettings = {
   quietHoursTo: '07:00', // 07:00 AM
 };
 
-const P = {
+const P_STATIC = {
   primary: '#22c55e',
   onPrimary: '#003915',
   surface: '#0e1322',
@@ -105,6 +106,7 @@ const MEAL_ITEMS = [
 const NotificationsScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const P = { ...P_STATIC, ...useEN() };
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
   const [, setIsSaving] = useState(false);
 
@@ -210,7 +212,7 @@ const NotificationsScreen = (): React.ReactElement => {
   const disabledInner = !settings.enabled;
 
   return (
-    <View style={S.container}>
+    <View style={[S.container, { backgroundColor: P.bg }]}>
       {/* ═══ Header ═══ */}
       <View style={[S.header, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, width: 40 }}>

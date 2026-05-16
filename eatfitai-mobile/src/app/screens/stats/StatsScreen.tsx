@@ -65,13 +65,14 @@ import {
 } from '../../../utils/dateDisplay';
 import { formatLocalDate } from '../../../utils/localDate';
 import type { AppTabsParamList } from '../../navigation/AppTabs';
+import { useEN } from '../../../theme/emeraldNebula';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /* ═══════════════════════════════════════════════
    Palette — exact match with HTML template
    ═══════════════════════════════════════════════ */
-const P = {
+const P_STATIC = {
   // Surfaces (from template tailwind config)
   bg: '#0a0e1a',
   surface: '#0a0e1a',
@@ -221,6 +222,22 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
    ═══════════════════════════════════════════════ */
 const StatsScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
+  const EN = useEN();
+  const P = {
+    ...P_STATIC,
+    bg: EN.bg,
+    surface: EN.bg,
+    surfaceContainerLow: EN.surfaceLow,
+    surfaceContainer: EN.surface,
+    surfaceContainerHigh: EN.surfaceHigh,
+    surfaceContainerHighest: EN.surfaceHighest,
+    primary: EN.primary,
+    primaryContainer: EN.primaryContainer,
+    onSurface: EN.onSurface,
+    onSurfaceVariant: EN.onSurfaceVariant,
+    textSlate400: EN.textMuted,
+    outlineVariant: EN.outlineVariant,
+  };
   const navigation = useNavigation<StatsScreenNavigationProp>();
   const route = useRoute<RouteProp<AppTabsParamList, 'StatsTab'>>();
   const weeklyReviewSource = route.params?.source ?? 'stats';

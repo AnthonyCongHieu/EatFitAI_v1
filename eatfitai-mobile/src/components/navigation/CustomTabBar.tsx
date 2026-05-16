@@ -14,16 +14,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { TEST_IDS } from '../../testing/testIds';
 import { navigateRoot } from '../../app/navigation/navigationRef';
 import { resolveBottomTabSafePadding } from './tabBarSafeArea';
-
-const C = {
-  bg: '#0a0e1a',
-  primary: '#4be277',
-  primaryDark: '#22c55e',
-  onPrimary: '#003915',
-  textMuted: '#64748b',
-  onSurface: '#dee1f7',
-  surfaceHigh: '#1e2435',
-};
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 type CommandTarget = 'HomeTab' | 'FoodSearch' | 'AiCamera' | 'VoiceTab' | 'StatsTab';
 
@@ -87,18 +78,20 @@ const CommandButton = ({
   command,
   isFocused,
   onPress,
+  colors,
 }: {
   command: CommandItem;
   isFocused: boolean;
   onPress: () => void;
+  colors: { primary: string; primaryDark: string; onPrimary: string; textMuted: string; bg: string };
 }) => {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const iconColor = command.isPrimary
-    ? C.onPrimary
+    ? colors.onPrimary
     : isFocused
-      ? C.primary
-      : C.textMuted;
+      ? colors.primary
+      : colors.textMuted;
 
   return (
     <Pressable
@@ -118,7 +111,7 @@ const CommandButton = ({
       <Animated.View
         style={[
           styles.commandInner,
-          command.isPrimary && styles.primaryCommand,
+          command.isPrimary && [styles.primaryCommand, { backgroundColor: colors.primary, shadowColor: colors.primaryDark }],
           anim,
         ]}
       >
@@ -132,10 +125,10 @@ const CommandButton = ({
             styles.commandLabel,
             {
               color: command.isPrimary
-                ? C.onPrimary
+                ? colors.onPrimary
                 : isFocused
-                  ? C.primary
-                  : C.textMuted,
+                  ? colors.primary
+                  : colors.textMuted,
             },
           ]}
           numberOfLines={1}
@@ -149,6 +142,20 @@ const CommandButton = ({
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
+  const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+
+  const colors = {
+    bg: isDark ? '#0a0e1a' : '#FFFFFF',
+    primary: theme.colors.primary,
+    primaryDark: isDark ? '#22c55e' : '#15803D',
+    onPrimary: isDark ? '#003915' : '#FFFFFF',
+    textMuted: theme.colors.textSecondary,
+    onSurface: theme.colors.text,
+    surfaceHigh: isDark ? '#1e2435' : '#F0F5EE',
+    borderTop: isDark ? 'rgba(75,226,119,0.08)' : 'rgba(0,0,0,0.06)',
+  };
+
   const safeBottom = resolveBottomTabSafePadding(Platform.OS, insets.bottom);
   const current = state.routes[state.index]?.name ?? '';
   const navigateTab = navigation.navigate as unknown as (name: string, params?: unknown) => void;
@@ -187,12 +194,13 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
 
   return (
     <View style={styles.outerWrapper} pointerEvents="box-none">
-      <View style={[styles.bar, { paddingBottom: safeBottom }]}>
-        <View style={styles.row}>
+      <View style={[styles.bar, { backgroundColor: colors.bg, borderTopColor: colors.borderTop }]}>
+        <View style={[styles.row, { paddingBottom: safeBottom }]}>
           {COMMAND_ITEMS.map((command) => (
             <CommandButton
               key={command.target}
               command={command}
+              colors={colors}
               isFocused={command.kind === 'tab' && current === command.target}
               onPress={() => runCommand(command)}
             />
@@ -211,14 +219,12 @@ const styles = StyleSheet.create({
     right: 0,
   },
   bar: {
-    backgroundColor: C.bg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(75,226,119,0.08)',
   },
   row: {
     flexDirection: 'row',
@@ -242,8 +248,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 20,
-    backgroundColor: C.primary,
-    shadowColor: C.primaryDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.34,
     shadowRadius: 10,

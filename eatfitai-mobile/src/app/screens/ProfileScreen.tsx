@@ -31,28 +31,14 @@ import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
 import { TEST_IDS } from '../../testing/testIds';
+import { useEN } from '../../theme/emeraldNebula';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 /* ═══════════════════════════════════════════════
-   Emerald Nebula Palette
+   Emerald Nebula Palette — resolved dynamically via useEN()
    ═══════════════════════════════════════════════ */
-const P = {
-  primary: '#4be277',
-  primaryContainer: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainer: '#1a1f2f',
-  surfaceContainerLow: '#161b2b',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerHighest: '#2f3445',
-  onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
-  outlineVariant: '#3d4a3d',
-  glassBg: 'rgba(37, 41, 58, 0.6)',
-  glassBorder: 'rgba(255,255,255,0.05)',
-  error: '#ffb4ab',
-  errorContainer: 'rgba(147, 0, 10, 0.3)',
-};
 
 /* ═══ BMI Helpers ═══ */
 const calcBMI = (kg?: number, cm?: number): number | null => {
@@ -84,11 +70,11 @@ const MenuRow = ({
   icon,
   label,
   onPress,
-  labelColor = P.onSurface,
-  iconBg = P.surfaceContainerHighest,
-  iconColor = P.onSurfaceVariant,
+  labelColor,
+  iconBg,
+  iconColor,
   showChevron = true,
-  chevronColor = P.onSurfaceVariant,
+  chevronColor,
   testID,
 }: MenuRowProps) => (
   <Pressable
@@ -114,6 +100,8 @@ const MenuRow = ({
 const ProfileScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const P = useEN();
+  const { mode, toggleTheme } = useAppTheme();
 
   const logout = useAuthStore((s) => s.logout);
   const { profile, fetchProfile, isLoading } = useProfileStore((state) => ({
@@ -223,11 +211,11 @@ const ProfileScreen = (): React.ReactElement => {
   const displayName = profile?.fullName || 'Chưa cập nhật';
 
   return (
-    <View style={[S.container, { paddingTop: insets.top }]} testID={TEST_IDS.profile.screen}>
+    <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
       <MoChiIslandSpacer />
 
       {/* ═══ HEADER ═══ */}
-      <View style={S.header}>
+      <View style={[S.header, { backgroundColor: P.bg }]}>
         <View style={S.headerBtn} />
         <ThemedText style={S.headerTitle}>Hồ sơ</ThemedText>
         <View style={S.headerBtn} />
@@ -289,7 +277,7 @@ const ProfileScreen = (): React.ReactElement => {
         </Animated.View>
 
         {/* ═══ METRICS STRIP ═══ */}
-        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={S.metricsCard}>
+        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={[S.metricsCard, { backgroundColor: P.glassBg, borderTopColor: P.glassBorder }]}>
           {/* Metallic sheen overlay */}
           <LinearGradient
             colors={['rgba(255,255,255,0.08)', 'transparent']}
@@ -337,7 +325,7 @@ const ProfileScreen = (): React.ReactElement => {
         </Animated.View>
 
         {/* ═══ MENU GROUP 1 — Main actions ═══ */}
-        <Animated.View entering={FadeInUp.delay(300).duration(400)} style={S.menuGroup}>
+        <Animated.View entering={FadeInUp.delay(300).duration(400)} style={[S.menuGroup, { backgroundColor: P.surfaceLow }]}>
           <MenuRow
             icon="person-outline"
             label="Hồ sơ thể chất"
@@ -362,8 +350,17 @@ const ProfileScreen = (): React.ReactElement => {
           />
         </Animated.View>
 
-        {/* ═══ MENU GROUP 2 — About + PRO ═══ */}
-        <Animated.View entering={FadeInUp.delay(400).duration(400)} style={[S.menuGroup, { marginTop: 16 }]}>
+        {/* ═══ MENU GROUP 2 — About + PRO + Theme ═══ */}
+        <Animated.View entering={FadeInUp.delay(400).duration(400)} style={[S.menuGroup, { backgroundColor: P.surfaceLow }]}>
+          <MenuRow
+            icon={mode === 'dark' ? 'moon-outline' : 'sunny-outline'}
+            label={mode === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'}
+            onPress={toggleTheme}
+            iconBg={P.surfaceHighest}
+            iconColor={mode === 'dark' ? '#fbbf24' : '#f59e0b'}
+            labelColor={P.onSurface}
+            chevronColor={P.onSurfaceVariant}
+          />
           <MenuRow
             icon="images-outline"
             label="Phòng MoChi"
@@ -373,6 +370,10 @@ const ProfileScreen = (): React.ReactElement => {
             icon="information-circle-outline"
             label="Về EatFit AI"
             onPress={() => navigation.navigate('About' as any)}
+            iconBg={P.surfaceHighest}
+            iconColor={P.onSurfaceVariant}
+            labelColor={P.onSurface}
+            chevronColor={P.onSurfaceVariant}
           />
           <MenuRow
             icon="ribbon-outline"
@@ -528,7 +529,6 @@ const ProfileScreen = (): React.ReactElement => {
 const S = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: P.surface,
   },
 
   /* ═══ HEADER ═══ */
@@ -538,7 +538,6 @@ const S = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     height: 56,
-    backgroundColor: '#0E1322', // Solid — tránh lỗi 2 màu trên Android
   },
   headerBtn: {
     width: 40,

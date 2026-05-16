@@ -14,9 +14,10 @@ import {
   showSuccess,
   handleApiErrorWithCustomMessage,
 } from '../../../utils/errorHandler';
+import { useEN } from '../../../theme/emeraldNebula';
 
 /* ═══ Emerald Nebula Palette ═══ */
-const P = {
+const P_STATIC = {
   primary: '#4be277',
   surface: '#0e1322',
   surfaceContainerHigh: '#25293a',
@@ -62,6 +63,7 @@ const ACTIVITY_OPTIONS = [
 const GoalSettingsScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const P = { ...P_STATIC, ...useEN() };
 
   const { profile, updateProfile, isSaving } = useProfileStore((state) => ({
     profile: state.profile,
@@ -93,7 +95,7 @@ const GoalSettingsScreen = (): React.ReactElement => {
   };
 
   return (
-    <View style={[S.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 20 }]}>
+    <View style={[S.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 20, backgroundColor: P.bg }]}>
       {/* Header */}
       <View style={S.header}>
         <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
