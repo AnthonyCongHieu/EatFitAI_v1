@@ -161,10 +161,11 @@ Wants=network-online.target
 [Service]
 User=${SUDO_USER:-$USER}
 WorkingDirectory=${APP_ROOT}/backend-publish
-EnvironmentFile=${APP_ROOT}/backend.env
+Environment=PORT=10000
+EnvironmentFile=-${APP_ROOT}/backend.env
 Restart=always
 RestartSec=5
-ExecStart=/usr/bin/dotnet ${APP_ROOT}/backend-publish/EatFitAI.API.dll
+ExecStart=/usr/bin/python3 ${APP_ROOT}/run-backend-once.py
 
 [Install]
 WantedBy=multi-user.target

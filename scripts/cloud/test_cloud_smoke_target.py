@@ -146,6 +146,18 @@ class CloudSmokeTargetTests(unittest.TestCase):
         self.assertNotIn("api-ls.eatfitai.com", content)
         self.assertNotIn("ai-provider.eatfitai.com", content)
 
+    def test_lightsail_backend_service_uses_env_wrapper(self) -> None:
+        content = LIGHTSAIL_DEPLOY_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("ENV_JSON = APP_ROOT / \"backend.env.json\"", content)
+        self.assertIn("Environment=PORT=10000", content)
+        self.assertIn("EnvironmentFile=-${APP_ROOT}/backend.env", content)
+        self.assertIn("ExecStart=/usr/bin/python3 ${APP_ROOT}/run-backend-once.py", content)
+        self.assertNotIn(
+            "ExecStart=/usr/bin/dotnet ${APP_ROOT}/backend-publish/EatFitAI.API.dll",
+            content,
+        )
+
     def test_smoke_primary_fixtures_match_lightsail_yolo_classes(self) -> None:
         manifest = json.loads(SMOKE_MANIFEST_TEMPLATE.read_text(encoding="utf-8"))
         primary_fixtures = manifest["fixtures"]["primary"]
