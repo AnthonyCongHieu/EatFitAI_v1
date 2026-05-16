@@ -30,6 +30,7 @@ const P_STATIC = {
   glassBg: 'rgba(37, 41, 58, 0.4)', glassBorder: 'rgba(61, 74, 61, 0.2)',
   outlineVariant: 'rgba(255,255,255,0.06)',
 };
+const P = P_STATIC;
 
 /* ─── Level system: 300 XP per level ─── */
 const XP_PER_LEVEL = 300;

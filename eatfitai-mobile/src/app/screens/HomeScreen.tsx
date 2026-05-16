@@ -45,7 +45,6 @@ import { waterService, type WaterIntakeData } from '../../services/waterService'
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
-import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import { formatBusinessDate } from '../../utils/businessDate';
 import { useEN } from '../../theme/emeraldNebula';
 
@@ -274,6 +273,15 @@ const HomeScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
   const [showWaterMoChi, setShowWaterMoChi] = useState(false);
+
+  useEffect(() => {
+    if (!showWaterMoChi) {
+      return;
+    }
+
+    const timer = setTimeout(() => setShowWaterMoChi(false), 6500);
+    return () => clearTimeout(timer);
+  }, [showWaterMoChi]);
 
   // Water intake state
   const { data: waterData } = useQuery<WaterIntakeData>({
@@ -526,8 +534,6 @@ const HomeScreen = (): React.ReactElement => {
           />
         }
       >
-        <MoChiIslandSpacer />
-
         {/* ══════════ HEADER ══════════ */}
         <WelcomeHeader
           streakCount={currentStreak}
@@ -856,7 +862,7 @@ const HomeScreen = (): React.ReactElement => {
           </View>
           {showWaterMoChi && (
             <View style={styles.moChiWaterNotice}>
-              <MoChiInlineNotice mochiEvent="water_added" compact />
+              <MoChiInlineNotice mochiEvent="water_added" compact hideSprite />
             </View>
           )}
         </Animated.View>

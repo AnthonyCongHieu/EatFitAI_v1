@@ -7,24 +7,19 @@ const readSource = (relativePath) => {
 };
 
 describe('Profile and top account actions IA', () => {
-  it('uses Home gear as the profile entry and keeps bell for notification content', () => {
+  it('anchors the shared MoChi island in the home header and keeps settings beside notifications', () => {
     const welcomeHeaderSource = readSource('src/components/home/WelcomeHeader.tsx');
+    const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const typesSource = readSource('src/app/types/index.ts');
-    const testIdsSource = readSource('src/testing/testIds.ts');
 
-    expect(welcomeHeaderSource).toContain('onSettingsPress');
+    expect(welcomeHeaderSource).toContain('useMoChiIslandLayout');
+    expect(welcomeHeaderSource).toContain('MOCHI ĐỒNG HÀNH');
     expect(welcomeHeaderSource).toContain('settings-outline');
-    expect(welcomeHeaderSource).toContain('TEST_IDS.home.settingsButton');
-    expect(testIdsSource).toContain("settingsButton: 'home-settings-button'");
-    expect(homeSource).toContain(
-      "onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}",
-    );
+    expect(tabBarSource).not.toContain("label: 'Cài đặt'");
     expect(homeSource).toContain("onNotificationPress={() => navigation.navigate('NotificationCenter')}");
-    expect(homeSource).not.toContain(
-      "onAvatarPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}",
-    );
+    expect(homeSource).toContain("onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}");
     expect(navigatorSource).toContain('getNotificationCenterScreen');
     expect(navigatorSource).toContain('name="NotificationCenter"');
     expect(typesSource).toContain('NotificationCenter: undefined');

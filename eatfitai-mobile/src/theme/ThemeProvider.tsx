@@ -102,3 +102,6 @@ export const useAppTheme = (): ThemeContextValue => {
 
   return context;
 };
+
+export const useOptionalAppTheme = (): ThemeContextValue | undefined =>
+  useContext(ThemeContext);

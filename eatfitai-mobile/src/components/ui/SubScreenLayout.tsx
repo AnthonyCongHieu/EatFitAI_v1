@@ -31,7 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../ThemedText';
-import { useEN } from '../../theme/emeraldNebula';
+import { EN, useEN } from '../../theme/emeraldNebula';
 
 interface SubScreenLayoutProps {
   /** Screen title displayed in the center of the header */

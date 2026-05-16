@@ -41,8 +41,10 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<ServingUnit> ServingUnits { get; set; }
 
     public virtual DbSet<TelemetryEvent> TelemetryEvents { get; set; }
+    public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<UserEntitlement> UserEntitlements { get; set; }
     public virtual DbSet<UserAccessControl> UserAccessControls { get; set; }
     public virtual DbSet<PasswordResetCode> PasswordResetCodes { get; set; }
 
@@ -703,6 +705,55 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK_TelemetryEvent_User");
+        });
+
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            entity.ToTable("SubscriptionPlan");
+
+            entity.HasKey(e => e.PlanCode);
+            entity.Property(e => e.PlanCode).HasMaxLength(40);
+            entity.Property(e => e.DisplayName).HasMaxLength(120);
+            entity.Property(e => e.FeaturesJson).HasDefaultValue("{}");
+            entity.Property(e => e.LimitsJson).HasDefaultValue("{}");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<UserEntitlement>(entity =>
+        {
+            entity.ToTable("UserEntitlement");
+
+            entity.HasKey(e => e.UserEntitlementId);
+            entity.HasIndex(e => new { e.UserId, e.Status, e.ExpiresAt }, "IX_UserEntitlement_User_Status_Expires");
+            entity.Property(e => e.UserEntitlementId).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.PlanCode).HasMaxLength(40);
+            entity.Property(e => e.Status).HasMaxLength(40).HasDefaultValue("active");
+            entity.Property(e => e.Source).HasMaxLength(60).HasDefaultValue("manual");
+            entity.Property(e => e.StartsAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserEntitlements)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_UserEntitlement_User");
+
+            entity.HasOne(d => d.Plan).WithMany(p => p.UserEntitlements)
+                .HasForeignKey(d => d.PlanCode)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_UserEntitlement_SubscriptionPlan");
         });
 
         modelBuilder.Entity<WaterIntake>(entity =>

@@ -77,6 +77,7 @@ const P_STATIC = {
   slate500: '#64748b',
   slate400: '#94a3b8',
 };
+const P = P_STATIC;
 
 // Helpers
 const timeStringToDate = (time: string): Date => {

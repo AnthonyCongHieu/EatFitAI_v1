@@ -66,6 +66,7 @@ import {
 import { formatLocalDate } from '../../../utils/localDate';
 import type { AppTabsParamList } from '../../navigation/AppTabs';
 import { useEN } from '../../../theme/emeraldNebula';
+import { useAppTheme } from '../../../theme/ThemeProvider';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -107,6 +108,7 @@ const P_STATIC = {
   glassCard: 'rgba(47, 52, 69, 0.4)',
   glassBorder: 'rgba(255, 255, 255, 0.12)',
 };
+const P = P_STATIC;
 
 /* ─── Meal type meta ─── */
 const MEAL_META: Record<number, { color: string; label: string }> = {
@@ -223,10 +225,12 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 const StatsScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const EN = useEN();
+  const { mode } = useAppTheme();
   const P = {
     ...P_STATIC,
     bg: EN.bg,
     surface: EN.bg,
+    surfaceContainerLowest: EN.surfaceLow,
     surfaceContainerLow: EN.surfaceLow,
     surfaceContainer: EN.surface,
     surfaceContainerHigh: EN.surfaceHigh,
@@ -236,7 +240,10 @@ const StatsScreen = (): React.ReactElement => {
     onSurface: EN.onSurface,
     onSurfaceVariant: EN.onSurfaceVariant,
     textSlate400: EN.textMuted,
+    textSlate500: EN.textMuted,
     outlineVariant: EN.outlineVariant,
+    glassCard: EN.glassBg,
+    glassBorder: EN.glassBorder,
   };
   const navigation = useNavigation<StatsScreenNavigationProp>();
   const route = useRoute<RouteProp<AppTabsParamList, 'StatsTab'>>();
@@ -513,10 +520,10 @@ const StatsScreen = (): React.ReactElement => {
      ═══════════════════════════════════════════════ */
   return (
     <View
-      style={[S.root, { paddingTop: insets.top }]}
+      style={[S.root, { paddingTop: insets.top, backgroundColor: P.bg }]}
       testID={TEST_IDS.stats.screen}
     >
-      <StatusBar barStyle="light-content" backgroundColor={P.bg} />
+      <StatusBar barStyle={mode === 'light' ? 'dark-content' : 'light-content'} backgroundColor={P.bg} />
 
       <MoChiIslandSpacer />
 
@@ -527,7 +534,7 @@ const StatsScreen = (): React.ReactElement => {
 
       {/* ══════ TAB SWITCHER ══════ */}
       <View style={S.tabWrap}>
-        <View style={S.tabPill}>
+        <View style={[S.tabPill, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
           {(['today', 'week', 'month'] as TabOption[]).map((tab) => {
             const on = activeTab === tab;
             const label = tab === 'today' ? 'Ngày' : tab === 'week' ? 'Tuần' : 'Tháng';
@@ -541,10 +548,10 @@ const StatsScreen = (): React.ReactElement => {
               <Pressable
                 key={tab}
                 onPress={() => handleTabChange(tab)}
-                style={[S.tabBtn, on && S.tabBtnOn]}
+                style={[S.tabBtn, on && S.tabBtnOn, on && { backgroundColor: P.primaryContainer }]}
                 testID={testID}
               >
-                <ThemedText style={[S.tabTxt, on && S.tabTxtOn]}>{label}</ThemedText>
+                <ThemedText style={[S.tabTxt, { color: P.textSlate400 }, on && S.tabTxtOn]}>{label}</ThemedText>
               </Pressable>
             );
           })}
@@ -580,7 +587,7 @@ const StatsScreen = (): React.ReactElement => {
                 useDeviceMotion
                 activeTouch={false}
               >
-                <View style={S.heroCard}>
+                <View style={[S.heroCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
                   {/* Metallic sheen */}
                   <LinearGradient
                     colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']}
@@ -627,7 +634,7 @@ const StatsScreen = (): React.ReactElement => {
                       </Svg>
                       {/* Center text */}
                       <View style={S.ringCenter}>
-                        <ThemedText style={S.ringBig}>
+                        <ThemedText style={[S.ringBig, { color: P.onSurface }]}>
                           {Math.round(todayCal).toLocaleString()}
                         </ThemedText>
                         <ThemedText style={S.ringUnit}>KCAL NẠP</ThemedText>
@@ -679,10 +686,10 @@ const StatsScreen = (): React.ReactElement => {
                 useDeviceMotion
                 activeTouch={false}
               >
-                <View style={S.distCard}>
+                <View style={[S.distCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
                   {/* Title row */}
                   <View style={S.distHead}>
-                    <ThemedText style={S.distTitle}>Phân bổ bữa ăn</ThemedText>
+                    <ThemedText style={[S.distTitle, { color: P.onSurface }]}>Phân bổ bữa ăn</ThemedText>
                     <View style={S.dotGreen} />
                   </View>
 
@@ -736,7 +743,7 @@ const StatsScreen = (): React.ReactElement => {
                 useDeviceMotion
                 activeTouch={false}
               >
-                <View style={S.waterCard}>
+                  <View style={[S.waterCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
                   <LinearGradient
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
@@ -752,7 +759,7 @@ const StatsScreen = (): React.ReactElement => {
                       <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                      <ThemedText style={S.waterBig}>
+                      <ThemedText style={[S.waterBig, { color: P.onSurface }]}>
                         {(statsWaterAmount / 1000).toFixed(1)}L
                       </ThemedText>
                       <ThemedText style={S.waterSmall}>
@@ -1378,7 +1385,7 @@ const StatsScreen = (): React.ReactElement => {
                             const isRealDay = d > 0 && d <= daysInMonth;
 
                             let bgColor = 'rgba(255,255,255,0.03)'; // Default
-                            let txtColor = P.textSlate500;
+                            let txtColor: string = P.textSlate500;
                             let opacity = 0.5;
 
                             if (isRealDay) {

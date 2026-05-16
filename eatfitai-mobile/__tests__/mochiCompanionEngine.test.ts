@@ -27,7 +27,7 @@ describe('MoChiPetEngine', () => {
         waterAmountMl: 100,
         currentStreak: 30,
       }).poseKey,
-    ).toBe('sadCry');
+    ).toBe('scanErrorFull');
 
     expect(
       getMoChiPetState({
@@ -38,7 +38,7 @@ describe('MoChiPetEngine', () => {
         waterAmountMl: 100,
         currentStreak: 30,
       }).poseKey,
-    ).toBe('foodPhone');
+    ).toBe('mealCoachFull');
 
     expect(
       getMoChiPetState({
@@ -48,7 +48,7 @@ describe('MoChiPetEngine', () => {
         waterAmountMl: 100,
         currentStreak: 30,
       }).poseKey,
-    ).toBe('cakeConcern');
+    ).toBe('nutritionCoachNotice');
 
     expect(
       getMoChiPetState({
@@ -57,7 +57,7 @@ describe('MoChiPetEngine', () => {
         waterTargetMl: 2000,
         currentStreak: 30,
       }).poseKey,
-    ).toBe('hydrate');
+    ).toBe('waterCoachFull');
 
     expect(
       getMoChiPetState({
@@ -73,7 +73,7 @@ describe('MoChiPetEngine', () => {
   it('returns actions and bubbles for the core assistant flows', () => {
     expect(getMoChiPetState({ ...baseInput, activeEvent: 'scan_processing' })).toMatchObject({
       mood: 'thinking',
-      poseKey: 'analyzing',
+      poseKey: 'scanThinkingFull',
       primaryAction: 'scanFood',
       shouldBubble: true,
     });
@@ -87,7 +87,7 @@ describe('MoChiPetEngine', () => {
 
     expect(getMoChiPetState({ ...baseInput, activeEvent: 'report_ready' })).toMatchObject({
       mood: 'reporting',
-      poseKey: 'reportReview',
+      poseKey: 'weeklyReportNotice',
       primaryAction: 'viewProgress',
     });
   });

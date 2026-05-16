@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQuery } from '@tanstack/react-query';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,13 +27,33 @@ import { ThemedText } from '../../components/ThemedText';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
+import { subscriptionService } from '../../services/subscriptionService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
+import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
 import { useAppTheme } from '../../theme/ThemeProvider';
+
+const P = {
+  bg: '#0e1322',
+  surface: '#0e1322',
+  surfaceLow: '#161b2b',
+  surfaceContainerLow: '#161b2b',
+  surfaceContainer: '#1a1f2f',
+  surfaceContainerHigh: '#25293a',
+  surfaceContainerHighest: '#2f3445',
+  primary: '#4be277',
+  primaryContainer: '#22c55e',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  glassBg: 'rgba(37, 41, 58, 0.6)',
+  glassBorder: 'rgba(255,255,255,0.05)',
+  error: '#ffb4ab',
+  errorContainer: 'rgba(147, 0, 10, 0.3)',
+};
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -76,23 +97,37 @@ const MenuRow = ({
   showChevron = true,
   chevronColor,
   testID,
-}: MenuRowProps) => (
-  <Pressable
-    style={({ pressed }) => [S.menuRow, pressed && { opacity: 0.7 }]}
-    onPress={onPress}
-    testID={testID}
-  >
-    <View style={[S.menuIconWrap, { backgroundColor: iconBg }]}>
-      <Ionicons name={icon as any} size={20} color={iconColor} />
-    </View>
-    <ThemedText style={[S.menuLabel, { color: labelColor }]} numberOfLines={1}>
-      {label}
-    </ThemedText>
-    {showChevron && (
-      <Ionicons name="chevron-forward" size={18} color={chevronColor} />
-    )}
-  </Pressable>
-);
+}: MenuRowProps) => {
+  const palette = useEN();
+  const resolvedLabelColor = labelColor ?? palette.onSurface;
+  const resolvedIconColor = iconColor ?? palette.onSurfaceVariant;
+  const resolvedChevronColor = chevronColor ?? palette.onSurfaceVariant;
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        S.menuRow,
+        {
+          backgroundColor: palette.glassBg,
+          borderTopColor: palette.glassBorder,
+        },
+        pressed && { opacity: 0.7 },
+      ]}
+      onPress={onPress}
+      testID={testID}
+    >
+      <View style={[S.menuIconWrap, { backgroundColor: iconBg ?? palette.surfaceHighest }]}>
+        <Ionicons name={icon as any} size={20} color={resolvedIconColor} />
+      </View>
+      <ThemedText style={[S.menuLabel, { color: resolvedLabelColor }]} numberOfLines={1}>
+        {label}
+      </ThemedText>
+      {showChevron && (
+        <Ionicons name="chevron-forward" size={18} color={resolvedChevronColor} />
+      )}
+    </Pressable>
+  );
+};
 
 /* ═══════════════════════════════════════════════
    ProfileScreen
@@ -114,6 +149,12 @@ const ProfileScreen = (): React.ReactElement => {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+  const { data: subscription, refetch: refetchSubscription } = useQuery({
+    queryKey: ['subscription', 'me'],
+    queryFn: subscriptionService.getCurrent,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
 
   useEffect(() => {
     fetchProfile().catch((error: any) => {
@@ -134,9 +175,12 @@ const ProfileScreen = (): React.ReactElement => {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchProfile({ force: true });
+    await Promise.all([
+      fetchProfile({ force: true }),
+      refetchSubscription(),
+    ]);
     setRefreshing(false);
-  }, [fetchProfile]);
+  }, [fetchProfile, refetchSubscription]);
 
   /* ═══ Avatar picker ═══ */
   const pickAvatar = useCallback(async (source: 'library' | 'camera') => {
@@ -191,12 +235,24 @@ const ProfileScreen = (): React.ReactElement => {
   }, [pickAvatar]);
 
   const handleProPress = useCallback(() => {
+    const isPremium = subscription?.isPremium ?? false;
     Toast.show({
-      type: 'info',
-      text1: 'Thông báo',
-      text2: 'Tính năng đang phát triển',
+      type: isPremium ? 'success' : 'info',
+      text1: isPremium ? 'Premium đang hoạt động' : 'Tài khoản Free',
+      text2: isPremium
+        ? 'Backend đã bật quyền Premium cho tài khoản này.'
+        : 'Premium đã sẵn sàng ở backend, chờ bổ sung màn nâng cấp.',
     });
-  }, []);
+  }, [subscription?.isPremium]);
+
+  const handleCompleteProfilePress = useCallback(() => {
+    if (!profile?.weightKg || !profile?.heightCm) {
+      navigation.navigate('BodyMetrics' as any);
+      return;
+    }
+
+    navigation.navigate('GoalSettings' as any);
+  }, [navigation, profile?.heightCm, profile?.weightKg]);
 
   /* Loading */
   if (isLoading && !profile) {
@@ -209,6 +265,10 @@ const ProfileScreen = (): React.ReactElement => {
 
   const bmi = calcBMI(profile?.weightKg, profile?.heightCm);
   const displayName = profile?.fullName || 'Chưa cập nhật';
+  const isPremium = subscription?.isPremium ?? false;
+  const memberLabel = isPremium ? 'Premium' : 'Free';
+  const premiumRowLabel = isPremium ? 'EatFitAI Premium đang hoạt động' : 'Nâng cấp EatFitAI Premium';
+  const hasProfileGaps = Boolean(profile && (!profile.weightKg || !profile.heightCm || !profile.goal));
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
@@ -272,7 +332,7 @@ const ProfileScreen = (): React.ReactElement => {
 
           {/* Member badge */}
           <View style={S.proBadge}>
-            <ThemedText style={S.proBadgeText}>Thành viên</ThemedText>
+            <ThemedText style={S.proBadgeText}>Thành viên {memberLabel}</ThemedText>
           </View>
         </Animated.View>
 
@@ -323,6 +383,24 @@ const ProfileScreen = (): React.ReactElement => {
             )}
           </View>
         </Animated.View>
+
+        {hasProfileGaps && (
+          <Pressable
+            onPress={handleCompleteProfilePress}
+            accessibilityRole="button"
+            accessibilityLabel="Hoàn thiện hồ sơ"
+          >
+            <Animated.View entering={FadeInUp.delay(260).duration(400)} style={S.profileNotice}>
+              <MoChiInlineNotice
+                mochiEvent="profile_incomplete"
+                title="MoChi cần thêm dữ liệu"
+                message="Bổ sung cân nặng, chiều cao và mục tiêu để MoChi tính gợi ý sát hơn."
+                ctaLabel="Hoàn thiện hồ sơ"
+                compact
+              />
+            </Animated.View>
+          </Pressable>
+        )}
 
         {/* ═══ MENU GROUP 1 — Main actions ═══ */}
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={[S.menuGroup, { backgroundColor: P.surfaceLow }]}>
@@ -377,7 +455,7 @@ const ProfileScreen = (): React.ReactElement => {
           />
           <MenuRow
             icon="ribbon-outline"
-            label="Quản lý Gói EatFit PRO"
+            label={premiumRowLabel}
             labelColor={P.primary}
             iconBg={P.primary + '18'}
             iconColor={P.primary}
@@ -843,6 +921,10 @@ const S = StyleSheet.create({
     borderTopColor: P.glassBorder,
     marginBottom: 28,
     overflow: 'hidden',
+  },
+  profileNotice: {
+    marginTop: -12,
+    marginBottom: 24,
   },
   metricCol: {
     flex: 1,

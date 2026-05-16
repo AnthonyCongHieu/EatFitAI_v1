@@ -54,6 +54,7 @@ export type MoChiIslandInput = {
   voiceStatus?: MoChiVoiceStatus | null;
   isOffline?: boolean;
   dismissedEventType?: MoChiPetEventType | null;
+  dismissedCooldownKey?: string | null;
   now?: Date;
 };
 
@@ -71,12 +72,10 @@ export type MoChiIslandState = {
   presentation: MoChiIslandPresentation;
 };
 
-const CONFIRM_AUTO_HIDE_MS = 8000;
-
 const COMPACT_PRESENTATION: MoChiIslandPresentation = {
   height: 42,
   reservedHeight: 58,
-  spriteSize: 34,
+  spriteSize: 38,
   spriteVariant: 'face',
   maxLines: 1,
 };
@@ -253,9 +252,9 @@ const resolveMode = (eventType: MoChiPetEventType): MoChiIslandMode => {
   return 'message';
 };
 
-const resolveAutoHideMs = (mode: MoChiIslandMode): number | null => {
-  if (mode === 'message') return 4200;
-  if (mode === 'confirm') return CONFIRM_AUTO_HIDE_MS;
+const resolveAutoHideMs = (eventType: MoChiPetEventType, mode: MoChiIslandMode): number | null => {
+  if (mode === 'message') return ERROR_EVENTS.has(eventType) ? 9000 : 6500;
+  if (mode === 'confirm') return 9000;
   if (mode === 'live') return null;
   return null;
 };
@@ -320,7 +319,7 @@ const getPresentation = (
   return {
     height,
     reservedHeight,
-    spriteSize: mode === 'message' ? 60 : 64,
+    spriteSize: mode === 'message' ? 68 : 72,
     spriteVariant: poseVariant === 'face' ? 'full' : poseVariant,
     maxLines: needsTallConfirm ? 4 : needsTallMessage ? 3 : mode === 'message' ? 2 : 3,
   };
@@ -329,8 +328,14 @@ const getPresentation = (
 export const getMoChiIslandState = (input: MoChiIslandInput): MoChiIslandState => {
   const eventType = resolveEventType(input);
   const mode = resolveMode(eventType);
+  const cooldownKey = mode === 'confirm' || mode === 'message'
+    ? `${eventType}:${input.routeName ?? 'global'}`
+    : null;
 
-  if (mode !== 'live' && input.dismissedEventType === eventType) {
+  if (
+    mode !== 'live'
+    && (input.dismissedCooldownKey === cooldownKey || input.dismissedEventType === eventType)
+  ) {
     return COMPACT_STATE;
   }
 
@@ -350,8 +355,8 @@ export const getMoChiIslandState = (input: MoChiIslandInput): MoChiIslandState =
       : experience.ctaLabel ?? null,
     confirmationAction,
     priority: experience.priority,
-    autoHideMs: resolveAutoHideMs(mode),
-    cooldownKey: mode === 'confirm' || mode === 'message' ? eventType : null,
+    autoHideMs: resolveAutoHideMs(eventType, mode),
+    cooldownKey,
     presentation: getPresentation(mode, poseKey, message, confirmationAction),
   };
 };

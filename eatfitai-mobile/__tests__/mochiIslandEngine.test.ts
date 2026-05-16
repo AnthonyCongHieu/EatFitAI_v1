@@ -29,7 +29,7 @@ describe('MoChi island engine', () => {
         height: 42,
         reservedHeight: 58,
         spriteVariant: 'face',
-        spriteSize: 34,
+        spriteSize: 38,
       },
     });
   });
@@ -64,7 +64,7 @@ describe('MoChi island engine', () => {
         height: 132,
         reservedHeight: 152,
         spriteVariant: 'full',
-        spriteSize: 64,
+        spriteSize: 72,
         maxLines: 4,
       },
     });
@@ -180,8 +180,8 @@ describe('MoChi island engine', () => {
     ).toMatchObject({
       mode: 'confirm',
       eventType: 'water_reminder',
-      autoHideMs: 8000,
-      cooldownKey: 'water_reminder',
+      autoHideMs: 9000,
+      cooldownKey: 'water_reminder:HomeTab',
     });
 
     expect(

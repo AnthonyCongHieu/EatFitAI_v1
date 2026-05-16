@@ -16,7 +16,7 @@ import { navigateRoot } from '../../app/navigation/navigationRef';
 import { resolveBottomTabSafePadding } from './tabBarSafeArea';
 import { useAppTheme } from '../../theme/ThemeProvider';
 
-type CommandTarget = 'HomeTab' | 'FoodSearch' | 'AiCamera' | 'VoiceTab' | 'StatsTab';
+type CommandTarget = 'HomeTab' | 'FoodSearch' | 'AiCamera' | 'VoiceTab' | 'StatsTab' | 'ProfileTab';
 
 type CommandItem = {
   target: CommandTarget;
@@ -175,7 +175,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
       const didNavigate = navigateRoot(
         'FoodSearch',
         {
-          autoFocus: true,
+          autoFocus: false,
           showQuickSuggestions: true,
           returnToDiaryOnSave: true,
         },
@@ -214,7 +214,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
 const styles = StyleSheet.create({
   outerWrapper: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 4,
     left: 0,
     right: 0,
   },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   commandLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.2,
     textAlign: 'center',

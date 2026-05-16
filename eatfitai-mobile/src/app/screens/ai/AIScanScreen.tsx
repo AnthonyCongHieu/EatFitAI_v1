@@ -57,6 +57,7 @@ import {
   getDefaultVisionGrams,
 } from '../../../utils/visionReview';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
+import { useEN } from '../../../theme/emeraldNebula';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
@@ -113,6 +114,7 @@ const ScanProgressCard = ({ message }: { message: string }): React.ReactElement 
 
 const AIScanScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const palette = useEN();
   const cameraRef = useRef<CameraViewInstance | null>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -617,21 +619,21 @@ const AIScanScreen: React.FC = () => {
      ═══════════════════════════════════════════════ */
   if (!permission) {
     return (
-      <View style={[S.center, { backgroundColor: P.surface }]}>
-        <ActivityIndicator color={P.primary} />
+      <View style={[S.center, { backgroundColor: palette.surface }]}>
+        <ActivityIndicator color={palette.primary} />
       </View>
     );
   }
 
   if (!hasPermission) {
     return (
-      <View style={[S.center, { backgroundColor: P.surface }]}>
+      <View style={[S.center, { backgroundColor: palette.surface }]}>
         <Animated.View entering={FadeIn.duration(400)}>
           <Icon name="camera-outline" size="xl" color="muted" />
         </Animated.View>
         <ThemedText
           variant="h3"
-          style={{ marginTop: 24, marginBottom: 8, color: P.onSurface }}
+          style={{ marginTop: 24, marginBottom: 8, color: palette.onSurface }}
         >
           {'Cần quyền camera'}
         </ThemedText>
@@ -640,7 +642,7 @@ const AIScanScreen: React.FC = () => {
           style={{
             textAlign: 'center',
             paddingHorizontal: 32,
-            color: P.onSurfaceVariant,
+            color: palette.onSurfaceVariant,
           }}
         >
           {'Cho phép truy cập camera để quét món ăn bằng AI'}

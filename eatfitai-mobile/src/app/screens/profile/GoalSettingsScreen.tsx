@@ -25,6 +25,7 @@ const P_STATIC = {
   onSurfaceVariant: '#bccbb9',
   glassBorder: 'rgba(255,255,255,0.05)',
 };
+const P = P_STATIC;
 
 // Activity level options
 const ACTIVITY_OPTIONS = [

@@ -26,6 +26,42 @@ export const AUTH_NEEDS_ONBOARDING_KEY = 'auth_needs_onboarding';
 export const AUTH_USER_KEY = 'auth_user';
 const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
 const STARTUP_API_INIT_TIMEOUT_MS = 2500;
+const STARTUP_AUTH_STORAGE_TIMEOUT_MS = 3500;
+
+const withStartupTimeout = async <T,>(
+  promise: Promise<T>,
+  fallback: T,
+  label: string,
+): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      promise.catch((error) => {
+        if (__DEV__) {
+          console.warn(`[useAuthStore] ${label} failed during startup:`, error);
+        }
+
+        return fallback;
+      }),
+      new Promise<T>((resolve) => {
+        timeoutHandle = setTimeout(() => {
+          if (__DEV__) {
+            console.warn(
+              `[useAuthStore] ${label} exceeded ${STARTUP_AUTH_STORAGE_TIMEOUT_MS}ms. Continuing startup without it.`,
+            );
+          }
+
+          resolve(fallback);
+        }, STARTUP_AUTH_STORAGE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+};
 
 const readNeedsOnboardingFlag = (
   payload: Record<string, unknown> | null | undefined,
@@ -139,10 +175,10 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       // 3. Load token từ storage nếu có
       const [token, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt] =
         await Promise.all([
-          tokenStorage.getAccessToken(),
-          tokenStorage.getRefreshToken(),
-          tokenStorage.getAccessTokenExpiresAt(),
-          tokenStorage.getRefreshTokenExpiresAt(),
+          withStartupTimeout(tokenStorage.getAccessToken(), null, 'Access token read'),
+          withStartupTimeout(tokenStorage.getRefreshToken(), null, 'Refresh token read'),
+          withStartupTimeout(tokenStorage.getAccessTokenExpiresAt(), null, 'Access token expiry read'),
+          withStartupTimeout(tokenStorage.getRefreshTokenExpiresAt(), null, 'Refresh token expiry read'),
         ]);
 
       if (token) {

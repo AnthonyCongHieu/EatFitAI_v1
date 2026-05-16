@@ -637,6 +637,57 @@ namespace EatFitAI.API.Migrations
                     b.ToTable("ServingUnit", (string)null);
                 });
 
+            modelBuilder.Entity("EatFitAI.API.Models.SubscriptionPlan", b =>
+                {
+                    b.Property<string>("PlanCode")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(3)
+                        .HasColumnType("timestamp(3) with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("FeaturesJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("{}");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsPremium")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LimitsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("{}");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(3)
+                        .HasColumnType("timestamp(3) with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.HasKey("PlanCode");
+
+                    b.ToTable("SubscriptionPlan", (string)null);
+                });
+
             modelBuilder.Entity("EatFitAI.API.Models.User", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -773,6 +824,65 @@ namespace EatFitAI.API.Migrations
                     b.HasIndex("UserDishId");
 
                     b.ToTable("UserDishIngredient", (string)null);
+                });
+
+            modelBuilder.Entity("EatFitAI.API.Models.UserEntitlement", b =>
+                {
+                    b.Property<Guid>("UserEntitlementId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(3)
+                        .HasColumnType("timestamp(3) with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PlanCode")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasDefaultValue("manual");
+
+                    b.Property<DateTime>("StartsAt")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(3)
+                        .HasColumnType("timestamp(3) with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("active");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(3)
+                        .HasColumnType("timestamp(3) with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserEntitlementId");
+
+                    b.HasIndex("PlanCode");
+
+                    b.HasIndex(new[] { "UserId", "Status", "ExpiresAt" }, "IX_UserEntitlement_User_Status_Expires");
+
+                    b.ToTable("UserEntitlement", (string)null);
                 });
 
             modelBuilder.Entity("EatFitAI.API.Models.UserFavoriteFood", b =>
@@ -1314,6 +1424,27 @@ namespace EatFitAI.API.Migrations
                     b.Navigation("UserDish");
                 });
 
+            modelBuilder.Entity("EatFitAI.API.Models.UserEntitlement", b =>
+                {
+                    b.HasOne("EatFitAI.API.Models.SubscriptionPlan", "Plan")
+                        .WithMany("UserEntitlements")
+                        .HasForeignKey("PlanCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserEntitlement_SubscriptionPlan");
+
+                    b.HasOne("EatFitAI.API.Models.User", "User")
+                        .WithMany("UserEntitlements")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserEntitlement_User");
+
+                    b.Navigation("Plan");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EatFitAI.API.Models.UserFavoriteFood", b =>
                 {
                     b.HasOne("EatFitAI.API.Models.FoodItem", "FoodItem")
@@ -1423,6 +1554,11 @@ namespace EatFitAI.API.Migrations
                     b.Navigation("MealDiaries");
                 });
 
+            modelBuilder.Entity("EatFitAI.API.Models.SubscriptionPlan", b =>
+                {
+                    b.Navigation("UserEntitlements");
+                });
+
             modelBuilder.Entity("EatFitAI.API.Models.User", b =>
                 {
                     b.Navigation("AILogs");
@@ -1434,6 +1570,8 @@ namespace EatFitAI.API.Migrations
                     b.Navigation("NutritionTargets");
 
                     b.Navigation("UserDishes");
+
+                    b.Navigation("UserEntitlements");
 
                     b.Navigation("UserFavoriteFoods");
 

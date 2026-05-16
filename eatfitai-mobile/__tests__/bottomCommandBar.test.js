@@ -5,7 +5,7 @@ const readSource = (relativePath) =>
   fs.readFileSync(path.join(__dirname, '..', relativePath), 'utf8');
 
 describe('Task-first bottom command bar', () => {
-  it('exposes the primary food logging commands directly instead of a profile tab slot', () => {
+  it('exposes the five primary food logging commands without duplicating settings', () => {
     const source = readSource('src/components/navigation/CustomTabBar.tsx');
 
     expect(source).toContain("label: 'Trang chủ'");
@@ -13,6 +13,7 @@ describe('Task-first bottom command bar', () => {
     expect(source).toContain("label: 'Scan'");
     expect(source).toContain("label: 'Giọng nói'");
     expect(source).toContain("label: 'Thống kê'");
+    expect(source).not.toContain("label: 'Cài đặt'");
     expect(source).toContain("target: 'FoodSearch'");
     expect(source).toContain("target: 'AiCamera'");
     expect(source).not.toContain("label: 'Cá nhân'");

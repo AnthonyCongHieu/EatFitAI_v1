@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../../components/ThemedText';
+import { useEN } from '../../theme/emeraldNebula';
 import MoChiSprite from './MoChiSprite';
 import { getMoChiEventState, type MoChiPetEventType } from './mochiPetEngine';
 import { getMoChiExperience } from './mochiExperienceCatalog';
@@ -12,6 +13,7 @@ type MoChiInlineNoticeProps = {
   message?: string;
   ctaLabel?: string;
   compact?: boolean;
+  hideSprite?: boolean;
 };
 
 const MoChiInlineNotice = ({
@@ -20,19 +22,29 @@ const MoChiInlineNotice = ({
   message,
   ctaLabel,
   compact = false,
+  hideSprite = false,
 }: MoChiInlineNoticeProps): React.ReactElement => {
+  const EN = useEN();
   const state = getMoChiEventState(mochiEvent);
   const experience = getMoChiExperience(mochiEvent);
-  const spriteSize = compact ? 72 : 92;
+  const spriteSize = compact ? 80 : 102;
 
   return (
-    <View style={[styles.root, compact && styles.compact]}>
-      <MoChiSprite poseKey={state.poseKey} size={spriteSize} animated={!compact} />
+    <View
+      style={[
+        styles.root,
+        compact && styles.compact,
+        { backgroundColor: EN.glassBg, borderColor: EN.outlineVariant },
+      ]}
+    >
+      {!hideSprite && (
+        <MoChiSprite poseKey={state.poseKey} size={spriteSize} animated={!compact} />
+      )}
       <View style={styles.copy}>
-        <ThemedText style={styles.title}>{title ?? experience.title}</ThemedText>
-        <ThemedText style={styles.dialogue}>{message ?? state.dialogue}</ThemedText>
+        <ThemedText style={[styles.title, { color: EN.primary }]}>{title ?? experience.title}</ThemedText>
+        <ThemedText style={[styles.dialogue, { color: EN.onSurface }]}>{message ?? state.dialogue}</ThemedText>
         {(ctaLabel ?? experience.ctaLabel) && (
-          <ThemedText style={styles.cta}>{ctaLabel ?? experience.ctaLabel}</ThemedText>
+          <ThemedText style={[styles.cta, { color: EN.primary }]}>{ctaLabel ?? experience.ctaLabel}</ThemedText>
         )}
       </View>
     </View>

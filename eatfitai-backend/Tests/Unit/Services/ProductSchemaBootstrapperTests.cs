@@ -18,10 +18,22 @@ public class ProductSchemaBootstrapperTests
     {
         Assert.Contains(@"ALTER TABLE ""WaterIntake"" ENABLE ROW LEVEL SECURITY", ProductSchemaBootstrapper.SchemaSql);
         Assert.Contains(@"ALTER TABLE ""TelemetryEvent"" ENABLE ROW LEVEL SECURITY", ProductSchemaBootstrapper.SchemaSql);
+        Assert.Contains(@"ALTER TABLE ""SubscriptionPlan"" ENABLE ROW LEVEL SECURITY", ProductSchemaBootstrapper.SchemaSql);
+        Assert.Contains(@"ALTER TABLE ""UserEntitlement"" ENABLE ROW LEVEL SECURITY", ProductSchemaBootstrapper.SchemaSql);
         Assert.Contains(@"ALTER TABLE ""GeminiProviderState"" ENABLE ROW LEVEL SECURITY", ProductSchemaBootstrapper.SchemaSql);
         Assert.Contains(@"ALTER TABLE ""__EFMigrationsHistory"" ENABLE ROW LEVEL SECURITY", ProductSchemaBootstrapper.SchemaSql);
         Assert.Contains(@"REVOKE ALL ON TABLE ""WaterIntake"" FROM anon, authenticated", ProductSchemaBootstrapper.SchemaSql);
+        Assert.Contains(@"REVOKE ALL ON TABLE ""SubscriptionPlan"" FROM anon, authenticated", ProductSchemaBootstrapper.SchemaSql);
+        Assert.Contains(@"REVOKE ALL ON TABLE ""UserEntitlement"" FROM anon, authenticated", ProductSchemaBootstrapper.SchemaSql);
         Assert.Contains(@"WaterIntake_authenticated_own_read", ProductSchemaBootstrapper.SchemaSql);
         Assert.Contains(@"TelemetryEvent_authenticated_own_insert", ProductSchemaBootstrapper.SchemaSql);
+    }
+
+    [Fact]
+    public void SchemaSql_SeedsFreeAndPremiumSubscriptionPlans()
+    {
+        Assert.Contains(@"""PlanCode"", ""DisplayName"", ""IsPremium""", ProductSchemaBootstrapper.SchemaSql);
+        Assert.Contains("('free', 'EatFitAI Free', false", ProductSchemaBootstrapper.SchemaSql);
+        Assert.Contains("('premium', 'EatFitAI Premium', true", ProductSchemaBootstrapper.SchemaSql);
     }
 }

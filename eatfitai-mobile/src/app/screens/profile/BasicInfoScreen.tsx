@@ -33,6 +33,7 @@ const P_STATIC = {
   primary: '#4be277',
   glassBorder: 'rgba(255,255,255,0.05)',
 };
+const P = P_STATIC;
 
 const getGenderLabel = (g?: string): string => {
   switch (g) {

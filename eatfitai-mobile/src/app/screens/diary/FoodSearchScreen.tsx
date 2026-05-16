@@ -74,6 +74,7 @@ const P_STATIC = {
   macroC: '#fbbf24', // amber-400
   macroF: '#fb7185', // rose-400
 };
+const P = P_STATIC;
 
 const FoodSearchScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
@@ -120,6 +121,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const selectedDate = route.params?.selectedDate;
   const returnToDiaryOnSave = route.params?.returnToDiaryOnSave ?? false;
   const initialQuery = route.params?.initialQuery;
+  const shouldAutoFocusSearch = autoFocus && Boolean(initialQuery?.trim());
   const defaultMealType = route.params?.defaultMealType as MealTypeId | undefined;
 
   const loadRecentSearches = useCallback(async () => {
@@ -634,7 +636,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                 value={query}
                 onChangeText={setQuery}
                 onSubmitEditing={handleSearch}
-                autoFocus={autoFocus}
+                autoFocus={shouldAutoFocusSearch}
                 returnKeyType="search"
               />
               {query.length > 0 && (

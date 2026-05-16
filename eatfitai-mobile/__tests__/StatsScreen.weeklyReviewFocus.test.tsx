@@ -138,6 +138,12 @@ jest.mock('react-native-safe-area-context', () => ({
   }),
 }));
 
+jest.mock('../src/theme/ThemeProvider', () => ({
+  useAppTheme: () => ({
+    mode: 'dark',
+  }),
+}));
+
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: ({ name }: { name: string }) => {
     const React = require('react');

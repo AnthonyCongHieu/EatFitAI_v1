@@ -36,6 +36,7 @@ const P_STATIC = {
   onSurfaceVariant: '#bccbb9',
   glassBorder: 'rgba(255,255,255,0.05)',
 };
+const P = P_STATIC;
 
 /* ═══ Helpers ═══ */
 const getGoalLabel = (goal?: string): string => {

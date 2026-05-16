@@ -36,6 +36,7 @@ import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -61,6 +62,7 @@ const P_STATIC = {
   glassBorder: 'rgba(255,255,255,0.06)',
   glow: 'rgba(75, 226, 119, 0.15)',
 };
+const P = P_STATIC;
 
 /* ═══════════════════════════════════════════════
    Quick Command Chips
@@ -87,6 +89,7 @@ interface ChatMessage {
 const VoiceScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const EN = useEN();
+  const { mode } = useAppTheme();
   const P = {
     ...P_STATIC,
     primary: EN.primary,
@@ -99,6 +102,7 @@ const VoiceScreen = (): React.ReactElement => {
     onSurface: EN.onSurface,
     onSurfaceVariant: EN.onSurfaceVariant,
     outlineVariant: EN.outlineVariant,
+    glassBg: EN.glassBg,
     glassBorder: EN.glassBorder,
   };
   const queryClient = useQueryClient();
@@ -552,13 +556,20 @@ const VoiceScreen = (): React.ReactElement => {
     >
       <MoChiIslandSpacer />
 
-      <Animated.View entering={FadeInDown.delay(50).duration(400)} style={S.header}>
+      <Animated.View
+        entering={FadeInDown.delay(50).duration(400)}
+        style={[S.header, { backgroundColor: P.surfaceContainer, borderBottomColor: P.glassBorder }]}
+      >
         <View style={S.headerInner}>
-          <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+          <Pressable
+            style={[S.headerBtn, { backgroundColor: P.surfaceContainerHighest }]}
+            onPress={() => navigation.goBack()}
+            hitSlop={12}
+          >
             <Ionicons name="chevron-back" size={22} color={P.primary} />
           </Pressable>
-          <ThemedText style={S.headerTitle}>Trợ lý AI</ThemedText>
-          <View style={S.headerState}>
+          <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Trợ lý AI</ThemedText>
+          <View style={[S.headerState, { backgroundColor: P.primary + '18', borderColor: P.primary + '35' }]}>
             <View style={S.headerStateDot} />
             <ThemedText style={S.headerStateText}>AI</ThemedText>
           </View>
@@ -592,17 +603,24 @@ const VoiceScreen = (): React.ReactElement => {
           </Animated.View>
         )}
 
-        <Animated.View entering={FadeInUp.delay(90)} style={S.voicePanel}>
+        <Animated.View
+          entering={FadeInUp.delay(90)}
+          style={[S.voicePanel, { backgroundColor: P.glassBg, borderColor: P.glassBorder }]}
+        >
           <LinearGradient
-            colors={['rgba(30, 36, 52, 0.96)', 'rgba(14, 19, 34, 0.98)']}
+            colors={
+              mode === 'light'
+                ? [P.surfaceContainer, P.surfaceContainerLow]
+                : ['rgba(30, 36, 52, 0.96)', 'rgba(14, 19, 34, 0.98)']
+            }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={S.voicePanelGradient}
           >
             <View style={S.voicePanelHeader}>
               <View style={S.voicePanelCopy}>
-                <ThemedText style={S.voicePanelTitle}>{micTitle}</ThemedText>
-                <ThemedText style={S.voicePanelHint}>{micHint}</ThemedText>
+                <ThemedText style={[S.voicePanelTitle, { color: P.onSurface }]}>{micTitle}</ThemedText>
+                <ThemedText style={[S.voicePanelHint, { color: P.onSurfaceVariant }]}>{micHint}</ThemedText>
               </View>
               <View style={[S.voiceStatePill, isRecording && S.voiceStatePillActive]}>
                 <View style={[S.voiceStateDot, isRecording && S.voiceStateDotActive]} />
@@ -677,11 +695,11 @@ const VoiceScreen = (): React.ReactElement => {
         </Animated.View>
 
         {!isRecording && (
-          <Animated.View entering={FadeInUp.delay(140)} style={S.commandDock}>
-            <View style={S.commandBar}>
+          <Animated.View entering={FadeInUp.delay(140)} style={[S.commandDock, { backgroundColor: P.glassBg, borderColor: P.glassBorder }]}>
+            <View style={[S.commandBar, { backgroundColor: P.surfaceContainer, borderColor: P.primary + '25' }]}>
               <Ionicons name="sparkles" size={18} color={P.primary} />
               <TextInput
-                style={S.textInput}
+                style={[S.textInput, { color: P.onSurface }]}
                 placeholder="Nhập lệnh..."
                 placeholderTextColor={P.onSurfaceVariant + '70'}
                 value={recognizedText}
@@ -707,11 +725,15 @@ const VoiceScreen = (): React.ReactElement => {
               {QUICK_COMMANDS.map((cmd) => (
                 <Pressable
                   key={cmd.label}
-                  style={[S.quickCommand, isVoiceAiBlocked && S.disabledControl]}
+                  style={[
+                    S.quickCommand,
+                    { backgroundColor: P.surfaceContainer, borderColor: P.glassBorder },
+                    isVoiceAiBlocked && S.disabledControl,
+                  ]}
                   onPress={() => handleQuickCommand(cmd.text)}
                 >
                   <Ionicons name={cmd.icon} size={15} color={P.primary} />
-                  <ThemedText style={S.quickCommandText}>{cmd.label}</ThemedText>
+                  <ThemedText style={[S.quickCommandText, { color: P.onSurface }]}>{cmd.label}</ThemedText>
                 </Pressable>
               ))}
             </View>

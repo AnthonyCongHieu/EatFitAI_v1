@@ -57,4 +57,5 @@ public partial class User
 
     public virtual ICollection<UserRecentFood> UserRecentFoods { get; set; } = new List<UserRecentFood>();
     public virtual UserPreference? UserPreference { get; set; }
+    public virtual ICollection<UserEntitlement> UserEntitlements { get; set; } = new List<UserEntitlement>();
 }

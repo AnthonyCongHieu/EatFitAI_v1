@@ -11,6 +11,7 @@ import { TEST_IDS } from '../../testing/testIds';
 import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
 import { getMoChiExperience } from '../../features/mochi/mochiExperienceCatalog';
 import type { MoChiPetEventType } from '../../features/mochi/mochiPoseCatalog';
+import { useEN } from '../../theme/emeraldNebula';
 
 export const HOME_TUTORIAL_SEEN_KEY = 'home_tutorial_v1_seen';
 
@@ -19,6 +20,7 @@ type TutorialStep = {
   title: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
+  targetLabel?: string;
   mascotState: MascotState;
   poseKey?: MoChiPoseKey;
 };
@@ -56,6 +58,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Gặp MoChi',
     description: getMoChiExperience('tutorial_welcome').dialogue,
     icon: 'sparkles',
+    targetLabel: 'MoChi',
     mascotState: 'wave',
     poseKey: 'boxIdle',
   },
@@ -64,6 +67,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Quét khi muốn nhanh',
     description: getMoChiExperience('tutorial_scan').dialogue,
     icon: 'camera',
+    targetLabel: 'Scan',
     mascotState: 'pointing',
     poseKey: 'foodPhone',
   },
@@ -72,6 +76,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Tìm khi cần chắc',
     description: getMoChiExperience('tutorial_search').dialogue,
     icon: 'restaurant',
+    targetLabel: 'Thêm bữa',
     mascotState: 'thinking',
     poseKey: 'mealChoice',
   },
@@ -80,6 +85,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Một nhịp nước',
     description: getMoChiExperience('tutorial_water').dialogue,
     icon: 'water',
+    targetLabel: 'Uống nước',
     mascotState: 'success',
     poseKey: 'waterGlass',
   },
@@ -88,6 +94,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Xem bức tranh tổng',
     description: getMoChiExperience('tutorial_progress').dialogue,
     icon: 'analytics',
+    targetLabel: 'Thống kê',
     mascotState: 'reporting',
     poseKey: 'reportReview',
   },
@@ -104,6 +111,7 @@ const HomeFirstLoginTutorial = ({
 }: HomeFirstLoginTutorialProps): React.ReactElement | null => {
   const [visible, setVisible] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const EN = useEN();
 
   useEffect(() => {
     let active = true;
@@ -183,11 +191,11 @@ const HomeFirstLoginTutorial = ({
 
         <Animated.View
           entering={FadeInDown.delay(100).duration(260)}
-          style={styles.card}
+          style={[styles.card, { backgroundColor: EN.bg, borderColor: EN.outlineVariant }]}
         >
           <View style={styles.headerRow}>
             <View style={styles.progressPill}>
-              <ThemedText style={styles.progressText}>{progressText}</ThemedText>
+              <ThemedText style={[styles.progressText, { color: EN.primary }]}>{progressText}</ThemedText>
             </View>
             <Pressable
               testID={TEST_IDS.home.tutorialSkipButton}
@@ -196,24 +204,31 @@ const HomeFirstLoginTutorial = ({
               onPress={completeTutorial}
               hitSlop={10}
             >
-              <ThemedText style={styles.skipText}>Bỏ qua</ThemedText>
+              <ThemedText style={[styles.skipText, { color: EN.onSurfaceVariant }]}>Bỏ qua</ThemedText>
             </Pressable>
+          </View>
+
+          <View style={[styles.coachTarget, { backgroundColor: EN.surfaceHigh, borderColor: EN.primary }]}>
+            <Ionicons name={currentStep.icon} size={18} color={EN.primary} />
+            <ThemedText style={[styles.coachTargetText, { color: EN.onSurface }]}>
+              MoChi đang chỉ vào: {currentStep.targetLabel ?? currentStep.title}
+            </ThemedText>
           </View>
 
           <View style={styles.mascotStage}>
             <MascotCharacter
               state={currentStep.mascotState}
               poseKey={currentStep.poseKey}
-              size={104}
+              size={116}
             />
           </View>
 
           <View style={styles.copyBlock}>
-            <View style={styles.iconBadge}>
+            <View style={[styles.iconBadge, { backgroundColor: EN.primary }]}>
               <Ionicons name={currentStep.icon} size={20} color="#052E16" />
             </View>
-            <ThemedText style={styles.title}>{currentStep.title}</ThemedText>
-            <ThemedText style={styles.description}>{currentStep.description}</ThemedText>
+            <ThemedText style={[styles.title, { color: EN.onSurface }]}>{currentStep.title}</ThemedText>
+            <ThemedText style={[styles.description, { color: EN.onSurfaceVariant }]}>{currentStep.description}</ThemedText>
           </View>
 
           <View style={styles.dotsRow}>
@@ -222,7 +237,9 @@ const HomeFirstLoginTutorial = ({
                 key={step.title}
                 style={[
                   styles.dot,
-                  index === currentStepIndex ? styles.dotActive : styles.dotInactive,
+                  index === currentStepIndex
+                    ? [styles.dotActive, { backgroundColor: EN.primary }]
+                    : styles.dotInactive,
                 ]}
               />
             ))}
@@ -237,7 +254,7 @@ const HomeFirstLoginTutorial = ({
             accessibilityRole="button"
             accessibilityLabel={isLastStep ? 'Hoàn tất hướng dẫn' : 'Tiếp tục hướng dẫn'}
             onPress={handleNext}
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryPressed]}
+            style={({ pressed }) => [styles.primaryButton, { backgroundColor: EN.primary }, pressed && styles.primaryPressed]}
           >
             <ThemedText style={styles.primaryText}>
               {isLastStep ? 'Xong' : 'Tiếp tục'}
@@ -301,7 +318,22 @@ const styles = StyleSheet.create({
   mascotStage: {
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 112,
+    minHeight: 124,
+  },
+  coachTarget: {
+    minHeight: 42,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  coachTargetText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
   },
   copyBlock: {
     alignItems: 'center',

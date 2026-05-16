@@ -2,13 +2,12 @@
  * WelcomeHeader – Compact Emerald Nebula header bar
  */
 import React from 'react';
-import { View, StyleSheet, Pressable, Text, Image } from 'react-native';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useProfileStore } from '../../store/useProfileStore';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
+import { useMoChiIslandLayout } from '../../features/mochi/MoChiIslandLayoutContext';
 
 const C_STATIC = {
   bg: '#0a0e1a',
@@ -18,6 +17,7 @@ const C_STATIC = {
   textMuted: '#94a3b8',
   danger: '#ff6b6b',
 };
+const C = C_STATIC;
 
 interface WelcomeHeaderProps {
   streakCount?: number;
@@ -58,13 +58,11 @@ const getStreakColor = (streak: number) => {
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   streakCount = 0,
   onNotificationPress,
-  onAvatarPress,
   onSettingsPress,
   onStreakPress,
 }) => {
-  const { user } = useAuthStore();
-  const { profile } = useProfileStore();
   const EN = useEN();
+  const { height: islandHeight, isExpanded } = useMoChiIslandLayout();
   const C = {
     ...C_STATIC,
     bg: EN.bg,
@@ -75,76 +73,59 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
     danger: EN.danger,
   };
 
-  const displayName = profile?.fullName || user?.name || user?.email?.split('@')[0] || 'Bạn';
-  const initials = displayName.charAt(0).toUpperCase();
-  const avatarUrl = profile?.avatarUrl;
-
   const timeIcon = getTimeIcon();
 
   return (
-    <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.container}>
-      {/* Left: avatar + texts */}
+    <Animated.View
+      entering={FadeInDown.delay(80).springify()}
+      style={[styles.container, isExpanded && { minHeight: islandHeight }]}
+    >
+      {/* Left: slot reserved for the real MoChi island anchored by MoChiIslandHost */}
       <View style={styles.left}>
-        <Pressable
-          style={styles.avatarRing}
-          onPress={onAvatarPress}
-          disabled={!onAvatarPress}
-          hitSlop={8}
-          accessibilityRole={onAvatarPress ? 'button' : 'image'}
-          accessibilityLabel="Mở hồ sơ"
-        >
-          <View style={styles.avatarInner}>
-            {avatarUrl ? (
-              <Image
-                source={{ uri: avatarUrl }}
-                style={styles.avatarImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <Text style={styles.avatarText}>{initials}</Text>
-            )}
+        <View style={styles.mochiSlot} />
+        {!isExpanded && (
+          <View style={styles.texts}>
+            <View style={styles.greetingRow}>
+              <Text style={[styles.greeting, { color: C.primary }]}>MOCHI ĐỒNG HÀNH</Text>
+              <Ionicons name={timeIcon.name} size={14} color={timeIcon.color} style={{ marginLeft: 4 }} />
+            </View>
+            <Text style={[styles.name, { color: C.onSurface }]} numberOfLines={1}>
+              {getGreetingText()} · chạm Scan hoặc Thêm bữa
+            </Text>
           </View>
-        </Pressable>
-        <View style={styles.texts}>
-          <View style={styles.greetingRow}>
-            <Text style={styles.greeting}>{getGreetingText()}</Text>
-            <Ionicons name={timeIcon.name} size={14} color={timeIcon.color} style={{ marginLeft: 4 }} />
-          </View>
-          <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
-        </View>
+        )}
       </View>
 
-      {/* Right: streak + bell */}
-      <View style={styles.right}>
-        {streakCount > 0 && (
-          <Pressable style={styles.streak} onPress={onStreakPress} hitSlop={8}>
-            <Ionicons name="flame" size={16} color="#ef4444" />
-            <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
+      {!isExpanded && (
+        <View style={styles.right}>
+          {streakCount > 0 && (
+            <Pressable style={[styles.streak, { backgroundColor: C.surfaceHigh }]} onPress={onStreakPress} hitSlop={8}>
+              <Ionicons name="flame" size={16} color="#ef4444" />
+              <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={[styles.iconButton, { backgroundColor: C.surfaceHigh }]}
+            onPress={onSettingsPress}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Mở cài đặt"
+          >
+            <Ionicons name="settings-outline" size={21} color={C.textMuted} />
           </Pressable>
-        )}
-        <Pressable
-          style={styles.iconButton}
-          onPress={onSettingsPress}
-          disabled={!onSettingsPress}
-          hitSlop={10}
-          testID={TEST_IDS.home.settingsButton}
-          accessibilityRole="button"
-          accessibilityLabel="Mở hồ sơ và cài đặt"
-        >
-          <Ionicons name="settings-outline" size={21} color={C.textMuted} />
-        </Pressable>
-        <Pressable
-          style={styles.bell}
-          onPress={onNotificationPress}
-          hitSlop={10}
-          testID={TEST_IDS.home.notificationsButton}
-          accessibilityRole="button"
-          accessibilityLabel="Xem thông báo"
-        >
-          <Ionicons name="notifications-outline" size={22} color={C.textMuted} />
-          <View style={styles.bellDot} />
-        </Pressable>
-      </View>
+          <Pressable
+            style={[styles.bell, { backgroundColor: C.surfaceHigh }]}
+            onPress={onNotificationPress}
+            hitSlop={10}
+            testID={TEST_IDS.home.notificationsButton}
+            accessibilityRole="button"
+            accessibilityLabel="Xem thông báo"
+          >
+            <Ionicons name="notifications-outline" size={22} color={C.textMuted} />
+            <View style={[styles.bellDot, { backgroundColor: C.danger, borderColor: C.bg }]} />
+          </Pressable>
+        </View>
+      )}
     </Animated.View>
   );
 };
@@ -164,36 +145,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  avatarRing: {
-    width: 40,            // ← was 44, reduced slightly
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: C.primary,
-    padding: 2,
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  avatarInner: {
-    flex: 1,
-    borderRadius: 16,
-    backgroundColor: C.surfaceHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: C.primary,
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 16,
+  mochiSlot: {
+    width: 46,
+    height: 46,
   },
 
   texts: { flex: 1 },
@@ -268,9 +222,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: C.danger,
     borderWidth: 1.5,
-    borderColor: C.bg,
   },
 });
 

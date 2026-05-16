@@ -15,11 +15,11 @@ describe('MoChi island reminder behavior', () => {
   });
 
   it('auto-hides result and confirm messages but keeps live states until handled', () => {
-    expect(engineSource).toContain('const CONFIRM_AUTO_HIDE_MS = 8000');
-    expect(engineSource).toContain("if (mode === 'message') return 4200");
-    expect(engineSource).toContain("if (mode === 'confirm') return CONFIRM_AUTO_HIDE_MS");
+    expect(engineSource).toContain("if (mode === 'message') return ERROR_EVENTS.has(eventType) ? 9000 : 6500");
+    expect(engineSource).toContain("if (mode === 'confirm') return 9000");
     expect(engineSource).toContain("if (mode === 'live') return null");
-    expect(hostSource).toContain('dismissIslandEvent(islandState.eventType)');
+    expect(engineSource).toContain('${eventType}:${input.routeName ??');
+    expect(hostSource).toContain('dismissIslandEvent(islandState.eventType, islandState.cooldownKey)');
   });
 
   it('keeps island interactions narrow instead of exposing a multi-action menu', () => {

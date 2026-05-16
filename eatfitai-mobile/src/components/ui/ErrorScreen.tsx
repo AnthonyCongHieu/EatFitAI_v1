@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeInUp,
   useAnimatedStyle,
@@ -9,11 +10,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import Button from '../Button';
-import Icon from '../Icon';
-import { ThemedText } from '../ThemedText';
 import { TEST_IDS } from '../../testing/testIds';
-import { useAppTheme } from '../../theme/ThemeProvider';
+import { useOptionalAppTheme } from '../../theme/ThemeProvider';
+import { darkTheme } from '../../theme/themes';
 
 export type ErrorType = 'network' | 'server' | 'auth' | 'generic';
 
@@ -63,7 +62,8 @@ export const ErrorScreen = ({
   onGoBack,
   inline = false,
 }: ErrorScreenProps): React.ReactElement => {
-  const { theme } = useAppTheme();
+  const themeContext = useOptionalAppTheme();
+  const theme = themeContext?.theme ?? darkTheme;
   const isDark = theme.mode === 'dark';
   const preset = ERROR_PRESETS[type];
   const displayTitle = title ?? preset.title;
@@ -107,16 +107,54 @@ export const ErrorScreen = ({
     title: {
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
+      color: theme.colors.text,
+      ...(inline ? theme.typography.h3 : theme.typography.h2),
+      fontWeight: '600',
     },
     message: {
       textAlign: 'center',
       marginBottom: theme.spacing.xl,
       maxWidth: 280,
+      color: theme.colors.textSecondary,
+      ...theme.typography.body,
     },
     actions: {
       gap: theme.spacing.md,
       width: '100%',
       maxWidth: 280,
+    },
+    primaryButton: {
+      minHeight: 48,
+      borderRadius: theme.borderRadius.button,
+      backgroundColor: theme.colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      ...theme.typography.button,
+      fontWeight: '600',
+    },
+    secondaryButton: {
+      minHeight: 48,
+      borderRadius: theme.borderRadius.button,
+      backgroundColor: 'transparent',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    secondaryButtonText: {
+      color: theme.colors.text,
+      ...theme.typography.button,
+      fontWeight: '600',
+    },
+    pressed: {
+      opacity: 0.75,
     },
   });
 
@@ -126,40 +164,42 @@ export const ErrorScreen = ({
         entering={FadeInUp.springify()}
         style={[styles.iconContainer, shakeStyle]}
       >
-        <Icon name={preset.icon} size={inline ? 40 : 56} color="danger" />
+        <Ionicons name={preset.icon as keyof typeof Ionicons.glyphMap} size={inline ? 40 : 56} color={theme.colors.danger} />
       </Animated.View>
 
       <Animated.View entering={FadeInUp.delay(100).springify()}>
-        <ThemedText variant={inline ? 'h3' : 'h2'} weight="600" style={styles.title}>
+        <Text style={styles.title}>
           {displayTitle}
-        </ThemedText>
+        </Text>
       </Animated.View>
 
       <Animated.View entering={FadeInUp.delay(200).springify()}>
-        <ThemedText variant="body" color="textSecondary" style={styles.message}>
+        <Text style={styles.message}>
           {displayMessage}
-        </ThemedText>
+        </Text>
       </Animated.View>
 
       <Animated.View entering={FadeInUp.delay(300).springify()} style={styles.actions}>
         {onRetry && (
-          <Button
-            title="Thử lại"
+          <Pressable
+            accessibilityRole="button"
             onPress={onRetry}
-            variant="primary"
-            icon="refresh-outline"
-            fullWidth
+            style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
             testID={TEST_IDS.error.retryButton}
-          />
+          >
+            <Ionicons name="refresh-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.primaryButtonText}>Thử lại</Text>
+          </Pressable>
         )}
         {onGoBack && (
-          <Button
-            title="Quay lại"
+          <Pressable
+            accessibilityRole="button"
             onPress={onGoBack}
-            variant="ghost"
-            icon="arrow-back-outline"
-            fullWidth
-          />
+            style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+          >
+            <Ionicons name="arrow-back-outline" size={20} color={theme.colors.text} />
+            <Text style={styles.secondaryButtonText}>Quay lại</Text>
+          </Pressable>
         )}
       </Animated.View>
     </View>
