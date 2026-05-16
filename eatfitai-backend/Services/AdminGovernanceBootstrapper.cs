@@ -143,7 +143,10 @@ public sealed class AdminGovernanceBootstrapper
 
         try
         {
-            await _context.Database.ExecuteSqlRawAsync(sql, Array.Empty<object>(), cancellationToken);
+            await _context.Database.ExecuteSqlRawAsync(
+                sql,
+                parameters: Array.Empty<object>(),
+                cancellationToken: cancellationToken);
             await EnsureExistingAdminAccessRowsAsync(cancellationToken);
             await EnsureSeedMembershipsAsync(cancellationToken);
             await BackfillLegacyAuditRowsAsync(cancellationToken);
@@ -169,7 +172,10 @@ public sealed class AdminGovernanceBootstrapper
               );
             """;
 
-        await _context.Database.ExecuteSqlRawAsync(sql, Array.Empty<object>(), cancellationToken);
+        await _context.Database.ExecuteSqlRawAsync(
+            sql,
+            parameters: Array.Empty<object>(),
+            cancellationToken: cancellationToken);
     }
 
     private async Task EnsureSeedMembershipsAsync(CancellationToken cancellationToken)
@@ -301,7 +307,10 @@ public sealed class AdminGovernanceBootstrapper
               AND lower(users."Email") = lower(audit."ActorEmail");
             """;
 
-        await _context.Database.ExecuteSqlRawAsync(actorBackfillSql, Array.Empty<object>(), cancellationToken);
+        await _context.Database.ExecuteSqlRawAsync(
+            actorBackfillSql,
+            parameters: Array.Empty<object>(),
+            cancellationToken: cancellationToken);
     }
 
     private static string NormalizeAccessState(string? accessState)

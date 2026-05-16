@@ -491,7 +491,10 @@ namespace EatFitAI.API.Services
                 : $"\"{schema}\".\"{tableName}\"";
             var ddl = $"ALTER TABLE {qualifiedTableName} ADD COLUMN IF NOT EXISTS \"{columnName}\" text NULL";
 
-            await _context.Database.ExecuteSqlRawAsync(ddl, Array.Empty<object>(), cancellationToken);
+            await _context.Database.ExecuteSqlRawAsync(
+                ddl,
+                parameters: Array.Empty<object>(),
+                cancellationToken: cancellationToken);
         }
     }
 }

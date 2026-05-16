@@ -42,7 +42,10 @@ public sealed class AuthInfrastructureBootstrapper
     {
         try
         {
-            await _context.Database.ExecuteSqlRawAsync(SchemaSql, Array.Empty<object>(), cancellationToken);
+            await _context.Database.ExecuteSqlRawAsync(
+                SchemaSql,
+                parameters: Array.Empty<object>(),
+                cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
