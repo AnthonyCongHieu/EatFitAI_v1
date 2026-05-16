@@ -44,9 +44,12 @@ describe('aiApiClient 401 retry', () => {
   });
 
   it('retries AI requests after refreshing the token', async () => {
-    const { aiApiClient } = require('../src/services/apiClient') as typeof import('../src/services/apiClient');
-    const { refreshAccessToken } = require('../src/services/authSession') as typeof import('../src/services/authSession');
-    const { getAccessTokenMem } = require('../src/services/authTokens') as typeof import('../src/services/authTokens');
+    const { aiApiClient } =
+      require('../src/services/apiClient') as typeof import('../src/services/apiClient');
+    const { refreshAccessToken } =
+      require('../src/services/authSession') as typeof import('../src/services/authSession');
+    const { getAccessTokenMem } =
+      require('../src/services/authTokens') as typeof import('../src/services/authTokens');
 
     let accessToken = 'expired-access-token';
     (getAccessTokenMem as jest.Mock).mockImplementation(() => accessToken);
@@ -87,5 +90,55 @@ describe('aiApiClient 401 retry', () => {
     expect(retriedConfig).toBeDefined();
     expect(retriedConfig?.headers.get('Authorization')).toBe('Bearer fresh-access-token');
     expect(response.status).toBe(200);
+  });
+});
+
+describe('apiClient public auth requests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('does not refresh/retry when login returns 401', async () => {
+    const { default: apiClient } =
+      require('../src/services/apiClient') as typeof import('../src/services/apiClient');
+    const { refreshAccessToken } =
+      require('../src/services/authSession') as typeof import('../src/services/authSession');
+
+    const responseHandlers = (apiClient.interceptors.response as any).handlers;
+    const rejectedHandler = responseHandlers.find((handler: any) => handler?.rejected)
+      ?.rejected as ((error: any) => Promise<any>) | undefined;
+    const loginError = {
+      response: {
+        status: 401,
+        data: { message: 'Email hoặc mật khẩu không đúng' },
+      },
+      config: {
+        url: '/api/auth/login',
+        baseURL: 'http://mock-api.local',
+        method: 'post',
+        headers: new AxiosHeaders(),
+      },
+    };
+
+    await expect(rejectedHandler!(loginError)).rejects.toBe(loginError);
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('does not attach stale Authorization headers to login requests', async () => {
+    const { default: apiClient } =
+      require('../src/services/apiClient') as typeof import('../src/services/apiClient');
+
+    const requestHandlers = (apiClient.interceptors.request as any).handlers;
+    const fulfilledHandler = requestHandlers.find((handler: any) => handler?.fulfilled)
+      ?.fulfilled as ((config: any) => Promise<any>) | undefined;
+
+    const config = await fulfilledHandler!({
+      url: '/api/auth/login',
+      baseURL: 'http://mock-api.local',
+      method: 'post',
+      headers: AxiosHeaders.from({ Authorization: 'Bearer stale-token' }),
+    });
+
+    expect(AxiosHeaders.from(config.headers).get('Authorization')).toBeUndefined();
   });
 });

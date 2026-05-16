@@ -30,6 +30,47 @@ const RESCAN_COOLDOWN = 120000; // 2 phút
 // Flag để track đã init chưa
 let isApiInitialized = false;
 
+const PUBLIC_API_PATHS = new Set([
+  '/health',
+  '/api/Health/live',
+  '/api/Health/ready',
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/register-with-verification',
+  '/api/auth/verify-email',
+  '/api/auth/resend-verification',
+  '/api/auth/refresh',
+  '/api/auth/forgot-password',
+  '/api/auth/verify-reset-code',
+  '/api/auth/reset-password',
+  '/api/auth/google/signin',
+  '/api/auth/google/link',
+  '/api/search',
+  '/api/food/search',
+  '/api/food/search-all',
+]);
+
+const getRequestPath = (url: unknown, baseURL?: unknown): string => {
+  const rawUrl = String(url ?? '');
+  if (!rawUrl) return '';
+
+  try {
+    const parsed = new URL(
+      rawUrl,
+      typeof baseURL === 'string' ? baseURL : 'http://eatfitai.local',
+    );
+    const pathname = parsed.pathname || '';
+    return pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+  } catch {
+    const path = rawUrl.split('?')[0] ?? '';
+    return path.length > 1 ? path.replace(/\/$/, '') : path;
+  }
+};
+
+const isPublicApiPath = (
+  config: Pick<InternalAxiosRequestConfig, 'url' | 'baseURL'> | undefined,
+): boolean => PUBLIC_API_PATHS.has(getRequestPath(config?.url, config?.baseURL));
+
 const isPrivateIpv4Host = (host: string): boolean =>
   /^10\./.test(host) ||
   /^127\./.test(host) ||
@@ -216,26 +257,8 @@ const retryUnauthorizedRequest = async (
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
     const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
-    const urlPath = String(config.url || '').split('?')[0];
-    const noAuthPaths = new Set([
-      '/health',
-      '/api/Health/live',
-      '/api/Health/ready',
-      '/api/auth/login',
-      '/api/auth/register',
-      '/api/auth/register-with-verification',
-      '/api/auth/verify-email',
-      '/api/auth/resend-verification',
-      '/api/auth/refresh',
-      '/api/auth/forgot-password',
-      '/api/auth/verify-reset-code',
-      '/api/auth/reset-password',
-      '/api/auth/google/signin',
-      '/api/auth/google/link',
-      '/api/search',
-      '/api/food/search',
-      '/api/food/search-all',
-    ]);
+    const urlPath = getRequestPath(config.url, config.baseURL);
+    const publicEndpoint = isPublicApiPath(config);
     if (__DEV__) {
       logger.debug('[EatFitAI] Request Interceptor:', {
         url: config.url,
@@ -246,7 +269,11 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
         headersBefore: config.headers,
       });
     }
-    if (token) {
+    if (publicEndpoint) {
+      const headers = AxiosHeaders.from(config.headers ?? {});
+      headers.delete('Authorization');
+      config.headers = headers;
+    } else if (token) {
       // Validate token format before attaching
       if (typeof token === 'string' && token.trim().length > 0) {
         config.headers = {
@@ -262,7 +289,7 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       } else {
         logger.warn('[EatFitAI] Invalid token format, skipping authorization header');
       }
-    } else if (__DEV__ && urlPath && !noAuthPaths.has(urlPath)) {
+    } else if (__DEV__ && urlPath && !PUBLIC_API_PATHS.has(urlPath)) {
       // Only warn for endpoints that typically require auth
       logger.warn('[EatFitAI] No token available for request:', config.url);
     }
@@ -301,15 +328,17 @@ apiClient.interceptors.response.use(
 
     const originalRequest = error.config;
     const status = error.response?.status;
+    const publicEndpoint = isPublicApiPath(originalRequest);
     if (__DEV__) {
       logger.debug('[EatFitAI] Response Interceptor - Status check:', {
         status,
         hasOriginalRequest: !!originalRequest,
         isRetry: !!originalRequest?._retry,
         url: originalRequest?.url,
+        publicEndpoint,
       });
     }
-    if (status === 401 && originalRequest && !originalRequest._retry) {
+    if (status === 401 && originalRequest && !originalRequest._retry && !publicEndpoint) {
       try {
         return await retryUnauthorizedRequest(apiClient, originalRequest);
       } catch (err) {
