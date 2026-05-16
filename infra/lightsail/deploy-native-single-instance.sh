@@ -195,9 +195,20 @@ SCHEMA_REPORT="${APP_ROOT}/schema-bootstrap-$(date -u +%Y%m%dT%H%M%SZ).json"
 echo "Schema bootstrap report written to ${SCHEMA_REPORT}."
 
 sudo systemctl restart eatfitai-backend
-sleep 5
-systemctl is-active eatfitai-backend
-curl -fsS "http://127.0.0.1:10000/health/ready" >/dev/null
+BACKEND_READY_URL="http://127.0.0.1:10000/health/ready"
+for attempt in $(seq 1 30); do
+  if curl -fsS -H "X-Forwarded-Proto: https" "${BACKEND_READY_URL}" >/dev/null; then
+    systemctl is-active eatfitai-backend
+    break
+  fi
+
+  if [ "${attempt}" -eq 30 ]; then
+    systemctl status eatfitai-backend --no-pager -l || true
+    curl -fsS -H "X-Forwarded-Proto: https" "${BACKEND_READY_URL}" >/dev/null
+  fi
+
+  sleep 2
+done
 
 echo "AI provider deployed for ${RELEASE_SHA}."
 echo "Backend deployed and restarted for ${RELEASE_SHA}."

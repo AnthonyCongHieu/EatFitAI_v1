@@ -158,6 +158,17 @@ class CloudSmokeTargetTests(unittest.TestCase):
             content,
         )
 
+    def test_lightsail_backend_deploy_waits_for_ready_port(self) -> None:
+        content = LIGHTSAIL_DEPLOY_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn("BACKEND_READY_URL=\"http://127.0.0.1:10000/health/ready\"", content)
+        self.assertIn("for attempt in $(seq 1 30); do", content)
+        self.assertIn("X-Forwarded-Proto: https", content)
+        self.assertNotIn(
+            "sleep 5\nsystemctl is-active eatfitai-backend\ncurl -fsS \"http://127.0.0.1:10000/health/ready\"",
+            content,
+        )
+
     def test_smoke_primary_fixtures_match_lightsail_yolo_classes(self) -> None:
         manifest = json.loads(SMOKE_MANIFEST_TEMPLATE.read_text(encoding="utf-8"))
         primary_fixtures = manifest["fixtures"]["primary"]
