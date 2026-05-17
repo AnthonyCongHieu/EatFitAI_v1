@@ -64,8 +64,8 @@ public sealed class ProductSchemaBootstrapper
             "PlanCode" varchar(40) PRIMARY KEY,
             "DisplayName" varchar(120) NOT NULL,
             "IsPremium" boolean NOT NULL DEFAULT false,
-            "FeaturesJson" text NOT NULL DEFAULT '{}',
-            "LimitsJson" text NOT NULL DEFAULT '{}',
+            "FeaturesJson" text NOT NULL DEFAULT '{{}}',
+            "LimitsJson" text NOT NULL DEFAULT '{{}}',
             "IsActive" boolean NOT NULL DEFAULT true,
             "SortOrder" integer NOT NULL DEFAULT 0,
             "CreatedAt" timestamp(3) with time zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
@@ -89,8 +89,8 @@ public sealed class ProductSchemaBootstrapper
 
         INSERT INTO "SubscriptionPlan" ("PlanCode", "DisplayName", "IsPremium", "FeaturesJson", "LimitsJson", "IsActive", "SortOrder")
         VALUES
-            ('free', 'EatFitAI Free', false, '{"basicLogging":true,"aiScan":true,"mochiCoach":true}', '{"aiScansPerDay":10,"recipeSuggestionsPerDay":3}', true, 0),
-            ('premium', 'EatFitAI Premium', true, '{"basicLogging":true,"aiScan":true,"mochiCoach":true,"advancedInsights":true,"priorityAi":true}', '{"aiScansPerDay":100,"recipeSuggestionsPerDay":30}', true, 10)
+            ('free', 'EatFitAI Free', false, '{{"basicLogging":true,"aiScan":true,"mochiCoach":true}}', '{{"aiScansPerDay":10,"recipeSuggestionsPerDay":3}}', true, 0),
+            ('premium', 'EatFitAI Premium', true, '{{"basicLogging":true,"aiScan":true,"mochiCoach":true,"advancedInsights":true,"priorityAi":true}}', '{{"aiScansPerDay":100,"recipeSuggestionsPerDay":30}}', true, 10)
         ON CONFLICT ("PlanCode") DO UPDATE
         SET "DisplayName" = EXCLUDED."DisplayName",
             "IsPremium" = EXCLUDED."IsPremium",
