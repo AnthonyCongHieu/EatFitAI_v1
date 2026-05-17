@@ -66,8 +66,9 @@ else:
     env_data = load_env_file(ENV_FILE)
 
 for key, value in env_data.items():
-    if key and key.replace("_", "").isalnum() and not key[0].isdigit():
-        os.environ[str(key)] = "" if value is None else str(value)
+    normalized_key = str(key).replace(":", "__")
+    if normalized_key and normalized_key.replace("_", "").isalnum() and not normalized_key[0].isdigit():
+        os.environ[normalized_key] = "" if value is None else str(value)
 
 os.chdir(AI_DIR)
 gunicorn = AI_DIR / "venv" / "bin" / "gunicorn"
@@ -142,8 +143,9 @@ else:
     env_data = load_env_file(ENV_FILE)
 
 for key, value in env_data.items():
-    if key and key.replace("_", "").isalnum() and not key[0].isdigit():
-        os.environ[str(key)] = "" if value is None else str(value)
+    normalized_key = str(key).replace(":", "__")
+    if normalized_key and normalized_key.replace("_", "").isalnum() and not normalized_key[0].isdigit():
+        os.environ[normalized_key] = "" if value is None else str(value)
 
 os.chdir(BACKEND_DIR)
 assembly = BACKEND_DIR / "EatFitAI.API.dll"
