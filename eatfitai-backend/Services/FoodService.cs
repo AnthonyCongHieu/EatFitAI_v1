@@ -196,24 +196,28 @@ namespace EatFitAI.API.Services
 
         public async Task<IEnumerable<FoodSearchResultDto>> SearchAllAsync(string searchTerm, Guid? userId, int limit = 50)
         {
-            var catalog = await _foodItemRepository.SearchByNameAsync(searchTerm, 0, limit);
+            var catalog = (await _foodItemRepository.SearchByNameAsync(searchTerm, 0, limit)).ToList();
+            var catalogThumbnailFallbacks = await BuildCatalogThumbnailFallbacksAsync(catalog);
 
-            var catalogResults = catalog.Select(c => new FoodSearchResultDto
+            var catalogResults = catalog.Select(c =>
             {
-                Source = "catalog",
-                Id = c.FoodItemId,
-                FoodName = c.FoodName,
-                // Map ThumbNail -> ThumbnailUrl if present
-                ThumbnailUrl = c.ThumbNail,
-                ImageVariants = MediaVariantHelper.FromThumbUrl(c.ThumbNail),
-                UnitType = "g",
-                CaloriesPer100 = c.CaloriesPer100g,
-                ProteinPer100 = c.ProteinPer100g,
-                CarbPer100 = c.CarbPer100g,
-                FatPer100 = c.FatPer100g,
-                NutrientCompletenessScore = c.NutrientCompletenessScore,
-                MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(c.MissingNutrients),
-                TrustSummary = FoodTrustBuilder.BuildSummary(ToTrustFoodItemDto(c))
+                var thumbnailUrl = ResolveCatalogThumbnail(c, catalogThumbnailFallbacks);
+                return new FoodSearchResultDto
+                {
+                    Source = "catalog",
+                    Id = c.FoodItemId,
+                    FoodName = c.FoodName,
+                    ThumbnailUrl = thumbnailUrl,
+                    ImageVariants = MediaVariantHelper.FromThumbUrl(thumbnailUrl),
+                    UnitType = "g",
+                    CaloriesPer100 = c.CaloriesPer100g,
+                    ProteinPer100 = c.ProteinPer100g,
+                    CarbPer100 = c.CarbPer100g,
+                    FatPer100 = c.FatPer100g,
+                    NutrientCompletenessScore = c.NutrientCompletenessScore,
+                    MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(c.MissingNutrients),
+                    TrustSummary = FoodTrustBuilder.BuildSummary(ToTrustFoodItemDto(c))
+                };
             });
 
             IEnumerable<FoodSearchResultDto> userResults = Enumerable.Empty<FoodSearchResultDto>();
@@ -250,6 +254,49 @@ namespace EatFitAI.API.Services
                 .ToList();
 
             return combined;
+        }
+
+        private async Task<Dictionary<int, string>> BuildCatalogThumbnailFallbacksAsync(IReadOnlyCollection<FoodItem> catalog)
+        {
+            var missingThumbnailFoodIds = catalog
+                .Where(food => string.IsNullOrWhiteSpace(food.ThumbNail))
+                .Select(food => food.FoodItemId)
+                .Distinct()
+                .ToList();
+
+            if (missingThumbnailFoodIds.Count == 0)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            var mappings = await _context.AiLabelMaps
+                .AsNoTracking()
+                .Where(map => map.FoodItemId.HasValue && missingThumbnailFoodIds.Contains(map.FoodItemId.Value))
+                .Select(map => new { FoodItemId = map.FoodItemId!.Value, map.Label })
+                .ToListAsync();
+
+            return mappings
+                .GroupBy(map => map.FoodItemId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => BuildCatalogThumbnailKey(group.Select(map => map.Label).OrderBy(label => label).First()));
+        }
+
+        private static string? ResolveCatalogThumbnail(FoodItem food, IReadOnlyDictionary<int, string> catalogThumbnailFallbacks)
+        {
+            if (!string.IsNullOrWhiteSpace(food.ThumbNail))
+            {
+                return food.ThumbNail;
+            }
+
+            return catalogThumbnailFallbacks.TryGetValue(food.FoodItemId, out var fallback)
+                ? fallback
+                : null;
+        }
+
+        private static string BuildCatalogThumbnailKey(string label)
+        {
+            return $"food-images/v2/thumb/{label}.webp";
         }
 
         public async Task<IEnumerable<FoodSearchResultDto>> GetRecentFoodsAsync(Guid userId, int limit = 20)

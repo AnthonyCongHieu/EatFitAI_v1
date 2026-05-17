@@ -460,6 +460,42 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task SearchAllAsync_CatalogThumbnailMissing_UsesAiLabelMapFallback()
+        {
+            var searchTerm = "bún";
+            var catalogFood = new FoodItem
+            {
+                FoodItemId = 77,
+                FoodName = "Bún bò Huế",
+                ThumbNail = null,
+                CaloriesPer100g = 105,
+                ProteinPer100g = 6,
+                CarbPer100g = 13,
+                FatPer100g = 3,
+                IsActive = true,
+                IsDeleted = false
+            };
+
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "bun_bo_hue",
+                FoodItemId = catalogFood.FoodItemId,
+                MinConfidence = 0.6m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, 20))
+                .ReturnsAsync(new List<FoodItem> { catalogFood });
+
+            var result = (await _foodService.SearchAllAsync(searchTerm, null, 20)).Single();
+
+            Assert.Equal("food-images/v2/thumb/bun_bo_hue.webp", result.ThumbnailUrl);
+            Assert.NotNull(result.ImageVariants);
+            Assert.Equal("food-images/v2/medium/bun_bo_hue.webp", result.ImageVariants!.MediumUrl);
+        }
+
+        [Fact]
         public async Task SearchAllAsync_WithoutUserId_ReturnsOnlyCatalogResults()
         {
             // Arrange - Tìm kiếm không có userId, chỉ trả về catalog

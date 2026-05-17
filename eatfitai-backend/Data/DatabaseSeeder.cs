@@ -406,6 +406,9 @@ namespace EatFitAI.API.Data
                 food.FoodName = string.IsNullOrWhiteSpace(seed.FoodName) ? entry.DisplayNameVi : seed.FoodName.Trim();
                 food.FoodNameEn = string.IsNullOrWhiteSpace(seed.FoodNameEn) ? null : seed.FoodNameEn.Trim();
                 food.FoodNameUnsigned = AiVisionLabelCatalog.NormalizeKey(food.FoodName);
+                food.ThumbNail = string.IsNullOrWhiteSpace(food.ThumbNail)
+                    ? BuildAiVisionCatalogThumbnailKey(seed.Label)
+                    : food.ThumbNail;
                 food.CaloriesPer100g = seed.CaloriesPer100g;
                 food.ProteinPer100g = seed.ProteinPer100g;
                 food.CarbPer100g = seed.CarbPer100g;
@@ -422,6 +425,11 @@ namespace EatFitAI.API.Data
             }
 
             await context.SaveChangesAsync();
+        }
+
+        private static string BuildAiVisionCatalogThumbnailKey(string label)
+        {
+            return $"food-images/v2/thumb/{label}.webp";
         }
 
         private static FoodItem? FindSeedCatalogFood(
