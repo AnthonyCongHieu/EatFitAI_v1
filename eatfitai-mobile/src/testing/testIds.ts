@@ -1,6 +1,9 @@
 export const TEST_IDS = {
   navigation: {
     homeTabButton: 'navigation-home-tab-button',
+    diaryTabButton: 'navigation-diary-tab-button',
+    mochiHubButton: 'navigation-mochi-hub-button',
+    mochiHubSheet: 'navigation-mochi-hub-sheet',
     addMealCommandButton: 'navigation-add-meal-command-button',
     voiceTabButton: 'navigation-voice-tab-button',
     aiScanTabButton: 'navigation-ai-scan-tab-button',

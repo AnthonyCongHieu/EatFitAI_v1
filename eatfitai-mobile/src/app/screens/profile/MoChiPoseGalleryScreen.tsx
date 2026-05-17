@@ -29,7 +29,7 @@ const P = {
 
 type PoseFilter = 'all' | MoChiSpriteVariant;
 
-const FILTERS: Array<{ key: PoseFilter; label: string }> = [
+const FILTERS: { key: PoseFilter; label: string }[] = [
   { key: 'all', label: 'Tất cả' },
   { key: 'full', label: 'Toàn thân' },
   { key: 'notice', label: 'Thông báo' },
@@ -48,6 +48,23 @@ const MOOD_LABEL: Record<MoChiPetMood, string> = {
   celebrating: 'Ăn mừng',
   reporting: 'Báo cáo',
 };
+
+const POSE_EXPLANATION_BY_MOOD: Record<MoChiPetMood, string> = {
+  idle: 'Dùng khi app ở trạng thái bình tĩnh, không có việc gấp.',
+  happy: 'Dùng để khen hoặc xác nhận thao tác đã ổn.',
+  hungry: 'Dùng cho ghi bữa, chọn món hoặc nhắc nhật ký ăn uống.',
+  thirsty: 'Dùng cho nhắc nước và các mục tiêu uống nước.',
+  thinking: 'Dùng khi MoChi đang phân tích, cân nhắc hoặc cần người dùng xác nhận.',
+  confused: 'Dùng khi kết quả chưa chắc và cần hỏi lại nhẹ nhàng.',
+  concerned: 'Dùng cho cảnh báo mềm, tránh gây áp lực.',
+  error: 'Dùng khi có lỗi hoặc cần xin lỗi người dùng.',
+  celebrating: 'Dùng cho streak, huy hiệu và khoảnh khắc ăn mừng.',
+  reporting: 'Dùng cho báo cáo, thống kê và tổng kết tiến độ.',
+};
+
+const getPoseExplanation = (pose: MoChiSpriteMeta): string =>
+  POSE_EXPLANATION_BY_MOOD[pose.mood] ?? 'Dùng để MoChi phản hồi theo ngữ cảnh hiện tại.';
+
 
 const MoChiPoseGalleryScreen = (): React.ReactElement => {
   const navigation = useNavigation();
@@ -85,6 +102,9 @@ const MoChiPoseGalleryScreen = (): React.ReactElement => {
       </ThemedText>
       <ThemedText style={S.poseKey} numberOfLines={1}>
         {pose.key}
+      </ThemedText>
+      <ThemedText style={S.poseExplanation} numberOfLines={2}>
+        {getPoseExplanation(pose)}
       </ThemedText>
       <View style={S.metaRow}>
         <ThemedText style={S.metaText}>{pose.variant}</ThemedText>
@@ -228,7 +248,7 @@ const S = StyleSheet.create({
   },
   poseCard: {
     width: '48.5%',
-    minHeight: 178,
+    minHeight: 216,
     borderRadius: 14,
     padding: 10,
     backgroundColor: P.card,
@@ -257,6 +277,14 @@ const S = StyleSheet.create({
     color: P.muted,
     fontSize: 11,
     fontWeight: '600',
+  },
+  poseExplanation: {
+    marginTop: 6,
+    minHeight: 32,
+    color: P.muted,
+    fontSize: 10.5,
+    fontWeight: '600',
+    lineHeight: 16,
   },
   metaRow: {
     marginTop: 8,

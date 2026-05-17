@@ -515,6 +515,42 @@ Decision:
   check `last.pt`, `best.pt`, `best.onnx`, `results.csv`, `args.yaml`, and
   `yolo11m_resume_manifest.json` before any promotion or runtime eval.
 
+2026-05-17 train version 2 duration failure and V2-style resume correction:
+
+- Kaggle status for `hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion`
+  returned `CANCEL_ACKNOWLEDGED`.
+- Failure message: exceeded Kaggle's max allowed execution duration.
+- `kaggle kernels files` returned no train outputs at the time of the initial
+  check, but this is not sufficient proof that the timed-out version had no
+  downloadable output. The earlier V1/V2 lane showed that a timed-out Kaggle
+  run can still expose usable checkpoint files through output download/probe.
+- The clean V4 artifact source remains valid:
+  `hiuinhcng/eatfitai-v4-clean-train-artifact` is `COMPLETE` and exposes the
+  clean candidate plus compact reports.
+- Correct next step: keep the V4 train target at 150 epochs, as in the V2
+  pattern, and after any timeout first probe/download outputs. If
+  `last.pt`/`best.pt`/`results.csv` are available, package them as a dedicated
+  V4 checkpoint dataset and mount that dataset on the next resume run.
+- A short 30-epoch version 5 was pushed as a checkpoint-pass experiment, then
+  canceled by the user before completion. Do not treat version 5 as the V4
+  training strategy.
+- Output probe for the canceled version 5 confirmed:
+  - Clean V1 checkpoint was discovered and mounted correctly.
+  - Training started on V4 data with T4 x2.
+  - The run was canceled during epoch 1, before the epoch-end checkpoint sync,
+    so no `last.pt`/`best.pt`/`results.csv` were available from version 5.
+- Local validation:
+  `python -m unittest ai-provider\tests\test_dataset_v2_yolo11m_train_handoff.py`
+  passed with 25 tests.
+- Restored the V4 train default back to 150 epochs and pushed GPU train version
+  6:
+  `hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion`.
+  - Status immediately after push: `RUNNING`.
+- Next gate:
+  run the 150-epoch V4 train from the mounted Clean V1 checkpoint. If it times
+  out, immediately probe/download output and build a V4 checkpoint dataset
+  before pushing any further resume run.
+
 ## Source Links
 
 - Food-101 / ETH Zurich via Hugging Face:

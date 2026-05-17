@@ -10,7 +10,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Dimensions,
   Pressable,
   RefreshControl,
@@ -53,7 +52,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
-import MoChiIslandSpacer from '../../../features/mochi/MoChiIslandSpacer';
+import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
 import type { RootStackParamList } from '../../types';
 import { waterService, type WaterIntakeData, type MonthlyWaterData, type WeeklyWaterData } from '../../../services/waterService';
 import { profileService } from '../../../services/profileService';
@@ -144,7 +143,7 @@ const formatViDate = (): string => {
   return `Hôm nay, ${hanoi.getUTCDate()} Thg ${hanoi.getUTCMonth() + 1}`;
 };
 
-const cardW = SCREEN_WIDTH - 48; // px-6 * 2
+const cardW = SCREEN_WIDTH - 40; // 20px content margins * 2
 
 type StatsScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<AppTabsParamList, 'StatsTab'>,
@@ -213,8 +212,8 @@ const findBestDay = (days: DayData[], target: number): DayData | null => {
 /* ═════════════════════════════════════════════════
    RING CONSTANTS
    ═════════════════════════════════════════════════ */
-const RING_SIZE = 192; // w-48 h-48
-const RING_STROKE = 12;
+const RING_SIZE = 166; // compact health dashboard ring
+const RING_STROKE = 10;
 const RING_CENTER = RING_SIZE / 2;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -226,6 +225,7 @@ const StatsScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const EN = useEN();
   const { mode } = useAppTheme();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = {
     ...P_STATIC,
     bg: EN.bg,
@@ -525,11 +525,11 @@ const StatsScreen = (): React.ReactElement => {
     >
       <StatusBar barStyle={mode === 'light' ? 'dark-content' : 'light-content'} backgroundColor={P.bg} />
 
-      <MoChiIslandSpacer />
-
-      {/* ══════ FIXED HEADER ══════ */}
-      <View style={S.headerBar}>
-        <ThemedText style={S.headerTitle}>{formatViDate()}</ThemedText>
+      {/* ══════ APP BAR ══════ */}
+      <View style={S.appBar}>
+        <View style={S.appBarSide} />
+        <ThemedText style={S.appBarTitle}>Thống kê</ThemedText>
+        <View style={S.appBarSide} />
       </View>
 
       {/* ══════ TAB SWITCHER ══════ */}
@@ -577,14 +577,19 @@ const StatsScreen = (): React.ReactElement => {
         {/* ═══════════ TODAY ═══════════ */}
         {activeTab === 'today' && (
           <>
+            <View style={S.dateMetaRow}>
+              <Ionicons name="calendar-outline" size={15} color={P.textSlate400} />
+              <ThemedText style={S.dateMetaText}>{formatViDate()}</ThemedText>
+            </View>
+
             {/* ── HERO CARD ── */}
             <Animated.View entering={FadeInDown.delay(100).springify()}>
               <Tilt3DCard
                 width={cardW}
-                height={440}
-                maxTilt={6}
+                height={340}
+                maxTilt={2}
                 showReflection={false}
-                useDeviceMotion
+                useDeviceMotion={false}
                 activeTouch={false}
               >
                 <View style={[S.heroCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
@@ -680,10 +685,10 @@ const StatsScreen = (): React.ReactElement => {
             <Animated.View entering={FadeInUp.delay(200).springify()}>
               <Tilt3DCard
                 width={cardW}
-                height={totalMealCal > 0 ? 220 : 140}
-                maxTilt={5}
+                height={totalMealCal > 0 ? 210 : 128}
+                maxTilt={2}
                 showReflection={false}
-                useDeviceMotion
+                useDeviceMotion={false}
                 activeTouch={false}
               >
                 <View style={[S.distCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
@@ -737,10 +742,10 @@ const StatsScreen = (): React.ReactElement => {
             <Animated.View entering={FadeInUp.delay(300).springify()}>
               <Tilt3DCard
                 width={cardW}
-                height={130}
-                maxTilt={4}
+                height={122}
+                maxTilt={2}
                 showReflection={false}
-                useDeviceMotion
+                useDeviceMotion={false}
                 activeTouch={false}
               >
                   <View style={[S.waterCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
@@ -1032,10 +1037,10 @@ const StatsScreen = (): React.ReactElement => {
             <Animated.View entering={FadeInUp.delay(350).springify()}>
               <Tilt3DCard
                 width={cardW}
-                height={130}
-                maxTilt={4}
+                height={122}
+                maxTilt={2}
                 showReflection={false}
-                useDeviceMotion
+                useDeviceMotion={false}
                 activeTouch={false}
               >
                 <View style={S.wkProteinCard}>
@@ -1082,10 +1087,10 @@ const StatsScreen = (): React.ReactElement => {
             <Animated.View entering={FadeInUp.delay(400).springify()}>
               <Tilt3DCard
                 width={cardW}
-                height={130}
-                maxTilt={4}
+                height={122}
+                maxTilt={2}
                 showReflection={false}
-                useDeviceMotion
+                useDeviceMotion={false}
                 activeTouch={false}
               >
                 <View style={S.wkProteinCard}>
@@ -1132,10 +1137,10 @@ const StatsScreen = (): React.ReactElement => {
             <Animated.View entering={FadeInUp.delay(450).springify()}>
               <Tilt3DCard
                 width={cardW}
-                height={130}
-                maxTilt={4}
+                height={122}
+                maxTilt={2}
                 showReflection={false}
-                useDeviceMotion
+                useDeviceMotion={false}
                 activeTouch={false}
               >
                 <View style={S.wkProteinCard}>
@@ -1182,10 +1187,10 @@ const StatsScreen = (): React.ReactElement => {
             <Animated.View entering={FadeInUp.delay(500).springify()}>
               <Tilt3DCard
                 width={cardW}
-                height={130}
-                maxTilt={4}
+                height={122}
+                maxTilt={2}
                 showReflection={false}
-                useDeviceMotion
+                useDeviceMotion={false}
                 activeTouch={false}
               >
                 <View style={S.wkProteinCard}>
@@ -1263,8 +1268,14 @@ const StatsScreen = (): React.ReactElement => {
                   <View style={S.mthChartCard}>
 
                     {isLoadingMonth ? (
-                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                        <ActivityIndicator color={P.primary} size="large" />
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
+                        <MoChiScreenState
+                          mochiEvent="stats_low_data"
+                          title="Đang tải thống kê"
+                          message="MoChi đang tổng hợp xu hướng trong tháng."
+                          showSpinner
+                          variant="compact"
+                        />
                       </View>
                     ) : monthData && weekAvgs.length > 0 ? (
                       <View style={{ flex: 1 }}>
@@ -1366,8 +1377,14 @@ const StatsScreen = (): React.ReactElement => {
                 >
                   <View style={S.mthHeatCard}>
                     {isLoadingMonth ? (
-                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                        <ActivityIndicator color={P.primary} size="large" />
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
+                        <MoChiScreenState
+                          mochiEvent="stats_low_data"
+                          title="Đang vẽ heatmap"
+                          message="MoChi đang kiểm tra dữ liệu từng ngày."
+                          showSpinner
+                          variant="compact"
+                        />
                       </View>
                     ) : (
                       <View>
@@ -1601,8 +1618,13 @@ const StatsScreen = (): React.ReactElement => {
 
         {/* Loading */}
         {isLoading && (
-          <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-            <ActivityIndicator color={P.primary} size="large" />
+          <View style={{ paddingVertical: 32 }}>
+            <MoChiScreenState
+              mochiEvent="stats_low_data"
+              title="Đang cập nhật thống kê"
+              message="MoChi đang làm mới số liệu dinh dưỡng."
+              showSpinner
+            />
           </View>
         )}
       </ScrollView>
@@ -1657,21 +1679,28 @@ const MacroBar = ({
 const S = StyleSheet.create({
   root: { flex: 1, backgroundColor: P.bg },
 
-  /* Header */
-  headerBar: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
+  /* App bar */
+  appBar: {
+    minHeight: 52,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  headerTitle: {
+  appBarSide: { width: 44, height: 44 },
+  appBarTitle: {
+    flex: 1,
+    textAlign: 'center',
     fontSize: 18,
-    fontWeight: '700',
-    color: P.primary,
-    letterSpacing: -0.3,
+    fontWeight: '800',
+    color: P.onSurface,
+    letterSpacing: -0.2,
   },
 
   /* Tabs — glass-card pill style */
-  tabWrap: { alignItems: 'center', paddingHorizontal: 24, paddingBottom: 16 },
+  tabWrap: { alignItems: 'center', paddingHorizontal: 20, paddingBottom: 14 },
   tabPill: {
     width: '100%',
     flexDirection: 'row',
@@ -1695,20 +1724,33 @@ const S = StyleSheet.create({
   tabTxtOn: { color: P.onPrimaryContainer, fontWeight: '700' },
 
   /* Scroll */
-  scroll: { paddingHorizontal: 24, paddingBottom: 140, gap: 20 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 140, gap: 16 },
+  dateMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 2,
+    marginBottom: -2,
+  },
+  dateMetaText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: P.primary,
+    letterSpacing: -0.1,
+  },
 
   /* ── Hero Card — vertical layout (ring top, macros bottom) ── */
   heroCard: {
     backgroundColor: 'rgba(22, 27, 43, 0.5)',
     borderRadius: 24,
-    padding: 28,
+    padding: 20,
     overflow: 'hidden',
-    minHeight: 420,
+    minHeight: 320,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
 
-  heroRingWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
+  heroRingWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   heroRing: {
     width: RING_SIZE,
     height: RING_SIZE,
@@ -1717,11 +1759,11 @@ const S = StyleSheet.create({
   },
   ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   ringBig: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '700',
     color: '#fff',
-    letterSpacing: -2,
-    lineHeight: 42,
+    letterSpacing: -1.5,
+    lineHeight: 38,
   },
   ringUnit: {
     fontSize: 12,
@@ -1732,10 +1774,10 @@ const S = StyleSheet.create({
     marginTop: 4,
   },
 
-  heroMacros: { gap: 20 },
+  heroMacros: { gap: 14 },
 
   /* Macro bar sub-component */
-  mBar: { gap: 6 },
+  mBar: { gap: 5 },
   mBarHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   mBarLabel: {
     fontSize: 10,
@@ -1746,7 +1788,7 @@ const S = StyleSheet.create({
   },
   mBarValue: { fontSize: 14, fontWeight: '700' },
   mBarTrack: {
-    height: 8,
+    height: 7,
     backgroundColor: P.surfaceContainerLowest,
     borderRadius: 99,
     overflow: 'hidden',

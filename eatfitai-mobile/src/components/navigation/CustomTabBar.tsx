@@ -15,8 +15,11 @@ import { TEST_IDS } from '../../testing/testIds';
 import { navigateRoot } from '../../app/navigation/navigationRef';
 import { resolveBottomTabSafePadding } from './tabBarSafeArea';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import MoChiSprite from '../../features/mochi/MoChiSprite';
+import SmartAddSheet from '../ui/SmartAddSheet';
+import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
 
-type CommandTarget = 'HomeTab' | 'FoodSearch' | 'AiCamera' | 'VoiceTab' | 'StatsTab' | 'ProfileTab';
+type CommandTarget = 'HomeTab' | 'MealDiary' | 'MoChiHub' | 'StatsTab' | 'ProfileTab';
 
 type CommandItem = {
   target: CommandTarget;
@@ -24,7 +27,7 @@ type CommandItem = {
   icon: keyof typeof Ionicons.glyphMap;
   iconFocused: keyof typeof Ionicons.glyphMap;
   testID: string;
-  kind: 'tab' | 'stack';
+  kind: 'tab' | 'stack' | 'hub';
   isPrimary?: boolean;
 };
 
@@ -38,29 +41,21 @@ const COMMAND_ITEMS: CommandItem[] = [
     kind: 'tab',
   },
   {
-    target: 'FoodSearch',
-    label: 'Thêm bữa',
-    icon: 'restaurant-outline',
-    iconFocused: 'restaurant',
-    testID: TEST_IDS.navigation.addMealCommandButton,
+    target: 'MealDiary',
+    label: 'Nhật ký',
+    icon: 'book-outline',
+    iconFocused: 'book',
+    testID: TEST_IDS.navigation.diaryTabButton,
     kind: 'stack',
   },
   {
-    target: 'AiCamera',
-    label: 'Scan',
-    icon: 'scan-outline',
-    iconFocused: 'scan',
-    testID: TEST_IDS.navigation.aiScanTabButton,
-    kind: 'stack',
+    target: 'MoChiHub',
+    label: 'MoChi',
+    icon: 'sparkles-outline',
+    iconFocused: 'sparkles',
+    testID: TEST_IDS.navigation.mochiHubButton,
+    kind: 'hub',
     isPrimary: true,
-  },
-  {
-    target: 'VoiceTab',
-    label: 'Giọng nói',
-    icon: 'mic-outline',
-    iconFocused: 'mic',
-    testID: TEST_IDS.navigation.voiceTabButton,
-    kind: 'tab',
   },
   {
     target: 'StatsTab',
@@ -70,19 +65,49 @@ const COMMAND_ITEMS: CommandItem[] = [
     testID: TEST_IDS.navigation.statsTabButton,
     kind: 'tab',
   },
+  {
+    target: 'ProfileTab',
+    label: 'Cá nhân',
+    icon: 'person-outline',
+    iconFocused: 'person',
+    testID: TEST_IDS.navigation.profileTabButton,
+    kind: 'tab',
+  },
 ];
 
 const TAB_BAR_HEIGHT = 60;
+
+const resolveMoChiDockPose = (currentRouteName: string): MoChiPoseKey => {
+  if (currentRouteName === 'AiCamera') {
+    return 'faceThinking';
+  }
+
+  if (currentRouteName === 'MealDiary') {
+    return 'scanSuccessFace';
+  }
+
+  if (currentRouteName === 'StatsTab') {
+    return 'faceDetermined';
+  }
+
+  if (currentRouteName === 'ProfileTab') {
+    return 'secureFace';
+  }
+
+  return 'faceCheerful';
+};
 
 const CommandButton = ({
   command,
   isFocused,
   onPress,
+  dockPose,
   colors,
 }: {
   command: CommandItem;
   isFocused: boolean;
   onPress: () => void;
+  dockPose: MoChiPoseKey;
   colors: { primary: string; primaryDark: string; onPrimary: string; textMuted: string; bg: string };
 }) => {
   const scale = useSharedValue(1);
@@ -111,15 +136,25 @@ const CommandButton = ({
       <Animated.View
         style={[
           styles.commandInner,
-          command.isPrimary && [styles.primaryCommand, { backgroundColor: colors.primary, shadowColor: colors.primaryDark }],
+          command.isPrimary && styles.primaryDock,
           anim,
         ]}
       >
-        <Ionicons
-          name={isFocused ? command.iconFocused : command.icon}
-          size={command.isPrimary ? 25 : 22}
-          color={iconColor}
-        />
+        {command.isPrimary ? (
+          <View style={styles.primaryDockHalo}>
+            <View style={[styles.primaryDockCore, { shadowColor: colors.primaryDark }]}>
+              <View style={styles.primaryDockMascotPlate}>
+                <MoChiSprite poseKey={dockPose} size={58} variant="face" animated={false} />
+              </View>
+            </View>
+          </View>
+        ) : (
+          <Ionicons
+            name={isFocused ? command.iconFocused : command.icon}
+            size={22}
+            color={iconColor}
+          />
+        )}
         <Text
           style={[
             styles.commandLabel,
@@ -143,52 +178,39 @@ const CommandButton = ({
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
   const { theme } = useAppTheme();
+  const [isHubVisible, setIsHubVisible] = React.useState(false);
   const isDark = theme.mode === 'dark';
 
   const colors = {
     bg: isDark ? '#0a0e1a' : '#FFFFFF',
     primary: theme.colors.primary,
-    primaryDark: isDark ? '#22c55e' : '#15803D',
-    onPrimary: isDark ? '#003915' : '#FFFFFF',
+    primaryDark: isDark ? '#38bdf8' : '#0F766E',
+    onPrimary: isDark ? '#dbeafe' : '#0f172a',
     textMuted: theme.colors.textSecondary,
     onSurface: theme.colors.text,
     surfaceHigh: isDark ? '#1e2435' : '#F0F5EE',
-    borderTop: isDark ? 'rgba(75,226,119,0.08)' : 'rgba(0,0,0,0.06)',
+    borderTop: isDark ? 'rgba(226,232,240,0.08)' : 'rgba(0,0,0,0.06)',
   };
 
   const safeBottom = resolveBottomTabSafePadding(Platform.OS, insets.bottom);
   const current = state.routes[state.index]?.name ?? '';
+  const mochiDockPose = resolveMoChiDockPose(current);
   const navigateTab = navigation.navigate as unknown as (name: string, params?: unknown) => void;
 
   const runCommand = (command: CommandItem) => {
-    if (command.kind === 'tab') {
-      if (command.target === 'VoiceTab') {
-        navigateTab('VoiceTab', { source: 'command-bar' });
-        return;
-      }
+    if (command.kind === 'hub') {
+      setIsHubVisible(true);
+      return;
+    }
 
+    if (command.kind === 'tab') {
       navigateTab(command.target);
       return;
     }
 
-    if (command.target === 'FoodSearch') {
-      const didNavigate = navigateRoot(
-        'FoodSearch',
-        {
-          autoFocus: false,
-          showQuickSuggestions: true,
-          returnToDiaryOnSave: true,
-        },
-      );
-      if (!didNavigate) {
-        console.warn('[navigation] Root navigator is not ready for FoodSearch command.');
-      }
-      return;
-    }
-
-    const didNavigate = navigateRoot('AiCamera');
+    const didNavigate = navigateRoot('MealDiary');
     if (!didNavigate) {
-      console.warn('[navigation] Root navigator is not ready for AI scan command.');
+      console.warn(`[navigation] Root navigator is not ready for ${command.target} command.`);
     }
   };
 
@@ -201,12 +223,18 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
               key={command.target}
               command={command}
               colors={colors}
-              isFocused={command.kind === 'tab' && current === command.target}
+              dockPose={isHubVisible ? 'faceThinking' : mochiDockPose}
+              isFocused={current === command.target}
               onPress={() => runCommand(command)}
             />
           ))}
         </View>
       </View>
+      <SmartAddSheet
+        visible={isHubVisible}
+        onClose={() => setIsHubVisible(false)}
+        testID={TEST_IDS.navigation.mochiHubSheet}
+      />
     </View>
   );
 };
@@ -244,14 +272,45 @@ const styles = StyleSheet.create({
     minWidth: 54,
     minHeight: 50,
   },
-  primaryCommand: {
-    width: 56,
-    height: 56,
-    borderRadius: 20,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.34,
-    shadowRadius: 10,
-    elevation: 8,
+  primaryDock: {
+    width: 86,
+    height: 88,
+    borderRadius: 43,
+    marginTop: -34,
+    backgroundColor: 'transparent',
+  },
+  primaryDockHalo: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(226, 232, 240, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.20)',
+  },
+  primaryDockCore: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#101827',
+    borderWidth: 2,
+    borderColor: 'rgba(226, 232, 240, 0.28)',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.32,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  primaryDockMascotPlate: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+    overflow: 'hidden',
   },
   commandLabel: {
     fontSize: 9,

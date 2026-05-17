@@ -46,8 +46,8 @@ const MoChiSprite = ({
 
     bob.value = withRepeat(
       withSequence(
-        withTiming(-4, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-2, { duration: 1450, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1450, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
       true,
@@ -55,8 +55,8 @@ const MoChiSprite = ({
 
     tilt.value = withRepeat(
       withSequence(
-        withTiming(-2, { duration: 900, easing: Easing.inOut(Easing.ease) }),
-        withTiming(2, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-0.8, { duration: 1300, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.8, { duration: 1300, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
       true,
@@ -65,8 +65,8 @@ const MoChiSprite = ({
     if (poseMeta.mood === 'celebrating' || poseMeta.mood === 'happy') {
       scale.value = withRepeat(
         withSequence(
-          withTiming(1.06, { duration: 220, easing: Easing.out(Easing.ease) }),
-          withTiming(1, { duration: 320, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1.03, { duration: 320, easing: Easing.out(Easing.ease) }),
+          withTiming(1, { duration: 420, easing: Easing.inOut(Easing.ease) }),
         ),
         -1,
         true,
@@ -85,7 +85,7 @@ const MoChiSprite = ({
   }));
 
   const spriteSize =
-    resolvedVariant === 'face' ? size * 0.92 : resolvedVariant === 'notice' ? size * 1.08 : size;
+    resolvedVariant === 'face' ? size : resolvedVariant === 'notice' ? size * 1.18 : size * 1.08;
 
   return (
     <View

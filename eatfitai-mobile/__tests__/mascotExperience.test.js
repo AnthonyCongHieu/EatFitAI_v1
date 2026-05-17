@@ -22,47 +22,36 @@ describe('MoChi virtual pet experience', () => {
     expect(spriteSource).toContain('resizeMode="contain"');
   });
 
-  it('uses a shared MoChi island with rule-based state and narrow confirmations', () => {
+  it('keeps the floating MoChi island disabled while preserving rule-based MoChi assets', () => {
     const islandSource = readSource('src/features/mochi/MoChiIslandHost.tsx');
     const engineSource = readSource('src/features/mochi/mochiIslandEngine.ts');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
-    const layoutContextSource = readSource('src/features/mochi/MoChiIslandLayoutContext.tsx');
     const spacerSource = readSource('src/features/mochi/MoChiIslandSpacer.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
-    const statsSource = readSource('src/app/screens/stats/StatsScreen.tsx');
-    const voiceSource = readSource('src/app/screens/VoiceScreen.tsx');
-    const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
 
-    expect(navigatorSource).toContain('MoChiIslandHost');
-    expect(navigatorSource).toContain('MoChiIslandLayoutProvider');
+    expect(navigatorSource).not.toContain('MoChiIslandHost');
+    expect(navigatorSource).not.toContain('MoChiIslandLayoutProvider');
     expect(navigatorSource).not.toContain('<MascotOverlay />');
     expect(islandSource).toContain('getMoChiIslandState');
     expect(islandSource).toContain('setIslandLayout');
-    expect(islandSource).toContain("variant={isCompact ? 'face' : islandState.presentation.spriteVariant}");
+    expect(islandSource).toContain(
+      "variant={isCompact ? 'face' : islandState.presentation.spriteVariant}",
+    );
     expect(engineSource).toContain("poseKey: 'islandAvatar'");
-    expect(islandSource).toContain('Math.min(width - 24, 388)');
-    expect(islandSource).toContain('isLongExpandedMessage');
-    expect(islandSource).toContain('longIslandCta');
-    expect(islandSource).toContain('confirmationAction');
-    expect(islandSource).toContain("navigation.navigate('AiCamera')");
-    expect(islandSource).toContain("navigation.navigate('FoodSearch'");
-    expect(islandSource).toContain("screen: 'HomeTab'");
-    expect(islandSource).toContain('focusWaterRequestId: Date.now()');
+    expect(islandSource).toContain(
+      'Math.min(width - (isHomeHeaderAnchored ? 40 : 24), 388)',
+    );
+    expect(engineSource).toContain('confirmationAction');
     expect(islandSource).not.toContain('QuickActionsOverlay');
-    expect(layoutContextSource).toContain('MoChiIslandLayoutProvider');
-    expect(layoutContextSource).toContain('useMoChiIslandLayout');
-    expect(layoutContextSource).toContain('topOffset');
-    expect(spacerSource).toContain('useMoChiIslandLayout');
-    expect(layoutContextSource).toContain('topOffset: 58');
-    expect(homeSource).toContain('MoChiIslandSpacer');
-    expect(statsSource).toContain('MoChiIslandSpacer');
-    expect(voiceSource).toContain('MoChiIslandSpacer');
-    expect(voiceSource).toContain("top: '50%'");
-    expect(voiceSource).toContain('marginLeft: -61');
+    expect(spacerSource).toContain('MoChiIslandSpacer');
+    expect(spacerSource).toContain('return <></>');
+    expect(homeSource).toContain('WelcomeHeader');
+    expect(navigatorSource).not.toContain('MoChiIslandSpacer');
     expect(homeSource).toContain('borderRadius: 999');
     expect(homeSource).toContain("overflow: 'hidden'");
-    expect(profileSource).toContain('MoChiIslandSpacer');
-    expect(engineSource).toContain("export type MoChiIslandMode = 'compact' | 'message' | 'live' | 'confirm'");
+    expect(engineSource).toContain(
+      "export type MoChiIslandMode = 'compact' | 'message' | 'live' | 'confirm'",
+    );
     expect(engineSource).not.toMatch(/body shaming|béo|mập|xấu/u);
   });
 
@@ -74,7 +63,7 @@ describe('MoChi virtual pet experience', () => {
     expect(profileSource).not.toContain('settings-outline');
     expect(profileSource).toContain('Đăng xuất khỏi EatFitAI?');
     expect(profileSource).not.toContain('ellipsis-horizontal');
-    expect(profileSource).not.toContain('Alert.alert(t(\'common.logout\')');
+    expect(profileSource).not.toContain("Alert.alert(t('common.logout')");
   });
 
   it('keeps the old MoChi room removed and exposes the temporary pose gallery from profile', () => {
@@ -98,17 +87,47 @@ describe('MoChi virtual pet experience', () => {
     const tutorialSource = readSource('src/components/home/HomeFirstLoginTutorial.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
     const scanSource = readSource('src/app/screens/ai/AIScanScreen.tsx');
-    const visionReviewSource = readSource('src/app/screens/meals/AddMealFromVisionScreen.tsx');
+    const visionReviewSource = readSource(
+      'src/app/screens/meals/AddMealFromVisionScreen.tsx',
+    );
 
     expect(tutorialSource).toContain('MascotCharacter');
     expect(tutorialSource).toContain("mascotState: 'wave'");
     expect(tutorialSource).toContain("mascotState: 'thinking'");
     expect(homeSource).toContain('HomeFirstLoginTutorial');
-    expect(homeSource).toContain("mochiEvent=\"water_added\"");
+    expect(homeSource).toContain('mochiEvent="water_added"');
     expect(scanSource).toContain('ScanProgressCard');
-    expect(scanSource).toContain("mochiEvent=\"scan_empty\"");
-    expect(scanSource).toContain("mochiEvent=\"scan_error\"");
-    expect(visionReviewSource).toContain("mochiEvent=\"meal_logged\"");
+    expect(scanSource).toContain('mochiEvent="scan_empty"');
+    expect(scanSource).toContain('mochiEvent="scan_error"');
+    expect(visionReviewSource).toContain('mochiEvent="meal_logged"');
+  });
+
+  it('adds a transient MoChi companion peek to the meal diary without enabling the old island', () => {
+    const diarySource = readSource('src/app/screens/diary/MealDiaryScreen.tsx');
+    const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
+    const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
+    const mochiDesignSource = readSource('DESIGN.md');
+
+    expect(diarySource).toContain('MoChiDiaryCompanionPeek');
+    expect(diarySource).toContain('mochiDiaryPeekShownThisSession');
+    expect(diarySource).toContain('showCompanionPeek');
+    expect(diarySource).toContain('setShowCompanionPeek(false)');
+    expect(diarySource).toContain('MOCHI_DIARY_PEEK_HIDE_MS');
+    expect(diarySource).toContain('MOCHI_DIARY_PEEK_MAX_SHOWS = 2');
+    expect(diarySource).toContain('MOCHI_DIARY_PEEK_STORAGE_KEY');
+    expect(diarySource).toContain('AsyncStorage.getItem');
+    expect(diarySource).toContain('<MoChiSprite');
+    expect(diarySource).toContain("variant=\"full\"");
+    expect(diarySource).toContain("poseKey={hasEntries ? 'tabletMeal' : 'mealCoachFull'}");
+    expect(diarySource).toContain('styles.companionStage');
+    expect(diarySource).not.toContain('topOffset={insets.top + 108}');
+    expect(diarySource).toContain('Mochi đang đứng cạnh nhật ký');
+    expect(tabBarSource).toContain("return 'faceCheerful'");
+    expect(tabBarSource).toContain("return 'faceDetermined'");
+    expect(tabBarSource).not.toContain("backgroundColor: '#3fd56f'");
+    expect(mochiDesignSource).toContain('name: EatFitAI MoChi Companion');
+    expect(mochiDesignSource).toContain('Accent xanh chỉ là tín hiệu');
+    expect(navigatorSource).not.toContain('MoChiIslandHost');
   });
 
   it('keeps touched mascot and quick-action UI text free from mojibake markers', () => {
@@ -127,6 +146,8 @@ describe('MoChi virtual pet experience', () => {
       .map(readSource)
       .join('\n');
 
-    expect(source).not.toMatch(/[\u00c3\u00c2\u00c4\u00c6]|\u00e1\u00bb|\u00e2[\u201d\u2022]/u);
+    expect(source).not.toMatch(
+      /[\u00c3\u00c2\u00c4\u00c6]|\u00e1\u00bb|\u00e2[\u201d\u2022]/u,
+    );
   });
 });

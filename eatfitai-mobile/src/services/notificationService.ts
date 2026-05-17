@@ -18,27 +18,34 @@ import { trackEvent } from './analytics';
 let Notifications: typeof import('expo-notifications') | null = null;
 let notificationsAvailable = false;
 
-// Try load notifications module
-try {
-  const notificationsModule =
-    require('expo-notifications') as typeof import('expo-notifications');
-  Notifications = notificationsModule;
-  notificationsAvailable = true;
+const isExpoGo = Constants.appOwnership === 'expo';
 
-  // Config hiển thị notification khi app đang foreground
-  notificationsModule.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
-  logger.info('[NotificationService] Native module loaded successfully');
-} catch (error) {
-  logger.info('[NotificationService] Native module không available (Expo Go mode)');
-  notificationsAvailable = false;
+// Try load notifications module. Expo Go SDK 53+ không còn hỗ trợ Android remote
+// notifications; require module trong Expo Go sẽ bắn warning/error native gây nhiễu UI.
+if (isExpoGo) {
+  logger.info('[NotificationService] Skip native notifications in Expo Go');
+} else {
+  try {
+    const notificationsModule =
+      require('expo-notifications') as typeof import('expo-notifications');
+    Notifications = notificationsModule;
+    notificationsAvailable = true;
+
+    // Config hiển thị notification khi app đang foreground
+    notificationsModule.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    logger.info('[NotificationService] Native module loaded successfully');
+  } catch (error) {
+    logger.info('[NotificationService] Native module không available');
+    notificationsAvailable = false;
+  }
 }
 
 // Key lưu trữ cài đặt notifications

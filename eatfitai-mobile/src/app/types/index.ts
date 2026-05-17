@@ -8,7 +8,7 @@ export type RootStackParamList = {
   Register: undefined;
   VerifyEmail: { email: string; verificationCode?: string };
   ForgotPassword: undefined;
-  Onboarding: undefined;
+  Onboarding: { initialStep?: number } | undefined;
   AppTabs: NavigatorScreenParams<AppTabsParamList> | undefined;
   FoodSearch:
     | {

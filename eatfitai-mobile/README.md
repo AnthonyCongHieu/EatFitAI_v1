@@ -5,15 +5,15 @@ Expo / React Native client for EatFitAI.
 ## Development contract
 
 - Use Node `20.x`
-- Default development target is the cloud backend so emulator work only needs the UI bundle
+- Default development target is the Lightsail cloud backend so emulator work only needs the UI bundle
 - Use `.env.development` for the cloud-first profile
 - Use `.env.development.local` only when you intentionally debug a local backend
-- Render `free` is supported. If the service is sleeping, the first API call can take longer while it wakes up.
+- The old Render backend is legacy/suspended and must not be used as a production health signal.
 
 Default cloud backend target:
 
 ```env
-EXPO_PUBLIC_API_BASE_URL=https://eatfitai-backend.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://eatfitai-api.duckdns.org
 ```
 
 - Local Android emulator override:

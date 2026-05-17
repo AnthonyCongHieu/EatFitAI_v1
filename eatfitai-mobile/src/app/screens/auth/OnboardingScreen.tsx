@@ -204,6 +204,7 @@ const OnboardingScreen = (): React.ReactElement => {
   const updateProfile = useProfileStore((s) => s.updateProfile);
   const fetchProfile = useProfileStore((s) => s.fetchProfile);
   const invalidateProfile = useProfileStore((s) => s.invalidateProfile);
+  const profile = useProfileStore((s) => s.profile);
 
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -221,6 +222,36 @@ const OnboardingScreen = (): React.ReactElement => {
     goal: null,
     activityLevel: 'moderate',
   });
+
+  useEffect(() => {
+    if (!route.params?.initialStep || !profile) {
+      return;
+    }
+
+    const activityById: Record<number, OnboardingData['activityLevel']> = {
+      1: 'sedentary',
+      2: 'light',
+      3: 'moderate',
+      4: 'active',
+      5: 'very_active',
+    };
+
+    setData((prev) => ({
+      ...prev,
+      gender: profile.gender === 'male' || profile.gender === 'female' ? profile.gender : prev.gender,
+      age: profile.age ? String(profile.age) : prev.age,
+      heightCm: profile.heightCm ? String(profile.heightCm) : prev.heightCm,
+      weightKg: profile.weightKg ? String(profile.weightKg) : prev.weightKg,
+      targetWeightKg: profile.targetWeightKg ? String(profile.targetWeightKg) : prev.targetWeightKg,
+      goal:
+        profile.goal === 'lose' || profile.goal === 'maintain' || profile.goal === 'gain'
+          ? profile.goal
+          : prev.goal,
+      activityLevel: profile.activityLevelId
+        ? activityById[profile.activityLevelId] ?? prev.activityLevel
+        : prev.activityLevel,
+    }));
+  }, [profile, route.params?.initialStep]);
 
   /* ─── Dynamic step logic for conditional Target Weight step ─── */
   const needsTargetWeight = data.goal === 'lose' || data.goal === 'gain';

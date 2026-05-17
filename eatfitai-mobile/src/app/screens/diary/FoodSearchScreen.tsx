@@ -1,7 +1,7 @@
 // Food search screen for adding foods to the diary
 // Emerald Nebula 3D UI
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
@@ -38,6 +38,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
+import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
 import { t } from '../../../i18n/vi';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
@@ -82,6 +83,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const EN = useEN();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = {
     ...P_STATIC,
     primary: EN.primary,
@@ -102,6 +104,7 @@ const FoodSearchScreen = (): React.ReactElement => {
 
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<FoodItem[]>([]);
+  const searchRequestSeqRef = useRef(0);
   const [recentFoods, setRecentFoods] = useState<FoodItem[]>([]);
   const [commonMeals, setCommonMeals] = useState<CommonMealTemplate[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -341,6 +344,8 @@ const FoodSearchScreen = (): React.ReactElement => {
         });
         return;
       }
+      const requestSeq = searchRequestSeqRef.current + 1;
+      searchRequestSeqRef.current = requestSeq;
       setIsLoading(true);
       setErrorMessage(null);
       trackEvent('food_search_submit', {
@@ -354,6 +359,9 @@ const FoodSearchScreen = (): React.ReactElement => {
       });
       try {
         const result = await foodService.searchAllFoods(searchTerm.trim(), PAGE_SIZE);
+        if (searchRequestSeqRef.current !== requestSeq) {
+          return;
+        }
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
         setHasSearched(true);
         setErrorMessage(null);
@@ -371,6 +379,9 @@ const FoodSearchScreen = (): React.ReactElement => {
           saveRecentSearch(searchTerm.trim());
         }
       } catch (error: any) {
+        if (searchRequestSeqRef.current !== requestSeq) {
+          return;
+        }
         setHasSearched(true);
         setItems([]);
         setErrorMessage(error?.response?.data?.message ?? error?.message ?? t('common.tryAgainLater'));
@@ -387,7 +398,9 @@ const FoodSearchScreen = (): React.ReactElement => {
         });
         handleApiError(error);
       } finally {
-        setIsLoading(false);
+        if (searchRequestSeqRef.current === requestSeq) {
+          setIsLoading(false);
+        }
       }
     },
     [activeTab],
@@ -681,7 +694,12 @@ const FoodSearchScreen = (): React.ReactElement => {
         {/* ═══ Content ═══ */}
         {isLoading ? (
           <View style={S.centerBox}>
-            <ActivityIndicator color={P.primary} size="large" />
+            <MoChiScreenState
+              mochiEvent="food_search_empty"
+              title="Đang tìm món"
+              message="MoChi đang lọc kết quả phù hợp với từ khóa của bạn."
+              showSpinner
+            />
           </View>
         ) : errorMessage ? (
           <View style={{ marginTop: 24 }}>

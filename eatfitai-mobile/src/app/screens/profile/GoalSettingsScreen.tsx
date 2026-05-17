@@ -64,6 +64,7 @@ const ACTIVITY_OPTIONS = [
 const GoalSettingsScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = { ...P_STATIC, ...useEN() };
 
   const { profile, updateProfile, isSaving } = useProfileStore((state) => ({

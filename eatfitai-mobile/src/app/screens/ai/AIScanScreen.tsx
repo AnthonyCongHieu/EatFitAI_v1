@@ -57,6 +57,8 @@ import {
   getDefaultVisionGrams,
 } from '../../../utils/visionReview';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
+import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
+import MoChiSprite from '../../../features/mochi/MoChiSprite';
 import { useEN } from '../../../theme/emeraldNebula';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -104,7 +106,9 @@ const SCANNER_SIZE = SW * 0.72;
 
 const ScanProgressCard = ({ message }: { message: string }): React.ReactElement => (
   <Animated.View entering={FadeIn.duration(300)} style={S.scanProgressCard}>
-    <ActivityIndicator size="small" color={P.primary} />
+    <View style={S.scanProgressMochi}>
+      <MoChiSprite poseKey="faceThinking" size={42} variant="face" animated />
+    </View>
     <View style={S.scanProgressCopy}>
       <ThemedText style={S.scanProgressEyebrow}>Đang phân tích</ThemedText>
       <ThemedText style={S.scanProgressText}>{message}</ThemedText>
@@ -620,7 +624,13 @@ const AIScanScreen: React.FC = () => {
   if (!permission) {
     return (
       <View style={[S.center, { backgroundColor: palette.surface }]}>
-        <ActivityIndicator color={palette.primary} />
+        <MoChiScreenState
+          mochiEvent="scan_processing"
+          title="Đang mở camera"
+          message="MoChi đang kiểm tra quyền camera và chuẩn bị khung quét."
+          showSpinner
+          variant="screen"
+        />
       </View>
     );
   }
@@ -1494,7 +1504,7 @@ const S = StyleSheet.create({
   scanProgressCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     alignSelf: 'center',
     backgroundColor: 'rgba(22, 27, 43, 0.82)',
     paddingHorizontal: 16,
@@ -1504,6 +1514,14 @@ const S = StyleSheet.create({
     borderColor: 'rgba(75, 226, 119, 0.22)',
     marginTop: 12,
     maxWidth: SW - 48,
+  },
+  scanProgressMochi: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(75, 226, 119, 0.12)',
   },
   scanProgressCopy: {
     flex: 1,

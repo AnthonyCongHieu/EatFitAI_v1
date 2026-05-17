@@ -5,12 +5,11 @@ const readSource = (relativePath) =>
   fs.readFileSync(path.join(__dirname, '..', relativePath), 'utf8');
 
 describe('Mascot water quick action navigation', () => {
-  it('opens the home water controls instead of silently adding water', () => {
+  it('keeps mascot water nudges non-mutating and dismiss-only', () => {
     const source = readSource('src/features/mochi/MoChiIslandHost.tsx');
 
-    expect(source).toContain("navigation.navigate('AppTabs', {");
-    expect(source).toContain("screen: 'HomeTab'");
-    expect(source).toContain('focusWaterRequestId: Date.now()');
+    expect(source).toContain('dismissIslandEvent');
+    expect(source).not.toContain('waterService.addWater');
     expect(source).not.toContain('handleAddWater();');
   });
 

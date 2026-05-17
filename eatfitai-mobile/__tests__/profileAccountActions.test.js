@@ -7,19 +7,24 @@ const readSource = (relativePath) => {
 };
 
 describe('Profile and top account actions IA', () => {
-  it('anchors the shared MoChi island in the home header and keeps settings beside notifications', () => {
+  it('keeps the MoChi home header and settings beside notifications without a floating island dependency', () => {
     const welcomeHeaderSource = readSource('src/components/home/WelcomeHeader.tsx');
     const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const typesSource = readSource('src/app/types/index.ts');
 
-    expect(welcomeHeaderSource).toContain('useMoChiIslandLayout');
-    expect(welcomeHeaderSource).toContain('MOCHI ĐỒNG HÀNH');
+    expect(welcomeHeaderSource).not.toContain('useMoChiIslandLayout');
+    expect(welcomeHeaderSource).toContain('MoChi');
+    expect(welcomeHeaderSource).toContain('Sẵn sàng hỗ trợ');
     expect(welcomeHeaderSource).toContain('settings-outline');
     expect(tabBarSource).not.toContain("label: 'Cài đặt'");
-    expect(homeSource).toContain("onNotificationPress={() => navigation.navigate('NotificationCenter')}");
-    expect(homeSource).toContain("onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}");
+    expect(homeSource).toContain(
+      "onNotificationPress={() => navigation.navigate('NotificationCenter')}",
+    );
+    expect(homeSource).toContain(
+      "onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}",
+    );
     expect(navigatorSource).toContain('getNotificationCenterScreen');
     expect(navigatorSource).toContain('name="NotificationCenter"');
     expect(typesSource).toContain('NotificationCenter: undefined');
@@ -36,6 +41,8 @@ describe('Profile and top account actions IA', () => {
     expect(profileSource).not.toContain('settings-outline');
     expect(profileSource).toContain('label="Đăng xuất"');
     expect(profileSource).toContain('testID={TEST_IDS.profile.logoutButton}');
-    expect(profileSource).toContain('testID={`${TEST_IDS.profile.logoutButton}-confirm`}');
+    expect(profileSource).toContain(
+      'testID={`${TEST_IDS.profile.logoutButton}-confirm`}',
+    );
   });
 });

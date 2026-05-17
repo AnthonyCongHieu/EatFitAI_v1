@@ -135,29 +135,7 @@ const LIVE_EVENTS = new Set<MoChiPetEventType>([
 
 const CONFIRM_EVENT_TO_ACTION: Partial<
   Record<MoChiPetEventType, Exclude<MoChiIslandConfirmationAction, null>>
-> = {
-  meal_reminder: 'addMeal',
-  diary_empty_today: 'addMeal',
-  food_search_empty: 'addMeal',
-  water_reminder: 'water',
-  hydration_goal: 'water',
-  voice_review: 'reviewVoice',
-  scan_empty: 'scanFood',
-  calorie_caution: 'addMeal',
-  stats_low_data: 'addMeal',
-  weekly_review: 'viewProgress',
-};
-
-const CONFIRM_ACTION_LABEL: Record<
-  Exclude<MoChiIslandConfirmationAction, null>,
-  string
-> = {
-  addMeal: 'Ghi bữa',
-  water: 'Ghi nước',
-  reviewVoice: 'Kiểm tra',
-  scanFood: 'Quét lại',
-  viewProgress: 'Xem',
-};
+> = {};
 
 const VOICE_STATUS_EVENT: Partial<Record<MoChiVoiceStatus, MoChiPetEventType>> = {
   listening: 'voice_listening',
@@ -218,7 +196,6 @@ const hasStreakMoment = (input: MoChiIslandInput): boolean =>
 
 const getRouteEvent = (routeName?: string | null): MoChiPetEventType | null => {
   if (routeName === 'VoiceTab') return 'voice_idle';
-  if (routeName === 'StatsTab') return 'stats_low_data';
   return null;
 };
 
@@ -303,7 +280,6 @@ const getPresentation = (
   mode: MoChiIslandMode,
   poseKey: MoChiPoseKey,
   message: string | null,
-  confirmationAction: MoChiIslandConfirmationAction,
 ): MoChiIslandPresentation => {
   if (mode === 'compact') {
     return COMPACT_PRESENTATION;
@@ -311,17 +287,16 @@ const getPresentation = (
 
   const poseVariant = MOCHI_SPRITE_CATALOG[poseKey]?.variant ?? 'notice';
   const messageLength = message?.length ?? 0;
-  const needsTallConfirm = Boolean(confirmationAction) && messageLength > 58;
   const needsTallMessage = mode === 'message' && messageLength > 72;
-  const height = needsTallConfirm ? 132 : needsTallMessage ? 110 : mode === 'message' ? 92 : 108;
-  const reservedHeight = height + (needsTallConfirm ? 20 : 18);
+  const height = needsTallMessage ? 102 : mode === 'message' ? 84 : 98;
+  const reservedHeight = height + 16;
 
   return {
     height,
     reservedHeight,
-    spriteSize: mode === 'message' ? 68 : 72,
+    spriteSize: mode === 'message' ? 78 : 72,
     spriteVariant: poseVariant === 'face' ? 'full' : poseVariant,
-    maxLines: needsTallConfirm ? 4 : needsTallMessage ? 3 : mode === 'message' ? 2 : 3,
+    maxLines: needsTallMessage ? 3 : mode === 'message' ? 2 : 3,
   };
 };
 
@@ -350,13 +325,11 @@ export const getMoChiIslandState = (input: MoChiIslandInput): MoChiIslandState =
     mood: experience.mood,
     poseKey,
     message,
-    ctaLabel: confirmationAction
-      ? CONFIRM_ACTION_LABEL[confirmationAction]
-      : experience.ctaLabel ?? null,
+    ctaLabel: null,
     confirmationAction,
     priority: experience.priority,
     autoHideMs: resolveAutoHideMs(eventType, mode),
     cooldownKey,
-    presentation: getPresentation(mode, poseKey, message, confirmationAction),
+    presentation: getPresentation(mode, poseKey, message),
   };
 };

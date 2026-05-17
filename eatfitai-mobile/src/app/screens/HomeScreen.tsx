@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -45,6 +44,7 @@ import { waterService, type WaterIntakeData } from '../../services/waterService'
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
+import MoChiScreenState from '../../features/mochi/MoChiScreenState';
 import { formatBusinessDate } from '../../utils/businessDate';
 import { useEN } from '../../theme/emeraldNebula';
 
@@ -235,7 +235,6 @@ const WaterGlassIcon = ({ isPlus }: { isPlus: boolean }) => {
 const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const EN = useEN();
-  const isDark = theme.mode === 'dark';
   // Dynamic palette based on theme
   const C = {
     bg: EN.bg,
@@ -523,7 +522,7 @@ const HomeScreen = (): React.ReactElement => {
         hasHeader={false}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingBottom: 140,
+          paddingBottom: 190,
           gap: 16,
         }}
         refreshControl={
@@ -564,7 +563,7 @@ const HomeScreen = (): React.ReactElement => {
             showReflection={false}
             useDeviceMotion={true}
             activeTouch={false}
-            style={styles.dashboardCard}
+            style={[styles.dashboardCard, styles.glassDashboardCard]}
           >
             {/* Ambient glow top-right */}
             <View style={styles.dashGlow} pointerEvents="none" />
@@ -716,8 +715,13 @@ const HomeScreen = (): React.ReactElement => {
           <View style={styles.diaryContainer}>
             {isLoading ? (
               <View style={styles.loadingBox}>
-                <ActivityIndicator color={C.primary} />
-                <ThemedText style={{ color: C.textMuted, fontSize: 13 }}>{t('home.loadingDiary')}</ThemedText>
+                <MoChiScreenState
+                  mochiEvent="diary_empty_today"
+                  title="Đang tải nhật ký"
+                  message={t('home.loadingDiary')}
+                  showSpinner
+                  variant="compact"
+                />
               </View>
             ) : todayEntries.length > 0 ? (
               <View style={{ gap: 0 }}>
@@ -755,7 +759,7 @@ const HomeScreen = (): React.ReactElement => {
 
                       {/* Card Content */}
                       <Pressable
-                        style={[styles.diaryEntryCard, { flex: 1, marginBottom: 16 }]}
+                        style={[styles.diaryEntryCard, styles.glassDiaryEntryCard, { flex: 1, marginBottom: 16 }]}
                         onLongPress={() => handleDelete(entry.id, entry.foodName)}
                       >
                         {/* Food image or emoji fallback */}
@@ -825,7 +829,7 @@ const HomeScreen = (): React.ReactElement => {
           entering={FadeInUp.delay(400).springify()}
           onLayout={(e) => setWaterCardY(e.nativeEvent.layout.y)}
         >
-          <View style={styles.waterCard}>
+          <View style={[styles.waterCard, styles.glassWaterCard]}>
             {/* Left: icon + label + value */}
             <View style={styles.waterLeft}>
               <Ionicons name="water" size={28} color="#0EA5E9" />
@@ -901,6 +905,15 @@ const styles = StyleSheet.create({
     borderColor: C_STATIC.outline,
     overflow: 'hidden',
   },
+  glassDashboardCard: {
+    backgroundColor: 'rgba(24, 31, 49, 0.72)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 6,
+  },
   dashGlow: {
     position: 'absolute',
     top: -40,
@@ -918,8 +931,8 @@ const styles = StyleSheet.create({
 
   /* Ring */
   ringSection: {
-    width: 140,
-    height: 140,
+    width: 132,
+    height: 132,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -930,8 +943,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringValue: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 25,
+    fontWeight: '800',
     color: C_STATIC.onSurface,
     lineHeight: 30,
     textAlign: 'center',
@@ -948,7 +961,7 @@ const styles = StyleSheet.create({
   /* Macros */
   macroSection: {
     flex: 1,
-    gap: 12,
+    gap: 13,
     minWidth: 0,
     justifyContent: 'center',
   },
@@ -964,12 +977,12 @@ const styles = StyleSheet.create({
   },
   macroTarget: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C_STATIC.primary,
     marginBottom: 10,
   },
   macroRow: {
-    gap: 4,
+    gap: 5,
   },
   macroLabelRow: {
     flexDirection: 'row',
@@ -986,11 +999,11 @@ const styles = StyleSheet.create({
     color: C_STATIC.textMuted,
   },
   macroTrack: {
-    height: 6,
-    backgroundColor: C_STATIC.surfaceHighest,
-    borderRadius: 3,
+    height: 5,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 999,
     overflow: 'hidden',
-    marginTop: 2,
+    marginTop: 3,
   },
   macroFill: {
     height: '100%',
@@ -1036,6 +1049,15 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 14,
     marginBottom: 12,
+  },
+  glassDiaryEntryCard: {
+    backgroundColor: 'rgba(18, 27, 45, 0.68)',
+    borderColor: 'rgba(255,255,255,0.075)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 3,
   },
   entryEmoji: {
     width: 68,
@@ -1227,6 +1249,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
     elevation: 4,
+  },
+  glassWaterCard: {
+    backgroundColor: 'rgba(27, 35, 55, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 3,
   },
   moChiWaterNotice: {
     marginTop: 12,

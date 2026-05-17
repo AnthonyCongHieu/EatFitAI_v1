@@ -26,6 +26,7 @@ import type { RecipeDetail } from '../../../types/aiEnhanced';
 import type { MealTypeId } from '../../../types';
 import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDiarySheet';
 import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
+import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
@@ -191,7 +192,13 @@ const RecipeDetailScreen = (): React.ReactElement => {
   if (loading) {
     return (
       <View style={S.center}>
-        <ActivityIndicator size="large" color={P.primary} />
+        <MoChiScreenState
+          mochiEvent="recipe_searching"
+          title="Đang tải công thức"
+          message="MoChi đang chuẩn bị nguyên liệu và hướng dẫn nấu."
+          showSpinner
+          variant="screen"
+        />
       </View>
     );
   }

@@ -31,6 +31,7 @@ export const TeachLabelBottomSheet = ({
   const [submittingFoodId, setSubmittingFoodId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRequestSeqRef = useRef(0);
 
   // Dynamic styles using theme
   const dynamicStyles = {
@@ -68,22 +69,38 @@ export const TeachLabelBottomSheet = ({
       return;
     }
 
+    const requestSeq = searchRequestSeqRef.current + 1;
+    searchRequestSeqRef.current = requestSeq;
     setLoading(true);
     setError(null);
 
     try {
       const result = await foodService.searchAllFoods(query, 20);
+      if (searchRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       setFoods(result.items);
     } catch (err) {
+      if (searchRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       setError('Không thể tìm kiếm món ăn. Vui lòng thử lại.');
       setFoods([]);
     } finally {
-      setLoading(false);
+      if (searchRequestSeqRef.current === requestSeq) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    if (visible && currentLabel) {
+    if (!visible) {
+      searchRequestSeqRef.current += 1;
+      setLoading(false);
+      return;
+    }
+
+    if (currentLabel) {
       setSearchQuery(currentLabel);
       searchFoods(currentLabel);
     }

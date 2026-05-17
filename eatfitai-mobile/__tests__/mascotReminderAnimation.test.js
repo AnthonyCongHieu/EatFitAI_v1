@@ -25,7 +25,7 @@ describe('MoChi island reminder behavior', () => {
   it('keeps island interactions narrow instead of exposing a multi-action menu', () => {
     expect(engineSource).toContain("export type MoChiIslandMode = 'compact' | 'message' | 'live' | 'confirm'");
     expect(engineSource).toContain('confirmationAction');
-    expect(hostSource).toContain('runConfirmation(islandState.confirmationAction)');
+    expect(hostSource).toContain('dismissIslandEvent');
     expect(hostSource).not.toContain('showQuickActions');
   });
 });

@@ -7,7 +7,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
-import { useMoChiIslandLayout } from '../../features/mochi/MoChiIslandLayoutContext';
 
 const C_STATIC = {
   bg: '#0a0e1a',
@@ -37,14 +36,6 @@ const getTimeIcon = (): { name: keyof typeof Ionicons.glyphMap; color: string } 
   return { name: 'moon-outline', color: '#818cf8' };                           // Khuya
 };
 
-const getGreetingText = (): string => {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'CHÀO BUỔI SÁNG';
-  if (h >= 12 && h < 15) return 'CHÀO BUỔI TRƯA';
-  if (h >= 15 && h < 18) return 'CHÀO BUỔI CHIỀU';
-  if (h >= 18 && h < 22) return 'CHÀO BUỔI TỐI';
-  return 'KHUYA RỒI';
-};
 
 const getStreakColor = (streak: number) => {
   if (streak >= 100) return '#c084fc'; // Purple (Legendary)
@@ -62,7 +53,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   onStreakPress,
 }) => {
   const EN = useEN();
-  const { height: islandHeight, isExpanded } = useMoChiIslandLayout();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const C = {
     ...C_STATIC,
     bg: EN.bg,
@@ -74,58 +65,53 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   };
 
   const timeIcon = getTimeIcon();
+  const companionStatus = streakCount > 0 ? `${streakCount} ngày liên tiếp` : 'Sẵn sàng hỗ trợ';
 
   return (
     <Animated.View
       entering={FadeInDown.delay(80).springify()}
-      style={[styles.container, isExpanded && { minHeight: islandHeight }]}
+      style={styles.container}
     >
-      {/* Left: slot reserved for the real MoChi island anchored by MoChiIslandHost */}
       <View style={styles.left}>
-        <View style={styles.mochiSlot} />
-        {!isExpanded && (
-          <View style={styles.texts}>
-            <View style={styles.greetingRow}>
-              <Text style={[styles.greeting, { color: C.primary }]}>MOCHI ĐỒNG HÀNH</Text>
-              <Ionicons name={timeIcon.name} size={14} color={timeIcon.color} style={{ marginLeft: 4 }} />
-            </View>
-            <Text style={[styles.name, { color: C.onSurface }]} numberOfLines={1}>
-              {getGreetingText()} · chạm Scan hoặc Thêm bữa
-            </Text>
+        <View style={styles.texts}>
+          <View style={styles.greetingRow}>
+            <Text style={[styles.greeting, { color: C.primary }]}>MoChi</Text>
+            <Ionicons name={timeIcon.name} size={13} color={timeIcon.color} style={{ marginLeft: 4 }} />
           </View>
-        )}
+          <Text style={[styles.name, { color: C.onSurface }]} numberOfLines={1}>
+            {companionStatus}
+          </Text>
+        </View>
       </View>
 
-      {!isExpanded && (
-        <View style={styles.right}>
-          {streakCount > 0 && (
-            <Pressable style={[styles.streak, { backgroundColor: C.surfaceHigh }]} onPress={onStreakPress} hitSlop={8}>
-              <Ionicons name="flame" size={16} color="#ef4444" />
-              <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
-            </Pressable>
-          )}
-          <Pressable
-            style={[styles.iconButton, { backgroundColor: C.surfaceHigh }]}
-            onPress={onSettingsPress}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Mở cài đặt"
-          >
-            <Ionicons name="settings-outline" size={21} color={C.textMuted} />
+      <View style={styles.right}>
+        {streakCount > 0 && (
+          <Pressable style={[styles.streak, { backgroundColor: C.surfaceHigh }]} onPress={onStreakPress} hitSlop={8}>
+            <Ionicons name="flame" size={16} color="#ef4444" />
+            <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
           </Pressable>
-          <Pressable
-            style={[styles.bell, { backgroundColor: C.surfaceHigh }]}
-            onPress={onNotificationPress}
-            hitSlop={10}
-            testID={TEST_IDS.home.notificationsButton}
-            accessibilityRole="button"
-            accessibilityLabel="Xem thông báo"
-          >
-            <Ionicons name="notifications-outline" size={22} color={C.textMuted} />
-            <View style={[styles.bellDot, { backgroundColor: C.danger, borderColor: C.bg }]} />
-          </Pressable>
-        </View>
-      )}
+        )}
+        <Pressable
+          style={[styles.iconButton, { backgroundColor: C.surfaceHigh }]}
+          onPress={onSettingsPress}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Mở cài đặt"
+        >
+          <Ionicons name="settings-outline" size={21} color={C.textMuted} />
+        </Pressable>
+        <Pressable
+          style={[styles.bell, { backgroundColor: C.surfaceHigh }]}
+          onPress={onNotificationPress}
+          hitSlop={10}
+          testID={TEST_IDS.home.notificationsButton}
+          accessibilityRole="button"
+          accessibilityLabel="Xem thông báo"
+        >
+          <Ionicons name="notifications-outline" size={22} color={C.textMuted} />
+          <View style={[styles.bellDot, { backgroundColor: C.danger, borderColor: C.bg }]} />
+        </Pressable>
+      </View>
     </Animated.View>
   );
 };
@@ -141,13 +127,7 @@ const styles = StyleSheet.create({
   left: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     flex: 1,
-  },
-
-  mochiSlot: {
-    width: 46,
-    height: 46,
   },
 
   texts: { flex: 1 },
@@ -158,16 +138,15 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    letterSpacing: 0.2,
   },
   name: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: C.onSurface,
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
   },
 
   right: {

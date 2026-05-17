@@ -44,7 +44,7 @@ describe('MoChi island engine', () => {
     });
   });
 
-  it('describes expanded presentation metadata for layout-aware host spacing', () => {
+  it('describes compact notice metadata for layout-aware host spacing', () => {
     const mealReminderState = getMoChiIslandState({
       ...baseInput,
       reminders: [
@@ -59,13 +59,13 @@ describe('MoChi island engine', () => {
     });
 
     expect(mealReminderState).toMatchObject({
-      mode: 'confirm',
+      mode: 'message',
       presentation: {
-        height: 132,
-        reservedHeight: 152,
+        height: 102,
+        reservedHeight: 118,
         spriteVariant: 'full',
-        spriteSize: 72,
-        maxLines: 4,
+        spriteSize: 78,
+        maxLines: 3,
       },
     });
     expect(mealReminderState.presentation.reservedHeight).toBeGreaterThan(
@@ -81,7 +81,7 @@ describe('MoChi island engine', () => {
     });
 
     expect(voiceReviewState).toMatchObject({
-      mode: 'confirm',
+      mode: 'message',
       eventType: 'voice_review',
       poseKey: 'mealPortionNotice',
       presentation: {
@@ -89,22 +89,23 @@ describe('MoChi island engine', () => {
       },
     });
 
-    const statsNudgeState = getMoChiIslandState({
+    const reportReadyState = getMoChiIslandState({
       ...baseInput,
       routeName: 'StatsTab',
+      activeEvent: 'report_ready',
       currentStreak: 0,
       totalCalories: 0,
     });
 
-    expect(statsNudgeState).toMatchObject({
-      mode: 'confirm',
-      eventType: 'stats_low_data',
+    expect(reportReadyState).toMatchObject({
+      mode: 'message',
+      eventType: 'report_ready',
       poseKey: 'weeklyReportNotice',
     });
-    expect(statsNudgeState.presentation.spriteVariant).not.toBe('face');
-    expect(statsNudgeState.presentation.height).toBeGreaterThan(108);
-    expect(statsNudgeState.presentation.reservedHeight).toBeGreaterThan(
-      statsNudgeState.presentation.height,
+    expect(reportReadyState.presentation.spriteVariant).not.toBe('face');
+    expect(reportReadyState.presentation.height).toBeLessThanOrEqual(102);
+    expect(reportReadyState.presentation.reservedHeight).toBeGreaterThan(
+      reportReadyState.presentation.height,
     );
   });
 
@@ -133,7 +134,7 @@ describe('MoChi island engine', () => {
     });
   });
 
-  it('turns meal and water nudges into narrow confirmations instead of a menu', () => {
+  it('keeps meal and water nudges as dismissible notices without quick confirmations', () => {
     expect(
       getMoChiIslandState({
         ...baseInput,
@@ -148,10 +149,10 @@ describe('MoChi island engine', () => {
         ],
       }),
     ).toMatchObject({
-      mode: 'confirm',
+      mode: 'message',
       eventType: 'meal_reminder',
-      confirmationAction: 'addMeal',
-      ctaLabel: 'Ghi bữa',
+      confirmationAction: null,
+      ctaLabel: null,
     });
 
     expect(
@@ -162,14 +163,14 @@ describe('MoChi island engine', () => {
         waterTargetMl: 2000,
       }),
     ).toMatchObject({
-      mode: 'confirm',
+      mode: 'message',
       eventType: 'water_reminder',
-      confirmationAction: 'water',
-      ctaLabel: 'Ghi nước',
+      confirmationAction: null,
+      ctaLabel: null,
     });
   });
 
-  it('auto-hides confirm nudges and leaves live task states active', () => {
+  it('auto-hides notice nudges and leaves live task states active', () => {
     expect(
       getMoChiIslandState({
         ...baseInput,
@@ -178,9 +179,9 @@ describe('MoChi island engine', () => {
         waterTargetMl: 2000,
       }),
     ).toMatchObject({
-      mode: 'confirm',
+      mode: 'message',
       eventType: 'water_reminder',
-      autoHideMs: 9000,
+      autoHideMs: 6500,
       cooldownKey: 'water_reminder:HomeTab',
     });
 

@@ -16,7 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,12 +30,16 @@ import { profileService } from '../../services/profileService';
 import { subscriptionService } from '../../services/subscriptionService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
-import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
+import MoChiScreenState from '../../features/mochi/MoChiScreenState';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import {
+  getProfileCompletionDestination,
+  hasProfileCompletionGaps,
+} from './profile/profileCompletion';
 
 const P = {
   bg: '#0e1322',
@@ -135,6 +139,7 @@ const MenuRow = ({
 const ProfileScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = useEN();
   const { mode, toggleTheme } = useAppTheme();
 
@@ -246,19 +251,30 @@ const ProfileScreen = (): React.ReactElement => {
   }, [subscription?.isPremium]);
 
   const handleCompleteProfilePress = useCallback(() => {
-    if (!profile?.weightKg || !profile?.heightCm) {
-      navigation.navigate('BodyMetrics' as any);
+    const destination = getProfileCompletionDestination(profile);
+    if (!destination) {
       return;
     }
 
-    navigation.navigate('GoalSettings' as any);
-  }, [navigation, profile?.heightCm, profile?.weightKg]);
+    if (destination.route === 'Onboarding') {
+      navigation.navigate(destination.route as any, destination.params as any);
+      return;
+    }
+
+    navigation.navigate(destination.route as any);
+  }, [navigation, profile]);
 
   /* Loading */
   if (isLoading && !profile) {
     return (
-      <View style={[S.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={P.primary} />
+      <View style={[S.container, { justifyContent: 'center', paddingHorizontal: 20 }]}>
+        <MoChiScreenState
+          mochiEvent="profile_incomplete"
+          title="Đang tải hồ sơ"
+          message="MoChi đang lấy thông tin cơ thể và mục tiêu của bạn."
+          showSpinner
+          variant="screen"
+        />
       </View>
     );
   }
@@ -268,12 +284,10 @@ const ProfileScreen = (): React.ReactElement => {
   const isPremium = subscription?.isPremium ?? false;
   const memberLabel = isPremium ? 'Premium' : 'Free';
   const premiumRowLabel = isPremium ? 'EatFitAI Premium đang hoạt động' : 'Nâng cấp EatFitAI Premium';
-  const hasProfileGaps = Boolean(profile && (!profile.weightKg || !profile.heightCm || !profile.goal));
+  const hasProfileGaps = hasProfileCompletionGaps(profile);
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
-      <MoChiIslandSpacer />
-
       {/* ═══ HEADER ═══ */}
       <View style={[S.header, { backgroundColor: P.bg }]}>
         <View style={S.headerBtn} />
@@ -496,8 +510,8 @@ const ProfileScreen = (): React.ReactElement => {
             accessibilityLabel="Đóng tuỳ chọn ảnh đại diện"
           />
           <Animated.View
-            entering={FadeInUp.duration(180)}
-            style={[S.accountSheet, S.avatarActionsSheet, { paddingBottom: insets.bottom + 14 }]}
+            entering={ZoomIn.duration(180)}
+            style={[S.accountSheet, S.avatarActionsSheet, { paddingBottom: 16 }]}
             testID={TEST_IDS.profile.avatarActionsSheet}
           >
             <View style={S.sheetHandle} />
@@ -670,15 +684,17 @@ const S = StyleSheet.create({
   },
   actionOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
   },
   actionBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.54)',
   },
   accountSheet: {
-    marginHorizontal: 14,
-    marginBottom: 10,
+    width: '100%',
+    maxWidth: 430,
+    alignSelf: 'center',
     borderRadius: 24,
     backgroundColor: P.surfaceContainer,
     borderWidth: 1,
@@ -686,7 +702,7 @@ const S = StyleSheet.create({
     paddingTop: 10,
     paddingHorizontal: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -12 },
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.35,
     shadowRadius: 24,
     elevation: 16,
@@ -700,19 +716,19 @@ const S = StyleSheet.create({
     height: 4,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.18)',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 4,
-    paddingBottom: 14,
+    paddingBottom: 10,
   },
   sheetAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: P.surfaceContainerHigh,
     borderWidth: 1,
     borderColor: P.primary + '40',
@@ -721,9 +737,9 @@ const S = StyleSheet.create({
     overflow: 'hidden',
   },
   sheetAvatarImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   sheetTitleWrap: {
     flex: 1,
@@ -742,8 +758,8 @@ const S = StyleSheet.create({
     gap: 8,
   },
   sheetAction: {
-    minHeight: 54,
-    borderRadius: 16,
+    minHeight: 48,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.045)',
     borderWidth: 1,
     borderColor: P.glassBorder,
@@ -756,16 +772,16 @@ const S = StyleSheet.create({
     opacity: 0.54,
   },
   sheetActionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: P.primary + '16',
     alignItems: 'center',
     justifyContent: 'center',
   },
   sheetActionLabel: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: P.onSurface,
   },
@@ -805,7 +821,7 @@ const S = StyleSheet.create({
     backgroundColor: P.errorContainer,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   logoutTitle: {
     fontSize: 19,

@@ -9,29 +9,28 @@ describe('Task-first bottom command bar', () => {
     const source = readSource('src/components/navigation/CustomTabBar.tsx');
 
     expect(source).toContain("label: 'Trang chủ'");
-    expect(source).toContain("label: 'Thêm bữa'");
-    expect(source).toContain("label: 'Scan'");
-    expect(source).toContain("label: 'Giọng nói'");
+    expect(source).toContain("label: 'Nhật ký'");
+    expect(source).toContain("label: 'MoChi'");
     expect(source).toContain("label: 'Thống kê'");
+    expect(source).toContain("label: 'Cá nhân'");
     expect(source).not.toContain("label: 'Cài đặt'");
-    expect(source).toContain("target: 'FoodSearch'");
-    expect(source).toContain("target: 'AiCamera'");
-    expect(source).not.toContain("label: 'Cá nhân'");
+    expect(source).toContain("target: 'MealDiary'");
+    expect(source).toContain("target: 'MoChiHub'");
   });
 
   it('uses the root navigation helper for stack commands to avoid parent navigator crashes', () => {
     const source = readSource('src/components/navigation/CustomTabBar.tsx');
 
     expect(source).toContain('navigateRoot');
-    expect(source).toMatch(/navigateRoot\(\s*'FoodSearch'/);
-    expect(source).toContain("navigateRoot('AiCamera'");
+    expect(source).toMatch(/navigateRoot\(\s*'MealDiary'/);
     expect(source).not.toContain('navigation.getParent()');
   });
 
-  it('uses a shared MoChi island host instead of the old floating mascot overlay', () => {
+  it('does not mount the old floating mascot overlay in the app navigator', () => {
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
 
-    expect(navigatorSource).toContain('MoChiIslandHost');
+    expect(navigatorSource).not.toContain('MoChiIslandLayoutProvider');
+    expect(navigatorSource).not.toContain('MoChiIslandHost');
     expect(navigatorSource).not.toContain('<MascotOverlay />');
   });
 });

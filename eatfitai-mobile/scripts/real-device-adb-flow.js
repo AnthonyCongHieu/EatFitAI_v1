@@ -87,11 +87,13 @@ const SCREEN_MARKERS = {
   profile: ['profile-screen', 'profile-logout-button'],
 };
 const TAB_TARGETS = {
-  home: { marker: 'navigation-home-tab-button', xRatio: 0.12, yRatio: 0.94 },
-  voice: { marker: 'navigation-voice-tab-button', xRatio: 0.36, yRatio: 0.94 },
-  scan: { marker: 'navigation-ai-scan-tab-button', xRatio: 0.5, yRatio: 0.91 },
-  stats: { marker: 'navigation-stats-tab-button', xRatio: 0.64, yRatio: 0.94 },
-  profile: { marker: 'navigation-profile-tab-button', xRatio: 0.88, yRatio: 0.94 },
+  home: { marker: 'navigation-home-tab-button', xRatio: 0.1, yRatio: 0.94 },
+  diary: { marker: 'navigation-diary-tab-button', xRatio: 0.3, yRatio: 0.94 },
+  hub: { marker: 'navigation-mochi-hub-button', xRatio: 0.5, yRatio: 0.91 },
+  stats: { marker: 'navigation-stats-tab-button', xRatio: 0.7, yRatio: 0.94 },
+  profile: { marker: 'navigation-profile-tab-button', xRatio: 0.9, yRatio: 0.94 },
+  voice: { marker: 'navigation-mochi-hub-button', xRatio: 0.5, yRatio: 0.91 },
+  scan: { marker: 'navigation-mochi-hub-button', xRatio: 0.5, yRatio: 0.91 },
 };
 
 function trim(value) {
@@ -2296,18 +2298,25 @@ async function navigateToTab(context, tabName, waitMs = 2500) {
     target.yRatio,
     waitMs,
   );
+
+  if (tabName === 'voice' || tabName === 'scan') {
+    const actionMarker = tabName === 'voice'
+      ? 'home-quick-add-voice-button'
+      : 'home-quick-add-scan-button';
+    const actionY = tabName === 'voice' ? 0.58 : 0.45;
+    await tapMarkerOrCoordinate(
+      context,
+      actionMarker,
+      `${tabName}-hub-action-tap`,
+      0.5,
+      actionY,
+      waitMs,
+    );
+  }
 }
 
 async function navigateToDiary(context) {
-  await navigateToTab(context, 'home', 1800);
-  await tapMarkerOrCoordinate(
-    context,
-    'home-view-diary-button',
-    'home-diary-button-tap',
-    0.86,
-    0.51,
-    2500,
-  );
+  await navigateToTab(context, 'diary', 2500);
   return assertScreen(context, 'food-diary', SCREEN_MARKERS.diary, true);
 }
 
@@ -2723,10 +2732,14 @@ async function runVisualBottomNav(context) {
     const size = readScreenSize(adb, serial);
     await navigateToTab(context, 'home', 1200);
     recordVisualCheckpoint(context, 'bottom-nav', 'home-start');
-    for (const tabName of ['voice', 'scan', 'stats', 'profile', 'home']) {
+    for (const tabName of ['diary', 'stats', 'profile', 'home']) {
       await navigateToTab(context, tabName, 1400);
       recordVisualCheckpoint(context, 'bottom-nav', `${tabName}-tab`);
     }
+    await navigateToTab(context, 'hub', 1200);
+    recordVisualCheckpoint(context, 'bottom-nav', 'mochi-hub-sheet');
+    runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
+    await sleep(900);
     await swipeStep(report, adb, serial, size, 'visual-bottom-nav-home-scroll-down', 0.5, 0.78, 0.5, 0.34, 500, 1200);
     recordVisualCheckpoint(context, 'bottom-nav', 'home-after-scroll-down');
     await swipeStep(report, adb, serial, size, 'visual-bottom-nav-home-scroll-up', 0.5, 0.34, 0.5, 0.78, 500, 1200);

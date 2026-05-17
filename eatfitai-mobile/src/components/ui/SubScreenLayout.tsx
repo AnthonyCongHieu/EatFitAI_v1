@@ -73,6 +73,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
 }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const EN = useEN();
 
   const paddingTop = Math.max(

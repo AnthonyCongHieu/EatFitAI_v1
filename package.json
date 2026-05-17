@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "design": "node node_modules/@google/design.md/dist/index.js",
+    "design:lint": "npm run design -- lint",
+    "design:spec": "npm run design -- spec"
+  },
+  "devDependencies": {
+    "@google/design.md": "^0.1.1"
+  }
+}

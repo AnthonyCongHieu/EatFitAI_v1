@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import Animated, {
@@ -19,10 +18,7 @@ import { waterService, type WaterIntakeData } from '../../services/waterService'
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useEN } from '../../theme/emeraldNebula';
 import MoChiSprite from './MoChiSprite';
-import {
-  getMoChiIslandState,
-  type MoChiIslandConfirmationAction,
-} from './mochiIslandEngine';
+import { getMoChiIslandState } from './mochiIslandEngine';
 import { useMoChiIslandLayoutController } from './MoChiIslandLayoutContext';
 
 type MoChiIslandHostProps = {
@@ -39,7 +35,6 @@ const runHaptic = () => {
 const MoChiIslandHost = ({
   currentRouteName,
 }: MoChiIslandHostProps): React.ReactElement | null => {
-  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const EN = useEN();
@@ -104,6 +99,21 @@ const MoChiIslandHost = ({
     setDismissedEvent({ eventType, cooldownKey, dismissedAt: Date.now() });
   }, []);
 
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_event, gestureState) =>
+          Math.abs(gestureState.dy) > 18 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+        onPanResponderRelease: (_event, gestureState) => {
+          if (gestureState.dy < -24) {
+            runHaptic();
+            dismissIslandEvent(islandState.eventType, islandState.cooldownKey);
+          }
+        },
+      }),
+    [dismissIslandEvent, islandState.cooldownKey, islandState.eventType],
+  );
+
   useEffect(() => {
     if (!islandState.autoHideMs) {
       return;
@@ -119,17 +129,16 @@ const MoChiIslandHost = ({
   const isVisible = Boolean(currentRouteName && MAIN_TAB_ROUTES.has(currentRouteName));
   const isCompact = islandState.mode === 'compact';
   const isHomeHeaderAnchored = currentRouteName === 'HomeTab';
-  const isLongExpandedMessage =
-    !isCompact &&
-    Boolean(islandState.confirmationAction) &&
-    (islandState.message?.length ?? 0) > 58;
+  const shouldRenderIsland = isVisible && (isHomeHeaderAnchored || !isCompact);
 
   useEffect(() => {
     setIslandLayout({
-      mode: isVisible ? islandState.mode : 'compact',
-      height: isVisible ? islandState.presentation.height : 42,
-      topOffset: isVisible && !isHomeHeaderAnchored ? islandState.presentation.reservedHeight : 0,
-      isExpanded: isVisible ? !isCompact : false,
+      mode: shouldRenderIsland ? islandState.mode : 'compact',
+      height: shouldRenderIsland ? islandState.presentation.height : 42,
+      topOffset: shouldRenderIsland && !isHomeHeaderAnchored && !isCompact
+        ? islandState.presentation.reservedHeight
+        : 0,
+      isExpanded: shouldRenderIsland ? !isCompact : false,
     });
   }, [
     isCompact,
@@ -139,52 +148,12 @@ const MoChiIslandHost = ({
     isHomeHeaderAnchored,
     isVisible,
     setIslandLayout,
+    shouldRenderIsland,
   ]);
 
-  if (!isVisible) {
+  if (!shouldRenderIsland) {
     return null;
   }
-
-  const runConfirmation = (action: MoChiIslandConfirmationAction) => {
-    runHaptic();
-
-    if (action === 'addMeal') {
-      navigation.navigate('FoodSearch', {
-        autoFocus: false,
-        showQuickSuggestions: true,
-        returnToDiaryOnSave: true,
-      });
-      return;
-    }
-
-    if (action === 'water') {
-      navigation.navigate('AppTabs', {
-        screen: 'HomeTab',
-        params: {
-          source: 'water-quick-action',
-          focusWaterRequestId: Date.now(),
-        },
-      });
-      return;
-    }
-
-    if (action === 'reviewVoice') {
-      navigation.navigate('AppTabs', { screen: 'VoiceTab' });
-      return;
-    }
-
-    if (action === 'scanFood') {
-      navigation.navigate('AiCamera');
-      return;
-    }
-
-    if (action === 'viewProgress') {
-      navigation.navigate('AppTabs', { screen: 'StatsTab' });
-      return;
-    }
-
-    dismissIslandEvent(islandState.eventType, islandState.cooldownKey);
-  };
 
   const maxWidth = Math.min(width - (isHomeHeaderAnchored ? 40 : 24), 388);
   const islandWidth = isCompact ? (isHomeHeaderAnchored ? 46 : 54) : maxWidth;
@@ -208,6 +177,7 @@ const MoChiIslandHost = ({
         entering={FadeInDown.duration(220)}
         exiting={FadeOutUp.duration(160)}
         layout={LinearTransition.springify().damping(22).stiffness(260)}
+        {...panResponder.panHandlers}
         style={[
           styles.island,
           isCompact ? styles.compactIsland : styles.expandedIsland,
@@ -229,10 +199,6 @@ const MoChiIslandHost = ({
             isCompact ? 'MoChi đang theo dõi ngữ cảnh' : islandState.message ?? 'Thông báo MoChi'
           }
           onPress={() => {
-            if (islandState.confirmationAction) {
-              runConfirmation(islandState.confirmationAction);
-              return;
-            }
             if (!isCompact) {
               runHaptic();
               dismissIslandEvent(islandState.eventType, islandState.cooldownKey);
@@ -252,26 +218,10 @@ const MoChiIslandHost = ({
             <View style={styles.messageWrap}>
               <ThemedText
                 style={[styles.message, { color: EN.onSurface }]}
-                numberOfLines={
-                  isLongExpandedMessage ? undefined : islandState.presentation.maxLines
-                }
+                numberOfLines={islandState.presentation.maxLines}
               >
                 {islandState.message}
               </ThemedText>
-              {isLongExpandedMessage && islandState.ctaLabel && (
-                <View style={[styles.ctaPill, styles.longIslandCta, { backgroundColor: EN.primary }]}>
-                  <ThemedText style={styles.ctaText}>{islandState.ctaLabel}</ThemedText>
-                </View>
-              )}
-            </View>
-          )}
-
-          {!isCompact &&
-            !isLongExpandedMessage &&
-            islandState.confirmationAction &&
-            islandState.ctaLabel && (
-            <View style={[styles.ctaPill, { backgroundColor: EN.primary }]}>
-              <ThemedText style={styles.ctaText}>{islandState.ctaLabel}</ThemedText>
             </View>
           )}
         </Pressable>
@@ -332,21 +282,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#dee1f7',
     lineHeight: 18,
-  },
-  ctaPill: {
-    borderRadius: 999,
-    backgroundColor: '#4be277',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  longIslandCta: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
-  },
-  ctaText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#003915',
   },
 });
 

@@ -32,6 +32,7 @@ export const FoodPickerBottomSheet = ({
   const [error, setError] = useState<string | null>(null);
   const [submittingFoodId, setSubmittingFoodId] = useState<string | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRequestSeqRef = useRef(0);
 
   const searchFoods = useCallback(async (query: string) => {
     const trimmedQuery = query.trim();
@@ -41,22 +42,34 @@ export const FoodPickerBottomSheet = ({
       return;
     }
 
+    const requestSeq = searchRequestSeqRef.current + 1;
+    searchRequestSeqRef.current = requestSeq;
     setLoading(true);
     setError(null);
 
     try {
       const result = await foodService.searchAllFoods(trimmedQuery, 20);
+      if (searchRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       setFoods(result.items);
     } catch {
+      if (searchRequestSeqRef.current !== requestSeq) {
+        return;
+      }
       setFoods([]);
       setError('Không thể tìm món ăn. Thử lại nhé.');
     } finally {
-      setLoading(false);
+      if (searchRequestSeqRef.current === requestSeq) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     if (!visible) {
+      searchRequestSeqRef.current += 1;
+      setLoading(false);
       return;
     }
 

@@ -31,7 +31,6 @@ import VoiceResultCard from '../../components/voice/VoiceResultCard';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
 import { useAiStatus } from '../../hooks/useAiStatus';
 import { useVoiceStore } from '../../store/useVoiceStore';
-import MoChiIslandSpacer from '../../features/mochi/MoChiIslandSpacer';
 import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
@@ -90,6 +89,7 @@ const VoiceScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const EN = useEN();
   const { mode } = useAppTheme();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = {
     ...P_STATIC,
     primary: EN.primary,
@@ -554,8 +554,6 @@ const VoiceScreen = (): React.ReactElement => {
       style={[S.container, { paddingTop: insets.top, backgroundColor: P.surface }]}
       testID={TEST_IDS.voice.screen}
     >
-      <MoChiIslandSpacer />
-
       <Animated.View
         entering={FadeInDown.delay(50).duration(400)}
         style={[S.header, { backgroundColor: P.surfaceContainer, borderBottomColor: P.glassBorder }]}

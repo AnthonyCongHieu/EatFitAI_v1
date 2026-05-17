@@ -76,6 +76,7 @@ const buildNotificationPreviews = (scheduled: any[]): NotificationPreview[] => {
 const NotificationCenterScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = { ...P_STATIC, ...useEN() };
   const [scheduled, setScheduled] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);

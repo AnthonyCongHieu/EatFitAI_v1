@@ -73,7 +73,16 @@
     "smoke:metrics": "node scripts/production-smoke-metrics.js",
     "smoke:rehearsal": "node scripts/production-smoke-rehearsal.js",
     "release:gate": "node scripts/product-release-gate.js",
-    "benchmark:ai": "node scripts/ai-benchmark.js"
+    "benchmark:ai": "node scripts/ai-benchmark.js",
+    "qa:public-release": "node scripts/public-release-qa.js all",
+    "qa:public-release:plan": "node scripts/public-release-qa.js plan",
+    "qa:public-release:preflight": "node scripts/public-release-qa.js preflight",
+    "qa:public-release:code": "node scripts/public-release-qa.js code",
+    "qa:public-release:cloud": "node scripts/public-release-qa.js cloud",
+    "qa:public-release:android": "node scripts/public-release-qa.js android",
+    "qa:public-release:device": "node scripts/public-release-qa.js device",
+    "qa:public-release:visual": "node scripts/public-release-qa.js visual",
+    "qa:public-release:final": "node scripts/public-release-qa.js final"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

@@ -107,6 +107,7 @@ const MEAL_ITEMS = [
 const NotificationsScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = { ...P_STATIC, ...useEN() };
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
   const [, setIsSaving] = useState(false);

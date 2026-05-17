@@ -68,33 +68,35 @@ export const QuickAddHub = ({
   ];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, compact && styles.containerCompact]}>
+      <View style={[styles.header, compact && styles.headerCompact]}>
         <View style={styles.headerCopy}>
-          <ThemedText variant={compact ? 'body' : 'h4'} weight="700">
+          <ThemedText variant={compact ? 'h4' : 'h4'} weight="700">
             Thêm nhanh
           </ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary">
-            Tìm kiếm / Quét ảnh / Giọng nói - nhanh chóng và tiện lợi.
+            Chọn một cách thêm bữa phù hợp với tình huống hiện tại.
           </ThemedText>
         </View>
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor: isDark
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(15, 23, 42, 0.05)',
-            },
-          ]}
-        >
-          <ThemedText variant="caption" weight="700" color="textSecondary">
-            {'<=3 steps'}
-          </ThemedText>
-        </View>
+        {!compact && (
+          <View
+            style={[
+              styles.badge,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.08)'
+                  : 'rgba(15, 23, 42, 0.05)',
+              },
+            ]}
+          >
+            <ThemedText variant="caption" weight="700" color="textSecondary">
+              Gợi ý
+            </ThemedText>
+          </View>
+        )}
       </View>
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, compact && styles.actionsCompact]}>
         {actions.map((action) => (
           <Pressable
             key={action.key}
@@ -105,6 +107,7 @@ export const QuickAddHub = ({
             accessibilityHint={action.description}
             style={({ pressed }) => [
               styles.actionCard,
+              compact && styles.actionCardCompact,
               {
                 backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
                 borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15, 23, 42, 0.06)',
@@ -113,10 +116,11 @@ export const QuickAddHub = ({
               },
             ]}
           >
-            <View style={styles.actionTopRow}>
+            <View style={[styles.actionTopRow, compact && styles.actionTopRowCompact]}>
               <View
                 style={[
                   styles.iconWrap,
+                  compact && styles.iconWrapCompact,
                   {
                     backgroundColor: action.accent + '18',
                     borderColor: action.accent + '30',
@@ -126,30 +130,34 @@ export const QuickAddHub = ({
                 <Icon name={action.icon} size="lg" color={action.accent} />
               </View>
 
-              <View
-                style={[
-                  styles.stepPill,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255,255,255,0.06)'
-                      : 'rgba(15, 23, 42, 0.04)',
-                  },
-                ]}
-              >
-                <ThemedText variant="caption" weight="700" color="textSecondary">
-                  {action.key === 'search' ? '2-3 taps' : '3 taps'}
-                </ThemedText>
-              </View>
+              {!compact && (
+                <View
+                  style={[
+                    styles.stepPill,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(15, 23, 42, 0.04)',
+                    },
+                  ]}
+                >
+                  <ThemedText variant="caption" weight="700" color="textSecondary">
+                    {action.key === 'search' ? '2-3 taps' : '3 taps'}
+                  </ThemedText>
+                </View>
+              )}
             </View>
 
-            <View style={styles.copy}>
+            <View style={[styles.copy, compact && styles.copyCompact]}>
               <ThemedText variant="body" weight="700">
                 {action.title}
               </ThemedText>
-              <ThemedText variant="bodySmall" color="textSecondary">
+              <ThemedText variant="bodySmall" color="textSecondary" numberOfLines={compact ? 1 : undefined}>
                 {action.description}
               </ThemedText>
             </View>
+
+            {compact && <Icon name="chevron-forward" size="sm" color="textSecondary" />}
           </Pressable>
         ))}
       </View>
@@ -161,11 +169,17 @@ const styles = StyleSheet.create({
   container: {
     gap: 14,
   },
+  containerCompact: {
+    gap: 12,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  headerCompact: {
+    alignItems: 'flex-start',
   },
   headerCopy: {
     flex: 1,
@@ -179,16 +193,30 @@ const styles = StyleSheet.create({
   actions: {
     gap: 12,
   },
+  actionsCompact: {
+    gap: 8,
+  },
   actionCard: {
     borderWidth: 1,
     borderRadius: 18,
     padding: 16,
     gap: 14,
   },
+  actionCardCompact: {
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   actionTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  actionTopRowCompact: {
+    justifyContent: 'center',
   },
   iconWrap: {
     width: 48,
@@ -198,6 +226,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconWrapCompact: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+  },
   stepPill: {
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -205,6 +238,10 @@ const styles = StyleSheet.create({
   },
   copy: {
     gap: 4,
+  },
+  copyCompact: {
+    flex: 1,
+    gap: 2,
   },
 });
 

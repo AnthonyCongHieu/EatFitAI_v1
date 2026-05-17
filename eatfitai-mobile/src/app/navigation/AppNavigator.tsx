@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useRef, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -15,10 +15,9 @@ import IntroCarouselScreen from '../screens/auth/IntroCarouselScreen';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import SplashScreen from '../screens/SplashScreen';
-import MoChiIslandHost from '../../features/mochi/MoChiIslandHost';
-import { MoChiIslandLayoutProvider } from '../../features/mochi/MoChiIslandLayoutContext';
 import { t } from '../../i18n/vi';
 import { getActiveRouteName, navigationRef } from './navigationRef';
+import BottomCommandOverlay from '../../components/navigation/BottomCommandOverlay';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -125,6 +124,26 @@ const getMoChiPoseGalleryScreen = lazyScreen(() =>
 );
 /* eslint-enable @typescript-eslint/no-require-imports */
 
+const MealDiaryWithBottomBar = (props: any): React.ReactElement => {
+  const Screen = getMealDiaryScreen();
+
+  return (
+    <BottomCommandOverlay activeRouteName="MealDiary">
+      <Screen {...props} />
+    </BottomCommandOverlay>
+  );
+};
+
+const AiCameraWithBottomBar = (props: any): React.ReactElement => {
+  const Screen = getAIScanScreen();
+
+  return (
+    <BottomCommandOverlay activeRouteName="AiCamera">
+      <Screen {...props} />
+    </BottomCommandOverlay>
+  );
+};
+
 const AppNavigator = (): React.ReactElement => {
   const { navigationTheme, theme } = useAppTheme();
   const isInitializing = useAuthStore((s) => s.isInitializing);
@@ -132,7 +151,6 @@ const AppNavigator = (): React.ReactElement => {
   const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const init = useAuthStore((s) => s.init);
   const lastRouteNameRef = useRef<string | undefined>(undefined);
-  const [currentRouteName, setCurrentRouteName] = useState<string | undefined>(undefined);
 
   const isInAuthFlow = !isAuthenticated || needsOnboarding;
   const navigatorKey = isInitializing
@@ -155,8 +173,7 @@ const AppNavigator = (): React.ReactElement => {
   }, [init]);
 
   return (
-    <MoChiIslandLayoutProvider>
-      <NavigationContainer
+    <NavigationContainer
         key={navigatorKey}
         ref={navigationRef}
         theme={navigationTheme}
@@ -164,7 +181,6 @@ const AppNavigator = (): React.ReactElement => {
           flushPendingNotificationNavigation();
           const routeName = getActiveRouteName();
           lastRouteNameRef.current = routeName;
-          setCurrentRouteName(routeName);
           if (routeName) {
             trackScreen(routeName, {
               flow: inferScreenFlow(routeName),
@@ -181,7 +197,6 @@ const AppNavigator = (): React.ReactElement => {
           }
 
           lastRouteNameRef.current = routeName;
-          setCurrentRouteName(routeName);
           trackScreen(routeName, {
             flow: inferScreenFlow(routeName),
             step: routeName,
@@ -192,8 +207,7 @@ const AppNavigator = (): React.ReactElement => {
         {isInitializing ? (
           <SplashScreen />
         ) : (
-          <>
-            <Stack.Navigator
+          <Stack.Navigator
               key={navigatorKey}
               initialRouteName={initialRouteName}
               screenOptions={{
@@ -255,7 +269,7 @@ const AppNavigator = (): React.ReactElement => {
               />
               <Stack.Screen
                 name="MealDiary"
-                getComponent={getMealDiaryScreen}
+                component={MealDiaryWithBottomBar}
                 options={{
                   headerShown: false,
                   title: 'Nhật ký bữa ăn',
@@ -263,7 +277,7 @@ const AppNavigator = (): React.ReactElement => {
               />
               <Stack.Screen
                 name="AiCamera"
-                getComponent={getAIScanScreen}
+                component={AiCameraWithBottomBar}
                 options={{
                   headerShown: false,
                   title: t('navigation.camera'),
@@ -378,14 +392,9 @@ const AppNavigator = (): React.ReactElement => {
               />
               </Stack.Group>
           )}
-            </Stack.Navigator>
-            {!isInAuthFlow && currentRouteName !== 'MoChiPoseGallery' && (
-              <MoChiIslandHost currentRouteName={currentRouteName} />
-            )}
-          </>
+          </Stack.Navigator>
         )}
-      </NavigationContainer>
-    </MoChiIslandLayoutProvider>
+    </NavigationContainer>
   );
 };
 

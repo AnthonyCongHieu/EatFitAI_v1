@@ -126,6 +126,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = { ...P_STATIC, ...useEN() };
 
   const profile = useProfileStore((s) => s.profile);

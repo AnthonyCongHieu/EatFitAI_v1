@@ -15,6 +15,7 @@ import { shareService } from '../../../services/shareService';
 import type { RootStackParamList } from '../../types';
 import { formatBusinessDate } from '../../../utils/businessDate';
 import { useEN } from '../../../theme/emeraldNebula';
+import MoChiSprite from '../../../features/mochi/MoChiSprite';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -82,6 +83,7 @@ const AchievementsScreen = (): React.ReactElement => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const viewRef = useRef(null);
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = { ...P_STATIC, ...useEN() };
   const { achievements, currentStreak, totalXP, checkStreak, syncAchievementProgress, dailyQuestsClaimed, claimDailyQuest } = useGamificationStore();
   const summary = useDiaryStore((s) => s.summary);
@@ -115,7 +117,7 @@ const AchievementsScreen = (): React.ReactElement => {
         if (diffDays === 0) time = 'Hôm nay';
         else if (diffDays === 1) time = 'Hôm qua';
         else time = `${diffDays} ngày trước`;
-        return { text: `Đạt thành tích "${a.title}" 🎉`, time, color: P.primaryLight };
+        return { text: `MoChi ăn mừng: bạn đạt "${a.title}"`, time, color: P.primaryLight };
       });
   }, [unlocked]);
 
@@ -163,9 +165,11 @@ const AchievementsScreen = (): React.ReactElement => {
             <ThemedText style={[S.streakNumber, { color: getStreakColor(currentStreak) }]}>{currentStreak}</ThemedText>
             <View style={S.streakCopy}>
               <ThemedText style={S.streakText}>Ngày liên tiếp</ThemedText>
-              <ThemedText style={S.streakSubtext}>Giữ nhịp hôm nay để tăng chuỗi</ThemedText>
+              <ThemedText style={S.streakSubtext}>Giữ nhịp hôm nay để MoChi ăn mừng cùng bạn</ThemedText>
             </View>
-            <ThemedText style={S.streakFlame}>🔥</ThemedText>
+            <View style={S.heroMochi}>
+              <MoChiSprite poseKey={currentStreak > 0 ? 'celebrate' : 'faceDetermined'} size={62} animated={false} />
+            </View>
           </View>
           <View style={S.statsRow}>
             <View style={S.statItem}>
@@ -212,7 +216,7 @@ const AchievementsScreen = (): React.ReactElement => {
             {recentActivity.map((a, i) => (
               <View key={i} style={S.activityRow}>
                 <View style={[S.activityIconBox, { backgroundColor: a.color + '18' }]}>
-                  <Ionicons name="star" size={20} color={a.color} />
+                  <MoChiSprite poseKey="sparkleSuccess" size={34} animated={false} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <ThemedText style={S.activityText}>{a.text}</ThemedText>
@@ -308,6 +312,7 @@ const S = StyleSheet.create({
   streakText: { fontSize: 20, fontWeight: '800', color: P.onSurface },
   streakSubtext: { fontSize: 13, fontWeight: '600', color: P.textMuted },
   streakFlame: { fontSize: 24, lineHeight: 28 },
+  heroMochi: { width: 64, height: 64, borderRadius: 22, backgroundColor: 'rgba(75,226,119,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   statsRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(9,14,28,0.42)', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 4 },
   statItem: { flex: 1 },
   statValue: { fontSize: 24, fontWeight: '800', color: '#fff' },
@@ -326,7 +331,7 @@ const S = StyleSheet.create({
   levelHint: { fontSize: 14, color: P.textMuted, fontStyle: 'italic' },
   sectionLabel: { fontSize: 13, fontWeight: '800', color: P.slate500, letterSpacing: 1.5, paddingLeft: 4 },
   activityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: P.surfaceLow, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: P.outlineVariant },
-  activityIconBox: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  activityIconBox: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   activityText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   activityTime: { fontSize: 13, color: P.textMuted, marginTop: 3 },
   badgesContainer: { backgroundColor: P.surfaceLow, borderRadius: 24, padding: 22 },

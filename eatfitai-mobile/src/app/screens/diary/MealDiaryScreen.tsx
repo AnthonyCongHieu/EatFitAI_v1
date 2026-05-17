@@ -4,9 +4,8 @@
  * floating add button, pull-to-refresh.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Dimensions,
   Image,
@@ -22,8 +21,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeOutUp,
   FadeInUp,
 } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,6 +42,8 @@ import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
+import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
+import MoChiSprite from '../../../features/mochi/MoChiSprite';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -81,6 +84,55 @@ const MEAL_ADD_LABELS: Record<MealTypeId, string> = {
   3: 'Thêm bữa tối',
   4: 'Thêm món ăn vặt',
 };
+
+const MOCHI_DIARY_PEEK_HIDE_MS = 5200;
+const MOCHI_DIARY_PEEK_DELAY_MS = 420;
+const MOCHI_DIARY_PEEK_MAX_SHOWS = 2;
+const MOCHI_DIARY_PEEK_STORAGE_KEY = 'mochi:meal-diary:companion-peek-count:v2';
+let mochiDiaryPeekShownThisSession = false;
+
+const MoChiDiaryCompanionPeek = ({
+  hasEntries,
+  onDismiss,
+}: {
+  hasEntries: boolean;
+  onDismiss: () => void;
+}): React.ReactElement => (
+  <Animated.View
+    entering={FadeInDown.duration(240).springify().damping(18).stiffness(180)}
+    exiting={FadeOutUp.duration(180)}
+    style={styles.companionStage}
+  >
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Ẩn gợi ý MoChi"
+      onPress={onDismiss}
+      style={styles.companionSpritePlate}
+    >
+      <MoChiSprite
+        poseKey={hasEntries ? 'tabletMeal' : 'mealCoachFull'}
+        size={104}
+        variant="full"
+        animated
+      />
+    </Pressable>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Mochi đang đứng cạnh nhật ký"
+      onPress={onDismiss}
+      style={styles.companionBubble}
+    >
+      <View style={styles.companionSignal} />
+      <ThemedText style={styles.companionEyebrow}>MOCHI GỢI Ý</ThemedText>
+      <ThemedText style={styles.companionText} numberOfLines={2}>
+        {hasEntries
+          ? 'Nhật ký đã có dữ liệu. Bữa nào còn trống thì chạm dấu cộng để thêm nhanh nhé.'
+          : 'Nhật ký hôm nay còn trống. Thử thêm bữa gần nhất để MoChi theo dõi cùng bạn.'}
+      </ThemedText>
+      <View style={styles.companionPointer} />
+    </Pressable>
+  </Animated.View>
+);
 
 /* ─── Date helpers (Hanoi UTC+7) ─── */
 const VIET_DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -148,6 +200,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCompanionPeek, setShowCompanionPeek] = useState(false);
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [selectedDate]);
 
@@ -206,6 +259,64 @@ const MealDiaryScreen = (): React.ReactElement => {
   }, [entries]);
 
   const weekDays = useMemo(() => getWeekDays(), []);
+
+  useEffect(() => {
+    if (isLoading || showDatePicker || !isToday(selectedDate)) {
+      setShowCompanionPeek(false);
+      return;
+    }
+
+    let isActive = true;
+    let showTimer: ReturnType<typeof setTimeout> | null = null;
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const schedulePeek = async () => {
+      try {
+        if (mochiDiaryPeekShownThisSession) {
+          return;
+        }
+
+        const storedCount = Number(
+          (await AsyncStorage.getItem(MOCHI_DIARY_PEEK_STORAGE_KEY)) ?? '0',
+        );
+
+        if (!isActive || storedCount >= MOCHI_DIARY_PEEK_MAX_SHOWS) {
+          return;
+        }
+
+        mochiDiaryPeekShownThisSession = true;
+        await AsyncStorage.setItem(
+          MOCHI_DIARY_PEEK_STORAGE_KEY,
+          String(storedCount + 1),
+        );
+
+        showTimer = setTimeout(() => {
+          if (!isActive) {
+            return;
+          }
+
+          setShowCompanionPeek(true);
+          hideTimer = setTimeout(() => {
+            if (isActive) {
+              setShowCompanionPeek(false);
+            }
+          }, MOCHI_DIARY_PEEK_HIDE_MS);
+        }, MOCHI_DIARY_PEEK_DELAY_MS);
+      } catch {
+        if (isActive) {
+          setShowCompanionPeek(false);
+        }
+      }
+    };
+
+    void schedulePeek();
+
+    return () => {
+      isActive = false;
+      if (showTimer) clearTimeout(showTimer);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [isLoading, selectedDate, showDatePicker]);
 
   /* ─── Handlers ─── */
   const handleRefresh = useCallback(async () => {
@@ -370,8 +481,21 @@ const MealDiaryScreen = (): React.ReactElement => {
       >
         {isLoading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator color={C.primary} size="large" />
-            <ThemedText style={{ color: C.textMuted, marginTop: 12 }}>Đang tải...</ThemedText>
+            <MoChiScreenState
+              mochiEvent="diary_empty_today"
+              title="Đang tải nhật ký"
+              message="MoChi đang lấy dữ liệu bữa ăn và mục tiêu hôm nay."
+              showSpinner
+            />
+            <View style={styles.loadingSkeletonCard}>
+              <View style={styles.loadingSkeletonHeader} />
+              <View style={styles.loadingSkeletonLine} />
+              <View style={[styles.loadingSkeletonLine, styles.loadingSkeletonLineShort]} />
+            </View>
+            <View style={styles.loadingSkeletonCard}>
+              <View style={styles.loadingSkeletonHeader} />
+              <View style={styles.loadingSkeletonLine} />
+            </View>
           </View>
         ) : (
           <>
@@ -407,6 +531,13 @@ const MealDiaryScreen = (): React.ReactElement => {
                 </View>
               </Tilt3DCard>
             </Animated.View>
+
+            {showCompanionPeek && (
+              <MoChiDiaryCompanionPeek
+                hasEntries={entries.length > 0}
+                onDismiss={() => setShowCompanionPeek(false)}
+              />
+            )}
 
             {/* ── Meal Sections ── */}
             {mealGroups.map((group, gIdx) => (
@@ -681,9 +812,33 @@ const styles = StyleSheet.create({
   /* ─── Loading ─── */
   loadingBox: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 80,
+    paddingTop: 48,
+    gap: 14,
+  },
+  loadingSkeletonCard: {
+    width: '100%',
+    borderRadius: 22,
+    backgroundColor: C.surfaceLow,
+    borderWidth: 1,
+    borderColor: C.outline,
+    padding: 18,
+    gap: 12,
+  },
+  loadingSkeletonHeader: {
+    width: '42%',
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: C.surfaceHighest,
+  },
+  loadingSkeletonLine: {
+    width: '100%',
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: C.surfaceHigh,
+  },
+  loadingSkeletonLineShort: {
+    width: '68%',
   },
 
   /* ─── Summary Card ─── */
@@ -989,6 +1144,84 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderColor: C.bg,
+  },
+
+  /* ─── Transient MoChi companion ─── */
+  companionStage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    width: '100%',
+    minHeight: 138,
+    gap: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginTop: -4,
+    marginBottom: -2,
+  },
+  companionBubble: {
+    flex: 1,
+    minHeight: 104,
+    borderRadius: 24,
+    paddingLeft: 18,
+    paddingRight: 16,
+    paddingVertical: 14,
+    backgroundColor: 'rgba(18, 24, 38, 0.90)',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.14)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 20,
+    justifyContent: 'center',
+  },
+  companionSignal: {
+    width: 28,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: C.primary,
+    marginBottom: 8,
+    opacity: 0.88,
+  },
+  companionEyebrow: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: C.primary,
+    letterSpacing: 0.8,
+    marginBottom: 3,
+  },
+  companionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.onSurface,
+    lineHeight: 17,
+  },
+  companionPointer: {
+    position: 'absolute',
+    left: -7,
+    top: 48,
+    width: 14,
+    height: 14,
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.14)',
+    backgroundColor: 'rgba(18, 24, 38, 0.90)',
+    transform: [{ rotate: '45deg' }],
+  },
+  companionSpritePlate: {
+    width: 108,
+    height: 128,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.14)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.34,
+    shadowRadius: 22,
+    overflow: 'visible',
   },
 
   /* ─── Back to Today ─── */

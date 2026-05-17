@@ -29,11 +29,13 @@ Các phiên bản mặc định:
 
 ## Chế độ khởi chạy mobile
 
-| Script | Mô tả | API target |
-|---|---|---|
-| `start-mobile.ps1` | Expo dev mặc định | `https://eatfitai-backend.onrender.com` |
-| `start-mobile-local.ps1` | Emulator/local-backend | `http://10.0.2.2:5247` |
-| `start-stack.ps1` | Full local stack | `http://10.0.2.2:5247` |
+| Script                   | Mô tả                  | API target                         |
+| ------------------------ | ---------------------- | ---------------------------------- |
+| `start-mobile.ps1`       | Expo dev mặc định      | `https://eatfitai-api.duckdns.org` |
+| `start-mobile-local.ps1` | Emulator/local-backend | `http://10.0.2.2:5247`             |
+| `start-stack.ps1`        | Full local stack       | `http://10.0.2.2:5247`             |
+
+> Render backend cũ `https://eatfitai-backend.onrender.com` đã suspended sau cutover sang Lightsail; không dùng domain này làm production health signal.
 
 ## Thiết bị Android thật
 

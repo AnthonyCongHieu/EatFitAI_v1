@@ -21,8 +21,8 @@ type MoChiIslandLayoutContextValue = MoChiIslandLayoutSnapshot & {
 
 const DEFAULT_LAYOUT: MoChiIslandLayoutSnapshot = {
   mode: 'compact',
-  height: 42,
-  topOffset: 58,
+  height: 0,
+  topOffset: 0,
   isExpanded: false,
 };
 

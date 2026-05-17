@@ -21,6 +21,7 @@ type TutorialStep = {
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
   targetLabel?: string;
+  actionLabel?: string;
   mascotState: MascotState;
   poseKey?: MoChiPoseKey;
 };
@@ -59,6 +60,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     description: getMoChiExperience('tutorial_welcome').dialogue,
     icon: 'sparkles',
     targetLabel: 'MoChi',
+    actionLabel: 'Chạm MoChi',
     mascotState: 'wave',
     poseKey: 'boxIdle',
   },
@@ -68,6 +70,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     description: getMoChiExperience('tutorial_scan').dialogue,
     icon: 'camera',
     targetLabel: 'Scan',
+    actionLabel: 'Chạm Scan',
     mascotState: 'pointing',
     poseKey: 'foodPhone',
   },
@@ -77,6 +80,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     description: getMoChiExperience('tutorial_search').dialogue,
     icon: 'restaurant',
     targetLabel: 'Thêm bữa',
+    actionLabel: 'Chạm Thêm bữa',
     mascotState: 'thinking',
     poseKey: 'mealChoice',
   },
@@ -86,6 +90,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     description: getMoChiExperience('tutorial_water').dialogue,
     icon: 'water',
     targetLabel: 'Uống nước',
+    actionLabel: 'Chạm Uống nước',
     mascotState: 'success',
     poseKey: 'waterGlass',
   },
@@ -95,6 +100,7 @@ const FIRST_WIN_TUTORIAL_STEPS: TutorialStep[] = [
     description: getMoChiExperience('tutorial_progress').dialogue,
     icon: 'analytics',
     targetLabel: 'Thống kê',
+    actionLabel: 'Chạm Thống kê',
     mascotState: 'reporting',
     poseKey: 'reportReview',
   },
@@ -179,7 +185,7 @@ const HomeFirstLoginTutorial = ({
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={completeTutorial}
+      onRequestClose={() => undefined}
     >
       <Animated.View
         entering={FadeIn.duration(180)}
@@ -197,21 +203,16 @@ const HomeFirstLoginTutorial = ({
             <View style={styles.progressPill}>
               <ThemedText style={[styles.progressText, { color: EN.primary }]}>{progressText}</ThemedText>
             </View>
-            <Pressable
-              testID={TEST_IDS.home.tutorialSkipButton}
-              accessibilityRole="button"
-              accessibilityLabel="Bỏ qua hướng dẫn"
-              onPress={completeTutorial}
-              hitSlop={10}
-            >
-              <ThemedText style={[styles.skipText, { color: EN.onSurfaceVariant }]}>Bỏ qua</ThemedText>
-            </Pressable>
+            <View style={styles.requiredPill}>
+              <Ionicons name="lock-closed" size={12} color={EN.primary} />
+              <ThemedText style={[styles.skipText, { color: EN.onSurfaceVariant }]}>Bắt buộc thao tác</ThemedText>
+            </View>
           </View>
 
           <View style={[styles.coachTarget, { backgroundColor: EN.surfaceHigh, borderColor: EN.primary }]}>
             <Ionicons name={currentStep.icon} size={18} color={EN.primary} />
             <ThemedText style={[styles.coachTargetText, { color: EN.onSurface }]}>
-              MoChi đang chỉ vào: {currentStep.targetLabel ?? currentStep.title}
+              Nhiệm vụ: chạm đúng {currentStep.targetLabel ?? currentStep.title}
             </ThemedText>
           </View>
 
@@ -252,18 +253,20 @@ const HomeFirstLoginTutorial = ({
                 : TEST_IDS.home.tutorialNextButton
             }
             accessibilityRole="button"
-            accessibilityLabel={isLastStep ? 'Hoàn tất hướng dẫn' : 'Tiếp tục hướng dẫn'}
+            accessibilityLabel={currentStep.actionLabel ?? 'Thực hiện bước hướng dẫn'}
             onPress={handleNext}
-            style={({ pressed }) => [styles.primaryButton, { backgroundColor: EN.primary }, pressed && styles.primaryPressed]}
+            style={({ pressed }) => [styles.targetButton, { borderColor: EN.primary, backgroundColor: EN.primary + '18' }, pressed && styles.primaryPressed]}
           >
-            <ThemedText style={styles.primaryText}>
-              {isLastStep ? 'Xong' : 'Tiếp tục'}
-            </ThemedText>
-            <Ionicons
-              name={isLastStep ? 'checkmark' : 'arrow-forward'}
-              size={18}
-              color="#052E16"
-            />
+            <View style={[styles.targetIcon, { backgroundColor: EN.primary }]}>
+              <Ionicons name={currentStep.icon} size={18} color="#052E16" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={[styles.targetEyebrow, { color: EN.primary }]}>CHẠM ĐỂ QUA BƯỚC</ThemedText>
+              <ThemedText style={[styles.targetText, { color: EN.onSurface }]}>
+                {isLastStep ? 'Hoàn tất tutorial' : currentStep.actionLabel ?? 'Thực hiện bước này'}
+              </ThemedText>
+            </View>
+            <Ionicons name={isLastStep ? 'checkmark' : 'chevron-forward'} size={18} color={EN.primary} />
           </Pressable>
         </Animated.View>
       </Animated.View>
@@ -274,7 +277,7 @@ const HomeFirstLoginTutorial = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
@@ -282,13 +285,12 @@ const styles = StyleSheet.create({
   },
   card: {
     marginHorizontal: 18,
-    marginBottom: 28,
     borderRadius: 28,
     backgroundColor: '#111827',
     borderWidth: 1,
     borderColor: 'rgba(75, 226, 119, 0.24)',
-    padding: 20,
-    gap: 18,
+    padding: 18,
+    gap: 14,
   },
   headerRow: {
     flexDirection: 'row',
@@ -308,6 +310,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     lineHeight: 16,
+  },
+  requiredPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(75, 226, 119, 0.10)',
   },
   skipText: {
     color: '#CBD5E1',
@@ -378,14 +389,33 @@ const styles = StyleSheet.create({
     width: 7,
     backgroundColor: 'rgba(203, 213, 225, 0.34)',
   },
-  primaryButton: {
-    height: 52,
+  targetButton: {
+    minHeight: 58,
     borderRadius: 18,
-    backgroundColor: '#4BE277',
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  targetIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+  },
+  targetEyebrow: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.1,
+    lineHeight: 14,
+  },
+  targetText: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
   },
   primaryPressed: {
     opacity: 0.82,
