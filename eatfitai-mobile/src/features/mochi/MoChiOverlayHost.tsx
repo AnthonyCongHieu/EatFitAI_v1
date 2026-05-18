@@ -16,6 +16,7 @@ import { useMoChiSurfaceDecision } from './useMoChiSurfaceDecision';
 import { useMoChiTopNotificationCandidate } from './useMoChiTopNotificationCandidate';
 import { useMoChiNotificationInboxStore } from './mochiNotificationInbox';
 import { performMoChiNotificationAction } from './mochiNotificationActions';
+import { useIsMoChiTopOverlayBlocked } from './mochiTransientGate';
 import type { MoChiSurfaceDecision } from './mochiNudgePolicy';
 
 type MoChiOverlayHostProps = {
@@ -61,11 +62,17 @@ const MoChiOverlayHost = ({
   const topNotificationCandidate = useMoChiTopNotificationCandidate(currentRouteName);
   const candidate = topNotificationCandidate ?? inlineCandidate;
   const { decision, recordDecision } = useMoChiSurfaceDecision(candidate);
+  const isTopOverlayBlocked = useIsMoChiTopOverlayBlocked();
   const markDismissed = useMoChiNotificationInboxStore((state) => state.markDismissed);
   const markActed = useMoChiNotificationInboxStore((state) => state.markActed);
   const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay | null>(null);
 
   useEffect(() => {
+    if (isTopOverlayBlocked) {
+      setActiveOverlay(null);
+      return;
+    }
+
     if (!candidate) {
       setActiveOverlay(null);
       return;
@@ -81,7 +88,7 @@ const MoChiOverlayHost = ({
 
     setActiveOverlay({ candidate, decision });
     recordDecision(decision, 'shown');
-  }, [activeOverlay?.decision.cadenceKey, candidate, decision, recordDecision]);
+  }, [activeOverlay?.decision.cadenceKey, candidate, decision, isTopOverlayBlocked, recordDecision]);
 
   const closeOverlay = useCallback(() => {
     if (!activeOverlay) {
@@ -138,7 +145,7 @@ const MoChiOverlayHost = ({
   }
 
   const experience = getMoChiExperience(activeOverlay.candidate.eventType);
-  const stageWidth = Math.min(width - 24, 386);
+  const stageWidth = Math.min(width - 40, 340);
   const topOffset = resolveMoChiTopOverlayOffset({
     topInset: insets.top,
     routeName: currentRouteName ?? activeOverlay.candidate.routeName,
@@ -168,7 +175,7 @@ const MoChiOverlayHost = ({
         >
           <MoChiSprite
             poseKey={experience.poseKey}
-            size={84}
+            size={60}
             variant="full"
             animated
             testID="mochi-overlay-sprite"
@@ -224,44 +231,44 @@ const MoChiOverlayHost = ({
 const styles = StyleSheet.create({
   companionOverlay: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1400,
-    elevation: 30,
+    zIndex: 800,
+    elevation: 18,
   },
   companionStage: {
     position: 'absolute',
-    left: 12,
-    right: 12,
+    left: 20,
+    right: 20,
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
   },
   companionSpriteHitbox: {
-    width: 82,
-    height: 92,
+    width: 58,
+    height: 66,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   companionSpeech: {
     flex: 1,
     minWidth: 0,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 18,
-    elevation: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 6,
   },
   companionSpeechTail: {
     position: 'absolute',
-    left: -8,
-    bottom: 20,
+    left: -6,
+    bottom: 18,
     width: 0,
     height: 0,
-    borderTopWidth: 8,
-    borderBottomWidth: 8,
-    borderRightWidth: 9,
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderRightWidth: 7,
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
   },
@@ -273,27 +280,27 @@ const styles = StyleSheet.create({
   companionEyebrow: {
     flex: 1,
     minWidth: 0,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
-    lineHeight: 15,
+    lineHeight: 13,
     textTransform: 'uppercase',
   },
   companionDismiss: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
   companionMessage: {
-    marginTop: 3,
-    fontSize: 13,
+    marginTop: 2,
+    fontSize: 12,
     fontWeight: '700',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   companionCtaHitbox: {
     alignSelf: 'flex-start',
-    marginTop: 5,
+    marginTop: 4,
   },
   companionCta: {
     fontSize: 12,

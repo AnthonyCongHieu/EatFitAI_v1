@@ -252,8 +252,8 @@ const ProfileScreen = (): React.ReactElement => {
       type: isPremium ? 'success' : 'info',
       text1: isPremium ? 'Premium đang hoạt động' : 'Tài khoản Free',
       text2: isPremium
-        ? 'Backend đã bật quyền Premium cho tài khoản này.'
-        : 'Premium đã sẵn sàng ở backend, chờ bổ sung màn nâng cấp.',
+        ? 'Bạn đã có quyền dùng các tính năng Premium.'
+        : 'Gói nâng cấp sẽ xuất hiện khi EatFitAI mở bán.',
     });
   }, [subscription?.isPremium]);
 

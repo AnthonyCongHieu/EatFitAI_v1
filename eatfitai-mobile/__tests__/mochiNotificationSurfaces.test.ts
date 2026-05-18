@@ -8,12 +8,39 @@ describe('MoChi notification surfaces', () => {
   it('keeps top coaching overlays separate from visible inline targets', () => {
     const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
     const surfaceDecisionSource = readSource('src/features/mochi/useMoChiSurfaceDecision.ts');
+    const topCandidateSource = readSource('src/features/mochi/useMoChiTopNotificationCandidate.ts');
 
     expect(overlayHostSource).toContain('resolveMoChiTopOverlayOffset');
     expect(overlayHostSource).toContain('top: topOffset');
     expect(overlayHostSource).not.toContain('resolveMoChiOverlayBottomOffset');
     expect(overlayHostSource).toContain('useMoChiTopNotificationCandidate');
+    expect(overlayHostSource).toContain('useIsMoChiTopOverlayBlocked');
+    expect(overlayHostSource).toContain('isTopOverlayBlocked');
     expect(surfaceDecisionSource).not.toContain('isCollisionSafe: true');
+    expect(topCandidateSource).toContain('useMoChiVisibleTargetsStore');
+    expect(topCandidateSource).toContain('visibleTargets');
+  });
+
+  it('registers toast transients as top-overlay blockers', () => {
+    const toastConfigSource = readSource('src/config/toastConfig.tsx');
+    const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
+
+    expect(toastConfigSource).toContain('blockMoChiTopOverlay');
+    expect(toastConfigSource).toContain("blockMoChiTopOverlay('toast', 4500)");
+    expect(toastConfigSource).toContain('size={56}');
+    expect(toastConfigSource).toContain('width: 62');
+    expect(overlayHostSource).toContain('if (isTopOverlayBlocked)');
+    expect(overlayHostSource).toContain('setActiveOverlay(null)');
+  });
+
+  it('keeps top MoChi notifications compact instead of modal-like', () => {
+    const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
+
+    expect(overlayHostSource).toContain('Math.min(width - 40, 340)');
+    expect(overlayHostSource).toContain('size={60}');
+    expect(overlayHostSource).not.toContain('size={84}');
+    expect(overlayHostSource).toContain('zIndex: 800');
+    expect(overlayHostSource).not.toContain('zIndex: 1400');
   });
 
   it('renders persisted inbox state and only shows the home bell dot for unread items', () => {
@@ -30,6 +57,26 @@ describe('MoChi notification surfaces', () => {
     expect(welcomeHeaderSource).toContain('unreadNotificationCount');
     expect(welcomeHeaderSource).toContain('unreadNotificationCount > 0');
     expect(homeSource).toContain('selectUnreadMoChiNotificationCount');
+  });
+
+  it('anchors Home water reminders inline and resolves them through the water add flow', () => {
+    const homeSource = readSource('src/app/screens/HomeScreen.tsx');
+
+    expect(homeSource).toContain('homeWaterReminder');
+    expect(homeSource).toContain('waterTargetInlineReady');
+    expect(homeSource).toContain("setMoChiVisibleTarget('HomeTab', 'water_reminder', waterTargetInlineReady)");
+    expect(homeSource).toContain('handleWaterReminderAction');
+    expect(homeSource).toContain('markMoChiNotificationActed(homeWaterReminder.id)');
+    expect(homeSource).toContain('homeWaterReminder && waterTargetInlineReady');
+    expect(homeSource).toContain('handleAddWater({ showConfirmationToast: true })');
+    expect(homeSource).toContain("text1: 'Đã ghi nước'");
+    expect(homeSource).toContain('mochiEvent="water_reminder"');
+    expect(homeSource).toContain('title="Nhắc uống nước"');
+    expect(homeSource).toContain('message="Ghi thêm một ly nước nếu bạn vừa uống xong."');
+    expect(homeSource).toContain('ctaLabel="Ghi nước"');
+    expect(homeSource).not.toContain('mochiEvent="water_added"');
+    expect(homeSource).toContain('hideSprite');
+    expect(homeSource).toContain('tone="calm"');
   });
 
   it('keeps actionable MoChi metadata in scheduled notifications and avoids external AI tip pushes', () => {
@@ -59,5 +106,17 @@ describe('MoChi notification surfaces', () => {
     expect(statsSource).toContain('MoChiInlineNotice');
     expect(statsSource).toContain('mochiEvent="stats_low_data"');
     expect(profileSource).toContain('mochiEvent="profile_incomplete"');
+  });
+
+  it('keeps MoChi guidance single-purpose on dense screens and uses user-facing toast copy', () => {
+    const statsSource = readSource('src/app/screens/stats/StatsScreen.tsx');
+    const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
+
+    expect(statsSource).toContain("activeTab === 'today' && !isLoading && todayCal <= 0");
+    expect(statsSource).not.toContain('title="Đang vẽ heatmap"');
+    expect(profileSource).toContain('Bạn đã có quyền dùng các tính năng Premium.');
+    expect(profileSource).toContain('Gói nâng cấp sẽ xuất hiện khi EatFitAI mở bán.');
+    expect(profileSource).not.toContain('Backend đã bật quyền Premium');
+    expect(profileSource).not.toContain('sẵn sàng ở backend');
   });
 });

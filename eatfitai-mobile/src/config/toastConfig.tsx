@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ToastConfig, BaseToastProps } from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../components/ThemedText';
 import MoChiSprite from '../features/mochi/MoChiSprite';
 import type { MoChiPoseKey } from '../assets/mascot/mochi/mochiAssets';
+import { blockMoChiTopOverlay } from '../features/mochi/mochiTransientGate';
 
 const C = {
   primary: '#4be277',
@@ -67,6 +68,8 @@ const CustomToast = ({
   const meta = TONE_META[tone];
   const poseKey = props?.mochiPose ?? meta.poseKey;
 
+  useEffect(() => blockMoChiTopOverlay('toast', 4500), []);
+
   return (
     <View style={styles.container}>
       <View style={[styles.iconWrap, { backgroundColor: `${meta.iconColor}22` }]}>
@@ -90,7 +93,7 @@ const CustomToast = ({
       </View>
 
       <View style={styles.mochiWrap}>
-        <MoChiSprite poseKey={poseKey} size={48} variant="notice" animated={false} />
+        <MoChiSprite poseKey={poseKey} size={56} variant="notice" animated={false} />
       </View>
     </View>
   );
@@ -153,8 +156,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   mochiWrap: {
-    width: 54,
-    height: 54,
+    width: 62,
+    height: 62,
     marginLeft: 10,
     alignItems: 'center',
     justifyContent: 'center',

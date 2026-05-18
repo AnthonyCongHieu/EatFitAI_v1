@@ -19,6 +19,8 @@ type ScreenProps = {
   style?: ScrollViewProps['style'] & ViewProps['style'];
   refreshControl?: ReactElement<RefreshControlProps>;
   scrollViewRef?: Ref<ScrollView>;
+  onScroll?: ScrollViewProps['onScroll'];
+  scrollEventThrottle?: ScrollViewProps['scrollEventThrottle'];
   scroll?: boolean;
   // Tùy chọn padding - mặc định true cho tất cả màn hình
   useSafeArea?: boolean;
@@ -37,6 +39,8 @@ export const Screen = ({
   style,
   refreshControl,
   scrollViewRef,
+  onScroll,
+  scrollEventThrottle,
   scroll = true,
   useSafeArea = true,
   horizontalPadding = true,
@@ -80,6 +84,8 @@ export const Screen = ({
       style={styles.scrollView}
       contentContainerStyle={[contentStyle, contentContainerStyle]}
       refreshControl={refreshControl}
+      onScroll={onScroll}
+      scrollEventThrottle={scrollEventThrottle}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >

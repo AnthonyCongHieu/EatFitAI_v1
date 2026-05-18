@@ -3,6 +3,10 @@ import { AppState } from 'react-native';
 
 import { canShowMoChiTopOverlay } from './mochiReminderOrchestrator';
 import { useMoChiNotificationInboxStore, type MoChiNotificationItem } from './mochiNotificationInbox';
+import {
+  isMoChiVisibleTargetInline,
+  useMoChiVisibleTargetsStore,
+} from './mochiVisibleTargets';
 import type { MoChiNudgeCandidate } from './useMoChiNudgeContext';
 
 const UNSAFE_TOP_OVERLAY_ROUTES = new Set([
@@ -27,6 +31,7 @@ export const useMoChiTopNotificationCandidate = (
   currentRouteName?: string | null,
 ): MoChiNudgeCandidate | null => {
   const items = useMoChiNotificationInboxStore((state) => state.items);
+  const visibleTargets = useMoChiVisibleTargetsStore((state) => state.visibleTargets);
   const [clockVersion, setClockVersion] = useState(0);
 
   useEffect(() => {
@@ -58,7 +63,15 @@ export const useMoChiTopNotificationCandidate = (
 
         return Date.parse(right.createdAt) - Date.parse(left.createdAt);
       })
-      .find((item) => canShowMoChiTopOverlay(item, routeName, now).shouldShow);
+      .find(
+        (item) =>
+          !isMoChiVisibleTargetInline({
+            visibleTargets,
+            routeName,
+            eventType: item.eventType,
+          })
+          && canShowMoChiTopOverlay(item, routeName, now).shouldShow,
+      );
 
     if (!candidate || !isRouteCollisionSafe(routeName)) {
       return null;
@@ -81,5 +94,5 @@ export const useMoChiTopNotificationCandidate = (
       message: candidate.body,
       ctaLabel: candidate.ctaLabel,
     };
-  }, [clockVersion, currentRouteName, items]);
+  }, [clockVersion, currentRouteName, items, visibleTargets]);
 };

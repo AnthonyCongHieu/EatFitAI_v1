@@ -4,6 +4,7 @@ import {
   resolveMoChiSystemNotificationBehavior,
   type MoChiReminderSettings,
 } from '../src/features/mochi/mochiReminderOrchestrator';
+import { isMoChiVisibleTargetInline } from '../src/features/mochi/mochiVisibleTargets';
 
 const SETTINGS: MoChiReminderSettings = {
   enabled: true,
@@ -125,6 +126,28 @@ describe('mochiReminderOrchestrator', () => {
       shouldShow: false,
       reason: 'visible-target-inline',
     });
+  });
+
+  it('downgrades Home water reminders only when the target is visible inline', () => {
+    const waterReminder = buildMoChiReminderCandidates({
+      now: new Date('2026-05-18T14:00:00+07:00'),
+      settings: SETTINGS,
+      loggedMealTypes: [1, 2],
+      waterAmountMl: 500,
+      waterTargetMl: 2000,
+    }).find((item) => item.eventType === 'water_reminder');
+
+    expect(waterReminder).toBeDefined();
+    expect(isMoChiVisibleTargetInline({
+      visibleTargets: {},
+      routeName: 'HomeTab',
+      eventType: waterReminder!.eventType,
+    })).toBe(false);
+    expect(isMoChiVisibleTargetInline({
+      visibleTargets: { 'HomeTab:water_reminder': true },
+      routeName: 'HomeTab',
+      eventType: waterReminder!.eventType,
+    })).toBe(true);
   });
 
   it('uses default system notification importance except for streak risk and never schedules AI tips externally', () => {

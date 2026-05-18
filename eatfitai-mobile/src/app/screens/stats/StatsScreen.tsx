@@ -574,7 +574,7 @@ const StatsScreen = (): React.ReactElement => {
           />
         }
       >
-        {activeTab === 'today' && todayCal <= 0 && (
+        {activeTab === 'today' && !isLoading && todayCal <= 0 && (
           <MoChiInlineNotice mochiEvent="stats_low_data" compact tone="calm" />
         )}
 
@@ -1381,14 +1381,10 @@ const StatsScreen = (): React.ReactElement => {
                 >
                   <View style={S.mthHeatCard}>
                     {isLoadingMonth ? (
-                      <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <MoChiScreenState
-                          mochiEvent="stats_low_data"
-                          title="Đang vẽ heatmap"
-                          message="MoChi đang kiểm tra dữ liệu từng ngày."
-                          showSpinner
-                          variant="compact"
-                        />
+                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }}>
+                        <ThemedText style={{ color: P.textSlate400, fontSize: 13, fontWeight: '700', textAlign: 'center' }}>
+                          Đang cập nhật dữ liệu từng ngày
+                        </ThemedText>
                       </View>
                     ) : (
                       <View>

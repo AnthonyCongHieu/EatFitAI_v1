@@ -107,7 +107,8 @@ describe('MoChi virtual pet experience', () => {
     expect(tutorialHostSource).toContain('styles.spotlightRing');
     expect(tutorialHostSource).toContain('styles.progressRail');
     expect(homeSource).not.toContain('HomeFirstLoginTutorial');
-    expect(homeSource).toContain('mochiEvent="water_added"');
+    expect(homeSource).toContain('mochiEvent="water_reminder"');
+    expect(homeSource).toContain("text1: 'Đã ghi nước'");
     expect(scanSource).toContain('ScanProgressCard');
     expect(scanSource).toContain('mochiEvent="scan_empty"');
     expect(scanSource).toContain('mochiEvent="scan_error"');

@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -48,10 +50,12 @@ import {
   selectUnreadMoChiNotificationCount,
   useMoChiNotificationInboxStore,
 } from '../../features/mochi/mochiNotificationInbox';
+import { useMoChiVisibleTargetsStore } from '../../features/mochi/mochiVisibleTargets';
 import { formatBusinessDate } from '../../utils/businessDate';
 import { useEN } from '../../theme/emeraldNebula';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const WATER_TARGET_VISIBLE_BOTTOM_CLEARANCE = 260;
 
 /* ─── Emerald Nebula palette (static fallback for WeekDayStrip/weekStyles) ─── */
 const C_STATIC = {
@@ -272,18 +276,39 @@ const HomeScreen = (): React.ReactElement => {
   const [serverDown, setServerDown] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
-  const [showWaterMoChi, setShowWaterMoChi] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
   const notificationInboxItems = useMoChiNotificationInboxStore((state) => state.items);
+  const markMoChiNotificationActed = useMoChiNotificationInboxStore((state) => state.markActed);
+  const setMoChiVisibleTarget = useMoChiVisibleTargetsStore((state) => state.setVisibleTarget);
   const unreadNotificationCount = selectUnreadMoChiNotificationCount(notificationInboxItems);
+  const homeWaterReminder = useMemo(() => {
+    const now = Date.now();
+
+    return notificationInboxItems.find((item) => {
+      if (
+        item.eventType !== 'water_reminder'
+        || item.resolvedAt
+        || item.actedAt
+        || item.severity === 'passive'
+      ) {
+        return false;
+      }
+
+      const retryAfter = item.retryAfter ? Date.parse(item.retryAfter) : 0;
+      return !retryAfter || retryAfter <= now;
+    });
+  }, [notificationInboxItems]);
+  const waterTargetInlineReady = waterCardY != null
+    && scrollY + SCREEN_HEIGHT - WATER_TARGET_VISIBLE_BOTTOM_CLEARANCE >= waterCardY;
 
   useEffect(() => {
-    if (!showWaterMoChi) {
-      return;
-    }
+    setMoChiVisibleTarget('HomeTab', 'water_reminder', waterTargetInlineReady);
+    return () => setMoChiVisibleTarget('HomeTab', 'water_reminder', false);
+  }, [setMoChiVisibleTarget, waterTargetInlineReady]);
 
-    const timer = setTimeout(() => setShowWaterMoChi(false), 6500);
-    return () => clearTimeout(timer);
-  }, [showWaterMoChi]);
+  const handleHomeScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setScrollY(event.nativeEvent.contentOffset.y);
+  }, []);
 
   // Water intake state
   const { data: waterData } = useQuery<WaterIntakeData>({
@@ -293,7 +318,9 @@ const HomeScreen = (): React.ReactElement => {
   });
   const waterAmount = waterData?.amountMl ?? 0;
 
-  const handleAddWater = useCallback(async () => {
+  const handleAddWater = useCallback(async (
+    options: { showConfirmationToast?: boolean } = {},
+  ): Promise<boolean> => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     // Optimistic Update
@@ -306,14 +333,33 @@ const HomeScreen = (): React.ReactElement => {
 
     try {
       await waterService.addWater(new Date());
-      setShowWaterMoChi(true);
+      if (options.showConfirmationToast) {
+        Toast.show({
+          type: 'success',
+          text1: 'Đã ghi nước',
+          text2: 'MoChi đã cộng thêm 200 ml vào hôm nay.',
+        });
+      }
+      return true;
     } catch (err: any) {
       if (prevData) {
         queryClient.setQueryData(['water-intake-today'], prevData);
       }
       Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+      return false;
     }
   }, [queryClient]);
+
+  const handleWaterReminderAction = useCallback(async () => {
+    if (!homeWaterReminder) {
+      return;
+    }
+
+    const added = await handleAddWater({ showConfirmationToast: true });
+    if (added) {
+      markMoChiNotificationActed(homeWaterReminder.id);
+    }
+  }, [handleAddWater, homeWaterReminder, markMoChiNotificationActed]);
 
   const handleSubtractWater = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -523,6 +569,8 @@ const HomeScreen = (): React.ReactElement => {
         horizontalPadding={false}
         useSafeArea={true}
         hasHeader={false}
+        onScroll={handleHomeScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingBottom: 190,
@@ -863,17 +911,32 @@ const HomeScreen = (): React.ReactElement => {
                     styles.waterPillBtn,
                     pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
                   ]}
-                  onPress={handleAddWater}
+                  onPress={() => {
+                    void handleAddWater();
+                  }}
                 >
                   <WaterGlassIcon isPlus={true} />
                 </Pressable>
               </View>
             </View>
           </MoChiTutorialTarget>
-          {showWaterMoChi && (
-            <View style={styles.moChiWaterNotice}>
-              <MoChiInlineNotice mochiEvent="water_added" compact hideSprite />
-            </View>
+          {homeWaterReminder && waterTargetInlineReady && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Nhắc uống nước. Ghi thêm một ly nước nếu bạn vừa uống xong."
+              onPress={handleWaterReminderAction}
+              style={styles.moChiWaterReminderNotice}
+            >
+              <MoChiInlineNotice
+                mochiEvent="water_reminder"
+                title="Nhắc uống nước"
+                message="Ghi thêm một ly nước nếu bạn vừa uống xong."
+                ctaLabel="Ghi nước"
+                compact
+                hideSprite
+                tone="calm"
+              />
+            </Pressable>
           )}
         </Animated.View>
       </Screen>
@@ -1260,8 +1323,8 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 3,
   },
-  moChiWaterNotice: {
-    marginTop: 12,
+  moChiWaterReminderNotice: {
+    marginTop: 10,
   },
   waterLeft: {
     flexDirection: 'row',
