@@ -57,6 +57,12 @@ namespace EatFitAI.API.Services
                 return ReplaceIgnoreCase(thumbUrl, NestedThumbSegment, NestedMediumSegment);
             }
 
+            if (thumbUrl.StartsWith("recipe-images/", StringComparison.OrdinalIgnoreCase)
+                && thumbUrl.Contains(NestedThumbSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                return ReplaceIgnoreCase(thumbUrl, NestedThumbSegment, NestedMediumSegment);
+            }
+
             return null;
         }
 

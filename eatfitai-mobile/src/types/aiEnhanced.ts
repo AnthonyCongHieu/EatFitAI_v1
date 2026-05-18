@@ -4,9 +4,22 @@
 // ============ RECIPE SUGGESTIONS ============
 export interface RecipeSuggestionRequest {
   availableIngredients: string[];
+  availableFoodItemIds?: number[];
+  ingredientHints?: RecipeIngredientHint[];
+  mealTypeId?: number;
   maxCookingTimeMinutes?: number;
   minMatchedIngredients?: number;
   maxResults?: number;
+  remainingCalories?: number;
+  remainingProtein?: number;
+  remainingCarbs?: number;
+  remainingFat?: number;
+}
+
+export interface RecipeIngredientHint {
+  foodItemId?: number | null;
+  name?: string | null;
+  confidence?: number | null;
 }
 
 export interface RecipeSuggestion {
@@ -17,9 +30,21 @@ export interface RecipeSuggestion {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
+  totalGrams?: number;
+  imageUrl?: string;
+  imageVariants?: {
+    thumbUrl?: string | null;
+    mediumUrl?: string | null;
+  } | null;
+  cookTimeMinutes?: number;
+  difficulty?: string;
+  servingCount?: number;
   matchedIngredientsCount: number;
   totalIngredientsCount: number;
   matchPercentage: number;
+  matchScore?: number;
+  scoreReasons?: string[];
+  missingIngredientCount?: number;
   matchedIngredients: string[];
   missingIngredients: string[];
   allIngredients: string[];
@@ -30,6 +55,30 @@ export interface RecipeDetail extends RecipeSuggestion {
   instructions?: string[];
   videoUrl?: string; // URL video YouTube để embed
   tags?: string[];
+  youtubeVideo?: RecipeYoutubeVideo | null;
+  guideStatus?: string;
+  sourceUrls?: string[];
+  credibilityScore?: number;
+}
+
+export interface RecipeCookingGuide {
+  recipeId?: number;
+  recipeName?: string;
+  steps: string[];
+  cookingTimeMinutes?: number;
+  difficulty?: string;
+  tips?: string[];
+  sourceUrls?: string[];
+  youtubeVideo?: RecipeYoutubeVideo | null;
+  guideStatus?: string;
+}
+
+export interface RecipeYoutubeVideo {
+  videoId?: string;
+  title?: string;
+  channelTitle?: string;
+  url?: string;
+  thumbnailUrl?: string;
 }
 
 export interface RecipeIngredientDetail {

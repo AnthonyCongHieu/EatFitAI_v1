@@ -127,5 +127,166 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.NotNull(result);
             Assert.Empty(result);
         }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_UsesFoodItemIdAndUnsignedAliasForMatching()
+        {
+            // Arrange
+            await SeedDatabaseAsync();
+            var egg = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 1);
+            var tomato = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 2);
+            egg.FoodNameUnsigned = "trung";
+            tomato.FoodNameUnsigned = "ca chua";
+            await _context.SaveChangesAsync();
+
+            var request = new RecipeSuggestionRequest
+            {
+                AvailableIngredients = new List<string> { "ca chua" },
+                AvailableFoodItemIds = new List<int> { 1 },
+                IngredientHints = new List<RecipeIngredientHintDto>
+                {
+                    new RecipeIngredientHintDto
+                    {
+                        FoodItemId = 1,
+                        Name = "Trứng",
+                        Confidence = 0.98m
+                    }
+                },
+                MinMatchedIngredients = 1,
+                MaxResults = 5
+            };
+
+            // Act
+            var result = await _service.SuggestRecipesAsync(request);
+
+            // Assert
+            var suggestion = Assert.Single(result);
+            Assert.Equal(2, suggestion.MatchedIngredientsCount);
+            Assert.Contains("Trứng", suggestion.MatchedIngredients);
+            Assert.Contains("Cà chua", suggestion.MatchedIngredients);
+            Assert.True(suggestion.MatchScore > 0);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_FiltersCookingTimeAndClampsMaxResults()
+        {
+            // Arrange
+            await SeedDatabaseAsync();
+            var egg = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 1);
+            var tomato = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 2);
+
+            _context.Recipes.AddRange(
+                new Recipe
+                {
+                    RecipeId = 2,
+                    RecipeName = "Trứng hấp nhanh",
+                    Description = "Nhanh",
+                    CookTimeMinutes = 15,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Recipe
+                {
+                    RecipeId = 3,
+                    RecipeName = "Trứng om chậm",
+                    Description = "Chậm",
+                    CookTimeMinutes = 45,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            _context.RecipeIngredients.AddRange(
+                new RecipeIngredient { RecipeId = 2, FoodItemId = egg.FoodItemId, Grams = 100 },
+                new RecipeIngredient { RecipeId = 2, FoodItemId = tomato.FoodItemId, Grams = 100 },
+                new RecipeIngredient { RecipeId = 3, FoodItemId = egg.FoodItemId, Grams = 100 },
+                new RecipeIngredient { RecipeId = 3, FoodItemId = tomato.FoodItemId, Grams = 100 });
+            await _context.SaveChangesAsync();
+
+            var request = new RecipeSuggestionRequest
+            {
+                AvailableIngredients = new List<string> { "Trứng", "Cà chua" },
+                MaxCookingTimeMinutes = 30,
+                MaxResults = 99
+            };
+
+            // Act
+            var result = await _service.SuggestRecipesAsync(request);
+
+            // Assert
+            Assert.Single(result);
+            Assert.All(result, suggestion => Assert.True(suggestion.CookTimeMinutes <= 30));
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_PrefersNutritionFitWhenCoverageIsEqual()
+        {
+            // Arrange
+            await SeedDatabaseAsync();
+            var egg = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 1);
+            var tomato = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 2);
+
+            _context.Recipes.AddRange(
+                new Recipe
+                {
+                    RecipeId = 2,
+                    RecipeName = "Trứng cà chua vừa kcal",
+                    CookTimeMinutes = 20,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new Recipe
+                {
+                    RecipeId = 3,
+                    RecipeName = "Trứng cà chua nhiều kcal",
+                    CookTimeMinutes = 20,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            _context.RecipeIngredients.AddRange(
+                new RecipeIngredient { RecipeId = 2, FoodItemId = egg.FoodItemId, Grams = 100 },
+                new RecipeIngredient { RecipeId = 2, FoodItemId = tomato.FoodItemId, Grams = 200 },
+                new RecipeIngredient { RecipeId = 3, FoodItemId = egg.FoodItemId, Grams = 300 },
+                new RecipeIngredient { RecipeId = 3, FoodItemId = tomato.FoodItemId, Grams = 300 });
+            await _context.SaveChangesAsync();
+
+            var request = new RecipeSuggestionRequest
+            {
+                AvailableIngredients = new List<string> { "Trứng", "Cà chua" },
+                RemainingCalories = 210,
+                MaxResults = 5
+            };
+
+            // Act
+            var result = await _service.SuggestRecipesAsync(request);
+
+            // Assert
+            Assert.Equal("Trứng cà chua vừa kcal", result[0].RecipeName);
+            Assert.True(result[0].MatchScore > result[1].MatchScore);
+        }
+
+        [Fact]
+        public async Task GetRecipeDetailAsync_ReturnsRecipeMetadataAndImageVariants()
+        {
+            // Arrange
+            await SeedDatabaseAsync();
+            var recipe = await _context.Recipes.SingleAsync(item => item.RecipeId == 1);
+            recipe.ImageUrl = "recipe-images/v1/thumb/trung-xao-ca-chua.webp";
+            recipe.CookTimeMinutes = 18;
+            recipe.Difficulty = "Dễ";
+            recipe.ServingCount = 2;
+            recipe.InstructionsJson = "[\"Chuẩn bị\", \"Xào chín\"]";
+            await _context.SaveChangesAsync();
+
+            // Act
+            var result = await _service.GetRecipeDetailAsync(recipe.RecipeId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(18, result!.CookTimeMinutes);
+            Assert.Equal("Dễ", result.Difficulty);
+            Assert.Equal(2, result.ServingCount);
+            Assert.Equal("recipe-images/v1/thumb/trung-xao-ca-chua.webp", result.ImageUrl);
+            Assert.Equal("recipe-images/v1/medium/trung-xao-ca-chua.webp", result.ImageVariants!.MediumUrl);
+            Assert.Equal(new[] { "Chuẩn bị", "Xào chín" }, result.Instructions);
+        }
     }
 }

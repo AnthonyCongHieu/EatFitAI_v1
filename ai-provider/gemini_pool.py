@@ -845,6 +845,7 @@ class GeminiPoolManager:
         response_mime_type: Optional[str] = None,
         response_schema: Optional[Dict[str, Any]] = None,
         thinking_budget: Optional[int] = None,
+        tools: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         probe_targets: List[GeminiPoolEntry] = []
         with self._lock:
@@ -909,6 +910,7 @@ class GeminiPoolManager:
                     response_mime_type=response_mime_type,
                     response_schema=response_schema,
                     thinking_budget=thinking_budget,
+                    tools=tools,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1129,6 +1131,7 @@ class GeminiPoolManager:
         response_mime_type: Optional[str],
         response_schema: Optional[Dict[str, Any]],
         thinking_budget: Optional[int],
+        tools: Optional[List[Dict[str, Any]]],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
@@ -1144,6 +1147,7 @@ class GeminiPoolManager:
                     response_mime_type=response_mime_type,
                     response_schema=response_schema,
                     thinking_budget=thinking_budget,
+                    tools=tools,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1165,6 +1169,7 @@ class GeminiPoolManager:
         response_mime_type: Optional[str],
         response_schema: Optional[Dict[str, Any]],
         thinking_budget: Optional[int],
+        tools: Optional[List[Dict[str, Any]]],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
@@ -1184,6 +1189,8 @@ class GeminiPoolManager:
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": generation_config,
         }
+        if tools:
+            payload["tools"] = tools
 
         try:
             response = self._requester(

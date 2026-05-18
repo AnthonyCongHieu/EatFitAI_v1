@@ -38,6 +38,8 @@ export type RootStackParamList = {
   MealDiary: { selectedDate?: string } | undefined;
   RecipeSuggestions: {
     ingredients?: string[];
+    availableFoodItemIds?: number[];
+    ingredientHints?: import('../../types/aiEnhanced').RecipeIngredientHint[];
     recipes?: import('../../services/aiService').SuggestedRecipe[];
   };
   RecipeDetail: { recipeId: number; recipeName: string; defaultMealType?: number; diaryEntryId?: string; currentGrams?: number };

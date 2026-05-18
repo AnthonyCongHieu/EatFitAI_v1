@@ -439,6 +439,37 @@ export const foodService = {
     }
   },
 
+  async addDiaryEntryFromRecipe(payload: {
+    mealTypeId: MealTypeId;
+    recipeId: number;
+    grams: number;
+    note?: string;
+    eatenDate?: string;
+  }): Promise<void> {
+    const requestBody = {
+      eatenDate: payload.eatenDate ?? getDefaultEatenDate(),
+      mealTypeId: payload.mealTypeId,
+      recipeId: payload.recipeId,
+      grams: payload.grams,
+      sourceMethod: 'recipe',
+      note: payload.note ?? null,
+    };
+
+    try {
+      await apiClient.post('/api/meal-diary', requestBody);
+    } catch (error: any) {
+      if (!error?.response) {
+        await enqueueFoodWrite({
+          endpoint: '/api/meal-diary',
+          method: 'POST',
+          payload: requestBody,
+        });
+        return;
+      }
+      throw error;
+    }
+  },
+
   async lookupByBarcode(barcode: string): Promise<FoodDetail | null> {
     const trimmedBarcode = barcode.trim();
     if (!trimmedBarcode) {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EatFitAI.API.DTOs.Food;
 
 namespace EatFitAI.API.DTOs.AI
 {
@@ -9,10 +10,24 @@ namespace EatFitAI.API.DTOs.AI
     public class RecipeSuggestionRequest
     {
         public List<string> AvailableIngredients { get; set; } = new();
+        public List<int> AvailableFoodItemIds { get; set; } = new();
+        public List<RecipeIngredientHintDto> IngredientHints { get; set; } = new();
+        public int? MealTypeId { get; set; }
         public int? MaxCookingTimeMinutes { get; set; }
         public int? MinMatchedIngredients { get; set; } = 1;
         public int MaxResults { get; set; } = 10;
+        public decimal? RemainingCalories { get; set; }
+        public decimal? RemainingProtein { get; set; }
+        public decimal? RemainingCarbs { get; set; }
+        public decimal? RemainingFat { get; set; }
         public Guid? UserId { get; set; }
+    }
+
+    public class RecipeIngredientHintDto
+    {
+        public int? FoodItemId { get; set; }
+        public string? Name { get; set; }
+        public decimal? Confidence { get; set; }
     }
 
     /// <summary>
@@ -29,11 +44,21 @@ namespace EatFitAI.API.DTOs.AI
         public decimal TotalProtein { get; set; }
         public decimal TotalCarbs { get; set; }
         public decimal TotalFat { get; set; }
+        public decimal TotalGrams { get; set; }
+
+        public string? ImageUrl { get; set; }
+        public ImageVariantsDto? ImageVariants { get; set; }
+        public int? CookTimeMinutes { get; set; }
+        public string? Difficulty { get; set; }
+        public int? ServingCount { get; set; }
         
         // Match information
         public int MatchedIngredientsCount { get; set; }
         public int TotalIngredientsCount { get; set; }
         public decimal MatchPercentage { get; set; }
+        public decimal MatchScore { get; set; }
+        public int MissingIngredientCount { get; set; }
+        public List<string> ScoreReasons { get; set; } = new();
         
         // Lists for user reference
         public List<string> MatchedIngredients { get; set; } = new();
@@ -55,12 +80,23 @@ namespace EatFitAI.API.DTOs.AI
         public decimal TotalProtein { get; set; }
         public decimal TotalCarbs { get; set; }
         public decimal TotalFat { get; set; }
+        public decimal TotalGrams { get; set; }
+
+        public string? ImageUrl { get; set; }
+        public ImageVariantsDto? ImageVariants { get; set; }
+        public int? CookTimeMinutes { get; set; }
+        public string? Difficulty { get; set; }
+        public int? ServingCount { get; set; }
+        public int CredibilityScore { get; set; }
         
         // Hướng dẫn nấu ăn (các bước)
         public List<string>? Instructions { get; set; }
         
         // URL video hướng dẫn (YouTube)
         public string? VideoUrl { get; set; }
+        public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }
+        public string? GuideStatus { get; set; }
+        public List<string> SourceUrls { get; set; } = new();
         
         // Detailed ingredients
         public List<RecipeIngredientDetailDto> Ingredients { get; set; } = new();
@@ -106,5 +142,26 @@ namespace EatFitAI.API.DTOs.AI
         public List<string> Steps { get; set; } = new();
         public string? CookingTime { get; set; }
         public string? Difficulty { get; set; }
+    }
+
+    public class RecipeYoutubeVideoDto
+    {
+        public string? VideoId { get; set; }
+        public string? Title { get; set; }
+        public string? ChannelTitle { get; set; }
+        public string? Url { get; set; }
+        public string? ThumbnailUrl { get; set; }
+    }
+
+    public class RecipeCookingGuideDto
+    {
+        public int RecipeId { get; set; }
+        public List<string> Steps { get; set; } = new();
+        public int? CookingTimeMinutes { get; set; }
+        public string? Difficulty { get; set; }
+        public List<string> Tips { get; set; } = new();
+        public List<string> SourceUrls { get; set; } = new();
+        public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }
+        public string GuideStatus { get; set; } = "fallback";
     }
 }

@@ -12,7 +12,10 @@ import hashlib
 import time
 import re
 import unicodedata
+from urllib.parse import urlparse
 from typing import Any, Dict, Optional
+
+import requests
 
 from gemini_pool import (
     DEFAULT_MODEL,
@@ -116,6 +119,7 @@ def query_gemini(
     cache_ttl: int = None,
     response_schema: Optional[Dict[str, Any]] = None,
     thinking_budget: Optional[int] = None,
+    tools: Optional[list[Dict[str, Any]]] = None,
 ) -> Optional[str]:
     """
     Query Gemini API với cache support.
@@ -136,6 +140,7 @@ def query_gemini(
             response_mime_type="application/json",
             response_schema=response_schema,
             thinking_budget=thinking_budget,
+            tools=tools,
         )
         
         if response:
@@ -570,45 +575,321 @@ def _meal_insight_fallback(cal_pct, total_calories, target_calories, current_mac
 
 # ============== COOKING INSTRUCTIONS ==============
 
-def get_cooking_instructions(
+RECIPE_GUIDE_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "steps": {"type": "array", "items": {"type": "string"}},
+        "cookingTimeMinutes": {"type": "integer"},
+        "difficulty": {"type": "string"},
+        "tips": {"type": "array", "items": {"type": "string"}},
+        "sourceUrls": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["steps", "cookingTimeMinutes", "difficulty", "tips", "sourceUrls"],
+}
+
+DEFAULT_TRUSTED_RECIPE_DOMAINS = {
+    "allrecipes.com",
+    "bbcgoodfood.com",
+    "cookpad.com",
+    "dienmayxanh.com",
+    "foodnetwork.com",
+    "monngonmoingay.com",
+    "suckhoedoisong.vn",
+    "taste.com.au",
+    "vnexpress.net",
+}
+
+
+def _csv_env_set(name: str, defaults: Optional[set[str]] = None) -> set[str]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return set(defaults or set())
+    return {item.strip().lower() for item in raw.split(",") if item.strip()}
+
+
+def _recipe_cache_ttl_seconds() -> int:
+    try:
+        hours = int(os.getenv("RECIPE_RESEARCH_CACHE_TTL_HOURS", "168"))
+    except ValueError:
+        hours = 168
+    return max(1, min(hours, 24 * 30)) * 3600
+
+
+def _is_enabled_env(name: str, default: str = "true") -> bool:
+    return os.getenv(name, default).strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start == -1 or end <= start:
+        return None
+    try:
+        parsed = json.loads(text[start:end])
+    except json.JSONDecodeError as exc:
+        logger.warning("Failed to parse recipe guide JSON: %s", exc)
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _coerce_string_list(value: Any, *, max_items: int = 8) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result: list[str] = []
+    for item in value:
+        text = str(item or "").strip()
+        if text:
+            result.append(text)
+        if len(result) >= max_items:
+            break
+    return result
+
+
+def _coerce_positive_int(value: Any) -> Optional[int]:
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        number = int(round(float(value)))
+    except (TypeError, ValueError):
+        match = re.search(r"\d+", str(value))
+        if not match:
+            return None
+        number = int(match.group(0))
+    return number if number > 0 else None
+
+
+def _is_trusted_source_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url.strip())
+    except Exception:
+        return False
+
+    if parsed.scheme != "https" or not parsed.netloc:
+        return False
+
+    host = parsed.netloc.lower().split("@")[-1].split(":")[0]
+    trusted_domains = _csv_env_set("TRUSTED_RECIPE_DOMAINS", DEFAULT_TRUSTED_RECIPE_DOMAINS)
+    return any(host == domain or host.endswith(f".{domain}") for domain in trusted_domains)
+
+
+def _trusted_source_urls(source_urls: Any) -> list[str]:
+    urls = _coerce_string_list(source_urls, max_items=5)
+    trusted: list[str] = []
+    for url in urls:
+        if _is_trusted_source_url(url) and url not in trusted:
+            trusted.append(url)
+    return trusted
+
+
+def _recipe_tools() -> list[Dict[str, Any]]:
+    if not _is_enabled_env("GEMINI_SEARCH_GROUNDING_ENABLED", "true"):
+        return []
+    return [{"google_search": {}}, {"url_context": {}}]
+
+
+def _build_recipe_guide_prompt(recipe_name: str, ingredients: list[dict], description: str) -> str:
+    ingredients_str = ", ".join(
+        f"{ing.get('foodName', 'nguyên liệu')} ({ing.get('grams', 100)}g)"
+        for ing in ingredients[:12]
+    )
+    trusted_domains = ", ".join(sorted(_csv_env_set("TRUSTED_RECIPE_DOMAINS", DEFAULT_TRUSTED_RECIPE_DOMAINS))[:12])
+    return f"""Bạn là đầu bếp EatFitAI. Tạo hướng dẫn nấu an toàn, thực tế, ngắn gọn cho người Việt.
+
+MÓN: "{recipe_name}"
+NGUYÊN LIỆU DB: {ingredients_str}
+{f"MÔ TẢ DB: {description}" if description else ""}
+
+YÊU CẦU:
+- Chỉ dùng các nguồn công thức/cooking đáng tin cậy; ưu tiên các domain: {trusted_domains}.
+- Không tự bịa URL. sourceUrls phải là URL https thật từ nguồn đã tham khảo.
+- Không thay đổi định lượng dinh dưỡng; backend đã quyết định macro.
+- Viết tiếng Việt tự nhiên, tránh quảng cáo và tránh lời khuyên y tế.
+- 3-7 bước, mỗi bước đủ rõ để nấu được trên bếp gia đình.
+
+CHỈ trả lời JSON hợp lệ:
+{{"steps":["..."],"cookingTimeMinutes":25,"difficulty":"Dễ","tips":["..."],"sourceUrls":["https://..."]}}"""
+
+
+def _normalize_search_text(value: str) -> str:
+    folded = unicodedata.normalize("NFD", value.lower())
+    folded = "".join(ch for ch in folded if unicodedata.category(ch) != "Mn").replace("đ", "d")
+    return re.sub(r"[^a-z0-9]+", " ", folded).strip()
+
+
+def _title_relevance_score(recipe_name: str, title: str, channel_title: str) -> float:
+    recipe_tokens = {token for token in _normalize_search_text(recipe_name).split() if len(token) >= 2}
+    text = _normalize_search_text(f"{title} {channel_title}")
+    if not recipe_tokens:
+        return 0.0
+    overlap = sum(1 for token in recipe_tokens if token in text)
+    score = overlap / max(1, len(recipe_tokens))
+    if any(token in text for token in ("cach nau", "cong thuc", "mon ngon", "healthy", "eat clean")):
+        score += 0.35
+    return score
+
+
+def _safe_int(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
+    api_key = os.getenv("YOUTUBE_DATA_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    trusted_channel_ids = _csv_env_set("TRUSTED_YOUTUBE_CHANNEL_IDS")
+    try:
+        search_response = requests.get(
+            "https://www.googleapis.com/youtube/v3/search",
+            params={
+                "part": "snippet",
+                "q": f"cách nấu {recipe_name}",
+                "type": "video",
+                "maxResults": 5,
+                "order": "relevance",
+                "relevanceLanguage": "vi",
+                "safeSearch": "moderate",
+                "key": api_key,
+            },
+            timeout=8,
+        )
+        search_response.raise_for_status()
+        search_items = search_response.json().get("items", [])
+        video_ids = [
+            item.get("id", {}).get("videoId")
+            for item in search_items
+            if item.get("id", {}).get("videoId")
+        ]
+        if not video_ids:
+            return None
+
+        videos_response = requests.get(
+            "https://www.googleapis.com/youtube/v3/videos",
+            params={
+                "part": "snippet,statistics",
+                "id": ",".join(video_ids[:5]),
+                "key": api_key,
+            },
+            timeout=8,
+        )
+        videos_response.raise_for_status()
+        videos = videos_response.json().get("items", [])
+    except requests.RequestException as exc:
+        logger.warning("YouTube recipe lookup failed: %s", exc)
+        return None
+
+    best: Optional[Dict[str, Any]] = None
+    best_score = 0.0
+    for item in videos:
+        snippet = item.get("snippet", {})
+        channel_id = str(snippet.get("channelId") or "").strip()
+        if trusted_channel_ids and channel_id.lower() not in trusted_channel_ids:
+            continue
+
+        title = str(snippet.get("title") or "").strip()
+        channel_title = str(snippet.get("channelTitle") or "").strip()
+        relevance = _title_relevance_score(recipe_name, title, channel_title)
+        views = _safe_int(item.get("statistics", {}).get("viewCount"))
+        trust_bonus = 1.0 if channel_id.lower() in trusted_channel_ids else 0.0
+        score = relevance + trust_bonus + min(0.35, views / 1_000_000)
+        if score > best_score:
+            thumbnails = snippet.get("thumbnails", {}) or {}
+            thumb = (
+                thumbnails.get("high")
+                or thumbnails.get("medium")
+                or thumbnails.get("default")
+                or {}
+            ).get("url")
+            video_id = item.get("id")
+            best = {
+                "videoId": video_id,
+                "title": title,
+                "channelTitle": channel_title,
+                "channelId": channel_id,
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+                "thumbnailUrl": thumb,
+                "trustScore": round(score, 3),
+            }
+            best_score = score
+
+    min_score = 1.15 if trusted_channel_ids else 0.85
+    return best if best and best_score >= min_score else None
+
+
+def get_cooking_guide(
     recipe_name: str, ingredients: list[dict], description: str = ""
 ) -> Dict[str, Any]:
-    """Generate hướng dẫn nấu ăn bằng Gemini AI"""
+    """Generate grounded cooking guide with source validation and optional YouTube candidate."""
     try:
         ensure_gemini_service_available()
     except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
-        logger.warning("Cooking instructions fallback due to Gemini unavailable: %s", exc)
-        return _generate_fallback_instructions(recipe_name, ingredients)
-    
-    ingredients_str = ", ".join([
-        f"{ing.get('foodName', 'Unknown')} ({ing.get('grams', 100)}g)"
-        for ing in ingredients
-    ])
-    
-    prompt = f"""Bạn là đầu bếp chuyên nghiệp. Hướng dẫn nấu chi tiết:
+        logger.warning("Recipe guide fallback due to Gemini unavailable: %s", exc)
+        fallback = _generate_fallback_instructions(recipe_name, ingredients)
+        fallback["guideStatus"] = "fallback"
+        fallback["sourceUrls"] = []
+        fallback["youtubeVideo"] = None
+        fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
+        return fallback
 
-MÓN: "{recipe_name}"
-NGUYÊN LIỆU: {ingredients_str}
-{f"MÔ TẢ: {description}" if description else ""}
+    response = query_gemini(
+        _build_recipe_guide_prompt(recipe_name, ingredients, description),
+        cache_ttl=_recipe_cache_ttl_seconds(),
+        response_schema=RECIPE_GUIDE_SCHEMA,
+        thinking_budget=0,
+        tools=_recipe_tools(),
+    )
 
-TRẢ LỜI JSON:
-{{"steps": ["bước 1 chi tiết...", "bước 2..."], "cookingTime": "X phút", "difficulty": "Dễ/Trung bình/Khó", "tips": ["mẹo 1", "mẹo 2"]}}"""
-
-    response = query_gemini(prompt, cache_ttl=600)
-    
     if response:
-        try:
-            start = response.find("{")
-            end = response.rfind("}") + 1
-            if start != -1 and end > start:
-                result = json.loads(response[start:end])
-                result["source"] = "gemini"
-                if "steps" in result and len(result["steps"]) >= 3:
-                    return result
-        except Exception as e:
-            logger.error(f"Error parsing cooking instructions: {e}")
-    
-    return _generate_fallback_instructions(recipe_name, ingredients)
+        parsed = _extract_json_object(response)
+        if parsed:
+            steps = _coerce_string_list(parsed.get("steps"), max_items=7)
+            source_urls = _trusted_source_urls(parsed.get("sourceUrls"))
+            if len(steps) >= 3 and source_urls:
+                return {
+                    "recipeName": recipe_name,
+                    "steps": steps,
+                    "cookingTimeMinutes": _coerce_positive_int(parsed.get("cookingTimeMinutes")) or 25,
+                    "difficulty": str(parsed.get("difficulty") or "Dễ").strip(),
+                    "tips": _coerce_string_list(parsed.get("tips"), max_items=5),
+                    "sourceUrls": source_urls,
+                    "youtubeVideo": _find_youtube_video(recipe_name),
+                    "guideStatus": "generated",
+                    "source": "gemini_grounded",
+                }
+
+            logger.warning(
+                "Rejected recipe guide without enough steps or trusted sources recipe=%s steps=%s sources=%s",
+                recipe_name,
+                len(steps),
+                len(source_urls),
+            )
+
+    fallback = _generate_fallback_instructions(recipe_name, ingredients)
+    fallback["guideStatus"] = "fallback"
+    fallback["sourceUrls"] = []
+    fallback["youtubeVideo"] = None
+    fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
+    return fallback
+
+
+def get_cooking_instructions(
+    recipe_name: str, ingredients: list[dict], description: str = ""
+) -> Dict[str, Any]:
+    """Backward-compatible cooking instruction shape for older backend/mobile clients."""
+    guide = get_cooking_guide(recipe_name, ingredients, description)
+    minutes = _coerce_positive_int(guide.get("cookingTimeMinutes")) or 25
+    return {
+        "steps": guide.get("steps", []),
+        "cookingTime": f"{minutes} phút",
+        "difficulty": guide.get("difficulty", "Dễ"),
+        "tips": guide.get("tips", []),
+        "source": guide.get("source", guide.get("guideStatus", "fallback")),
+        "sourceUrls": guide.get("sourceUrls", []),
+        "youtubeVideo": guide.get("youtubeVideo"),
+    }
 
 
 def _generate_fallback_instructions(recipe_name: str, ingredients: list[dict]) -> Dict[str, Any]:

@@ -550,6 +550,7 @@ const AIScanScreen: React.FC = () => {
         addIngredient({
           name: getVisionFoodDisplayName(item),
           confidence: item.confidence,
+          foodItemId: item.foodItemId ?? null,
           imageUri: capturedUri || undefined,
         });
       });

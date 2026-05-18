@@ -13,6 +13,7 @@ import type {
 import type {
   AdaptiveTarget,
   NutritionInsight,
+  RecipeCookingGuide,
   RecipeDetail,
   RecipeIngredientDetail,
   RecipeSuggestion,
@@ -43,6 +44,7 @@ const getApiBaseUrl = (): string => {
 export type IngredientItem = {
   name: string;
   confidence?: number | null;
+  foodItemId?: number | null;
 };
 
 export type SuggestedRecipe = RecipeSuggestion;
@@ -354,6 +356,22 @@ const normalizeRecipeSuggestionItem = (item: RecipeSuggestionApiItem | any): Rec
   totalProtein: readRecipeNumber(item, 'totalProtein', 'TotalProtein', 'protein', 'Protein'),
   totalCarbs: readRecipeNumber(item, 'totalCarbs', 'TotalCarbs', 'carbs', 'Carbs'),
   totalFat: readRecipeNumber(item, 'totalFat', 'TotalFat', 'fat', 'Fat'),
+  totalGrams: readRecipeNumber(item, 'totalGrams', 'TotalGrams'),
+  imageUrl: (() => {
+    const rawImage = item?.imageUrl ?? item?.ImageUrl;
+    return typeof rawImage === 'string' && rawImage.trim().length > 0
+      ? rawImage.trim()
+      : undefined;
+  })(),
+  imageVariants: item?.imageVariants ?? item?.ImageVariants ?? null,
+  cookTimeMinutes: readRecipeNumber(item, 'cookTimeMinutes', 'CookTimeMinutes') || undefined,
+  difficulty: (() => {
+    const rawDifficulty = item?.difficulty ?? item?.Difficulty;
+    return typeof rawDifficulty === 'string' && rawDifficulty.trim().length > 0
+      ? rawDifficulty.trim()
+      : undefined;
+  })(),
+  servingCount: readRecipeNumber(item, 'servingCount', 'ServingCount') || undefined,
   matchedIngredientsCount: readRecipeNumber(
     item,
     'matchedIngredientsCount',
@@ -365,6 +383,13 @@ const normalizeRecipeSuggestionItem = (item: RecipeSuggestionApiItem | any): Rec
     'TotalIngredientsCount',
   ),
   matchPercentage: readRecipeNumber(item, 'matchPercentage', 'MatchPercentage'),
+  matchScore: readRecipeNumber(item, 'matchScore', 'MatchScore'),
+  scoreReasons: normalizeStringArray(item?.scoreReasons ?? item?.ScoreReasons) ?? [],
+  missingIngredientCount: readRecipeNumber(
+    item,
+    'missingIngredientCount',
+    'MissingIngredientCount',
+  ),
   matchedIngredients: normalizeStringArray(item?.matchedIngredients ?? item?.MatchedIngredients) ?? [],
   missingIngredients: normalizeStringArray(item?.missingIngredients ?? item?.MissingIngredients) ?? [],
   allIngredients: normalizeStringArray(item?.allIngredients ?? item?.AllIngredients) ?? [],
@@ -420,8 +445,39 @@ const normalizeRecipeDetail = (data: any): RecipeDetail => ({
     typeof (data?.videoUrl ?? data?.VideoUrl) === 'string'
       ? String(data.videoUrl ?? data.VideoUrl).trim() || undefined
       : undefined,
+  youtubeVideo: data?.youtubeVideo ?? data?.YoutubeVideo ?? null,
+  guideStatus:
+    typeof (data?.guideStatus ?? data?.GuideStatus) === 'string'
+      ? String(data.guideStatus ?? data.GuideStatus).trim() || undefined
+      : undefined,
+  sourceUrls: normalizeStringArray(data?.sourceUrls ?? data?.SourceUrls) ?? [],
+  credibilityScore: readRecipeNumber(data, 'credibilityScore', 'CredibilityScore'),
   tags: normalizeStringArray(data?.tags ?? data?.Tags),
 });
+
+const normalizeRecipeCookingGuide = (data: any): RecipeCookingGuide => ({
+  recipeId: toNumber(data?.recipeId ?? data?.RecipeId) ?? undefined,
+  recipeName:
+    typeof (data?.recipeName ?? data?.RecipeName) === 'string'
+      ? String(data.recipeName ?? data.RecipeName).trim()
+      : undefined,
+  steps: normalizeStringArray(data?.steps ?? data?.Steps) ?? [],
+  cookingTimeMinutes:
+    toNumber(data?.cookingTimeMinutes ?? data?.CookingTimeMinutes) ?? undefined,
+  difficulty:
+    typeof (data?.difficulty ?? data?.Difficulty) === 'string'
+      ? String(data.difficulty ?? data.Difficulty).trim()
+      : undefined,
+  tips: normalizeStringArray(data?.tips ?? data?.Tips) ?? [],
+  sourceUrls: normalizeStringArray(data?.sourceUrls ?? data?.SourceUrls) ?? [],
+  youtubeVideo: data?.youtubeVideo ?? data?.YoutubeVideo ?? null,
+  guideStatus:
+    typeof (data?.guideStatus ?? data?.GuideStatus) === 'string'
+      ? String(data.guideStatus ?? data.GuideStatus).trim()
+      : undefined,
+});
+
+export const normalizeRecipeSuggestionForTest = normalizeRecipeSuggestionItem;
 
 const normalizeAdaptiveTarget = (data: any): AdaptiveTarget => ({
   currentTarget: {
@@ -798,6 +854,13 @@ export const aiService = {
   ): Promise<import('../types/aiEnhanced').RecipeDetail> {
     const response = await apiClient.get(`/api/ai/recipes/${recipeId}`);
     return normalizeRecipeDetail(response.data);
+  },
+
+  async getRecipeCookingGuide(
+    recipeId: number,
+  ): Promise<import('../types/aiEnhanced').RecipeCookingGuide> {
+    const response = await apiClient.post(`/api/ai/recipes/${recipeId}/cooking-guide`);
+    return normalizeRecipeCookingGuide(response.data);
   },
 
   async getNutritionInsights(

@@ -867,6 +867,7 @@ builder.Services.AddScoped<IUserPreferenceService, UserPreferenceService>();
 builder.Services.AddScoped<IEntitlementService, EntitlementService>();
 builder.Services.AddScoped<IBusinessDateService, BusinessDateService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
+builder.Services.AddScoped<IRecipeGuideService, RecipeGuideService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
 builder.Services.AddScoped<AIReviewService>(); // AI Weekly Review
 builder.Services.AddScoped<IVisionCacheService, VisionCacheService>();

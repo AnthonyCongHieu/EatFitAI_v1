@@ -12,12 +12,23 @@ public partial class Recipe
 
     public string? Description { get; set; }
 
-    // TODO: Uncomment sau khi chạy migration SQL
-    // Hướng dẫn nấu ăn (các bước cụ thể)
-    // public string? Instructions { get; set; }
+    public string? ImageUrl { get; set; }
 
-    // URL video hướng dẫn (YouTube embed)
-    // public string? VideoUrl { get; set; }
+    public int? CookTimeMinutes { get; set; }
+
+    public string? Difficulty { get; set; }
+
+    public int? ServingCount { get; set; }
+
+    public string? InstructionsJson { get; set; }
+
+    public string? VideoUrl { get; set; }
+
+    public string? SourceUrlsJson { get; set; }
+
+    public int CredibilityScore { get; set; } = 70;
+
+    public DateTime? EnhancedAt { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

@@ -21,6 +21,8 @@ import { aiService } from '../../../services/aiService';
 import { foodService } from '../../../services/foodService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { diaryService } from '../../../services/diaryService';
+import AppImage from '../../../components/ui/AppImage';
+import { sanitizeFoodImageUrl } from '../../../utils/imageHelpers';
 import type { RootStackParamList } from '../../types';
 import type { RecipeDetail } from '../../../types/aiEnhanced';
 import type { MealTypeId } from '../../../types';
@@ -33,8 +35,12 @@ type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
 
 type AiCookingInstructions = {
   steps: string[];
-  cookingTime?: string;
+  cookingTimeMinutes?: number;
   difficulty?: string;
+  tips?: string[];
+  sourceUrls?: string[];
+  youtubeVideo?: RecipeDetail['youtubeVideo'];
+  guideStatus?: string;
   isLoading: boolean;
   error?: string;
 };
@@ -93,28 +99,61 @@ const RecipeDetailScreen = (): React.ReactElement => {
   }, [route.params.recipeId]);
 
   useEffect(() => {
-    if (!recipe || (recipe.instructions && recipe.instructions.length > 0)) return;
+    if (!recipe) return;
 
     const fetchAiInstructions = async () => {
-      setAiInstructions((prev) => ({ ...prev, isLoading: true, error: undefined }));
+      setAiInstructions((prev) => ({
+        ...prev,
+        steps: recipe.instructions ?? prev.steps,
+        sourceUrls: recipe.sourceUrls ?? prev.sourceUrls,
+        youtubeVideo: recipe.youtubeVideo ?? prev.youtubeVideo,
+        guideStatus: recipe.guideStatus ?? prev.guideStatus,
+        isLoading: true,
+        error: undefined,
+      }));
       try {
-        const result = await aiService.getCookingInstructions(
-          recipe.recipeName,
-          recipe.ingredients || [],
-          recipe.description,
-        );
+        const result = await aiService.getRecipeCookingGuide(recipe.recipeId);
         setAiInstructions({
           steps: result.steps,
-          cookingTime: result.cookingTime,
+          cookingTimeMinutes: result.cookingTimeMinutes,
           difficulty: result.difficulty,
+          tips: result.tips,
+          sourceUrls: result.sourceUrls,
+          youtubeVideo: result.youtubeVideo,
+          guideStatus: result.guideStatus,
           isLoading: false,
         });
       } catch (e) {
-        setAiInstructions({
-          steps: [],
-          isLoading: false,
-          error: 'Không thể tạo hướng dẫn nấu',
-        });
+        if (recipe.instructions?.length) {
+          setAiInstructions((prev) => ({
+            ...prev,
+            steps: recipe.instructions ?? [],
+            isLoading: false,
+            error: undefined,
+            guideStatus: recipe.guideStatus ?? 'stored',
+          }));
+          return;
+        }
+
+        try {
+          const result = await aiService.getCookingInstructions(
+            recipe.recipeName,
+            recipe.ingredients || [],
+            recipe.description,
+          );
+          setAiInstructions({
+            steps: result.steps,
+            difficulty: result.difficulty,
+            isLoading: false,
+            guideStatus: 'fallback',
+          });
+        } catch {
+          setAiInstructions({
+            steps: [],
+            isLoading: false,
+            error: 'Không thể tải hướng dẫn nấu',
+          });
+        }
       }
     };
     fetchAiInstructions();
@@ -123,37 +162,19 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const handleAddToDiary = async (mealTypeId: MealTypeId, servings: number) => {
     if (!recipe) return;
     try {
-      const totalGrams = 100 * servings;
-      const ratio = totalGrams / 100;
+      const totalGrams = Math.max(1, (recipe.totalGrams || 100) * servings);
 
       if (route.params.diaryEntryId) {
         await diaryService.updateEntry(route.params.diaryEntryId, {
           grams: totalGrams,
         });
       } else {
-        const formData = new FormData();
-        formData.append('foodName', recipe.recipeName);
-        formData.append('description', recipe.description || `Công thức: ${recipe.recipeName}`);
-        formData.append('caloriesPer100', String(recipe.totalCalories ?? 0));
-        formData.append('proteinPer100', String(recipe.totalProtein ?? 0));
-        formData.append('carbPer100', String(recipe.totalCarbs ?? 0));
-        formData.append('fatPer100', String(recipe.totalFat ?? 0));
-        formData.append('unitType', 'g');
-
-        const createdItem = await foodService.createUserFoodItem(formData);
-
-        const diaryPayload = {
+        await foodService.addDiaryEntryFromRecipe({
           mealTypeId,
-          userFoodItemId: String(createdItem.userFoodItemId),
+          recipeId: recipe.recipeId,
           grams: totalGrams,
-          calories: Number((recipe.totalCalories ?? 0) * ratio) || 0,
-          protein: Number((recipe.totalProtein ?? 0) * ratio) || 0,
-          carb: Number((recipe.totalCarbs ?? 0) * ratio) || 0,
-          fat: Number((recipe.totalFat ?? 0) * ratio) || 0,
           note: `Từ công thức: ${recipe.recipeName}`,
-        };
-
-        await foodService.addDiaryEntryFromUserFoodItem(diaryPayload);
+        });
       }
 
       await invalidateDiaryQueries(queryClient);
@@ -214,6 +235,30 @@ const RecipeDetailScreen = (): React.ReactElement => {
     );
   }
 
+  const heroImageUrl = sanitizeFoodImageUrl(
+    recipe.imageVariants?.mediumUrl ?? recipe.imageUrl,
+    'medium',
+  );
+  const guideSteps = aiInstructions.steps.length > 0
+    ? aiInstructions.steps
+    : recipe.instructions ?? [];
+  const guideSourceUrls = aiInstructions.sourceUrls?.length
+    ? aiInstructions.sourceUrls
+    : recipe.sourceUrls ?? [];
+  const youtubeVideo = aiInstructions.youtubeVideo ?? recipe.youtubeVideo ?? null;
+  const youtubeUrl = youtubeVideo?.url || recipe.videoUrl;
+  const cookingTimeLabel =
+    aiInstructions.cookingTimeMinutes || recipe.cookTimeMinutes
+      ? `${aiInstructions.cookingTimeMinutes ?? recipe.cookTimeMinutes} phút`
+      : null;
+  const guideStatusLabel =
+    aiInstructions.guideStatus === 'generated'
+      ? 'Đã kiểm chứng nguồn'
+      : aiInstructions.guideStatus === 'stored'
+        ? 'Bản hướng dẫn đã lưu'
+        : aiInstructions.guideStatus === 'stale'
+          ? 'Bản lưu cần cập nhật'
+          : 'Hướng dẫn dự phòng';
 
 
   return (
@@ -232,17 +277,33 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
       <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={S.heroContainer}>
-          <View style={[S.heroImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: P.surfaceContainerLow }]}>
-            <Ionicons name="image-outline" size={64} color={P.onSurfaceVariant} />
-            <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 14, marginTop: 12 }}>Chưa có ảnh</ThemedText>
+          <View style={S.heroImage}>
+            {heroImageUrl ? (
+              <AppImage
+                source={{ uri: heroImageUrl }}
+                style={S.heroImage}
+                fallbackEmoji="🍽️"
+                showPlaceholder
+              />
+            ) : (
+              <View style={[S.heroImage, S.heroFallback]}>
+                <Ionicons name="restaurant-outline" size={56} color={P.onSurfaceVariant} />
+              </View>
+            )}
             <LinearGradient colors={['transparent', P.surface]} style={S.gradientMask} />
           </View>
           <View style={S.heroTextWrap}>
             <ThemedText style={S.heroMainTitle} numberOfLines={3}>{recipe.recipeName}</ThemedText>
-            {aiInstructions.cookingTime && (
+            {cookingTimeLabel && (
               <View style={S.badgeWrap}>
                 <Ionicons name="time" size={14} color={P.primary} />
-                <ThemedText style={S.badgeText}>{aiInstructions.cookingTime}</ThemedText>
+                <ThemedText style={S.badgeText}>{cookingTimeLabel}</ThemedText>
+              </View>
+            )}
+            {!!(aiInstructions.difficulty ?? recipe.difficulty) && (
+              <View style={S.badgeWrap}>
+                <Ionicons name="speedometer-outline" size={14} color={P.primary} />
+                <ThemedText style={S.badgeText}>{aiInstructions.difficulty ?? recipe.difficulty}</ThemedText>
               </View>
             )}
           </View>
@@ -295,25 +356,40 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
           {/* Cooking Instructions */}
           <Animated.View entering={FadeInDown.delay(400)} style={S.glassCard}>
-            <ThemedText style={S.sectionTitle}>Hướng dẫn nấu</ThemedText>
+            <View style={S.sectionTitleRow}>
+              <ThemedText style={S.sectionTitle}>Hướng dẫn nấu</ThemedText>
+              <View style={S.statusBadge}>
+                <ThemedText style={S.statusBadgeText}>{guideStatusLabel}</ThemedText>
+              </View>
+            </View>
 
             {aiInstructions.isLoading ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
                 <ActivityIndicator size="small" color={P.primary} />
                 <ThemedText style={{ marginLeft: 10, color: P.onSurfaceVariant, fontSize: 13 }}>
-                  AI đang viết công thức...
+                  Đang tải hướng dẫn...
                 </ThemedText>
               </View>
             ) : aiInstructions.error ? (
               <ThemedText style={{ color: P.danger, fontSize: 13 }}>{aiInstructions.error}</ThemedText>
             ) : (
               <View style={S.stepsWrap}>
-                {(recipe.instructions?.length ? recipe.instructions : aiInstructions.steps).map((step: string, i: number) => (
+                {guideSteps.map((step: string, i: number) => (
                   <View key={i} style={S.stepRow}>
                     <View style={S.stepNumberWrap}>
                       <ThemedText style={S.stepNumberText}>{i + 1}</ThemedText>
                     </View>
                     <ThemedText style={S.stepContentText}>{step}</ThemedText>
+                  </View>
+                ))}
+              </View>
+            )}
+            {!!aiInstructions.tips?.length && (
+              <View style={S.tipsWrap}>
+                {aiInstructions.tips.slice(0, 3).map((tip) => (
+                  <View key={tip} style={S.tipRow}>
+                    <Ionicons name="bulb-outline" size={14} color={P.primary} />
+                    <ThemedText style={S.tipText}>{tip}</ThemedText>
                   </View>
                 ))}
               </View>
@@ -324,19 +400,35 @@ const RecipeDetailScreen = (): React.ReactElement => {
           <Animated.View entering={FadeInDown.delay(500)} style={S.glassCard}>
             <ThemedText style={S.sectionTitle}>Video hướng dẫn</ThemedText>
             <Pressable
-              onPress={() => Linking.openURL(recipe.videoUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(`cách nấu ${recipe.recipeName}`)}`)}
+              onPress={() => Linking.openURL(youtubeUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(`cách nấu ${recipe.recipeName}`)}`)}
               style={({ pressed }) => [S.videoBox, { opacity: pressed ? 0.8 : 1 }]}
             >
               <View style={S.videoIconBg}>
                 <Ionicons name="play" size={24} color="#ef4444" />
               </View>
               <View style={S.videoTextWrap}>
-                <ThemedText style={S.videoTitle}>{recipe.videoUrl ? 'Xem video hướng dẫn' : 'Tìm video trên YouTube'}</ThemedText>
-                <ThemedText style={S.videoSub}>Học cách nấu trực quan</ThemedText>
+                <ThemedText style={S.videoTitle} numberOfLines={1}>
+                  {youtubeVideo?.title || (youtubeUrl ? 'Xem video hướng dẫn' : 'Tìm video trên YouTube')}
+                </ThemedText>
+                <ThemedText style={S.videoSub} numberOfLines={1}>
+                  {youtubeVideo?.channelTitle || 'Học cách nấu trực quan'}
+                </ThemedText>
               </View>
               <Ionicons name="open-outline" size={20} color={P.onSurfaceVariant} />
             </Pressable>
           </Animated.View>
+
+          {guideSourceUrls.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(550)} style={S.glassCard}>
+              <ThemedText style={S.sectionTitle}>Nguồn tham khảo</ThemedText>
+              {guideSourceUrls.slice(0, 3).map((url) => (
+                <Pressable key={url} style={S.sourceRow} onPress={() => Linking.openURL(url)}>
+                  <Ionicons name="link-outline" size={16} color={P.primary} />
+                  <ThemedText style={S.sourceText} numberOfLines={1}>{url}</ThemedText>
+                </Pressable>
+              ))}
+            </Animated.View>
+          )}
 
           <View style={{ height: 100 }} />
         </View>
@@ -352,6 +444,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
           defaultMealType={route.params.defaultMealType}
           diaryEntryId={route.params.diaryEntryId}
           currentGrams={route.params.currentGrams}
+          baseGrams={recipe.totalGrams || 100}
         />
       )}
     </View>
@@ -381,6 +474,7 @@ const S = StyleSheet.create({
 
   heroContainer: { width: '100%', height: 350, position: 'relative' },
   heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: P.surfaceContainerLow },
   gradientMask: { ...StyleSheet.absoluteFillObject },
   heroTextWrap: {
     position: 'absolute', bottom: 20, left: 24, right: 24, gap: 12,
@@ -410,7 +504,17 @@ const S = StyleSheet.create({
     borderRadius: 24, padding: 20, gap: 12,
     borderWidth: 1, borderColor: P.glassBorder,
   },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   sectionTitle: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, marginBottom: 4 },
+  statusBadge: {
+    backgroundColor: P.primary + '18',
+    borderColor: P.primary + '35',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  statusBadgeText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: P.primary },
   bodyText: { fontSize: 14, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, lineHeight: 22 },
 
   ingredientsWrap: { gap: 10 },
@@ -428,12 +532,25 @@ const S = StyleSheet.create({
   },
   stepNumberText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', color: P.primary },
   stepContentText: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 22 },
+  tipsWrap: { gap: 8, paddingTop: 4 },
+  tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  tipText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 20 },
 
   videoBox: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: P.surfaceContainerLowest, padding: 14, borderRadius: 16 },
   videoIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', alignItems: 'center', justifyContent: 'center' },
   videoTextWrap: { flex: 1 },
   videoTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface },
   videoSub: { fontSize: 12, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: P.surfaceContainerLowest,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  sourceText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
 
   floatBottomBtn: {
     position: 'absolute', left: 24, right: 24, zIndex: 100,

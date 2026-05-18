@@ -603,7 +603,7 @@ def root() -> Dict[str, Any]:
     return {
         "service": "ai-provider", 
         "version": "2.0.0-cloud",
-        "endpoints": ["/healthz", "/healthz/gemini", "/detect", "/nutrition-advice", "/meal-insight", "/cooking-instructions"]
+        "endpoints": ["/healthz", "/healthz/gemini", "/detect", "/nutrition-advice", "/meal-insight", "/cooking-guide", "/cooking-instructions"]
     }
 
 @app.get("/healthz")
@@ -1315,20 +1315,55 @@ def meal_insight():
         return {"error": "Internal server error"}, 500
 
 
-# Import cooking instructions generator
+# Import cooking guide generator
 try:
-    from nutrition_llm import get_cooking_instructions
+    from nutrition_llm import get_cooking_guide, get_cooking_instructions
     COOKING_INSTRUCTIONS_AVAILABLE = True
-    logger.info("✅ Cooking instructions generator loaded")
+    logger.info("✅ Cooking guide generator loaded")
 except ImportError as e:
     COOKING_INSTRUCTIONS_AVAILABLE = False
-    logger.warning(f"Cooking instructions generator not available: {e}")
+    logger.warning(f"Cooking guide generator not available: {e}")
+
+
+@app.route("/cooking-guide", methods=["POST"])
+@require_internal_token
+def cooking_guide():
+    """Generate grounded cooking guide with validated source URLs."""
+    if not COOKING_INSTRUCTIONS_AVAILABLE:
+        return {"error": "Cooking guide service not available"}, 503
+
+    try:
+        data = request.get_json()
+        if not data:
+            return {"error": "Missing JSON body"}, 400
+
+        recipe_name = data.get("recipeName", "")
+        ingredients = data.get("ingredients", [])
+        description = data.get("description", "")
+
+        if not recipe_name:
+            return {"error": "recipeName is required"}, 400
+
+        result = get_cooking_guide(
+            recipe_name=recipe_name,
+            ingredients=ingredients,
+            description=description
+        )
+
+        return jsonify(result)
+
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning(f"Cooking guide Gemini unavailable: {exc}")
+        return _gemini_service_error_response(exc)
+    except Exception as e:
+        logger.error(f"Cooking guide error: {e}", exc_info=True)
+        return {"error": "Internal server error"}, 500
 
 
 @app.route("/cooking-instructions", methods=["POST"])
 @require_internal_token
 def cooking_instructions():
-    """Generate cooking instructions using Gemini AI"""
+    """Generate cooking instructions using Gemini AI (legacy shape)."""
     if not COOKING_INSTRUCTIONS_AVAILABLE:
         return {"error": "Cooking instructions service not available"}, 503
     

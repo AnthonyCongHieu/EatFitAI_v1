@@ -65,8 +65,16 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
     onClose();
     navigation.navigate('RecipeSuggestions', {
       ingredients: names,
+      availableFoodItemIds: ingredients
+        .map((item) => item.foodItemId)
+        .filter((id): id is number => typeof id === 'number' && id > 0),
+      ingredientHints: ingredients.map((item) => ({
+        name: item.name,
+        foodItemId: item.foodItemId ?? null,
+        confidence: item.confidence,
+      })),
     });
-  }, [getIngredientNames, navigation, onClose]);
+  }, [getIngredientNames, ingredients, navigation, onClose]);
 
   const renderIngredient = useCallback(
     ({ item }: { item: ScannedIngredient }) => (

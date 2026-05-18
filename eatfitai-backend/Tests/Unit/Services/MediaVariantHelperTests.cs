@@ -39,5 +39,17 @@ namespace EatFitAI.API.Tests.Unit.Services
                 "https://media.example.com/user-food/avatars/v2/userid/medium/image.webp",
                 variants.MediumUrl);
         }
+
+        [Fact]
+        public void FromThumbUrl_DerivesRecipeMediumUrl()
+        {
+            var variants = MediaVariantHelper.FromThumbUrl(
+                "recipe-images/v1/thumb/trung-xao-ca-chua.webp");
+
+            Assert.NotNull(variants);
+            Assert.Equal(
+                "recipe-images/v1/medium/trung-xao-ca-chua.webp",
+                variants.MediumUrl);
+        }
     }
 }

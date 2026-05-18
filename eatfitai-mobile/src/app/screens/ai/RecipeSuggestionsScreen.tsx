@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
   TextInput,
+  type ViewStyle,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,12 +15,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
+import AppImage from '../../../components/ui/AppImage';
 import { aiService } from '../../../services/aiService';
+import { sanitizeFoodImageUrl } from '../../../utils/imageHelpers';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
+type SortMode = 'best' | 'fast' | 'protein' | 'missing';
 
 
 
@@ -40,6 +44,61 @@ const P = {
   danger: '#ffb4ab',
 };
 
+const SORT_OPTIONS: { key: SortMode; label: string }[] = [
+  { key: 'best', label: 'Phù hợp nhất' },
+  { key: 'fast', label: 'Nhanh' },
+  { key: 'protein', label: 'Giàu đạm' },
+  { key: 'missing', label: 'Ít thiếu' },
+];
+
+const selectRecipeImageUrl = (
+  recipe: RecipeSuggestion,
+  size: 'thumb' | 'medium' = 'medium',
+): string | null => {
+  const raw =
+    size === 'medium'
+      ? recipe.imageVariants?.mediumUrl ?? recipe.imageUrl
+      : recipe.imageVariants?.thumbUrl ?? recipe.imageUrl;
+  return sanitizeFoodImageUrl(raw, size);
+};
+
+const getRecipeTimeLabel = (recipe: RecipeSuggestion): string =>
+  recipe.cookTimeMinutes ? `${recipe.cookTimeMinutes} phút` : 'Chưa rõ';
+
+const getPrimaryReason = (recipe: RecipeSuggestion): string => {
+  if (recipe.scoreReasons?.length) return recipe.scoreReasons[0]!;
+  if (recipe.matchedIngredientsCount > 0) {
+    return `Khớp ${recipe.matchedIngredientsCount}/${recipe.totalIngredientsCount} nguyên liệu`;
+  }
+  return 'Dựa trên nguyên liệu đã chọn';
+};
+
+const RecipeImage = ({
+  recipe,
+  style,
+}: {
+  recipe: RecipeSuggestion;
+  style: ViewStyle;
+}): React.ReactElement => {
+  const imageUrl = selectRecipeImageUrl(recipe, 'medium');
+  if (!imageUrl) {
+    return (
+      <View style={[style, S.imageFallback]}>
+        <Ionicons name="restaurant-outline" size={34} color={P.onSurfaceVariant} />
+      </View>
+    );
+  }
+
+  return (
+    <AppImage
+      source={{ uri: imageUrl }}
+      style={style}
+      fallbackEmoji="🍽️"
+      showPlaceholder
+    />
+  );
+};
+
 const RecipeSuggestionsScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
@@ -52,7 +111,24 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const featuredRecipe = recipes[0] ?? null;
+  const [sortMode, setSortMode] = useState<SortMode>('best');
+  const displayedRecipes = useMemo(() => {
+    const sorted = [...recipes];
+    sorted.sort((a, b) => {
+      if (sortMode === 'fast') {
+        return (a.cookTimeMinutes ?? 999) - (b.cookTimeMinutes ?? 999);
+      }
+      if (sortMode === 'protein') {
+        return (b.totalProtein ?? 0) - (a.totalProtein ?? 0);
+      }
+      if (sortMode === 'missing') {
+        return (a.missingIngredientCount ?? 999) - (b.missingIngredientCount ?? 999);
+      }
+      return (b.matchScore ?? b.matchPercentage ?? 0) - (a.matchScore ?? a.matchPercentage ?? 0);
+    });
+    return sorted;
+  }, [recipes, sortMode]);
+  const featuredRecipe = displayedRecipes[0] ?? null;
 
   async function searchRecipes(overrideIngredients?: string[]) {
     const ingredientsToUse = overrideIngredients ?? ingredients;
@@ -62,7 +138,19 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
     setError(null);
     setRecipes([]);
     try {
-      const results = await aiService.suggestRecipes(ingredientsToUse);
+      const routeHints = route.params?.ingredientHints ?? [];
+      const ingredientHints = ingredientsToUse.map((name) => {
+        const existing = routeHints.find(
+          (hint) => (hint.name ?? '').toLowerCase() === name.toLowerCase(),
+        );
+        return existing ?? { name, confidence: null, foodItemId: null };
+      });
+      const results = await aiService.suggestRecipesEnhanced({
+        availableIngredients: ingredientsToUse,
+        availableFoodItemIds: route.params?.availableFoodItemIds,
+        ingredientHints,
+        maxResults: 12,
+      });
       setRecipes(results);
       if (results.length === 0) {
         setError('Không tìm thấy công thức nào phù hợp.');
@@ -91,7 +179,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
     if ((route.params?.ingredients?.length ?? 0) > 0) {
       void searchRecipes(route.params.ingredients);
     }
-  }, [route.params?.recipes, route.params?.ingredients]);
+  }, [route.params?.recipes, route.params?.ingredients, route.params?.availableFoodItemIds, route.params?.ingredientHints]);
 
   const addIngredient = (ing?: string) => {
     const val = (ing ?? newIngredient).trim();
@@ -217,40 +305,68 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           ) : (
             <>
               <MoChiInlineNotice mochiEvent="recipe_success" compact />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={S.sortChipsScroll}
+                style={S.sortChipsSection}
+              >
+                {SORT_OPTIONS.map((option) => {
+                  const active = sortMode === option.key;
+                  return (
+                    <TouchableOpacity
+                      key={option.key}
+                      style={[S.sortChip, active && S.sortChipActive]}
+                      onPress={() => setSortMode(option.key)}
+                    >
+                      <ThemedText style={[S.sortChipText, active && S.sortChipTextActive]}>
+                        {option.label}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
               {featuredRecipe && (
               <Animated.View entering={FadeInDown.springify()} style={S.featuredCard}>
                 <View style={S.featuredContent}>
-                  {/* Left Side / Top - Image Space */}
-                  <View style={[S.featuredImageWrap, { alignItems: 'center', justifyContent: 'center' }]}>
-                    <Ionicons name="image-outline" size={48} color={P.onSurfaceVariant} />
-                    <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 8 }}>Chưa có ảnh</ThemedText>
-                  </View>
-                  {/* Right Side / Bottom - Details */}
+                  <RecipeImage recipe={featuredRecipe} style={S.featuredImageWrap} />
                   <View style={S.featuredDetails}>
                     <View style={S.aiBadge}>
-                      <Ionicons name="sparkles" size={12} color={P.primary} />
-                      <ThemedText style={S.aiBadgeText}>GỢI Ý TỪ AI</ThemedText>
+                      <Ionicons name="checkmark-circle-outline" size={12} color={P.primary} />
+                      <ThemedText style={S.aiBadgeText}>PHÙ HỢP NGUYÊN LIỆU</ThemedText>
                     </View>
                     <ThemedText style={S.featuredTitle} numberOfLines={2}>
                       {featuredRecipe.recipeName}
                     </ThemedText>
+                    <ThemedText style={S.reasonText} numberOfLines={2}>
+                      {getPrimaryReason(featuredRecipe)}
+                    </ThemedText>
                     <View style={S.tagsRow}>
                       <View style={S.tagSubBadge}>
-                        <ThemedText style={S.tagText}>Trùng {recipes[0]?.matchedIngredientsCount}/{recipes[0]?.totalIngredientsCount}</ThemedText>
+                        <ThemedText style={S.tagText}>Trùng {featuredRecipe.matchedIngredientsCount}/{featuredRecipe.totalIngredientsCount}</ThemedText>
                       </View>
                       <View style={S.tagSubBadge}>
-                        <ThemedText style={S.tagText}>{Math.round(recipes[0]?.matchPercentage || 0)}% Phù hợp</ThemedText>
+                        <ThemedText style={S.tagText}>{Math.round(featuredRecipe.matchScore || featuredRecipe.matchPercentage || 0)} điểm</ThemedText>
+                      </View>
+                      <View style={S.tagSubBadge}>
+                        <ThemedText style={S.tagText}>Thiếu {featuredRecipe.missingIngredientCount ?? featuredRecipe.missingIngredients.length}</ThemedText>
                       </View>
                     </View>
                     <View style={S.metricsRow}>
                       <View style={S.metric}>
                         <Ionicons name="time-outline" size={14} color={P.onSurfaceVariant} />
-                        <ThemedText style={S.metricText}>~20m</ThemedText>
+                        <ThemedText style={S.metricText}>{getRecipeTimeLabel(featuredRecipe)}</ThemedText>
                       </View>
                       <View style={S.metric}>
                         <Ionicons name="flame-outline" size={14} color={P.onSurfaceVariant} />
                         <ThemedText style={S.metricText}>{Math.round(featuredRecipe.totalCalories || 0)} kcal</ThemedText>
                       </View>
+                      {!!featuredRecipe.difficulty && (
+                        <View style={S.metric}>
+                          <Ionicons name="speedometer-outline" size={14} color={P.onSurfaceVariant} />
+                          <ThemedText style={S.metricText}>{featuredRecipe.difficulty}</ThemedText>
+                        </View>
+                      )}
                     </View>
                     <TouchableOpacity
                       style={S.viewRecipeBtn}
@@ -264,14 +380,14 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
               )}
 
               {/* Grid 2 Columns for Explore More */}
-              {recipes.length > 1 && (
+              {displayedRecipes.length > 1 && (
                 <View style={S.exploreSection}>
                   <View style={S.exploreHeader}>
                     <ThemedText style={S.exploreTitle}>Khám phá thêm</ThemedText>
                     <ThemedText style={S.exploreLink}>Xem tất cả</ThemedText>
                   </View>
                   <View style={S.gridContainer}>
-                    {recipes.slice(1).map((item, idx) => (
+                    {displayedRecipes.slice(1).map((item, idx) => (
                       <Animated.View
                         key={item.recipeId}
                         entering={FadeInDown.delay((idx + 1) * 100).springify()}
@@ -282,18 +398,19 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                           activeOpacity={0.8}
                           onPress={() => navigation.navigate('RecipeDetail', { recipeId: item.recipeId, recipeName: item.recipeName })}
                         >
-                          <View style={[S.gridImageWrap, { alignItems: 'center', justifyContent: 'center', backgroundColor: P.surfaceContainerLow }]}>
-                            <Ionicons name="image-outline" size={32} color={P.onSurfaceVariant} />
+                          <View style={S.gridImageFrame}>
+                            <RecipeImage recipe={item} style={S.gridImageWrap} />
                             <View style={S.glassOverlayTag}>
-                              <ThemedText style={S.tagTextSmall}>{Math.round(item.matchPercentage)}% MATCH</ThemedText>
+                              <ThemedText style={S.tagTextSmall}>{Math.round(item.matchScore || item.matchPercentage)} điểm</ThemedText>
                             </View>
                           </View>
                           <View style={S.gridCardBody}>
                             <ThemedText style={S.gridTitle} numberOfLines={2}>{item.recipeName}</ThemedText>
+                            <ThemedText style={S.gridReason} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
                             <View style={S.gridMetrics}>
                               <View style={S.metric}>
                                 <Ionicons name="time-outline" size={12} color={P.onSurfaceVariant} />
-                                <ThemedText style={S.metricTextSmall}>20m</ThemedText>
+                                <ThemedText style={S.metricTextSmall}>{getRecipeTimeLabel(item)}</ThemedText>
                               </View>
                               <View style={S.metric}>
                                 <Ionicons name="flame-outline" size={12} color={P.primary} />
@@ -381,6 +498,27 @@ const S = StyleSheet.create({
   mainActionBtnText: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
 
   resultsWrap: { minHeight: 400 },
+  sortChipsSection: { marginHorizontal: -20, marginBottom: 16 },
+  sortChipsScroll: { paddingHorizontal: 20, gap: 10 },
+  sortChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: P.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  sortChipActive: {
+    backgroundColor: P.primary,
+    borderColor: P.primary,
+  },
+  sortChipText: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.onSurfaceVariant },
+  sortChipTextActive: { color: P.onPrimary },
+  imageFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: P.surfaceContainerLow,
+  },
 
   /* Featured Card */
   featuredCard: {
@@ -411,6 +549,7 @@ const S = StyleSheet.create({
   },
   aiBadgeText: { fontSize: 10, fontFamily: 'Inter_800ExtraBold', color: P.primary, letterSpacing: 0.5 },
   featuredTitle: { fontSize: 26, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, lineHeight: 32 },
+  reasonText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 20 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagSubBadge: {
     backgroundColor: P.surfaceContainerLowest,
@@ -445,7 +584,8 @@ const S = StyleSheet.create({
     borderWidth: 1,
     borderColor: P.glassBorder,
   },
-  gridImageWrap: { height: 130, width: '100%', position: 'relative' },
+  gridImageFrame: { height: 130, width: '100%', position: 'relative', backgroundColor: P.surfaceContainerLow },
+  gridImageWrap: { height: '100%', width: '100%' },
   glassOverlayTag: {
     position: 'absolute',
     bottom: 10, left: 10,
@@ -456,6 +596,7 @@ const S = StyleSheet.create({
   tagTextSmall: { fontSize: 9, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
   gridCardBody: { padding: 12, gap: 8 },
   gridTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface, lineHeight: 20 },
+  gridReason: { fontSize: 11, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 16 },
   gridMetrics: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   metricTextSmall: { fontSize: 11, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
 

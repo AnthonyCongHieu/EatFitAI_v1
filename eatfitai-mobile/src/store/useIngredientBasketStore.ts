@@ -11,6 +11,7 @@ export interface ScannedIngredient {
   name: string;
   confidence: number;
   addedAt: Date;
+  foodItemId?: number | null;
   imageUri?: string;
 }
 
@@ -39,6 +40,7 @@ export const useIngredientBasketStore = create<IngredientBasketState>()(
           id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
           name: ingredient.name,
           confidence: ingredient.confidence,
+          foodItemId: ingredient.foodItemId ?? null,
           imageUri: ingredient.imageUri,
           addedAt: new Date(),
         };

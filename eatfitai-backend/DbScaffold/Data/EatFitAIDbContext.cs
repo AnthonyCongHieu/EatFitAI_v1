@@ -305,6 +305,13 @@ public partial class EatFitAIDbContext : DbContext
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.Difficulty).HasMaxLength(40);
+            entity.Property(e => e.InstructionsJson).HasColumnType("text");
+            entity.Property(e => e.VideoUrl).HasMaxLength(500);
+            entity.Property(e => e.SourceUrlsJson).HasColumnType("text");
+            entity.Property(e => e.CredibilityScore).HasDefaultValue(70);
+            entity.Property(e => e.EnhancedAt).HasPrecision(3);
             entity.Property(e => e.RecipeName).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
@@ -586,4 +593,3 @@ public partial class EatFitAIDbContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
-

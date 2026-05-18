@@ -689,138 +689,213 @@ namespace EatFitAI.API.Data
         /// </summary>
         private static async Task SeedRecipesAsync(EatFitAIDbContext context)
         {
-            if (await context.Recipes.AnyAsync()) return;
-
-            var foodItems = await context.FoodItems.ToListAsync();
-            
-            // Helper để tìm food item
-            FoodItem? FindFood(string name) => foodItems.FirstOrDefault(f => 
-                f.FoodName.Contains(name, StringComparison.OrdinalIgnoreCase));
-
-            var chicken = FindFood("Chicken");
-            var rice = FindFood("Rice");
-            var egg = FindFood("Egg");
-            var broccoli = FindFood("Broccoli");
-            var spinach = FindFood("Spinach");
-            var salmon = FindFood("Salmon");
-            var sweetPotato = FindFood("Sweet Potato");
-            var yogurt = FindFood("Yogurt");
-            var banana = FindFood("Banana");
-            var almonds = FindFood("Almonds");
-
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
+            var recipes = await context.Recipes
+                .Include(recipe => recipe.RecipeIngredients)
+                .ToListAsync();
+            var recipesByName = recipes
+                .GroupBy(recipe => NormalizeCatalogKey(recipe.RecipeName), StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
             var now = DateTime.UtcNow;
 
-            // Recipe 1: Cơm gà xào rau củ
-            var recipe1 = new Recipe
+            foreach (var seed in RecipeSeeds)
             {
-                RecipeName = "Cơm gà xào rau củ",
-                Description = "Bữa ăn cân bằng với protein từ gà, carbs từ cơm và vitamin từ rau",
-                CreatedAt = now,
-                UpdatedAt = now,
-                IsDeleted = false
-            };
-            context.Recipes.Add(recipe1);
-            await context.SaveChangesAsync();
+                var resolvedFoodIngredients = seed.Ingredients
+                    .Select(ingredient => new
+                    {
+                        Food = FindSeedFood(foodItems, ingredient.Keys),
+                        ingredient.Grams
+                    })
+                    .Where(item => item.Food != null)
+                    .ToList();
+                var resolvedIngredients = resolvedFoodIngredients
+                    .Select(item => new RecipeIngredient
+                    {
+                        FoodItemId = item.Food!.FoodItemId,
+                        Grams = item.Grams
+                    })
+                    .GroupBy(item => item.FoodItemId)
+                    .Select(group => new RecipeIngredient
+                    {
+                        FoodItemId = group.Key,
+                        Grams = group.Sum(item => item.Grams)
+                    })
+                    .ToList();
 
-            if (chicken != null && rice != null && broccoli != null)
-            {
-                context.RecipeIngredients.AddRange(new[]
+                if (resolvedIngredients.Count < 2)
                 {
-                    new RecipeIngredient { RecipeId = recipe1.RecipeId, FoodItemId = chicken.FoodItemId, Grams = 150 },
-                    new RecipeIngredient { RecipeId = recipe1.RecipeId, FoodItemId = rice.FoodItemId, Grams = 200 },
-                    new RecipeIngredient { RecipeId = recipe1.RecipeId, FoodItemId = broccoli.FoodItemId, Grams = 100 }
-                });
-            }
+                    continue;
+                }
 
-            // Recipe 2: Cá hồi nướng với khoai lang
-            var recipe2 = new Recipe
-            {
-                RecipeName = "Cá hồi nướng với khoai lang",
-                Description = "Giàu omega-3 và carbs phức hợp, tốt cho sức khỏe tim mạch",
-                CreatedAt = now,
-                UpdatedAt = now,
-                IsDeleted = false
-            };
-            context.Recipes.Add(recipe2);
-            await context.SaveChangesAsync();
-
-            if (salmon != null && sweetPotato != null && spinach != null)
-            {
-                context.RecipeIngredients.AddRange(new[]
+                var recipeKey = NormalizeCatalogKey(seed.Name);
+                if (!recipesByName.TryGetValue(recipeKey, out var recipe))
                 {
-                    new RecipeIngredient { RecipeId = recipe2.RecipeId, FoodItemId = salmon.FoodItemId, Grams = 180 },
-                    new RecipeIngredient { RecipeId = recipe2.RecipeId, FoodItemId = sweetPotato.FoodItemId, Grams = 200 },
-                    new RecipeIngredient { RecipeId = recipe2.RecipeId, FoodItemId = spinach.FoodItemId, Grams = 50 }
-                });
-            }
+                    recipe = new Recipe
+                    {
+                        RecipeName = seed.Name,
+                        CreatedAt = now
+                    };
+                    recipesByName[recipeKey] = recipe;
+                    await context.Recipes.AddAsync(recipe);
+                }
 
-            // Recipe 3: Salad trứng healthy
-            var recipe3 = new Recipe
-            {
-                RecipeName = "Salad trứng healthy",
-                Description = "Bữa sáng hoặc bữa phụ giàu protein và chất xơ",
-                CreatedAt = now,
-                UpdatedAt = now,
-                IsDeleted = false
-            };
-            context.Recipes.Add(recipe3);
-            await context.SaveChangesAsync();
+                recipe.RecipeName = seed.Name;
+                recipe.Description = seed.Description;
+                recipe.ImageUrl = ResolveSeedRecipeImageUrl(recipe.ImageUrl, resolvedFoodIngredients
+                    .Select(item => item.Food!.ThumbNail)
+                    .FirstOrDefault(image => !string.IsNullOrWhiteSpace(image)));
+                recipe.CookTimeMinutes = seed.CookTimeMinutes;
+                recipe.Difficulty = seed.Difficulty;
+                recipe.ServingCount = seed.ServingCount;
+                recipe.CredibilityScore = seed.CredibilityScore;
+                recipe.UpdatedAt = now;
+                recipe.IsDeleted = false;
 
-            if (egg != null && spinach != null && broccoli != null)
-            {
-                context.RecipeIngredients.AddRange(new[]
+                if (recipe.RecipeId != 0)
                 {
-                    new RecipeIngredient { RecipeId = recipe3.RecipeId, FoodItemId = egg.FoodItemId, Grams = 100 }, // 2 eggs
-                    new RecipeIngredient { RecipeId = recipe3.RecipeId, FoodItemId = spinach.FoodItemId, Grams = 80 },
-                    new RecipeIngredient { RecipeId = recipe3.RecipeId, FoodItemId = broccoli.FoodItemId, Grams = 60 }
-                });
-            }
+                    context.RecipeIngredients.RemoveRange(recipe.RecipeIngredients);
+                }
 
-            // Recipe 4: Smoothie bowl bổ dưỡng
-            var recipe4 = new Recipe
-            {
-                RecipeName = "Smoothie bowl bổ dưỡng",
-                Description = "Bữa sáng nhẹ nhàng với sữa chua, chuối và hạnh nhân",
-                CreatedAt = now,
-                UpdatedAt = now,
-                IsDeleted = false
-            };
-            context.Recipes.Add(recipe4);
-            await context.SaveChangesAsync();
-
-            if (yogurt != null && banana != null && almonds != null)
-            {
-                context.RecipeIngredients.AddRange(new[]
+                foreach (var ingredient in resolvedIngredients)
                 {
-                    new RecipeIngredient { RecipeId = recipe4.RecipeId, FoodItemId = yogurt.FoodItemId, Grams = 200 },
-                    new RecipeIngredient { RecipeId = recipe4.RecipeId, FoodItemId = banana.FoodItemId, Grams = 120 },
-                    new RecipeIngredient { RecipeId = recipe4.RecipeId, FoodItemId = almonds.FoodItemId, Grams = 20 }
-                });
-            }
-
-            // Recipe 5: Gà nướng cùng rau xanh
-            var recipe5 = new Recipe
-            {
-                RecipeName = "Gà nướng cùng rau xanh",
-                Description = "Bữa tối low-carb giàu protein, phù hợp giảm cân",
-                CreatedAt = now,
-                UpdatedAt = now,
-                IsDeleted = false
-            };
-            context.Recipes.Add(recipe5);
-            await context.SaveChangesAsync();
-
-            if (chicken != null && spinach != null && broccoli != null)
-            {
-                context.RecipeIngredients.AddRange(new[]
-                {
-                    new RecipeIngredient { RecipeId = recipe5.RecipeId, FoodItemId = chicken.FoodItemId, Grams = 200 },
-                    new RecipeIngredient { RecipeId = recipe5.RecipeId, FoodItemId = spinach.FoodItemId, Grams = 100 },
-                    new RecipeIngredient { RecipeId = recipe5.RecipeId, FoodItemId = broccoli.FoodItemId, Grams = 100 }
-                });
+                    ingredient.Recipe = recipe;
+                    await context.RecipeIngredients.AddAsync(ingredient);
+                }
             }
 
             await context.SaveChangesAsync();
         }
+
+        private static FoodItem? FindSeedFood(IReadOnlyCollection<FoodItem> foodItems, IReadOnlyCollection<string> keys)
+        {
+            var normalizedKeys = ExpandRecipeIngredientKeys(keys)
+                .Select(NormalizeCatalogKey)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (normalizedKeys.Count == 0)
+            {
+                return null;
+            }
+
+            return foodItems.FirstOrDefault(food => FoodMatchesRecipeKeys(food, normalizedKeys, exactOnly: true))
+                ?? foodItems.FirstOrDefault(food => FoodMatchesRecipeKeys(food, normalizedKeys, exactOnly: false));
+        }
+
+        private static IEnumerable<string> ExpandRecipeIngredientKeys(IEnumerable<string> keys)
+        {
+            foreach (var key in keys)
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                yield return key;
+                var entry = AiVisionLabelCatalog.Find(key);
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                yield return entry.Label;
+                yield return entry.DisplayNameVi;
+                foreach (var alias in entry.Aliases)
+                {
+                    yield return alias;
+                }
+            }
+        }
+
+        private static bool FoodMatchesRecipeKeys(FoodItem food, IReadOnlyCollection<string> normalizedKeys, bool exactOnly)
+        {
+            var foodKeys = new[]
+            {
+                food.FoodName,
+                food.FoodNameUnsigned,
+                food.FoodNameEn
+            }
+                .Select(NormalizeCatalogKey)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (foodKeys.Any(normalizedKeys.Contains))
+            {
+                return true;
+            }
+
+            return !exactOnly && foodKeys.Any(foodKey =>
+                normalizedKeys.Any(seedKey =>
+                    seedKey.Length >= 3 &&
+                    (foodKey.Contains(seedKey, StringComparison.Ordinal) ||
+                     seedKey.Contains(foodKey, StringComparison.Ordinal))));
+        }
+
+        private static string? ResolveSeedRecipeImageUrl(string? currentImageUrl, string? primaryIngredientImageUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(currentImageUrl)
+                && currentImageUrl.StartsWith("recipe-images/", StringComparison.OrdinalIgnoreCase))
+            {
+                return currentImageUrl;
+            }
+
+            return string.IsNullOrWhiteSpace(primaryIngredientImageUrl)
+                ? currentImageUrl
+                : primaryIngredientImageUrl;
+        }
+
+        private static RecipeIngredientSeed I(decimal grams, params string[] keys) => new(keys, grams);
+
+        private sealed record RecipeSeed(
+            string Name,
+            string Description,
+            int CookTimeMinutes,
+            string Difficulty,
+            int ServingCount,
+            int CredibilityScore,
+            string Slug,
+            IReadOnlyList<RecipeIngredientSeed> Ingredients);
+
+        private sealed record RecipeIngredientSeed(IReadOnlyCollection<string> Keys, decimal Grams);
+
+        private static readonly RecipeSeed[] RecipeSeeds =
+        [
+            new("Cơm gà xào rau củ", "Bữa chính cân bằng với thịt gà, cơm và rau xanh dễ chuẩn bị.", 25, "Dễ", 1, 82, "com-ga-xao-rau-cu", [I(150, "chicken"), I(180, "rice"), I(100, "broccoli"), I(60, "carrot")]),
+            new("Cá hồi nướng khoai lang", "Giàu đạm và chất béo tốt, ăn cùng khoai lang để no lâu.", 30, "Trung bình", 1, 86, "ca-hoi-nuong-khoai-lang", [I(180, "salmon"), I(200, "sweet_potato"), I(80, "spinach")]),
+            new("Salad trứng rau xanh", "Bữa sáng hoặc bữa phụ giàu protein, nhẹ bụng.", 15, "Dễ", 1, 80, "salad-trung-rau-xanh", [I(110, "egg"), I(80, "spinach"), I(80, "cucumber"), I(60, "tomato")]),
+            new("Smoothie bowl chuối sữa chua", "Bữa sáng nhanh với sữa chua, chuối và hạt béo vừa đủ.", 10, "Dễ", 1, 78, "smoothie-bowl-chuoi-sua-chua", [I(200, "Greek Yogurt", "yogurt"), I(120, "banana"), I(20, "Almonds")]),
+            new("Gà nướng rau xanh", "Bữa tối ít tinh bột, phù hợp ngày cần ưu tiên protein.", 35, "Dễ", 1, 83, "ga-nuong-rau-xanh", [I(200, "chicken"), I(120, "broccoli"), I(100, "spinach")]),
+            new("Ức gà áp chảo sốt cà chua", "Món đạm nạc dùng với cà chua và hành tây, vị thanh.", 22, "Dễ", 1, 82, "uc-ga-ap-chao-sot-ca-chua", [I(180, "chicken"), I(120, "tomato"), I(50, "onion"), I(8, "garlic")]),
+            new("Bò xào bông cải xanh", "Bữa chính giàu sắt và protein, nấu nhanh trong chảo nóng.", 20, "Dễ", 1, 82, "bo-xao-bong-cai-xanh", [I(160, "beef"), I(160, "broccoli"), I(60, "bell_pepper"), I(8, "garlic")]),
+            new("Đậu hũ sốt nấm cà chua", "Lựa chọn nhẹ nhàng, nhiều chất xơ và phù hợp ngày muốn giảm thịt.", 20, "Dễ", 1, 80, "dau-hu-sot-nam-ca-chua", [I(180, "tofu"), I(120, "mushroom"), I(120, "tomato"), I(40, "green_onion")]),
+            new("Tôm xào rau củ", "Tôm chín nhanh, hợp với rau củ giòn để giữ vị ngọt tự nhiên.", 18, "Dễ", 1, 82, "tom-xao-rau-cu", [I(170, "shrimp"), I(100, "broccoli"), I(80, "carrot"), I(60, "bell_pepper")]),
+            new("Cá kho cà chua", "Phiên bản cá kho nhẹ vị, ăn cùng cơm vừa đủ.", 35, "Trung bình", 2, 84, "ca-kho-ca-chua", [I(220, "fish"), I(140, "tomato"), I(40, "green_onion"), I(6, "chili")]),
+            new("Canh bí đỏ tôm", "Canh ấm bụng, vị ngọt tự nhiên từ bí đỏ và tôm.", 25, "Dễ", 2, 82, "canh-bi-do-tom", [I(220, "pumpkin"), I(120, "shrimp"), I(30, "green_onion")]),
+            new("Canh khổ qua thịt nạc", "Món canh Việt thanh vị, hợp bữa tối nhẹ.", 35, "Trung bình", 2, 81, "canh-kho-qua-thit-nac", [I(220, "bitter_gourd"), I(140, "pork"), I(20, "green_onion")]),
+            new("Thịt heo kho trứng phiên bản nhẹ", "Giữ hương vị quen thuộc nhưng kiểm soát khẩu phần thịt và trứng.", 45, "Trung bình", 2, 78, "thit-heo-kho-trung-nhe", [I(180, "pork"), I(110, "egg"), I(30, "shallot")]),
+            new("Cơm tôm trứng rau củ", "Một đĩa cơm nhanh, có đạm từ tôm và trứng.", 20, "Dễ", 1, 80, "com-tom-trung-rau-cu", [I(160, "rice"), I(120, "shrimp"), I(80, "egg"), I(80, "carrot"), I(40, "green_onion")]),
+            new("Bún gà rau thơm", "Bữa bún nhẹ, ưu tiên thịt gà và rau ăn kèm.", 25, "Dễ", 1, 80, "bun-ga-rau-thom", [I(160, "noodles", "bun"), I(150, "chicken"), I(80, "cucumber"), I(30, "green_onion")]),
+            new("Phở gà nhanh tại nhà", "Tô phở gà gọn nhẹ cho ngày cần món nước quen thuộc.", 35, "Trung bình", 1, 79, "pho-ga-nhanh-tai-nha", [I(170, "noodles", "pho"), I(160, "chicken"), I(10, "ginger"), I(20, "green_onion")]),
+            new("Bò kho rau củ", "Bò kho kiểu gia đình, thêm cà rốt và khoai để cân bằng.", 50, "Trung bình", 2, 80, "bo-kho-rau-cu", [I(220, "beef"), I(140, "carrot"), I(120, "potato"), I(12, "lemongrass")]),
+            new("Mì Quảng gà rau củ", "Tô mì đậm vị nhưng giữ khẩu phần tinh bột vừa phải.", 40, "Trung bình", 2, 79, "mi-quang-ga-rau-cu", [I(180, "noodles", "mi_quang"), I(180, "chicken"), I(80, "egg"), I(40, "green_onion")]),
+            new("Gỏi cuốn tôm đậu hũ", "Món cuốn tươi, dễ ăn và hợp bữa phụ nhiều đạm.", 25, "Dễ", 2, 83, "goi-cuon-tom-dau-hu", [I(120, "shrimp"), I(140, "tofu"), I(60, "cucumber"), I(40, "banh_trang")]),
+            new("Bánh mì trứng rau củ", "Bữa sáng nhanh, thêm rau để đỡ ngấy.", 12, "Dễ", 1, 75, "banh-mi-trung-rau-cu", [I(90, "banh_mi"), I(90, "egg"), I(60, "cucumber"), I(50, "tomato")]),
+            new("Trứng chiên cà chua", "Món nhanh, mềm và dễ ăn khi nguyên liệu ít.", 12, "Dễ", 1, 76, "trung-chien-ca-chua", [I(120, "egg", "fried_egg"), I(120, "tomato"), I(20, "green_onion")]),
+            new("Rau muống xào tỏi đậu hũ", "Bữa rau xanh đơn giản, thêm đậu hũ để có protein.", 15, "Dễ", 1, 78, "rau-muong-xao-toi-dau-hu", [I(180, "water_spinach"), I(140, "tofu"), I(8, "garlic")]),
+            new("Cải thìa xào nấm", "Món rau xào nhanh, vị nhẹ và ít năng lượng.", 15, "Dễ", 1, 78, "cai-thia-xao-nam", [I(180, "bokchoy"), I(120, "mushroom"), I(8, "garlic")]),
+            new("Canh bầu tôm", "Canh ngọt mát, phù hợp bữa cơm gia đình.", 22, "Dễ", 2, 80, "canh-bau-tom", [I(240, "bottle_gourd"), I(120, "shrimp"), I(20, "green_onion")]),
+            new("Cá áp chảo sả gừng", "Cá chín mềm, thơm sả gừng và không cần nhiều dầu.", 25, "Dễ", 1, 82, "ca-ap-chao-sa-gung", [I(220, "fish"), I(12, "lemongrass"), I(8, "ginger"), I(80, "cucumber")]),
+            new("Mực xào ớt chuông", "Món hải sản nhanh, giòn và giàu protein.", 18, "Dễ", 1, 81, "muc-xao-ot-chuong", [I(180, "squid"), I(120, "bell_pepper"), I(50, "onion"), I(8, "garlic")]),
+            new("Súp cua trứng", "Món súp mềm, dễ ăn và hợp bữa nhẹ.", 30, "Trung bình", 2, 79, "sup-cua-trung", [I(120, "crab"), I(90, "egg"), I(80, "corn"), I(40, "carrot")]),
+            new("Khoai lang trứng luộc", "Bữa sáng tối giản, no lâu và dễ chuẩn bị.", 18, "Dễ", 1, 76, "khoai-lang-trung-luoc", [I(220, "sweet_potato"), I(110, "egg")]),
+            new("Salad gà dưa leo cà chua", "Đĩa salad gọn nhẹ, phù hợp ngày cần giảm tinh bột.", 18, "Dễ", 1, 81, "salad-ga-dua-leo-ca-chua", [I(160, "chicken"), I(100, "cucumber"), I(100, "tomato"), I(40, "onion")]),
+            new("Cơm chiên gạo lứt rau củ", "Phiên bản cơm chiên tiết chế dầu, nhiều rau hơn.", 20, "Dễ", 1, 77, "com-chien-gao-lut-rau-cu", [I(180, "rice", "Brown Rice"), I(80, "egg"), I(80, "carrot"), I(60, "peas"), I(40, "green_onion")]),
+            new("Đậu hũ kho nấm", "Món chay mặn nhẹ, ăn cùng cơm vừa khẩu phần.", 25, "Dễ", 2, 80, "dau-hu-kho-nam", [I(220, "tofu"), I(140, "mushroom"), I(30, "shallot")]),
+            new("Lẩu rau nấm đậu hũ", "Nồi lẩu nhẹ cho hai người, tập trung rau và đạm thực vật.", 35, "Dễ", 2, 79, "lau-rau-nam-dau-hu", [I(220, "tofu"), I(160, "mushroom"), I(120, "bokchoy"), I(100, "cabbage")]),
+        ];
     }
 }

@@ -39,6 +39,7 @@ namespace EatFitAI.API.Controllers
         private readonly IAiHealthService _aiHealthService;
         private readonly IAiLogService _aiLog;
         private readonly IRecipeSuggestionService _recipeSuggestionService;
+        private readonly IRecipeGuideService _recipeGuideService;
         private readonly INutritionInsightService _nutritionInsightService;
         private readonly INutritionCalcService _nutritionCalcService;
         private readonly IVisionCacheService _visionCacheService;
@@ -54,6 +55,7 @@ namespace EatFitAI.API.Controllers
             IAiHealthService aiHealthService,
             IAiLogService aiLog,
             IRecipeSuggestionService recipeSuggestionService,
+            IRecipeGuideService recipeGuideService,
             INutritionInsightService nutritionInsightService,
             INutritionCalcService nutritionCalcService,
             IVisionCacheService visionCacheService,
@@ -68,6 +70,7 @@ namespace EatFitAI.API.Controllers
             _aiHealthService = aiHealthService;
             _aiLog = aiLog;
             _recipeSuggestionService = recipeSuggestionService;
+            _recipeGuideService = recipeGuideService;
             _nutritionInsightService = nutritionInsightService;
             _nutritionCalcService = nutritionCalcService;
             _visionCacheService = visionCacheService;
@@ -331,6 +334,32 @@ namespace EatFitAI.API.Controllers
             {
                 _logger.LogError(ex, "Error getting recipe detail for RecipeId {RecipeId}", recipeId);
                 return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy chi tiết công thức", HttpContext));
+            }
+        }
+
+        [HttpPost("recipes/{recipeId}/cooking-guide")]
+        [ProducesResponseType(typeof(RecipeCookingGuideDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RecipeCookingGuideDto>> GetRecipeCookingGuide(
+            int recipeId,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var guide = await _recipeGuideService.GetCookingGuideAsync(recipeId, cancellationToken);
+                if (guide == null)
+                {
+                    return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy công thức", HttpContext));
+                }
+
+                return Ok(guide);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting cooking guide for RecipeId {RecipeId}", recipeId);
+                return StatusCode(
+                    500,
+                    ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy hướng dẫn nấu", HttpContext));
             }
         }
 

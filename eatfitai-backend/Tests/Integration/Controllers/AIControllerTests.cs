@@ -122,7 +122,10 @@ public class AIControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var suggestions = await response.Content.ReadFromJsonAsync<List<RecipeSuggestionDto>>();
 
         Assert.NotNull(suggestions);
-        var suggestion = Assert.Single(suggestions);
+        Assert.NotEmpty(suggestions);
+        Assert.True(suggestions.Count <= 5);
+        var suggestion = suggestions.FirstOrDefault(item => item.RecipeName == "Trứng gà áp chảo");
+        Assert.NotNull(suggestion);
         Assert.Equal("Trứng gà áp chảo", suggestion.RecipeName);
         Assert.Equal(2, suggestion.MatchedIngredientsCount);
     }

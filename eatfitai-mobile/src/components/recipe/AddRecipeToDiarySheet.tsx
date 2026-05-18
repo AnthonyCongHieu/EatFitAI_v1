@@ -20,6 +20,7 @@ interface AddRecipeToDiarySheetProps {
   defaultMealType?: number;
   diaryEntryId?: string;
   currentGrams?: number;
+  baseGrams?: number;
 }
 
 const MEAL_TYPES: { id: MealTypeId; label: string; icon: string }[] = [
@@ -40,10 +41,11 @@ export const AddRecipeToDiarySheet = ({
   defaultMealType,
   diaryEntryId,
   currentGrams,
+  baseGrams = 100,
 }: AddRecipeToDiarySheetProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const [selectedMealType, setSelectedMealType] = useState<MealTypeId | undefined>(defaultMealType as MealTypeId | undefined);
-  const [selectedServings, setSelectedServings] = useState(currentGrams ? currentGrams / 100 : 1);
+  const [selectedServings, setSelectedServings] = useState(currentGrams ? currentGrams / baseGrams : 1);
 
   const calculatedNutrition = {
     calories: Math.round(nutrition.calories * selectedServings),

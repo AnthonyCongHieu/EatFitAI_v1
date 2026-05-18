@@ -69,6 +69,50 @@ public class DatabaseSeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_AddsRecipeCatalogWithoutDuplicatingExistingRows()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            await context.Recipes.AddAsync(new Recipe
+            {
+                RecipeName = "Recipe cũ của hệ thống",
+                Description = "Không thuộc catalog seed",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        await DatabaseSeeder.SeedAsync(provider);
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using var verifyScope = provider.CreateScope();
+        var verifyContext = verifyScope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var seededRecipes = await verifyContext.Recipes
+            .Include(recipe => recipe.RecipeIngredients)
+            .ToListAsync();
+
+        Assert.True(seededRecipes.Count >= 31);
+        Assert.Single(seededRecipes, recipe => recipe.RecipeName == "Recipe cũ của hệ thống");
+        Assert.Single(seededRecipes, recipe => recipe.RecipeName == "Cơm gà xào rau củ");
+
+        var canhBiDo = Assert.Single(seededRecipes, recipe => recipe.RecipeName == "Canh bí đỏ tôm");
+        Assert.StartsWith("food-images/", canhBiDo.ImageUrl);
+        Assert.Equal(25, canhBiDo.CookTimeMinutes);
+        Assert.True(canhBiDo.RecipeIngredients.Count >= 2);
+    }
+
+    [Fact]
     public async Task SeedAsync_RepairsPartialStableLookupRows()
     {
         var databaseRoot = new InMemoryDatabaseRoot();

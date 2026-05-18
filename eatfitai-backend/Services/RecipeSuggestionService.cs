@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data; // FIX: Using EatFitAIDbContext (scaffolded)
 using EatFitAI.API.DbScaffold.Models; // FIX: Using scaffolded Models
 using EatFitAI.API.DTOs.AI;
@@ -42,73 +43,12 @@ namespace EatFitAI.API.Services
             _userPreferenceService = userPreferenceService;
         }
 
-        // Dictionary ánh xạ tên nguyên liệu tiếng Anh -> tiếng Việt (lowercase)
-        private static readonly Dictionary<string, List<string>> _ingredientMappings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
-        {
-            // Thịt
-            { "chicken", new List<string> { "gà", "thịt gà", "ức gà", "đùi gà", "cánh gà" } },
-            { "pork", new List<string> { "heo", "thịt heo", "thịt lợn", "ba chỉ", "thịt ba chỉ" } },
-            { "beef", new List<string> { "bò", "thịt bò" } },
-            { "fish", new List<string> { "cá", "cá hồi", "cá thu", "cá basa" } },
-            { "shrimp", new List<string> { "tôm" } },
-            { "egg", new List<string> { "trứng", "trứng gà" } },
-            // Rau củ
-            { "tomato", new List<string> { "cà chua" } },
-            { "carrot", new List<string> { "cà rốt" } },
-            { "potato", new List<string> { "khoai tây" } },
-            { "onion", new List<string> { "hành", "hành tây" } },
-            { "garlic", new List<string> { "tỏi" } },
-            { "lettuce", new List<string> { "xà lách", "rau xà lách" } },
-            { "salad", new List<string> { "xà lách", "salad", "rau trộn" } },
-            { "cucumber", new List<string> { "dưa chuột", "dưa leo" } },
-            { "cabbage", new List<string> { "bắp cải", "cải bắp" } },
-            { "spinach", new List<string> { "rau bina", "rau chân vịt" } },
-            { "broccoli", new List<string> { "bông cải xanh", "súp lơ xanh" } },
-            { "mushroom", new List<string> { "nấm" } },
-            { "pepper", new List<string> { "ớt", "tiêu" } },
-            { "corn", new List<string> { "bắp", "ngô" } },
-            // Trái cây
-            { "apple", new List<string> { "táo" } },
-            { "banana", new List<string> { "chuối" } },
-            { "orange", new List<string> { "cam" } },
-            // Khác
-            { "rice", new List<string> { "gạo", "cơm" } },
-            { "noodle", new List<string> { "mì", "bún", "phở" } },
-            { "tofu", new List<string> { "đậu hũ", "đậu phụ" } },
-        };
-
-        private List<string> ExpandIngredientNames(List<string> ingredients)
-        {
-            var expanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var ingredient in ingredients)
-            {
-                expanded.Add(ingredient);
-                if (_ingredientMappings.TryGetValue(ingredient, out var vietnameseNames))
-                {
-                    foreach (var viName in vietnameseNames)
-                    {
-                        expanded.Add(viName);
-                    }
-                }
-            }
-            return expanded.ToList();
-        }
-
         public async Task<List<RecipeSuggestionDto>> SuggestRecipesAsync(
             RecipeSuggestionRequest request,
             CancellationToken cancellationToken = default)
         {
-            if (request.AvailableIngredients == null || request.AvailableIngredients.Count == 0)
-            {
-                return new List<RecipeSuggestionDto>();
-            }
-
-            var normalizedIngredients = request.AvailableIngredients
-                .Select(i => i.Trim().ToLowerInvariant())
-                .Where(i => !string.IsNullOrWhiteSpace(i))
-                .ToList();
-
-            if (normalizedIngredients.Count == 0)
+            var query = BuildIngredientQuery(request);
+            if (query.NameKeys.Count == 0 && query.FoodItemIds.Count == 0)
             {
                 return new List<RecipeSuggestionDto>();
             }
@@ -129,8 +69,8 @@ namespace EatFitAI.API.Services
                 }
             }
 
-            var forbiddenKeywords = GetForbiddenKeywords(userPrefs);
-            var expandedIngredients = ExpandIngredientNames(normalizedIngredients);
+            var forbiddenKeywords = GetForbiddenIngredientKeys(userPrefs);
+            var maxResults = Math.Clamp(request.MaxResults, 1, 20);
 
             _logger.LogInformation("Searching recipes (User: {UserId}, Forbidden keywords: {ForbiddenCount})", 
                 request.UserId, forbiddenKeywords.Count);
@@ -151,47 +91,62 @@ namespace EatFitAI.API.Services
 
             foreach (var recipe in recipesWithIngredients)
             {
-                var recipeIngredientNames = recipe.RecipeIngredients
-                    .Where(ri => ri.FoodItem != null && !ri.FoodItem.IsDeleted)
-                    .Select(ri => ri.FoodItem.FoodName.Trim().ToLowerInvariant())
+                if (request.MaxCookingTimeMinutes.HasValue
+                    && (!recipe.CookTimeMinutes.HasValue
+                        || recipe.CookTimeMinutes.Value > request.MaxCookingTimeMinutes.Value))
+                {
+                    continue;
+                }
+
+                var recipeIngredients = recipe.RecipeIngredients
+                    .Where(ri => ri.FoodItem != null && !ri.FoodItem.IsDeleted && ri.FoodItem.IsActive)
                     .ToList();
 
-                if (recipeIngredientNames.Count == 0) continue;
+                if (recipeIngredients.Count == 0) continue;
 
                 // 1. Dietary/Allergy Filtering
                 if (forbiddenKeywords.Any())
                 {
-                    bool isForbidden = false;
-                    foreach (var ingName in recipeIngredientNames)
-                    {
-                        if (forbiddenKeywords.Any(k => ingName.Contains(k)))
-                        {
-                            isForbidden = true;
-                            break;
-                        }
-                    }
+                    var isForbidden = recipeIngredients.Any(ingredient =>
+                        GetIngredientKeys(ingredient.FoodItem).Any(forbiddenKeywords.Contains));
                     if (isForbidden) continue;
                 }
 
                 // 2. Ingredient Matching
-                var matchedIngredients = recipeIngredientNames
-                    .Where(recipeName => expandedIngredients.Any(available =>
-                        recipeName.Contains(available) || available.Contains(recipeName)))
+                var matchedIngredients = recipeIngredients
+                    .Select(ingredient => new
+                    {
+                        Ingredient = ingredient,
+                        Match = MatchIngredient(ingredient, query)
+                    })
+                    .Where(item => item.Match != null)
                     .ToList();
 
                 var matchCount = matchedIngredients.Count;
 
                 if (matchCount < (request.MinMatchedIngredients ?? 1)) continue;
 
-                var (calories, protein, carbs, fat) = CalculateRecipeNutrition(recipe.RecipeIngredients.ToList());
-
-                var missingIngredients = recipeIngredientNames
-                    .Except(matchedIngredients)
-                    .Select(name => recipe.RecipeIngredients
-                        .FirstOrDefault(ri => ri.FoodItem != null && ri.FoodItem.FoodName.Trim().ToLowerInvariant() == name)?.FoodItem.FoodName)
-                    .Where(name => !string.IsNullOrEmpty(name))
-                    .Select(name => name!)
+                var (calories, protein, carbs, fat) = CalculateRecipeNutrition(recipeIngredients);
+                var totalGrams = CalculateTotalGrams(recipeIngredients);
+                var matchedIngredientIds = matchedIngredients
+                    .Select(item => item.Ingredient.FoodItemId)
+                    .ToHashSet();
+                var missingIngredients = recipeIngredients
+                    .Where(ingredient => !matchedIngredientIds.Contains(ingredient.FoodItemId))
+                    .Select(ingredient => ingredient.FoodItem.FoodName)
                     .ToList();
+                var matchPercentage = recipeIngredients.Count > 0
+                    ? ((decimal)matchCount / recipeIngredients.Count) * 100m
+                    : 0m;
+                var score = CalculateMatchScore(
+                    request,
+                    recipe,
+                    recipeIngredients,
+                    matchedIngredients.Select(item => item.Match!).ToList(),
+                    calories,
+                    protein,
+                    carbs,
+                    fat);
 
                 recipeSuggestions.Add(new RecipeSuggestionDto
                 {
@@ -202,29 +157,33 @@ namespace EatFitAI.API.Services
                     TotalProtein = protein,
                     TotalCarbs = carbs,
                     TotalFat = fat,
+                    TotalGrams = totalGrams,
+                    ImageUrl = recipe.ImageUrl,
+                    ImageVariants = MediaVariantHelper.FromThumbUrl(recipe.ImageUrl),
+                    CookTimeMinutes = recipe.CookTimeMinutes,
+                    Difficulty = recipe.Difficulty,
+                    ServingCount = recipe.ServingCount,
                     MatchedIngredientsCount = matchCount,
-                    TotalIngredientsCount = recipeIngredientNames.Count,
-                    MatchPercentage = recipeIngredientNames.Count > 0
-                        ? ((decimal)matchCount / (decimal)recipeIngredientNames.Count) * 100m
-                        : 0m,
+                    TotalIngredientsCount = recipeIngredients.Count,
+                    MatchPercentage = matchPercentage,
+                    MatchScore = score.Total,
+                    MissingIngredientCount = missingIngredients.Count,
+                    ScoreReasons = score.Reasons,
                     MatchedIngredients = matchedIngredients
-                        .Select(name => recipe.RecipeIngredients
-                            .FirstOrDefault(ri => ri.FoodItem != null && ri.FoodItem.FoodName.Trim().ToLowerInvariant() == name)?.FoodItem.FoodName)
-                        .Where(name => !string.IsNullOrEmpty(name))
-                        .Select(name => name!)
+                        .Select(item => item.Ingredient.FoodItem.FoodName)
                         .ToList(),
                     MissingIngredients = missingIngredients,
-                    AllIngredients = recipe.RecipeIngredients
-                        .Where(ri => ri.FoodItem != null)
+                    AllIngredients = recipeIngredients
                         .Select(ri => ri.FoodItem.FoodName)
                         .ToList()
                 });
             }
 
             return recipeSuggestions
-                .OrderByDescending(r => r.MatchPercentage)
+                .OrderByDescending(r => r.MatchScore)
+                .ThenByDescending(r => r.MatchPercentage)
                 .ThenBy(r => r.TotalIngredientsCount)
-                .Take(request.MaxResults)
+                .Take(maxResults)
                 .ToList();
         }
 
@@ -242,6 +201,7 @@ namespace EatFitAI.API.Services
 
             var (totalCalories, totalProtein, totalCarbs, totalFat) = 
                 CalculateRecipeNutrition(recipe.RecipeIngredients.ToList());
+            var totalGrams = CalculateTotalGrams(recipe.RecipeIngredients.ToList());
 
             var ingredientDetails = recipe.RecipeIngredients
                 .Where(ri => ri.FoodItem != null && !ri.FoodItem.IsDeleted)
@@ -261,8 +221,8 @@ namespace EatFitAI.API.Services
                 })
                 .ToList();
 
-            var instructions = TryGetRecipeInstructions(recipe);
-            var videoUrl = TryGetRecipeVideoUrl(recipe);
+            var instructions = ParseInstructions(recipe.InstructionsJson) ?? TryGetRecipeInstructions(recipe);
+            var videoUrl = recipe.VideoUrl ?? TryGetRecipeVideoUrl(recipe);
 
             return new RecipeDetailDto
             {
@@ -273,6 +233,13 @@ namespace EatFitAI.API.Services
                 TotalProtein = totalProtein,
                 TotalCarbs = totalCarbs,
                 TotalFat = totalFat,
+                TotalGrams = totalGrams,
+                ImageUrl = recipe.ImageUrl,
+                ImageVariants = MediaVariantHelper.FromThumbUrl(recipe.ImageUrl),
+                CookTimeMinutes = recipe.CookTimeMinutes,
+                Difficulty = recipe.Difficulty,
+                ServingCount = recipe.ServingCount,
+                CredibilityScore = recipe.CredibilityScore,
                 Instructions = instructions,
                 VideoUrl = videoUrl,
                 Ingredients = ingredientDetails
@@ -294,7 +261,211 @@ namespace EatFitAI.API.Services
             return (totalCals, totalP, totalC, totalF);
         }
 
-        private List<string> GetForbiddenKeywords(UserPreferenceDto? prefs)
+        private static decimal CalculateTotalGrams(List<RecipeIngredient> ingredients)
+        {
+            return ingredients
+                .Where(i => i.FoodItem != null && !i.FoodItem.IsDeleted && i.FoodItem.IsActive)
+                .Sum(i => i.Grams);
+        }
+
+        private static IngredientQuery BuildIngredientQuery(RecipeSuggestionRequest request)
+        {
+            var nameKeys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var ingredient in request.AvailableIngredients ?? new List<string>())
+            {
+                AddNameKey(nameKeys, ingredient);
+            }
+
+            foreach (var hint in request.IngredientHints ?? new List<RecipeIngredientHintDto>())
+            {
+                AddNameKey(nameKeys, hint.Name);
+            }
+
+            ExpandAliasKeys(nameKeys);
+
+            var foodItemIds = new HashSet<int>(request.AvailableFoodItemIds ?? new List<int>());
+            foreach (var hint in request.IngredientHints ?? new List<RecipeIngredientHintDto>())
+            {
+                if (hint.FoodItemId.HasValue && hint.FoodItemId.Value > 0)
+                {
+                    foodItemIds.Add(hint.FoodItemId.Value);
+                }
+            }
+
+            var confidenceByFoodItemId = (request.IngredientHints ?? new List<RecipeIngredientHintDto>())
+                .Where(hint => hint.FoodItemId.HasValue && hint.FoodItemId.Value > 0)
+                .GroupBy(hint => hint.FoodItemId!.Value)
+                .ToDictionary(
+                    group => group.Key,
+                    group => ClampConfidence(group.Max(hint => hint.Confidence ?? 1m)));
+
+            var confidenceByNameKey = (request.IngredientHints ?? new List<RecipeIngredientHintDto>())
+                .Where(hint => !string.IsNullOrWhiteSpace(hint.Name))
+                .Select(hint => new
+                {
+                    Key = AiVisionLabelCatalog.NormalizeKey(hint.Name),
+                    Confidence = ClampConfidence(hint.Confidence ?? 1m)
+                })
+                .Where(item => !string.IsNullOrWhiteSpace(item.Key))
+                .GroupBy(item => item.Key, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Max(item => item.Confidence),
+                    StringComparer.Ordinal);
+
+            return new IngredientQuery(nameKeys, foodItemIds, confidenceByFoodItemId, confidenceByNameKey);
+        }
+
+        private static void AddNameKey(HashSet<string> keys, string? value)
+        {
+            var key = AiVisionLabelCatalog.NormalizeKey(value);
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                keys.Add(key);
+            }
+        }
+
+        private static void ExpandAliasKeys(HashSet<string> keys)
+        {
+            var matchedEntries = AiVisionLabelCatalog.Entries
+                .Where(entry =>
+                    keys.Contains(AiVisionLabelCatalog.NormalizeKey(entry.DisplayNameVi))
+                    || entry.Aliases.Any(alias => keys.Contains(AiVisionLabelCatalog.NormalizeKey(alias))))
+                .ToList();
+
+            foreach (var entry in matchedEntries)
+            {
+                AddNameKey(keys, entry.DisplayNameVi);
+                AddNameKey(keys, entry.Label);
+                foreach (var alias in entry.Aliases)
+                {
+                    AddNameKey(keys, alias);
+                }
+            }
+        }
+
+        private static IngredientMatch? MatchIngredient(RecipeIngredient ingredient, IngredientQuery query)
+        {
+            if (query.FoodItemIds.Contains(ingredient.FoodItemId))
+            {
+                return new IngredientMatch(
+                    ingredient.FoodItemId,
+                    true,
+                    query.ConfidenceByFoodItemId.GetValueOrDefault(ingredient.FoodItemId, 1m));
+            }
+
+            var matchedKey = GetIngredientKeys(ingredient.FoodItem)
+                .FirstOrDefault(query.NameKeys.Contains);
+            if (matchedKey == null)
+            {
+                return null;
+            }
+
+            return new IngredientMatch(
+                ingredient.FoodItemId,
+                false,
+                query.ConfidenceByNameKey.GetValueOrDefault(matchedKey, 0.9m));
+        }
+
+        private static HashSet<string> GetIngredientKeys(FoodItem food)
+        {
+            var keys = new HashSet<string>(StringComparer.Ordinal);
+            AddNameKey(keys, food.FoodName);
+            AddNameKey(keys, food.FoodNameUnsigned);
+            AddNameKey(keys, food.FoodNameEn);
+            ExpandAliasKeys(keys);
+            return keys;
+        }
+
+        private static RecipeScore CalculateMatchScore(
+            RecipeSuggestionRequest request,
+            Recipe recipe,
+            IReadOnlyCollection<RecipeIngredient> ingredients,
+            IReadOnlyCollection<IngredientMatch> matches,
+            decimal calories,
+            decimal protein,
+            decimal carbs,
+            decimal fat)
+        {
+            var coverageRatio = ingredients.Count == 0 ? 0m : (decimal)matches.Count / ingredients.Count;
+            var coverageScore = coverageRatio * 60m;
+            var averageConfidence = matches.Count == 0 ? 0m : matches.Average(match => match.Confidence);
+            var confidenceScore = averageConfidence * 10m;
+            var exactMatchBonus = matches.Count == 0
+                ? 0m
+                : ((decimal)matches.Count(match => match.IsExactFoodItemId) / matches.Count) * 5m;
+            var nutritionScore = CalculateNutritionFitScore(request, calories, protein, carbs, fat);
+            var trustScore = Math.Clamp(recipe.CredibilityScore, 0, 100) / 100m * 10m;
+            var timeScore = CalculateTimeScore(request.MaxCookingTimeMinutes, recipe.CookTimeMinutes);
+
+            var reasons = new List<string>
+            {
+                $"Khớp {matches.Count}/{ingredients.Count} nguyên liệu"
+            };
+
+            if (matches.Any(match => match.IsExactFoodItemId))
+            {
+                reasons.Add("Có nguyên liệu khớp chính xác từ giỏ quét");
+            }
+
+            if (nutritionScore > 0m && request.RemainingCalories.HasValue)
+            {
+                reasons.Add("Phù hợp mục tiêu dinh dưỡng còn lại");
+            }
+
+            if (recipe.CookTimeMinutes.HasValue)
+            {
+                reasons.Add($"Khoảng {recipe.CookTimeMinutes.Value} phút");
+            }
+
+            return new RecipeScore(
+                Math.Round(coverageScore + confidenceScore + exactMatchBonus + nutritionScore + trustScore + timeScore, 2),
+                reasons);
+        }
+
+        private static decimal CalculateNutritionFitScore(
+            RecipeSuggestionRequest request,
+            decimal calories,
+            decimal protein,
+            decimal carbs,
+            decimal fat)
+        {
+            var score = 0m;
+            score += CalculateTargetScore(request.RemainingCalories, calories, 12m);
+            score += CalculateTargetScore(request.RemainingProtein, protein, 4m);
+            score += CalculateTargetScore(request.RemainingCarbs, carbs, 2m);
+            score += CalculateTargetScore(request.RemainingFat, fat, 2m);
+            return score;
+        }
+
+        private static decimal CalculateTargetScore(decimal? target, decimal actual, decimal maxScore)
+        {
+            if (!target.HasValue || target.Value <= 0m)
+            {
+                return 0m;
+            }
+
+            var ratio = Math.Min(1m, Math.Abs(actual - target.Value) / target.Value);
+            return Math.Round((1m - ratio) * maxScore, 2);
+        }
+
+        private static decimal CalculateTimeScore(int? maxMinutes, int? cookTimeMinutes)
+        {
+            if (!maxMinutes.HasValue || !cookTimeMinutes.HasValue || maxMinutes.Value <= 0)
+            {
+                return 0m;
+            }
+
+            var ratio = Math.Clamp((decimal)cookTimeMinutes.Value / maxMinutes.Value, 0m, 1m);
+            return Math.Round((1m - ratio) * 3m, 2);
+        }
+
+        private static decimal ClampConfidence(decimal confidence)
+        {
+            return Math.Clamp(confidence, 0m, 1m);
+        }
+
+        private List<string> GetForbiddenIngredientKeys(UserPreferenceDto? prefs)
         {
             var keywords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (prefs == null) return keywords.ToList();
@@ -342,7 +513,38 @@ namespace EatFitAI.API.Services
                     }
                 }
             }
-            return keywords.ToList();
+            return keywords
+                .Select(AiVisionLabelCatalog.NormalizeKey)
+                .Where(keyword => !string.IsNullOrWhiteSpace(keyword))
+                .ToList();
+        }
+
+        private static List<string>? ParseInstructions(string? instructionsJson)
+        {
+            if (string.IsNullOrWhiteSpace(instructionsJson))
+            {
+                return null;
+            }
+
+            try
+            {
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<List<string>>(instructionsJson);
+                var steps = parsed?
+                    .Select(step => step?.Trim())
+                    .Where(step => !string.IsNullOrWhiteSpace(step))
+                    .Select(step => step!)
+                    .ToList();
+                return steps is { Count: > 0 } ? steps : null;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                var steps = instructionsJson
+                    .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(step => step.Trim())
+                    .Where(step => !string.IsNullOrWhiteSpace(step))
+                    .ToList();
+                return steps.Count > 0 ? steps : null;
+            }
         }
 
         private static List<string>? TryGetRecipeInstructions(Recipe recipe)
@@ -407,5 +609,15 @@ namespace EatFitAI.API.Services
 
             return property?.GetValue(source);
         }
+
+        private sealed record IngredientQuery(
+            HashSet<string> NameKeys,
+            HashSet<int> FoodItemIds,
+            Dictionary<int, decimal> ConfidenceByFoodItemId,
+            Dictionary<string, decimal> ConfidenceByNameKey);
+
+        private sealed record IngredientMatch(int FoodItemId, bool IsExactFoodItemId, decimal Confidence);
+
+        private sealed record RecipeScore(decimal Total, List<string> Reasons);
     }
 }

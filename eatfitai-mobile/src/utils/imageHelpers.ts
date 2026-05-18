@@ -8,7 +8,7 @@ const MEDIA_PUBLIC_BASE_URL =
   (__DEV__ ? DEFAULT_DEV_MEDIA_PUBLIC_BASE_URL : '');
 const MEDIA_BUDGET_MODE = process.env.EXPO_PUBLIC_MEDIA_BUDGET_MODE?.trim().toLowerCase();
 const SUPABASE_PUBLIC_STORAGE_MARKER = '/storage/v1/object/public/';
-const MEDIA_BUCKET_PREFIXES = ['food-images/', 'user-food/'];
+const MEDIA_BUCKET_PREFIXES = ['food-images/', 'user-food/', 'recipe-images/'];
 
 const isBudgetPlaceholderMode = (): boolean => MEDIA_BUDGET_MODE === 'placeholder';
 
