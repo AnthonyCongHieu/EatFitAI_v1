@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -50,12 +50,12 @@ export const AiSummaryBar = ({
     },
     buttonText: {
       fontSize: 14,
-      fontFamily: 'Inter_600SemiBold',
+      fontFamily: 'BeVietnamPro_600SemiBold',
       color: disabled ? theme.colors.textSecondary : '#fff',
     },
     animatedNumber: {
       fontSize: 14,
-      fontFamily: 'Inter_600SemiBold',
+      fontFamily: 'BeVietnamPro_600SemiBold',
       color: theme.colors.primary,
     },
   };
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ToastConfig, BaseToastProps } from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.primary,
     letterSpacing: 0.8,
     textTransform: 'uppercase',

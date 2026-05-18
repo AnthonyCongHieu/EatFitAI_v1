@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../../components/ThemedText';
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#86efac',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   dialogue: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: '#dee1f7',
     lineHeight: 18,
   },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   cta: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#4BE277',
     lineHeight: 16,
   },

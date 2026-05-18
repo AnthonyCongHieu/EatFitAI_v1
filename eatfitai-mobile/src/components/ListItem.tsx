@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -169,7 +169,7 @@ export const ListItem = ({
               {
                 fontSize: sizeConfig.titleSize,
                 color: selected ? theme.colors.primary : theme.colors.text,
-                fontFamily: selected ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                fontFamily: selected ? 'BeVietnamPro_600SemiBold' : 'BeVietnamPro_400Regular',
               },
             ]}
           >
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     lineHeight: 20,
   },
   subtitle: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
 });
 

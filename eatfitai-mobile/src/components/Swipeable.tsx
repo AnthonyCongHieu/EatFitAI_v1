@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -130,7 +130,7 @@ export const Swipeable = ({
                 {
                   color: '#fff',
                   fontSize: 12,
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'BeVietnamPro_600SemiBold',
                 },
               ]}
             >
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   actionLabel: {
-    fontWeight: 'bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     textAlign: 'center',
   },
 });

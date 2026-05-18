@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -341,13 +341,13 @@ const styles = StyleSheet.create({
   sheetEyebrow: {
     color: DESIGN_TOKENS.primary,
     fontSize: 10,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 1.4,
   },
   sheetTitle: {
     color: DESIGN_TOKENS.label,
     fontSize: 18,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     marginTop: 2,
   },
   closeButton: {
@@ -407,14 +407,14 @@ const styles = StyleSheet.create({
   actionLabel: {
     color: DESIGN_TOKENS.label,
     fontSize: 14,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 18,
     letterSpacing: 0,
   },
   actionMeta: {
     color: DESIGN_TOKENS.meta,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     marginTop: 3,
   },
   diaryShortcut: {
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
   diaryShortcutText: {
     color: DESIGN_TOKENS.label,
     fontSize: 10,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 2,
   },
 });

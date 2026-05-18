@@ -1,4 +1,4 @@
-// Food Detail Screen - Emerald Nebula 3D UI
+﻿// Food Detail Screen - Emerald Nebula 3D UI
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -499,7 +499,7 @@ const S = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     fontSize: 18,
     color: P.primary,
   },
@@ -527,7 +527,7 @@ const S = StyleSheet.create({
   },
   heroMainTitle: {
     fontSize: 32,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#fff',
     letterSpacing: -0.5,
     marginBottom: 4,
@@ -536,7 +536,7 @@ const S = StyleSheet.create({
   },
   heroSubTitle: {
     fontSize: 14,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant,
   },
 
@@ -560,12 +560,12 @@ const S = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 18,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   serveLabel: {
     fontSize: 11,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: P.onSurfaceVariant,
@@ -580,14 +580,14 @@ const S = StyleSheet.create({
   caloriesValBlock: { flexDirection: 'row', alignItems: 'baseline' },
   caloriesNumber: {
     fontSize: 60,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     letterSpacing: -2,
     lineHeight: 65,
   },
   caloriesUnit: {
     fontSize: 20,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     marginLeft: 8,
   },
@@ -608,14 +608,14 @@ const S = StyleSheet.create({
     alignItems: 'center',
   },
   stepperInput: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     fontSize: 14,
     color: '#fff',
     minWidth: 35,
     textAlign: 'center',
   },
   stepperSuffix: {
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     fontSize: 14,
     color: '#fff',
   },
@@ -625,8 +625,8 @@ const S = StyleSheet.create({
   macroHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   macroNameBox: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   macroDot: { width: 8, height: 8, borderRadius: 4 },
-  macroName: { fontSize: 13, fontFamily: 'Inter_700Bold', color: P.onSurface },
-  macroNumber: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  macroName: { fontSize: 13, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
+  macroNumber: { fontSize: 13, fontFamily: 'BeVietnamPro_700Bold' },
   barTrack: {
     height: 8,
     width: '100%',
@@ -639,7 +639,7 @@ const S = StyleSheet.create({
   mealSection: { gap: 16 },
   mealSectionTitle: {
     fontSize: 12,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 1.5,
     color: P.onSurfaceVariant,
     paddingHorizontal: 8,
@@ -657,7 +657,7 @@ const S = StyleSheet.create({
     backgroundColor: P.primary + '20',
     borderColor: P.primary + '50',
   },
-  mealChipText: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurfaceVariant },
+  mealChipText: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurfaceVariant },
   mealChipTextActive: { color: P.primary },
 
   bottomActions: {
@@ -684,7 +684,7 @@ const S = StyleSheet.create({
   },
   submitText: {
     fontSize: 18,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onPrimary,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   skipText: {
     color: '#E5E7EB',
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0,
   },
   overviewCard: {
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
     fontSize: 22,
     lineHeight: 28,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     textAlign: 'center',
     letterSpacing: 0,
   },
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     color: '#CBD5E1',
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     textAlign: 'center',
     marginTop: 8,
     letterSpacing: 0,
@@ -494,13 +494,13 @@ const styles = StyleSheet.create({
   stepNumberText: {
     color: '#082112',
     fontSize: 12,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0,
   },
   stepRowText: {
     color: '#F8FAFC',
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0,
   },
   primaryButton: {
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#082112',
     fontSize: 15,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0,
   },
   spotlightRing: {
@@ -564,21 +564,21 @@ const styles = StyleSheet.create({
   coachStep: {
     color: '#8FE7AE',
     fontSize: 12,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0,
   },
   coachTitle: {
     color: '#F8FAFC',
     fontSize: 18,
     lineHeight: 23,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0,
   },
   coachBody: {
     color: '#CBD5E1',
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     marginTop: 10,
     letterSpacing: 0,
   },
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#D9FBE5',
     fontSize: 14,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0,
   },
   pressed: {

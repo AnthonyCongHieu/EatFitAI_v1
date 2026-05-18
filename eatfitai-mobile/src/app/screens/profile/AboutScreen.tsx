@@ -1,4 +1,4 @@
-// AboutScreen — Emerald Nebula Design
+﻿// AboutScreen — Emerald Nebula Design
 // Thông tin ứng dụng: Logo, version, developer info, links
 
 import React from 'react';
@@ -42,7 +42,7 @@ const MenuRow = ({
       <Ionicons name={icon as any} size={20} color={iconColor} />
     </View>
     <View style={{ flex: 1 }}>
-      <ThemedText style={{ fontSize: 15, fontWeight: '500', color: labelColor }} numberOfLines={1}>
+      <ThemedText style={{ fontSize: 15, fontFamily: 'BeVietnamPro_500Medium', color: labelColor }} numberOfLines={1}>
         {label}
       </ThemedText>
       {subtitle && (
@@ -206,7 +206,7 @@ const S = StyleSheet.create({
   },
   appName: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: EN.onSurface,
     letterSpacing: -0.5,
   },
@@ -237,7 +237,7 @@ const S = StyleSheet.create({
   },
   badgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: EN.primary,
     letterSpacing: 0.3,
   },
@@ -247,7 +247,7 @@ const S = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: EN.onSurfaceVariant + '50',
     letterSpacing: 0.5,
   },

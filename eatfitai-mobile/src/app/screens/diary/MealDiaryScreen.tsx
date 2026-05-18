@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MealDiaryScreen — Full meal diary with Emerald Nebula 3D aesthetic
  * Features: Week strip, daily summary card, meal group cards with tilt,
  * floating add button, pull-to-refresh.
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.primary,
     letterSpacing: -0.3,
   },
@@ -699,14 +699,14 @@ const styles = StyleSheet.create({
   },
   weekDayLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   weekDayLabelSelected: {
     color: C.onSurface,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   weekDayNumWrap: {
     width: 34,
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   },
   weekDayNum: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
   },
   weekDayNumSelected: {
@@ -788,27 +788,27 @@ const styles = StyleSheet.create({
   },
   summaryCalories: {
     fontSize: 28,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.primary,
     letterSpacing: -1,
     lineHeight: 38,
   },
   summaryRemaining: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.textMuted,
     marginTop: 2,
   },
   summaryTargetLabel: {
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   summaryTargetValue: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
     marginTop: 2,
   },
@@ -856,12 +856,12 @@ const styles = StyleSheet.create({
   },
   mealTitle: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
   },
   mealCalories: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.primary,
   },
 
@@ -896,18 +896,18 @@ const styles = StyleSheet.create({
   },
   entryName: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
   },
   entryQuantity: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.textMuted,
     marginTop: 2,
   },
   entryCalories: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.primary,
   },
 
@@ -924,7 +924,7 @@ const styles = StyleSheet.create({
   },
   macroPillText: {
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -958,7 +958,7 @@ const styles = StyleSheet.create({
   },
   mealEmptyText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.textMuted,
   },
   copyDayButton: {
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
   },
   copyDayButtonText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onPrimary,
   },
   copyMealButton: {
@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
   },
   copyMealButtonText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.primary,
   },
 
@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
   },
   backToTodayText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#fff',
   },
 

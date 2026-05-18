@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../ThemedText';
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
   valueContainer: {
     minWidth: 40,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
 });
 

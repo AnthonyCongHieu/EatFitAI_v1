@@ -1,4 +1,4 @@
-// ChangePasswordScreen — Emerald Nebula Design
+﻿// ChangePasswordScreen — Emerald Nebula Design
 // Đổi mật khẩu: Current password → New password → Confirm password
 
 import React, { useState } from 'react';
@@ -254,7 +254,7 @@ const S = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: EN.onSurface,
   },
   required: {
@@ -312,7 +312,7 @@ const S = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
     letterSpacing: 0.3,
   },

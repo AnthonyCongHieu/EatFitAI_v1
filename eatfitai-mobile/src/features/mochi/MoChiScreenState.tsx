@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
 });
 

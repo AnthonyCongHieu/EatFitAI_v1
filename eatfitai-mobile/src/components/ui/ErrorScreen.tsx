@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -109,7 +109,7 @@ export const ErrorScreen = ({
       marginBottom: theme.spacing.sm,
       color: theme.colors.text,
       ...(inline ? theme.typography.h3 : theme.typography.h2),
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
     },
     message: {
       textAlign: 'center',
@@ -136,7 +136,7 @@ export const ErrorScreen = ({
     primaryButtonText: {
       color: '#FFFFFF',
       ...theme.typography.button,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
     },
     secondaryButton: {
       minHeight: 48,
@@ -151,7 +151,7 @@ export const ErrorScreen = ({
     secondaryButtonText: {
       color: theme.colors.text,
       ...theme.typography.button,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
     },
     pressed: {
       opacity: 0.75,

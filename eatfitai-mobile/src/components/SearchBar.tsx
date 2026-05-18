@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   iconText: {
-    fontWeight: 'bold',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
 });
 

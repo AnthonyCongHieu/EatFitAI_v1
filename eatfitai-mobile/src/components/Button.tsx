@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, ActivityIndicator, type Insets } from 'react-native';
 import { memo, useMemo } from 'react';
 import * as Haptics from 'expo-haptics';
@@ -190,7 +190,7 @@ export const Button = memo(
                 style={{
                   color: styles.textColor,
                   fontSize: styles.fontSize,
-                  fontWeight: '600',
+                  fontFamily: 'BeVietnamPro_600SemiBold',
                 }}
               >
                 {title}

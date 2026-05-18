@@ -1,4 +1,4 @@
-import type { ImageSourcePropType } from 'react-native';
+﻿import type { ImageSourcePropType } from 'react-native';
 import { View, StyleSheet, Image } from 'react-native';
 
 import { ThemedText } from './ThemedText';
@@ -104,7 +104,7 @@ export const Avatar = ({
           {
             fontSize: sizeConfig.fontSize,
             color: finalTextColor,
-            fontFamily: 'Inter_600SemiBold',
+            fontFamily: 'BeVietnamPro_600SemiBold',
           },
         ]}
       >
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   initials: {
-    fontWeight: 'bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     textAlign: 'center',
   },
 });

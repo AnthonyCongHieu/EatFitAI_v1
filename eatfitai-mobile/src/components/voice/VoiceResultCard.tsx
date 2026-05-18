@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
@@ -190,7 +190,7 @@ export const VoiceResultCard = ({
     },
     sectionTitle: {
       fontSize: 13,
-      fontWeight: '800',
+      fontFamily: 'BeVietnamPro_700Bold',
       color: P.primary,
     },
     itemPanel: {
@@ -203,7 +203,7 @@ export const VoiceResultCard = ({
     },
     fieldLabel: {
       fontSize: 12,
-      fontWeight: '700',
+      fontFamily: 'BeVietnamPro_700Bold',
       color: P.muted,
     },
     field: {
@@ -216,7 +216,7 @@ export const VoiceResultCard = ({
       borderColor: P.borderMuted,
       color: P.text,
       fontSize: 14,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
     },
     segmentedRow: {
       flexDirection: 'row',
@@ -240,7 +240,7 @@ export const VoiceResultCard = ({
     segmentText: {
       color: P.muted,
       fontSize: 12,
-      fontWeight: '800',
+      fontFamily: 'BeVietnamPro_700Bold',
     },
     segmentTextActive: {
       color: P.primary,
@@ -261,13 +261,13 @@ export const VoiceResultCard = ({
     candidateName: {
       color: P.text,
       fontSize: 13,
-      fontWeight: '800',
+      fontFamily: 'BeVietnamPro_700Bold',
     },
     candidateMeta: {
       marginTop: 2,
       color: P.muted,
       fontSize: 11,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
     },
     totalPanel: {
       flexDirection: 'row',
@@ -283,19 +283,19 @@ export const VoiceResultCard = ({
     totalValue: {
       color: P.text,
       fontSize: 15,
-      fontWeight: '800',
+      fontFamily: 'BeVietnamPro_700Bold',
     },
     totalLabel: {
       marginTop: 2,
       color: P.muted,
       fontSize: 10,
-      fontWeight: '700',
+      fontFamily: 'BeVietnamPro_700Bold',
       textTransform: 'uppercase',
     },
     warning: {
       color: P.danger,
       fontSize: 12,
-      fontWeight: '700',
+      fontFamily: 'BeVietnamPro_700Bold',
       marginBottom: theme.spacing.sm,
     },
     readOnlyRow: {

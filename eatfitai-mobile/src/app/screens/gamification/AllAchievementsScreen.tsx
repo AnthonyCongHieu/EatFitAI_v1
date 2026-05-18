@@ -134,7 +134,7 @@ const AllAchievementsScreen = (): React.ReactElement => {
 export default AllAchievementsScreen;
 
 const S = StyleSheet.create({
-  sectionLabel: { fontSize: 13, fontWeight: '800', color: '#64748b', letterSpacing: 1.5, paddingLeft: 4 },
+  sectionLabel: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: '#64748b', letterSpacing: 1.5, paddingLeft: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   card: {
     width: '47%' as any, backgroundColor: EN.surfaceHigh, borderRadius: 20,
@@ -149,12 +149,12 @@ const S = StyleSheet.create({
   iconCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   titleContainer: { height: 68, justifyContent: 'center', alignItems: 'center', width: '100%', marginBottom: 4, paddingHorizontal: 4 },
   descContainer: { height: 60, justifyContent: 'flex-start', alignItems: 'center', width: '100%', marginBottom: 8, paddingHorizontal: 4 },
-  name: { fontSize: 16, fontWeight: '800', color: '#fff', textAlign: 'center', lineHeight: 20 },
+  name: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: '#fff', textAlign: 'center', lineHeight: 20 },
   desc: { fontSize: 13, color: EN.textMuted, textAlign: 'center', lineHeight: 18 },
   earnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  earnedText: { fontSize: 12, fontWeight: '800', color: EN.primary, letterSpacing: 1 },
+  earnedText: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: EN.primary, letterSpacing: 1 },
   dateText: { fontSize: 11, color: EN.textMuted, marginTop: 4 },
   progressBar: { width: '85%', height: 5, borderRadius: 3, backgroundColor: EN.surfaceHighest, overflow: 'hidden', marginTop: 4 },
   progressFill: { height: '100%', borderRadius: 3 },
-  progressLabel: { fontSize: 12, fontWeight: '600', color: EN.textMuted, marginTop: 5 },
+  progressLabel: { fontSize: 12, fontFamily: 'BeVietnamPro_600SemiBold', color: EN.textMuted, marginTop: 5 },
 });

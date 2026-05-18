@@ -1,4 +1,4 @@
-import type { TextProps } from 'react-native';
+﻿import type { TextProps } from 'react-native';
 import { Text } from 'react-native';
 import { memo } from 'react';
 
@@ -61,11 +61,11 @@ export const ThemedText = memo(
 
     // Determine font family based on weight override
     let fontFamily = typography.fontFamily;
-    if (weight === '300') fontFamily = 'Inter_300Light';
-    else if (weight === '400') fontFamily = 'Inter_400Regular';
-    else if (weight === '500') fontFamily = 'Inter_500Medium';
-    else if (weight === '600') fontFamily = 'Inter_600SemiBold';
-    else if (weight === '700') fontFamily = 'Inter_700Bold';
+    if (weight === '300') fontFamily = 'BeVietnamPro_300Light';
+    else if (weight === '400') fontFamily = 'BeVietnamPro_400Regular';
+    else if (weight === '500') fontFamily = 'BeVietnamPro_500Medium';
+    else if (weight === '600') fontFamily = 'BeVietnamPro_600SemiBold';
+    else if (weight === '700') fontFamily = 'BeVietnamPro_700Bold';
 
     // Xác định numberOfLines: ưu tiên lines prop, nếu chỉ có ellipsis thì mặc định 1 dòng
     const numberOfLines = lines ?? (ellipsis ? 1 : undefined);

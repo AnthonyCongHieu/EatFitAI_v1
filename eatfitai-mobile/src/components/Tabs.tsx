@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -131,7 +131,7 @@ export const Tabs = ({
               {
                 fontSize: sizeConfig.fontSize,
                 color: textColor,
-                fontFamily: isActive ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                fontFamily: isActive ? 'BeVietnamPro_600SemiBold' : 'BeVietnamPro_400Regular',
               },
             ]}
           >
@@ -156,7 +156,7 @@ export const Tabs = ({
                   {
                     fontSize: sizeConfig.fontSize - 2,
                     color: '#fff',
-                    fontFamily: 'Inter_600SemiBold',
+                    fontFamily: 'BeVietnamPro_600SemiBold',
                   },
                 ]}
               >
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   tabLabel: {
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
   },
   badge: {
     alignItems: 'center',
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   badgeText: {
-    fontWeight: 'bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     textAlign: 'center',
   },
   indicator: {

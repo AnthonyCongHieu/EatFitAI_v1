@@ -1,4 +1,4 @@
-// Component nhóm các settings menu items
+﻿// Component nhóm các settings menu items
 // Hiển thị tiêu đề section và wrap children
 
 import React from 'react';
@@ -37,7 +37,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
     },
     title: {
       fontSize: 13,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
       color: theme.colors.textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,

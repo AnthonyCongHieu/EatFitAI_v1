@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 30,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: COLORS.emerald,
     textAlign: 'center',
     letterSpacing: -0.5,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   glassButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
   googleIconWrap: {
     position: 'absolute',
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   outlineButtonText: {
     color: COLORS.emerald,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
   buttonPressed: {
     opacity: 0.7,
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 11,
     letterSpacing: 2,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
   },
 
   /* ─── Footer ─── */
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   },
   registerLink: {
     color: COLORS.emerald,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     fontSize: 15,
   },
 });

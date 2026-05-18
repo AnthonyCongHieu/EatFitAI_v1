@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -203,13 +203,13 @@ const S = StyleSheet.create({
   headerTitle: {
     color: P.text,
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   headerSubtitle: {
     marginTop: 3,
     color: P.muted,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
   content: {
     padding: 16,
@@ -236,7 +236,7 @@ const S = StyleSheet.create({
   filterText: {
     color: P.muted,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   filterTextActive: {
     color: P.primary,
@@ -270,20 +270,20 @@ const S = StyleSheet.create({
   poseLabel: {
     color: P.text,
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   poseKey: {
     marginTop: 2,
     color: P.muted,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
   poseExplanation: {
     marginTop: 6,
     minHeight: 32,
     color: P.muted,
     fontSize: 10.5,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     lineHeight: 16,
   },
   metaRow: {
@@ -299,7 +299,7 @@ const S = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     color: P.muted,
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   pressed: {
     opacity: 0.72,

@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
+﻿import { useCallback, useState, useRef, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   StyleSheet,
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     textAlign: 'center',
     fontSize: 22,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#FFFFFF',
   },
 

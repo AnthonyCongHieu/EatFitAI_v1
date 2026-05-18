@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -1400,7 +1400,7 @@ const S = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     letterSpacing: -0.3,
   },
@@ -1421,7 +1421,7 @@ const S = StyleSheet.create({
   },
   helpPillText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -1436,7 +1436,7 @@ const S = StyleSheet.create({
     maxWidth: 280,
     textAlign: 'center',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
     lineHeight: 17,
   },
@@ -1519,7 +1519,7 @@ const S = StyleSheet.create({
   },
   processingText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
   },
   scanProgressCard: {
@@ -1550,7 +1550,7 @@ const S = StyleSheet.create({
   },
   scanProgressEyebrow: {
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -1558,7 +1558,7 @@ const S = StyleSheet.create({
   },
   scanProgressText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
     lineHeight: 18,
   },
@@ -1581,7 +1581,7 @@ const S = StyleSheet.create({
   },
   holdText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: 'rgba(255,255,255,0.8)',
   },
 
@@ -1610,13 +1610,13 @@ const S = StyleSheet.create({
   },
   floatingLabelName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     maxWidth: 160,
   },
   floatingLabelConf: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
 
@@ -1664,25 +1664,25 @@ const S = StyleSheet.create({
   },
   macroBubbleLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     textTransform: 'uppercase',
     letterSpacing: -0.5,
   },
   macroBubbleValuePrimary: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   macroBubbleLabelSm: {
     fontSize: 8,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     textTransform: 'uppercase',
   },
   macroBubbleValueSm: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
 
@@ -1706,7 +1706,7 @@ const S = StyleSheet.create({
   },
   galleryPillText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
   },
   bottomRow: {
@@ -1789,13 +1789,13 @@ const S = StyleSheet.create({
   },
   drawerFoodName: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     lineHeight: 28,
   },
   resultEyebrow: {
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -1840,17 +1840,17 @@ const S = StyleSheet.create({
   },
   trustBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
   },
   drawerKcal: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   drawerServing: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'BeVietnamPro_400Regular',
     color: P.onSurfaceVariant,
   },
   qtyControl: {
@@ -1873,7 +1873,7 @@ const S = StyleSheet.create({
   },
   qtyText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     paddingHorizontal: 10,
     textDecorationLine: 'underline',
@@ -1909,7 +1909,7 @@ const S = StyleSheet.create({
   },
   quickPortionText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
   },
   quickPortionTextActive: {
@@ -1940,12 +1940,12 @@ const S = StyleSheet.create({
   },
   detectedListTitle: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   detectedListCount: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   detectedItem: {
@@ -1977,7 +1977,7 @@ const S = StyleSheet.create({
   },
   detectedRankText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
   },
   detectedRankTextPrimary: {
@@ -1989,12 +1989,12 @@ const S = StyleSheet.create({
   },
   detectedItemName: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   detectedItemMeta: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
     marginTop: 2,
   },
@@ -2002,12 +2002,12 @@ const S = StyleSheet.create({
     minWidth: 38,
     textAlign: 'right',
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   detectedListMore: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
     textAlign: 'center',
     paddingTop: 2,
@@ -2029,7 +2029,7 @@ const S = StyleSheet.create({
   },
   macroLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -2042,7 +2042,7 @@ const S = StyleSheet.create({
   },
   macroVal: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   macroBarTrack: {
@@ -2082,7 +2082,7 @@ const S = StyleSheet.create({
   },
   retakeBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
   },
   addBtn: {
@@ -2102,7 +2102,7 @@ const S = StyleSheet.create({
   },
   addBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
     letterSpacing: -0.3,
   },
@@ -2125,7 +2125,7 @@ const S = StyleSheet.create({
   },
   basketBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.primary,
   },
   searchManualRow: {
@@ -2135,12 +2135,12 @@ const S = StyleSheet.create({
   },
   searchManualTextNormal: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: '#ffffff',
   },
   searchManualTextLink: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.primary,
   },
 
@@ -2152,14 +2152,14 @@ const S = StyleSheet.create({
   },
   noResultsTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     marginBottom: 8,
     textAlign: 'center',
   },
   noResultsDesc: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant,
     textAlign: 'center',
     marginBottom: 24,
@@ -2183,7 +2183,7 @@ const S = StyleSheet.create({
   },
   noResultsPrimaryText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
     letterSpacing: -0.3,
   },
@@ -2198,7 +2198,7 @@ const S = StyleSheet.create({
   },
   noResultsSecondaryText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.primary,
   },
 
@@ -2258,13 +2258,13 @@ const S = StyleSheet.create({
   },
   gramModalTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     marginBottom: 4,
   },
   gramModalSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant,
     marginBottom: 20,
   },
@@ -2279,7 +2279,7 @@ const S = StyleSheet.create({
   },
   gramInput: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     textAlign: 'center',
   },
@@ -2294,12 +2294,12 @@ const S = StyleSheet.create({
   },
   gramPreviewVal: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   gramPreviewLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
     marginTop: 2,
   },
@@ -2316,7 +2316,7 @@ const S = StyleSheet.create({
   },
   gramCancelBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
   },
   gramConfirmBtn: {
@@ -2331,7 +2331,7 @@ const S = StyleSheet.create({
   },
   gramConfirmBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
   },
 });

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -148,7 +148,7 @@ export const FAB = ({
             {
               fontSize: sizeConfig.fontSize,
               color: '#fff',
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'BeVietnamPro_600SemiBold',
               marginLeft: 8,
             },
           ]}
@@ -213,11 +213,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconText: {
-    fontWeight: 'bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     textAlign: 'center',
   },
   label: {
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
 });
 

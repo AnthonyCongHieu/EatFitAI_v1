@@ -213,7 +213,7 @@ const S = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
+  headerTitle: { fontSize: 17, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurface, letterSpacing: -0.3 },
 
   content: { padding: 20, gap: 20, paddingBottom: 120, paddingTop: 16 },
 
@@ -225,8 +225,8 @@ const S = StyleSheet.create({
     borderColor: P.glassBorder,
   },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  sectionTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', color: P.onSurface },
-  subtitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, marginBottom: 20, lineHeight: 22 },
+  sectionTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
+  subtitle: { fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, marginBottom: 20, lineHeight: 22 },
 
   chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   chip: {
@@ -245,8 +245,8 @@ const S = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-  chipText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
-  chipTextActive: { color: P.onPrimary, fontFamily: 'Inter_700Bold' },
+  chipText: { fontSize: 14, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant },
+  chipTextActive: { color: P.onPrimary, fontFamily: 'BeVietnamPro_700Bold' },
 
   bottomArea: {
     position: 'absolute',
@@ -268,7 +268,7 @@ const S = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 16,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onPrimary,
   },
 });

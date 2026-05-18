@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#dee1f7',
     lineHeight: 18,
   },

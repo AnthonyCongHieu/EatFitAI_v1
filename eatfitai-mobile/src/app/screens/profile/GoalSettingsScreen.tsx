@@ -1,4 +1,4 @@
-// GoalSettingsScreen: Cài đặt mức độ vận động
+﻿// GoalSettingsScreen: Cài đặt mức độ vận động
 // Emerald Nebula 3D — only Activity Level selection
 
 import React, { useEffect, useState } from 'react';
@@ -207,7 +207,7 @@ const S = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     letterSpacing: -0.3,
   },
@@ -216,13 +216,13 @@ const S = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     marginBottom: 6,
   },
   sectionSubtitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant,
     marginBottom: 20,
   },
@@ -251,12 +251,12 @@ const S = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
   },
   optionDesc: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'BeVietnamPro_400Regular',
     color: P.onSurfaceVariant,
     marginTop: 3,
   },
@@ -280,7 +280,7 @@ const S = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
   },
 });

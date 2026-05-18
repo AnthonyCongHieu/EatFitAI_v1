@@ -1,4 +1,4 @@
-// ProfileScreen — Emerald Nebula 3D Design v2
+﻿// ProfileScreen — Emerald Nebula 3D Design v2
 // Hồ sơ: Hero avatar + PRO badge + Metrics strip + Grouped menu actions
 
 import { useEffect, useState, useCallback } from 'react';
@@ -658,7 +658,7 @@ const S = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.primaryContainer,
     letterSpacing: -0.3,
   },
@@ -759,7 +759,7 @@ const S = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   sheetSubtitle: {
@@ -795,7 +795,7 @@ const S = StyleSheet.create({
   sheetActionLabel: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
   },
   sheetDangerAction: {
@@ -838,7 +838,7 @@ const S = StyleSheet.create({
   },
   logoutTitle: {
     fontSize: 19,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     textAlign: 'center',
     marginBottom: 8,
@@ -875,12 +875,12 @@ const S = StyleSheet.create({
   },
   logoutCancelText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   logoutConfirmText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.error,
   },
   avatarGradientRing: {
@@ -910,7 +910,7 @@ const S = StyleSheet.create({
   },
   heroName: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     letterSpacing: -0.5,
     marginBottom: 10,
@@ -933,7 +933,7 @@ const S = StyleSheet.create({
   },
   proBadgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.primary,
     letterSpacing: 0.3,
   },
@@ -962,7 +962,7 @@ const S = StyleSheet.create({
   },
   metricLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -970,12 +970,12 @@ const S = StyleSheet.create({
   },
   metricValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   metricUnit: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'BeVietnamPro_400Regular',
     color: P.onSurfaceVariant,
   },
   metricDivider: {
@@ -985,7 +985,7 @@ const S = StyleSheet.create({
   },
   metricBMIValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     textShadowColor: 'rgba(75, 226, 119, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
@@ -1022,7 +1022,7 @@ const S = StyleSheet.create({
   menuLabel: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
   },
 
   /* ═══ FOOTER ═══ */
@@ -1033,7 +1033,7 @@ const S = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant + '50',
     letterSpacing: 0.5,
   },

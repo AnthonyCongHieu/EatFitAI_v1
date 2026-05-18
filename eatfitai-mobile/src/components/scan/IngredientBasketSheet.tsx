@@ -1,4 +1,4 @@
-/**
+﻿/**
  * IngredientBasketSheet - Bottom Sheet hiển thị danh sách nguyên liệu
  * Cho phép xóa nguyên liệu và gợi ý công thức
  */
@@ -205,13 +205,13 @@ const styles = StyleSheet.create({
   },
   ingredientName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#dee1f7',
     marginBottom: 2,
   },
   ingredientConf: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: '#4be277',
   },
   removeBtn: {
@@ -240,13 +240,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#dee1f7',
     marginBottom: 8,
   },
   emptyDesc: {
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: '#bccbb9',
     textAlign: 'center',
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
   clearBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: '#dee1f7',
   },
   suggestBtn: {
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   suggestBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
   },
 });

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CustomTabBar - Emerald Nebula task-first bottom command bar.
  *
  * Navigation destinations stay in tabs, while high-frequency logging actions
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
   },
   commandLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 0.2,
     textAlign: 'center',
     textTransform: 'uppercase',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, SectionList, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -172,7 +172,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
                     item.averageConfidence > 0.8
                       ? theme.colors.success
                       : theme.colors.warning,
-                  fontWeight: 'bold',
+                  fontFamily: 'BeVietnamPro_700Bold',
                   fontSize: 10,
                 }}
               >

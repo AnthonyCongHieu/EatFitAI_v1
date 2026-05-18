@@ -1,4 +1,4 @@
-// Component hiển thị BMI với visual gauge
+﻿// Component hiển thị BMI với visual gauge
 // BMI = Weight (kg) / Height (m)^2
 // Phân loại: <18.5 Gầy | 18.5-24.9 Bình thường | 25-29.9 Thừa cân | >=30 Béo phì
 
@@ -75,13 +75,13 @@ export const BMIIndicator: React.FC<BMIIndicatorProps> = ({
     },
     bmiValue: {
       fontSize: 18,
-      fontWeight: '700',
+      fontFamily: 'BeVietnamPro_700Bold',
       color: category?.color || theme.colors.text,
     },
     bmiLabel: {
       fontSize: 13,
       color: category?.color || theme.colors.textSecondary,
-      fontWeight: '500',
+      fontFamily: 'BeVietnamPro_500Medium',
     },
     // Full variant styles
     fullContainer: {
@@ -97,7 +97,7 @@ export const BMIIndicator: React.FC<BMIIndicatorProps> = ({
     },
     bigValue: {
       fontSize: 36,
-      fontWeight: '800',
+      fontFamily: 'BeVietnamPro_700Bold',
       color: category?.color || theme.colors.text,
       lineHeight: 44,
       includeFontPadding: false,
@@ -115,7 +115,7 @@ export const BMIIndicator: React.FC<BMIIndicatorProps> = ({
     },
     categoryText: {
       fontSize: 14,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
       color: category?.color || theme.colors.text,
     },
     // Gauge

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+﻿import React, { useCallback, useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import {
@@ -864,7 +864,7 @@ const S = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#ffffff',
     letterSpacing: -0.3,
     textAlign: 'center',
@@ -889,7 +889,7 @@ const S = StyleSheet.create({
   },
   headerStateText: {
     fontSize: 11,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   scrollView: {
@@ -945,7 +945,7 @@ const S = StyleSheet.create({
   },
   bubbleText: {
     fontSize: 14,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurface,
     lineHeight: 20,
   },
@@ -969,7 +969,7 @@ const S = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   availabilityCard: {
@@ -979,13 +979,13 @@ const S = StyleSheet.create({
   },
   availabilityTitle: {
     fontSize: 13,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     marginBottom: 2,
   },
   availabilityText: {
     fontSize: 12,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant,
     lineHeight: 17,
   },
@@ -1016,7 +1016,7 @@ const S = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     fontSize: 15,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurface,
     minHeight: 42,
     maxHeight: 76,
@@ -1053,7 +1053,7 @@ const S = StyleSheet.create({
   },
   quickCommandText: {
     fontSize: 12,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     lineHeight: 15,
   },
@@ -1068,7 +1068,7 @@ const S = StyleSheet.create({
   },
   transcriptText: {
     fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
     lineHeight: 20,
   },
@@ -1099,7 +1099,7 @@ const S = StyleSheet.create({
   },
   voicePanelTitle: {
     fontSize: 18,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     lineHeight: 23,
     letterSpacing: -0.2,
@@ -1107,7 +1107,7 @@ const S = StyleSheet.create({
   voicePanelHint: {
     marginTop: 2,
     fontSize: 12,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant,
     lineHeight: 17,
   },
@@ -1137,7 +1137,7 @@ const S = StyleSheet.create({
   },
   voiceStateText: {
     fontSize: 11,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   voiceStateTextActive: {
@@ -1221,13 +1221,13 @@ const S = StyleSheet.create({
   },
   durationText: {
     fontSize: 19,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#ffffff',
   },
   listeningLabel: {
     marginTop: 12,
     fontSize: 12,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -1249,7 +1249,7 @@ const S = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 12,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
   },
   actionsRow: {
@@ -1271,7 +1271,7 @@ const S = StyleSheet.create({
   },
   resetBtnText: {
     fontSize: 13,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
   },
   analyzeBtn: {
@@ -1289,7 +1289,7 @@ const S = StyleSheet.create({
   },
   analyzeBtnText: {
     fontSize: 13,
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
   },
   disabledControl: {

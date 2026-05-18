@@ -1,4 +1,4 @@
-// Component hiển thị một menu item trong settings
+﻿// Component hiển thị một menu item trong settings
 // Thiết kế theo xu hướng 2026: glassmorphism, micro-interactions
 
 import React from 'react';
@@ -102,7 +102,7 @@ export const SettingsMenuItem: React.FC<SettingsMenuItemProps> = ({
     },
     label: {
       fontSize: 16,
-      fontWeight: '500',
+      fontFamily: 'BeVietnamPro_500Medium',
       color: disabled ? theme.colors.textSecondary : theme.colors.text,
     },
     subtitle: {

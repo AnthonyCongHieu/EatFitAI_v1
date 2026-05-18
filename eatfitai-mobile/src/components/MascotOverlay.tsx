@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   },
   chatBubbleTitle: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#86efac',
     letterSpacing: 0.4,
     marginBottom: 3,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
   chatBubbleText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: '#dee1f7',
     lineHeight: 18,
     letterSpacing: 0.1,

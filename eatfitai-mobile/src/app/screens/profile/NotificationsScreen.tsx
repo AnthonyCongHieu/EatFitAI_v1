@@ -255,7 +255,7 @@ const NotificationsScreen = (): React.ReactElement => {
                       <Ionicons name={item.icon as any} size={20} color={P.primary} />
                     </View>
                     <ThemedText
-                      style={[S.itemText, !settings[item.toggleKey] && { color: P.slate400, fontFamily: 'Inter_500Medium' }, { flex: 1 }]}
+                      style={[S.itemText, !settings[item.toggleKey] && { color: P.slate400, fontFamily: 'BeVietnamPro_500Medium' }, { flex: 1 }]}
                       numberOfLines={1}
                     >
                       {item.label}
@@ -425,7 +425,7 @@ const S = StyleSheet.create({
     paddingHorizontal: 16, paddingBottom: 15,
   },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontFamily: 'Inter_800ExtraBold', fontSize: 22, color: P.primary, letterSpacing: -0.5 },
+  headerTitle: { fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 17, color: P.primary, letterSpacing: -0.3 },
 
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
 
@@ -440,9 +440,9 @@ const S = StyleSheet.create({
   iconBoxPrimary: { width: 48, height: 48, borderRadius: 16, backgroundColor: P.primary + '33', alignItems: 'center', justifyContent: 'center' },
   iconBoxDark: { width: 40, height: 40, borderRadius: 12, backgroundColor: P.surfaceContainerHighest, alignItems: 'center', justifyContent: 'center' },
 
-  titleWhite: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
-  subText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: P.slate400, marginTop: 4 },
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', color: P.slate500, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 20 },
+  titleWhite: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: '#fff' },
+  subText: { fontSize: 13, fontFamily: 'BeVietnamPro_400Regular', color: P.slate400, marginTop: 4 },
+  sectionLabel: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.slate500, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 20 },
 
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowBetweenStart: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
@@ -451,9 +451,9 @@ const S = StyleSheet.create({
   gapLarge: { gap: 20 },
   gapMedium: { gap: 16 },
 
-  itemText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#fff', marginLeft: 12 },
-  itemTextStandard: { fontSize: 16, fontFamily: 'Inter_500Medium', color: '#fff' },
-  timeText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: P.slate500 },
+  itemText: { fontSize: 16, fontFamily: 'BeVietnamPro_500Medium', color: '#fff', marginLeft: 12 },
+  itemTextStandard: { fontSize: 16, fontFamily: 'BeVietnamPro_500Medium', color: '#fff' },
+  timeText: { fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', color: P.slate500 },
 
   // Time edit button (when in editing mode)
   timeEditBtn: {
@@ -462,10 +462,10 @@ const S = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5,
     borderWidth: 1, borderColor: P.primary + '40',
   },
-  timeEditText: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+  timeEditText: { fontSize: 14, fontFamily: 'BeVietnamPro_600SemiBold', color: P.primary },
 
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 },
-  editBtnText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', color: P.primary, letterSpacing: 1 },
+  editBtnText: { fontSize: 14, fontFamily: 'BeVietnamPro_600SemiBold', color: P.primary, letterSpacing: 0.5 },
 
   quietGrid: { flexDirection: 'row', gap: 16, marginTop: 20 },
   quietBox: {
@@ -474,8 +474,8 @@ const S = StyleSheet.create({
     padding: 16, gap: 4,
   },
   quietTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  quietLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.slate500, textTransform: 'uppercase' },
-  quietTime: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
+  quietLabel: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.slate500, textTransform: 'uppercase', letterSpacing: 1.5 },
+  quietTime: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: '#fff' },
 
   // Modal styles for iOS time picker
   modalOverlay: {
@@ -491,7 +491,7 @@ const S = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  modalTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
-  modalCancel: { fontSize: 15, fontFamily: 'Inter_500Medium', color: P.slate400 },
-  modalDone: { fontSize: 15, fontFamily: 'Inter_700Bold', color: P.primary },
+  modalTitle: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: '#fff' },
+  modalCancel: { fontSize: 15, fontFamily: 'BeVietnamPro_500Medium', color: P.slate400 },
+  modalDone: { fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
 });

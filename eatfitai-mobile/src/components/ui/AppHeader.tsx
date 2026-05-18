@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AppHeader - Unified Header Component (Trend 2026)
  *
  * Design: glassmorphism with a semi-transparent background and subtle border glow
@@ -428,7 +428,7 @@ const createStyles = (theme: any, isDark: boolean) =>
     subtitle: {
       textAlign: 'center',
       fontSize: 13,
-      fontWeight: '500', // Better readability
+      fontFamily: 'BeVietnamPro_500Medium', // Better readability
     },
     iconButtonPlaceholder: {
       width: 42,

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 3,
     color: 'rgba(75, 226, 119, 0.8)',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     textTransform: 'uppercase',
   },
 });

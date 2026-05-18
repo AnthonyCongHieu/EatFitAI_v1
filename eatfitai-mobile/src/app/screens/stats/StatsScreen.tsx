@@ -1,4 +1,4 @@
-/**
+﻿/**
  * StatsScreen — Emerald Nebula 3D unified stats
  * Faithfully follows the HTML template design reference.
  *
@@ -935,13 +935,13 @@ const StatsScreen = (): React.ReactElement => {
                   {/* Averages & Perfect Days */}
                   <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
                     <View style={{ alignItems: 'center' }}>
-                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 11, fontFamily: 'Inter_700Bold', letterSpacing: 0.5 }}>TRUNG BÌNH</ThemedText>
-                      <ThemedText style={{ color: P.onSurface, fontSize: 15, fontFamily: 'Inter_800ExtraBold', marginTop: 2 }}>{avgDailyCal} <ThemedText style={{ fontSize: 11, fontFamily: 'Inter_500Medium' }}>kcal/ngày</ThemedText></ThemedText>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 11, fontFamily: 'BeVietnamPro_700Bold', letterSpacing: 0.5 }}>TRUNG BÌNH</ThemedText>
+                      <ThemedText style={{ color: P.onSurface, fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', marginTop: 2 }}>{avgDailyCal} <ThemedText style={{ fontSize: 11, fontFamily: 'BeVietnamPro_500Medium' }}>kcal/ngày</ThemedText></ThemedText>
                     </View>
                     <View style={{ width: 1, backgroundColor: P.glassBorder, height: '100%' }} />
                     <View style={{ alignItems: 'center' }}>
-                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 11, fontFamily: 'Inter_700Bold', letterSpacing: 0.5 }}>ĐẠT MỤC TIÊU</ThemedText>
-                      <ThemedText style={{ color: '#4BE277', fontSize: 15, fontFamily: 'Inter_800ExtraBold', marginTop: 2 }}>{daysOnTrack} <ThemedText style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: '#4BE277' }}>ngày</ThemedText></ThemedText>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 11, fontFamily: 'BeVietnamPro_700Bold', letterSpacing: 0.5 }}>ĐẠT MỤC TIÊU</ThemedText>
+                      <ThemedText style={{ color: '#4BE277', fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', marginTop: 2 }}>{daysOnTrack} <ThemedText style={{ fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: '#4BE277' }}>ngày</ThemedText></ThemedText>
                     </View>
                   </View>
                 </View>
@@ -1070,7 +1070,7 @@ const StatsScreen = (): React.ReactElement => {
                           {' '}/ {Math.round(wkTargetProtein)}g
                         </ThemedText>
                       </View>
-                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'BeVietnamPro_500Medium' }}>
                         Trung bình: {avgDailyProtein} g/ngày
                       </ThemedText>
                     </View>
@@ -1120,7 +1120,7 @@ const StatsScreen = (): React.ReactElement => {
                           {' '}/ {Math.round(wkTargetCarbs)}g
                         </ThemedText>
                       </View>
-                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'BeVietnamPro_500Medium' }}>
                         Trung bình: {avgDailyCarbs} g/ngày
                       </ThemedText>
                     </View>
@@ -1170,7 +1170,7 @@ const StatsScreen = (): React.ReactElement => {
                           {' '}/ {Math.round(wkTargetFat)}g
                         </ThemedText>
                       </View>
-                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'BeVietnamPro_500Medium' }}>
                         Trung bình: {avgDailyFat} g/ngày
                       </ThemedText>
                     </View>
@@ -1220,7 +1220,7 @@ const StatsScreen = (): React.ReactElement => {
                           {' '}/ {((effectiveWaterTargetMl * 7) / 1000).toFixed(1)}L
                         </ThemedText>
                       </View>
-                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'Inter_500Medium' }}>
+                      <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 4, fontFamily: 'BeVietnamPro_500Medium' }}>
                         Trung bình: {((weeklyWaterData?.averageMl ?? 0) / 1000).toFixed(1)} L/ngày
                       </ThemedText>
                     </View>
@@ -1382,7 +1382,7 @@ const StatsScreen = (): React.ReactElement => {
                   <View style={S.mthHeatCard}>
                     {isLoadingMonth ? (
                       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }}>
-                        <ThemedText style={{ color: P.textSlate400, fontSize: 13, fontWeight: '700', textAlign: 'center' }}>
+                        <ThemedText style={{ color: P.textSlate400, fontSize: 13, fontFamily: 'BeVietnamPro_700Bold', textAlign: 'center' }}>
                           Đang cập nhật dữ liệu từng ngày
                         </ThemedText>
                       </View>
@@ -1436,7 +1436,7 @@ const StatsScreen = (): React.ReactElement => {
                                 }}
                               >
                                 {isRealDay && (
-                                  <ThemedText style={{ fontSize: 11, fontWeight: '700', color: txtColor, opacity }}>
+                                  <ThemedText style={{ fontSize: 11, fontFamily: 'BeVietnamPro_700Bold', color: txtColor, opacity }}>
                                     {d}
                                   </ThemedText>
                                 )}
@@ -1694,7 +1694,7 @@ const S = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     letterSpacing: -0.2,
   },
@@ -1720,7 +1720,7 @@ const S = StyleSheet.create({
     shadowRadius: 15,
     elevation: 4,
   },
-  tabTxt: { fontSize: 14, fontWeight: '700', color: P.textSlate400 },
+  tabTxt: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.textSlate400 },
   tabTxtOn: { color: P.onPrimaryContainer, fontWeight: '700' },
 
   /* Scroll */
@@ -1734,7 +1734,7 @@ const S = StyleSheet.create({
   },
   dateMetaText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     letterSpacing: -0.1,
   },
@@ -1760,14 +1760,14 @@ const S = StyleSheet.create({
   ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   ringBig: {
     fontSize: 32,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#fff',
     letterSpacing: -1.5,
     lineHeight: 38,
   },
   ringUnit: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -1781,7 +1781,7 @@ const S = StyleSheet.create({
   mBarHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   mBarLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate400,
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -1806,7 +1806,7 @@ const S = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   distHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-  distTitle: { fontSize: 16, fontWeight: '700', color: P.onSurface },
+  distTitle: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
   dotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: P.primary },
 
   stackTrack: {
@@ -1823,12 +1823,12 @@ const S = StyleSheet.create({
   distDot: { width: 8, height: 8, borderRadius: 4 },
   distLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate400,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
-  distVal: { fontSize: 20, fontWeight: '700', color: P.onSurface, paddingLeft: 16 },
+  distVal: { fontSize: 20, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, paddingLeft: 16 },
 
   /* ── Lượng Nước ── */
   waterCard: {
@@ -1857,12 +1857,12 @@ const S = StyleSheet.create({
   },
   waterLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  waterBig: { fontSize: 22, fontWeight: '700', color: '#fff' },
+  waterBig: { fontSize: 22, fontFamily: 'BeVietnamPro_700Bold', color: '#fff' },
   waterSmall: { fontSize: 12, color: P.textSlate500 },
   waterDrops: {
     flexDirection: 'row',
@@ -1882,7 +1882,7 @@ const S = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   wkBtn: { padding: 8, borderRadius: 12 },
-  wkTitle: { fontSize: 15, fontWeight: '700', color: P.onSurface },
+  wkTitle: { fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
 
   weeklyReviewCard: {
     backgroundColor: 'rgba(22, 27, 43, 0.6)',
@@ -1908,7 +1908,7 @@ const S = StyleSheet.create({
   },
   weeklyReviewEyebrow: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: P.primary,
@@ -1917,7 +1917,7 @@ const S = StyleSheet.create({
   weeklyReviewTitle: {
     flexShrink: 1,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#fff',
     lineHeight: 24,
   },
@@ -1931,7 +1931,7 @@ const S = StyleSheet.create({
   },
   weeklyReviewBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
   weeklyReviewMetrics: {
@@ -1949,7 +1949,7 @@ const S = StyleSheet.create({
   },
   weeklyReviewMetricValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#fff',
     marginBottom: 4,
   },
@@ -2002,7 +2002,7 @@ const S = StyleSheet.create({
   },
   weeklyReviewButtonText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#fff',
   },
 
@@ -2014,7 +2014,7 @@ const S = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 280,
   },
-  secTitle: { fontSize: 16, fontWeight: '700', color: P.onSurface, marginBottom: 8 },
+  secTitle: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, marginBottom: 8 },
 
   bars: {
     flexDirection: 'row',
@@ -2024,7 +2024,7 @@ const S = StyleSheet.create({
     marginTop: 8,
   },
   barCol: { alignItems: 'center', flex: 1, gap: 4 },
-  barVal: { fontSize: 9, fontWeight: '700', color: P.textSlate400 },
+  barVal: { fontSize: 9, fontFamily: 'BeVietnamPro_700Bold', color: P.textSlate400 },
   barTrack: {
     width: 20,
     height: 140,
@@ -2034,7 +2034,7 @@ const S = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   barFill: { width: '100%', borderRadius: 10 },
-  barLbl: { fontSize: 10, fontWeight: '700', color: P.textSlate400, textTransform: 'uppercase' },
+  barLbl: { fontSize: 10, fontFamily: 'BeVietnamPro_700Bold', color: P.textSlate400, textTransform: 'uppercase' },
 
   /* Summary row */
   sumRow: { flexDirection: 'row', gap: 10 },
@@ -2048,8 +2048,8 @@ const S = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
     gap: 4,
   },
-  sumVal: { fontSize: 16, fontWeight: '700', color: P.onSurface },
-  sumLbl: { fontSize: 10, fontWeight: '700', color: P.textSlate400 },
+  sumVal: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
+  sumLbl: { fontSize: 10, fontFamily: 'BeVietnamPro_700Bold', color: P.textSlate400 },
 
   /* Macro card */
   macroCard: {
@@ -2069,7 +2069,7 @@ const S = StyleSheet.create({
   macroV: { fontSize: 24, fontWeight: '700' },
   macroL: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate400,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -2100,7 +2100,7 @@ const S = StyleSheet.create({
   },
   mthGoalLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: 'rgba(75, 226, 119, 0.6)',
   },
   mthWeekLabels: {
@@ -2111,7 +2111,7 @@ const S = StyleSheet.create({
   },
   mthWeekLbl: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate500,
   },
 
@@ -2132,7 +2132,7 @@ const S = StyleSheet.create({
   },
   mthFloatLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate400,
     letterSpacing: 3,
     textTransform: 'uppercase',
@@ -2140,14 +2140,14 @@ const S = StyleSheet.create({
   },
   mthFloatPct: {
     fontSize: 40,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     letterSpacing: -2,
     lineHeight: 46,
   },
   mthFloatSub: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.textSlate500,
     marginTop: 4,
   },
@@ -2162,7 +2162,7 @@ const S = StyleSheet.create({
   },
   mthHeatTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2170,7 +2170,7 @@ const S = StyleSheet.create({
   },
   mthHeatBadge: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2197,7 +2197,7 @@ const S = StyleSheet.create({
   },
   mthEnergyLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate400,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -2205,12 +2205,12 @@ const S = StyleSheet.create({
   },
   mthEnergyVal: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   mthEnergyUnit: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
     opacity: 0.6,
   },
@@ -2241,26 +2241,26 @@ const S = StyleSheet.create({
   },
   mthUniformLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate400,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   mthUniformVal: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   mthUniformTagGray: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.textSlate500,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   mthUniformTagGreen: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#34d399',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2284,20 +2284,20 @@ const S = StyleSheet.create({
   },
   wkRingUnit: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
     marginTop: 4,
   },
   wkRingTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     marginTop: 8,
     letterSpacing: -0.3,
   },
   wkRingSub: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
     marginTop: 4,
   },
@@ -2322,7 +2322,7 @@ const S = StyleSheet.create({
   },
   wkChartTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   wkTargetBadge: {
@@ -2332,7 +2332,7 @@ const S = StyleSheet.create({
   },
   wkTargetBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2380,7 +2380,7 @@ const S = StyleSheet.create({
     left: '-25%',
     textAlign: 'center',
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
     textTransform: 'uppercase',
   },
@@ -2392,7 +2392,7 @@ const S = StyleSheet.create({
   },
   wkDayLbl: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
     textTransform: 'uppercase',
     flex: 1,
@@ -2400,7 +2400,7 @@ const S = StyleSheet.create({
   },
   wkDayLblBest: {
     color: P.primary,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
 
   /* Protein card */
@@ -2427,7 +2427,7 @@ const S = StyleSheet.create({
   },
   wkProteinTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   wkProteinBottom: {
@@ -2438,14 +2438,14 @@ const S = StyleSheet.create({
   },
   wkProteinVal: {
     fontSize: 26,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     paddingHorizontal: 8,
     marginLeft: -4, // Bù lại padding để không bị lệch quá xa
   },
   wkProteinTarget: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
   },
   wkProteinBarTrack: {
@@ -2490,17 +2490,17 @@ const S = StyleSheet.create({
   },
   wkMiniMacroLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
   },
   wkMiniMacroVal: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   wkMiniMacroUnit: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
     marginLeft: 2,
   },

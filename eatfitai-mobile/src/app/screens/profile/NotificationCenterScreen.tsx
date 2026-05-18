@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -209,13 +209,13 @@ const S = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   headerSubtitle: {
     marginTop: 2,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurfaceVariant,
   },
   scrollContent: {
@@ -242,7 +242,7 @@ const S = StyleSheet.create({
   },
   summaryTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   summaryText: {
@@ -292,12 +292,12 @@ const S = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
   notificationState: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
   },
   notificationBody: {
@@ -309,7 +309,7 @@ const S = StyleSheet.create({
   notificationCta: {
     marginTop: 5,
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
 });
 

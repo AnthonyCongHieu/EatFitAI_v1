@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -151,7 +151,7 @@ export const StatusIndicator = ({
                 {
                   color: config.color,
                   fontSize: sizeConfig.fontSize,
-                  fontFamily: theme?.typography?.body?.fontFamily || 'Inter_400Regular',
+                  fontFamily: theme?.typography?.body?.fontFamily || 'BeVietnamPro_400Regular',
                   lineHeight: 20,
                 },
               ]}

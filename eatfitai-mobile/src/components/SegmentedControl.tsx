@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -159,7 +159,7 @@ export const SegmentedControl = ({
                           : isSelected
                             ? '#fff'
                             : theme.colors.text,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'BeVietnamPro_600SemiBold',
                     },
                   ]}
                 >
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   segmentLabel: {
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
   },
 });
 

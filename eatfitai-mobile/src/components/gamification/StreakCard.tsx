@@ -1,4 +1,4 @@
-/**
+﻿/**
  * StreakCard - Enhanced với animated fire và weekly calendar
  * Features:
  * - Animated fire icon khi streak active (pulse + scale)
@@ -271,7 +271,7 @@ const getStyles = (theme: any, isDark: boolean, isActive: boolean) =>
     },
     badgeText: {
       color: '#FFF',
-      fontWeight: 'bold',
+      fontFamily: 'BeVietnamPro_700Bold',
       fontSize: 11,
     },
     weeklyContainer: {

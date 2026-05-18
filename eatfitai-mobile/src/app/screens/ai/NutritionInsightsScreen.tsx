@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -71,7 +71,7 @@ const ScoreGauge = ({
         </G>
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <ThemedText style={{ color, fontSize: 32, fontWeight: '700', lineHeight: 36 }}>
+        <ThemedText style={{ color, fontSize: 32, fontFamily: 'BeVietnamPro_700Bold', lineHeight: 36 }}>
           {Math.round(score)}
         </ThemedText>
         <ThemedText style={{ color: EN.textMuted, fontSize: 14 }}>
@@ -393,7 +393,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                         : EN.warning
                   }
                 />
-                <ThemedText style={{ marginLeft: 6, fontWeight: '600', fontSize: 15, color: EN.onSurface }}>
+                <ThemedText style={{ marginLeft: 6, fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15, color: EN.onSurface }}>
                   {insights.progressTrend === 'improving'
                     ? t('nutrition_insights.trend_improving')
                     : insights.progressTrend === 'declining'
@@ -434,7 +434,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                 </View>
                 <ThemedText style={{ color: EN.onSurface, fontSize: 15, marginBottom: 8 }}>
                   {t('nutrition_insights.meal_timing_avg')}:{' '}
-                  <ThemedText style={{ fontWeight: '700', color: EN.onSurface }}>
+                  <ThemedText style={{ fontFamily: 'BeVietnamPro_700Bold', color: EN.onSurface }}>
                     {insights.mealTimingInsight.averageMealsPerDay.toFixed(1)}{' '}
                     {t('nutrition_insights.meals_per_day')}
                   </ThemedText>
@@ -477,7 +477,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                   <ThemedText style={{ fontSize: 12, color: EN.textMuted, marginBottom: 4 }}>
                     {t('nutrition_insights.current')}
                   </ThemedText>
-                  <ThemedText style={{ fontSize: 24, fontWeight: '700', color: EN.onSurface }}>
+                  <ThemedText style={{ fontSize: 24, fontFamily: 'BeVietnamPro_700Bold', color: EN.onSurface }}>
                     {formatTargetMetric(adaptiveTarget.currentTarget.targetCalories)}
                   </ThemedText>
                   <ThemedText style={{ fontSize: 12, color: EN.textMuted }}>
@@ -491,7 +491,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                   <ThemedText style={{ fontSize: 12, color: EN.primary, marginBottom: 4, fontWeight: '700' }}>
                     {t('nutrition_insights.suggested')}
                   </ThemedText>
-                  <ThemedText style={{ fontSize: 24, fontWeight: '700', color: EN.primary }}>
+                  <ThemedText style={{ fontSize: 24, fontFamily: 'BeVietnamPro_700Bold', color: EN.primary }}>
                     {formatTargetMetric(adaptiveTarget.suggestedTarget.targetCalories)}
                   </ThemedText>
                   <ThemedText style={{ fontSize: 12, color: EN.primary }}>
@@ -558,14 +558,14 @@ const S = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: EN.onSurface,
     marginTop: 8,
     marginLeft: 4,
   },
   sectionCardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: EN.onSurface,
     marginBottom: 4,
   },
@@ -579,7 +579,7 @@ const S = StyleSheet.create({
   },
   recTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: EN.onSurface,
   },
   recMessage: {
@@ -639,7 +639,7 @@ const S = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#003915',
     letterSpacing: 0.3,
     textAlign: 'center',

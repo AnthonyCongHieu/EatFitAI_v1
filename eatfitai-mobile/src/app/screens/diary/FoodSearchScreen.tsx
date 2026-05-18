@@ -843,7 +843,7 @@ const S = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter_600SemiBold', color: P.primaryDark, letterSpacing: -0.3 },
+  headerTitle: { fontSize: 17, fontFamily: 'BeVietnamPro_600SemiBold', color: P.primaryDark, letterSpacing: -0.3 },
 
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 
@@ -861,9 +861,9 @@ const S = StyleSheet.create({
     flex: 1,
     color: P.onSurface,
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
   },
-  cancelBtn: { color: P.primary, fontFamily: 'Inter_600SemiBold', fontSize: 15, paddingHorizontal: 4 },
+  cancelBtn: { color: P.primary, fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15, paddingHorizontal: 4 },
 
   chipsWrapper: { marginBottom: 24, marginHorizontal: -20 },
   chipsContent: { paddingHorizontal: 20, gap: 10 },
@@ -880,12 +880,12 @@ const S = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  chipText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
-  chipTextActive: { color: P.onPrimary, fontFamily: 'Inter_700Bold' },
+  chipText: { fontSize: 14, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant },
+  chipTextActive: { color: P.onPrimary, fontFamily: 'BeVietnamPro_700Bold' },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  sectionTitle: { fontSize: 13, fontFamily: 'Inter_700Bold', color: P.onSurfaceVariant, letterSpacing: 1.5, textTransform: 'uppercase' },
-  sectionAction: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+  sectionTitle: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurfaceVariant, letterSpacing: 1.5, textTransform: 'uppercase' },
+  sectionAction: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
 
   recentArea: { gap: 12 },
   recentItem: {
@@ -898,7 +898,7 @@ const S = StyleSheet.create({
     borderWidth: 1,
     borderColor: P.glassBorder,
   },
-  recentText: { fontSize: 16, fontFamily: 'Inter_500Medium', color: P.onSurface },
+  recentText: { fontSize: 16, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurface },
 
   resultsArea: { gap: 12 },
   resultCard: {
@@ -923,10 +923,10 @@ const S = StyleSheet.create({
   },
   thumbnail: { width: '100%', height: '100%', borderRadius: 18 },
   resultInfo: { flex: 1 },
-  resultTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface, marginBottom: 4 },
-  templateDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, marginBottom: 6 },
+  resultTitle: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, marginBottom: 4 },
+  templateDescription: { fontSize: 12, fontFamily: 'BeVietnamPro_400Regular', color: P.onSurfaceVariant, marginBottom: 6 },
   templateMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  templateMetaText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  templateMetaText: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant },
   commonMealEmptyCard: {
     borderRadius: 18,
     borderWidth: 1,
@@ -935,10 +935,10 @@ const S = StyleSheet.create({
     padding: 16,
     gap: 10,
   },
-  commonMealEmptyTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface },
+  commonMealEmptyTitle: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
   commonMealEmptyDescription: {
     fontSize: 14,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'BeVietnamPro_400Regular',
     color: P.onSurfaceVariant,
     lineHeight: 20,
   },
@@ -952,15 +952,15 @@ const S = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: 'rgba(75, 226, 119, 0.12)',
   },
-  commonMealEmptyButtonText: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+  commonMealEmptyButtonText: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
   macroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  per100g: { fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+  per100g: { fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant },
   macroDots: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   macroDot: { width: 8, height: 8, borderRadius: 4 },
-  macroText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  macroText: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant },
 
   resultCardRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },
+  resultCaloriesSmall: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.primary },
   addBtn: { width: 32, height: 32, backgroundColor: P.primary + '20', borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 
   centerBox: { paddingTop: 40, alignItems: 'center' },

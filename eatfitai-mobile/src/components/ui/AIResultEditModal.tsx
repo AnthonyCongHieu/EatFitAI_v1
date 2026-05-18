@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingHorizontal: 16,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     textAlign: 'center',
   },
   nutritionCard: {

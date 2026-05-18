@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -183,13 +183,13 @@ const weekStyles = StyleSheet.create({
   },
   dayLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: C_STATIC.textMuted,
     textTransform: 'uppercase',
   },
   dayLabelSelected: {
     color: C_STATIC.onSurface,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   dayNumContainer: {
     width: 34,
@@ -206,7 +206,7 @@ const weekStyles = StyleSheet.create({
   },
   dayNum: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
   },
   dayNumSelected: {
@@ -232,7 +232,7 @@ const WaterGlassIcon = ({ isPlus }: { isPlus: boolean }) => {
         {/* Outline */}
         <Path d="M4 3L6.5 20C6.7 21.1 7.6 22 8.8 22H15.2C16.4 22 17.3 21.1 17.5 20L20 3" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
-      <ThemedText style={{ position: 'absolute', fontSize: 16, fontWeight: '600', color: '#fff', top: 3, width: '100%', textAlign: 'center' }}>
+      <ThemedText style={{ position: 'absolute', fontSize: 16, fontFamily: 'BeVietnamPro_600SemiBold', color: '#fff', top: 3, width: '100%', textAlign: 'center' }}>
         {isPlus ? '+' : '−'}
       </ThemedText>
     </View>
@@ -596,7 +596,7 @@ const HomeScreen = (): React.ReactElement => {
         {/* ══════════ SERVER ERROR ══════════ */}
         {serverDown && (
           <View style={styles.errorBanner}>
-            <ThemedText style={{ color: C.danger, fontWeight: '600', fontSize: 13 }}>
+            <ThemedText style={{ color: C.danger, fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 13 }}>
               {t('app.serverConnectionError')}
             </ThemedText>
             <ThemedText style={{ color: C.textMuted, fontSize: 12 }}>
@@ -1009,14 +1009,14 @@ const styles = StyleSheet.create({
   },
   ringValue: {
     fontSize: 25,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
     lineHeight: 30,
     textAlign: 'center',
   },
   ringLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.textMuted,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -1035,14 +1035,14 @@ const styles = StyleSheet.create({
   },
   macroTitle: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   macroTarget: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.primary,
     marginBottom: 10,
   },
@@ -1055,12 +1055,12 @@ const styles = StyleSheet.create({
   },
   macroName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
   },
   macroValue: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.textMuted,
   },
   macroTrack: {
@@ -1085,13 +1085,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
     letterSpacing: -0.3,
   },
   seeAll: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.primary,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -1151,19 +1151,19 @@ const styles = StyleSheet.create({
   },
   entryMealLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   entryCalories: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
   },
   entryFoodName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
   },
   entryMacros: {
@@ -1182,7 +1182,7 @@ const styles = StyleSheet.create({
   },
   entryMacroTextV2: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#a1a1aa',
   },
 
@@ -1195,7 +1195,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
     marginBottom: 6,
   },
@@ -1337,12 +1337,12 @@ const styles = StyleSheet.create({
   },
   waterTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: '#f8fafc',
   },
   waterValue: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: '#f8fafc',
   },
   waterPill: {

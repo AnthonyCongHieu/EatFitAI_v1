@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   progressText: {
     color: '#86EFAC',
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 16,
   },
   requiredPill: {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   skipText: {
     color: '#CBD5E1',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 20,
   },
   mascotStage: {
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   coachTargetText: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 18,
   },
   copyBlock: {
@@ -361,14 +361,14 @@ const styles = StyleSheet.create({
   title: {
     color: '#F8FAFC',
     fontSize: 21,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 28,
     textAlign: 'center',
   },
   description: {
     color: '#CBD5E1',
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     lineHeight: 21,
     textAlign: 'center',
   },
@@ -408,13 +408,13 @@ const styles = StyleSheet.create({
   },
   targetEyebrow: {
     fontSize: 10,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 1.1,
     lineHeight: 14,
   },
   targetText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 20,
   },
   primaryPressed: {
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   primaryText: {
     color: '#052E16',
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 22,
   },
 });

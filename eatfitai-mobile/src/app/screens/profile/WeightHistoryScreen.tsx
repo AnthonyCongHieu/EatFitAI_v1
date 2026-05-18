@@ -1,4 +1,4 @@
-// WeightHistoryScreen: Lịch sử cân đo với biểu đồ
+﻿// WeightHistoryScreen: Lịch sử cân đo với biểu đồ
 // Hiển thị chart tiến trình cân nặng theo thời gian
 
 import React, { useMemo } from 'react';
@@ -142,24 +142,24 @@ const WeightHistoryScreen = (): React.ReactElement => {
     },
     statValue: {
       fontSize: 32,
-      fontWeight: '700',
+      fontFamily: 'BeVietnamPro_700Bold',
       color: theme.colors.text,
       lineHeight: 40,
     },
     statUnit: {
       fontSize: 14,
-      fontWeight: '500',
+      fontFamily: 'BeVietnamPro_500Medium',
       color: theme.colors.textSecondary,
     },
     statLabel: {
       fontSize: 13,
       color: theme.colors.textSecondary,
       marginTop: 4,
-      fontWeight: '500',
+      fontFamily: 'BeVietnamPro_500Medium',
     },
     statChange: {
       fontSize: 24,
-      fontWeight: '700',
+      fontFamily: 'BeVietnamPro_700Bold',
       lineHeight: 32,
     },
     statDivider: {
@@ -192,7 +192,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
     },
     recordWeight: {
       fontSize: 16,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
       color: theme.colors.text,
     },
     loadingContainer: {

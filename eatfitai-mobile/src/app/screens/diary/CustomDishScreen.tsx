@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+﻿import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigation } from '@react-navigation/native';
@@ -181,7 +181,7 @@ const CustomDishScreen = (): React.ReactElement => {
             <ThemedText
               style={{
                 fontSize: 20,
-                fontWeight: '700',
+                fontFamily: 'BeVietnamPro_700Bold',
                 letterSpacing: 0,
                 lineHeight: 28,
               }}

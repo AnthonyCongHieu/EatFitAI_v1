@@ -1,4 +1,4 @@
-// BasicInfoScreen — "Thông tin cơ bản"
+﻿// BasicInfoScreen — "Thông tin cơ bản"
 // Emerald Nebula 3D: Editable rows for Nickname, Gender, Age, Height
 
 import React, { useState, useCallback } from 'react';
@@ -99,10 +99,10 @@ const EditModal = ({
         />
         <View style={S.modalBtnRow}>
           <Pressable style={S.modalBtnCancel} onPress={onCancel}>
-            <ThemedText style={{ color: P.onSurfaceVariant, fontWeight: '600', fontSize: 15 }}>Hủy</ThemedText>
+            <ThemedText style={{ color: P.onSurfaceVariant, fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15 }}>Hủy</ThemedText>
           </Pressable>
           <Pressable style={S.modalBtnSave} onPress={onSave}>
-            <ThemedText style={{ color: '#003915', fontWeight: '700', fontSize: 15 }}>Lưu</ThemedText>
+            <ThemedText style={{ color: '#003915', fontFamily: 'BeVietnamPro_700Bold', fontSize: 15 }}>Lưu</ThemedText>
           </Pressable>
         </View>
       </Pressable>
@@ -145,7 +145,7 @@ const GenderModal = ({
           </Pressable>
         ))}
         <Pressable style={[S.modalBtnCancel, { marginTop: 8 }]} onPress={onCancel}>
-          <ThemedText style={{ color: P.onSurfaceVariant, fontWeight: '600', fontSize: 15 }}>Hủy</ThemedText>
+          <ThemedText style={{ color: P.onSurfaceVariant, fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15 }}>Hủy</ThemedText>
         </Pressable>
       </Pressable>
     </Pressable>
@@ -304,7 +304,7 @@ const S = StyleSheet.create({
     height: 56,
   },
   headerBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: P.onSurface, letterSpacing: -0.3 },
+  headerTitle: { fontSize: 17, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, letterSpacing: -0.3 },
   content: { paddingHorizontal: 20, marginTop: 8 },
   card: {
     borderRadius: 16,
@@ -324,8 +324,8 @@ const S = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: P.glassBorder,
   },
-  editRowLabel: { fontSize: 16, fontWeight: '500', color: P.onSurface },
-  editRowValue: { fontSize: 16, fontWeight: '600', color: P.onSurfaceVariant },
+  editRowLabel: { fontSize: 16, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurface },
+  editRowValue: { fontSize: 16, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant },
 
   /* Gender option */
   genderOption: {
@@ -339,7 +339,7 @@ const S = StyleSheet.create({
     borderColor: P.glassBorder,
     marginBottom: 8,
   },
-  genderOptionText: { fontSize: 16, fontWeight: '600', color: P.onSurface },
+  genderOptionText: { fontSize: 16, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurface },
 
   /* Modals */
   modalOverlay: {
@@ -356,7 +356,7 @@ const S = StyleSheet.create({
     padding: 24,
     gap: 16,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: P.onSurface },
+  modalTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
   modalInput: {
     borderRadius: 12,
     backgroundColor: P.surfaceContainerLow,

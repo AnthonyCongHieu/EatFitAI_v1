@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+﻿import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -311,7 +311,7 @@ const AppNavigator = (): React.ReactElement => {
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                  headerTitleStyle: { fontFamily: 'BeVietnamPro_600SemiBold' },
                 }}
               />
               <Stack.Screen

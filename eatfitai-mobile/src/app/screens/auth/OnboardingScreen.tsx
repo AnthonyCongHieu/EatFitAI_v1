@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
  *
@@ -883,7 +883,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   color: '#FFFFFF',
                   fontSize: 28,
                   textAlign: 'center',
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'BeVietnamPro_700Bold',
                 }}
               >
                 Thông tin cơ bản
@@ -896,7 +896,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   textAlign: 'center',
                   lineHeight: 22,
                   maxWidth: 280,
-                  fontFamily: 'Inter_500Medium',
+                  fontFamily: 'BeVietnamPro_500Medium',
                 }}
               >
                 Hãy cho chúng tôi biết một chút{'\n'}về bản thân bạn
@@ -1029,7 +1029,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         color: C.onSurfaceVariant,
                         fontSize: 13,
                         letterSpacing: 0.5,
-                        fontFamily: 'Inter_600SemiBold',
+                        fontFamily: 'BeVietnamPro_600SemiBold',
                       }}
                     >
                       0
@@ -1040,7 +1040,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         color: C.onSurfaceVariant,
                         fontSize: 13,
                         letterSpacing: 0.5,
-                        fontFamily: 'Inter_600SemiBold',
+                        fontFamily: 'BeVietnamPro_600SemiBold',
                       }}
                     >
                       100
@@ -1090,7 +1090,7 @@ const OnboardingScreen = (): React.ReactElement => {
                             color: selected ? C.primary : C.onSurface,
                             marginTop: 2,
                             fontSize: 13,
-                            fontFamily: selected ? 'Inter_700Bold' : 'Inter_500Medium',
+                            fontFamily: selected ? 'BeVietnamPro_700Bold' : 'BeVietnamPro_500Medium',
                           }}
                         >
                           {opt.label}
@@ -1226,7 +1226,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   fontSize: 11,
                   color: 'rgba(188, 200, 185, 0.6)',
                   marginBottom: 6,
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'BeVietnamPro_600SemiBold',
                   width: 40,
                   textAlign: 'center',
                 }}
@@ -1265,7 +1265,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   fontSize: 11,
                   color: 'rgba(188, 200, 185, 0.6)',
                   marginBottom: 6,
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'BeVietnamPro_600SemiBold',
                   width: 40,
                   textAlign: 'center',
                 }}
@@ -1303,7 +1303,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 fontSize: 11,
                 color: 'rgba(188, 200, 185, 0.6)',
                 marginBottom: 6,
-                fontFamily: 'Inter_600SemiBold',
+                fontFamily: 'BeVietnamPro_600SemiBold',
                 width: 40,
                 textAlign: 'center',
               }}
@@ -1341,7 +1341,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   color: '#FFFFFF',
                   fontSize: 28,
                   textAlign: 'center',
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'BeVietnamPro_700Bold',
                   paddingTop: 8,
                 }}
               >
@@ -1355,7 +1355,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   textAlign: 'center',
                   lineHeight: 22,
                   maxWidth: 280,
-                  fontFamily: 'Inter_500Medium',
+                  fontFamily: 'BeVietnamPro_500Medium',
                 }}
               >
                 Cung cấp chỉ số cơ thể chính xác để chúng tôi tính toán lộ trình tối ưu
@@ -1391,7 +1391,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         style={{
                           color: '#FFFFFF',
                           fontSize: 36,
-                          fontFamily: 'Inter_700Bold',
+                          fontFamily: 'BeVietnamPro_700Bold',
                           lineHeight: 42,
                         }}
                       >
@@ -1401,7 +1401,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         style={{
                           color: C.onSurfaceVariant,
                           fontSize: 16,
-                          fontFamily: 'Inter_500Medium',
+                          fontFamily: 'BeVietnamPro_500Medium',
                         }}
                       >
                         cm
@@ -1502,7 +1502,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         style={{
                           color: '#FFFFFF',
                           fontSize: 36,
-                          fontFamily: 'Inter_700Bold',
+                          fontFamily: 'BeVietnamPro_700Bold',
                           lineHeight: 42,
                         }}
                       >
@@ -1512,7 +1512,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         style={{
                           color: C.onSurfaceVariant,
                           fontSize: 16,
-                          fontFamily: 'Inter_500Medium',
+                          fontFamily: 'BeVietnamPro_500Medium',
                         }}
                       >
                         kg
@@ -1621,7 +1621,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         color: '#FFFFFF',
                         fontSize: 28,
                         textAlign: 'center',
-                        fontFamily: 'Inter_700Bold',
+                        fontFamily: 'BeVietnamPro_700Bold',
                         paddingTop: 8,
                       }}
                     >
@@ -1635,7 +1635,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         textAlign: 'center',
                         lineHeight: 22,
                         maxWidth: 280,
-                        fontFamily: 'Inter_500Medium',
+                        fontFamily: 'BeVietnamPro_500Medium',
                       }}
                     >
                       Chúng tôi sẽ cá nhân hóa kế hoạch dinh dưỡng dựa trên mục tiêu của
@@ -1689,7 +1689,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 17,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           Giảm cân
@@ -1698,7 +1698,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: C.onSurfaceVariant,
                             fontSize: 13,
-                            fontFamily: 'Inter_400Regular',
+                            fontFamily: 'BeVietnamPro_400Regular',
                             marginTop: 2,
                             lineHeight: 18,
                           }}
@@ -1763,7 +1763,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 17,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           Duy trì cân nặng
@@ -1772,7 +1772,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: C.onSurfaceVariant,
                             fontSize: 13,
-                            fontFamily: 'Inter_400Regular',
+                            fontFamily: 'BeVietnamPro_400Regular',
                             marginTop: 2,
                             lineHeight: 18,
                           }}
@@ -1836,7 +1836,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 17,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           Tăng cơ
@@ -1845,7 +1845,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: C.onSurfaceVariant,
                             fontSize: 13,
-                            fontFamily: 'Inter_400Regular',
+                            fontFamily: 'BeVietnamPro_400Regular',
                             marginTop: 2,
                             lineHeight: 18,
                           }}
@@ -1904,7 +1904,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         color: '#FFFFFF',
                         fontSize: 28,
                         textAlign: 'center',
-                        fontFamily: 'Inter_700Bold',
+                        fontFamily: 'BeVietnamPro_700Bold',
                         paddingTop: 8,
                       }}
                     >
@@ -1918,7 +1918,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         textAlign: 'center',
                         lineHeight: 22,
                         maxWidth: 280,
-                        fontFamily: 'Inter_500Medium',
+                        fontFamily: 'BeVietnamPro_500Medium',
                       }}
                     >
                       Hãy cho chúng tôi biết cân nặng mà bạn mong muốn đạt được
@@ -1933,7 +1933,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         style={{
                           color: '#FFFFFF',
                           fontSize: 64,
-                          fontFamily: 'Inter_700Bold',
+                          fontFamily: 'BeVietnamPro_700Bold',
                           letterSpacing: -2,
                           textShadowColor: 'rgba(75, 226, 119, 0.4)',
                           textShadowOffset: { width: 0, height: 0 },
@@ -1948,7 +1948,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         style={{
                           color: C.onSurfaceVariant,
                           fontSize: 22,
-                          fontFamily: 'Inter_700Bold',
+                          fontFamily: 'BeVietnamPro_700Bold',
                           marginLeft: 4,
                           marginBottom: 6,
                         }}
@@ -1979,7 +1979,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: weightDiff < 0 ? C.primary : '#FB923C',
                             fontSize: 14,
-                            fontFamily: 'Inter_600SemiBold',
+                            fontFamily: 'BeVietnamPro_600SemiBold',
                           }}
                         >
                           {weightDiff > 0 ? '+' : ''}
@@ -2092,7 +2092,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         color: '#FFFFFF',
                         fontSize: 28,
                         textAlign: 'center',
-                        fontFamily: 'Inter_700Bold',
+                        fontFamily: 'BeVietnamPro_700Bold',
                         paddingTop: 8,
                       }}
                     >
@@ -2106,7 +2106,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         textAlign: 'center',
                         lineHeight: 22,
                         maxWidth: 280,
-                        fontFamily: 'Inter_500Medium',
+                        fontFamily: 'BeVietnamPro_500Medium',
                       }}
                     >
                       Chỉ số BMR sẽ được tùy chỉnh theo mức tốn năng lượng của bạn
@@ -2171,7 +2171,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 17,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           Ít vận động
@@ -2180,7 +2180,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: C.onSurfaceVariant,
                             fontSize: 13,
-                            fontFamily: 'Inter_400Regular',
+                            fontFamily: 'BeVietnamPro_400Regular',
                             marginTop: 2,
                             lineHeight: 18,
                           }}
@@ -2250,7 +2250,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 17,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           Vận động nhẹ
@@ -2259,7 +2259,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: C.onSurfaceVariant,
                             fontSize: 13,
-                            fontFamily: 'Inter_400Regular',
+                            fontFamily: 'BeVietnamPro_400Regular',
                             marginTop: 2,
                             lineHeight: 18,
                           }}
@@ -2333,7 +2333,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 17,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           Vận động vừa
@@ -2342,7 +2342,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: C.onSurfaceVariant,
                             fontSize: 13,
-                            fontFamily: 'Inter_400Regular',
+                            fontFamily: 'BeVietnamPro_400Regular',
                             marginTop: 2,
                             lineHeight: 18,
                           }}
@@ -2412,7 +2412,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 17,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           Vận động nhiều
@@ -2421,7 +2421,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: C.onSurfaceVariant,
                             fontSize: 13,
-                            fontFamily: 'Inter_400Regular',
+                            fontFamily: 'BeVietnamPro_400Regular',
                             marginTop: 2,
                             lineHeight: 18,
                           }}
@@ -2574,7 +2574,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   color: '#FFFFFF',
                   fontSize: 28,
                   textAlign: 'center',
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'BeVietnamPro_700Bold',
                 }}
               >
                 {analysisStep >= 5
@@ -2589,7 +2589,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   color: C.onSurfaceVariant,
                   marginTop: 6,
                   textAlign: 'center',
-                  fontFamily: 'Inter_500Medium',
+                  fontFamily: 'BeVietnamPro_500Medium',
                   lineHeight: 22,
                   maxWidth: 280,
                 }}
@@ -2638,7 +2638,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     s5.chipText,
                     analysisStep === 1 && {
                       color: C.primary,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'BeVietnamPro_600SemiBold',
                     },
                     analysisStep > 1 && { color: '#FFFFFF' },
                   ]}
@@ -2683,7 +2683,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     s5.chipText,
                     analysisStep === 2 && {
                       color: C.primary,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'BeVietnamPro_600SemiBold',
                     },
                     analysisStep > 2 && { color: '#FFFFFF' },
                   ]}
@@ -2728,7 +2728,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     s5.chipText,
                     analysisStep === 3 && {
                       color: C.primary,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'BeVietnamPro_600SemiBold',
                     },
                     analysisStep > 3 && { color: '#FFFFFF' },
                   ]}
@@ -2773,7 +2773,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     s5.chipText,
                     analysisStep === 4 && {
                       color: C.primary,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'BeVietnamPro_600SemiBold',
                     },
                     analysisStep > 4 && { color: '#FFFFFF' },
                   ]}
@@ -2814,7 +2814,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       style={{
                         color: '#FFB4AB',
                         fontSize: 13,
-                        fontFamily: 'Inter_500Medium',
+                        fontFamily: 'BeVietnamPro_500Medium',
                       }}
                     >
                       {calculationError}
@@ -2837,7 +2837,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     style={{
                       color: C.primary,
                       fontSize: 14,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'BeVietnamPro_600SemiBold',
                     }}
                   >
                     Thử lại
@@ -2883,7 +2883,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             fontSize: 12,
                             color: C.onSurfaceVariant,
-                            fontFamily: 'Inter_600SemiBold',
+                            fontFamily: 'BeVietnamPro_600SemiBold',
                             letterSpacing: 2,
                             marginBottom: 4,
                           }}
@@ -2895,7 +2895,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#4BE277',
                             fontSize: 36,
-                            fontFamily: 'Inter_800ExtraBold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                             lineHeight: 46,
                             textShadowColor: 'rgba(75, 226, 119, 0.5)',
                             textShadowOffset: { width: 0, height: 0 },
@@ -2908,7 +2908,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             fontSize: 12,
                             color: C.onSurfaceVariant,
-                            fontFamily: 'Inter_500Medium',
+                            fontFamily: 'BeVietnamPro_500Medium',
                             marginTop: 2,
                           }}
                         >
@@ -2938,7 +2938,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             fontSize: 11,
                             color: C.onSurfaceVariant,
-                            fontFamily: 'Inter_600SemiBold',
+                            fontFamily: 'BeVietnamPro_600SemiBold',
                             letterSpacing: 1,
                             marginBottom: 8,
                           }}
@@ -2950,7 +2950,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 22,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           {aiResult.protein}
@@ -2973,7 +2973,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             fontSize: 11,
                             color: C.onSurfaceVariant,
-                            fontFamily: 'Inter_600SemiBold',
+                            fontFamily: 'BeVietnamPro_600SemiBold',
                             letterSpacing: 1,
                             marginBottom: 8,
                           }}
@@ -2985,7 +2985,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 22,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           {aiResult.carbs}
@@ -3001,7 +3001,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             fontSize: 11,
                             color: C.onSurfaceVariant,
-                            fontFamily: 'Inter_600SemiBold',
+                            fontFamily: 'BeVietnamPro_600SemiBold',
                             letterSpacing: 1,
                             marginBottom: 8,
                           }}
@@ -3013,7 +3013,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           style={{
                             color: '#FFFFFF',
                             fontSize: 22,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'BeVietnamPro_700Bold',
                           }}
                         >
                           {aiResult.fat}
@@ -3043,7 +3043,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     style={{
                       fontSize: 10,
                       color: C.onSurfaceVariant,
-                      fontFamily: 'Inter_700Bold',
+                      fontFamily: 'BeVietnamPro_700Bold',
                       letterSpacing: 1,
                       textTransform: 'uppercase',
                     }}
@@ -3055,7 +3055,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     style={{
                       color: '#FFFFFF',
                       fontSize: 24,
-                      fontFamily: 'Inter_700Bold',
+                      fontFamily: 'BeVietnamPro_700Bold',
                       marginTop: 2,
                     }}
                   >
@@ -3074,7 +3074,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     style={{
                       fontSize: 12,
                       color: C.primary,
-                      fontFamily: 'Inter_500Medium',
+                      fontFamily: 'BeVietnamPro_500Medium',
                     }}
                   >
                     {analysisProgress >= 100
@@ -3521,7 +3521,7 @@ const s = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.5,
     marginLeft: 2,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -3534,7 +3534,7 @@ const s = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
     height: '100%',
   },
 
@@ -3581,7 +3581,7 @@ const s = StyleSheet.create({
   },
   ageDirectInput: {
     fontSize: 24,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     textAlign: 'center',
     width: 60,
     height: 40,
@@ -3829,7 +3829,7 @@ const s5 = StyleSheet.create({
   },
   chipText: {
     fontSize: 14,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: C.onSurfaceVariant,
   },
   chipPendingDot: {

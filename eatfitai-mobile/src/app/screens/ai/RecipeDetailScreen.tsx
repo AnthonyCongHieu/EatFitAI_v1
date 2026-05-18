@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
@@ -520,7 +520,7 @@ const S = StyleSheet.create({
   heroTextWrap: {
     position: 'absolute', bottom: 20, left: 24, right: 24, gap: 12,
   },
-  heroMainTitle: { fontSize: 32, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, lineHeight: 40 },
+  heroMainTitle: { fontSize: 32, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, lineHeight: 40 },
   badgeWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: P.surfaceContainerHigh,
@@ -528,7 +528,7 @@ const S = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
     borderWidth: 1, borderColor: P.glassBorder,
   },
-  badgeText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurface },
+  badgeText: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurface },
 
   mainCanvas: { paddingHorizontal: 20, gap: 16 },
 
@@ -537,8 +537,8 @@ const S = StyleSheet.create({
     flex: 1, borderRadius: 16, paddingVertical: 12, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center', gap: 2,
   },
-  macroVal: { fontSize: 16, fontFamily: 'Inter_800ExtraBold' },
-  macroLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+  macroVal: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold' },
+  macroLabel: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant },
 
   glassCard: {
     backgroundColor: P.surfaceContainerHigh,
@@ -546,7 +546,7 @@ const S = StyleSheet.create({
     borderWidth: 1, borderColor: P.glassBorder,
   },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  sectionTitle: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, marginBottom: 4 },
+  sectionTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, marginBottom: 4 },
   statusBadge: {
     backgroundColor: P.primary + '18',
     borderColor: P.primary + '35',
@@ -555,16 +555,16 @@ const S = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  statusBadgeText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: P.primary },
-  bodyText: { fontSize: 14, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, lineHeight: 22 },
+  statusBadgeText: { fontSize: 10, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
+  bodyText: { fontSize: 14, fontFamily: 'BeVietnamPro_400Regular', color: P.onSurfaceVariant, lineHeight: 22 },
   ingredientStatusBlock: { gap: 4 },
-  ingredientStatusTitle: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
+  ingredientStatusTitle: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
 
   ingredientsWrap: { gap: 10 },
   ingredientRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   ingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.primary },
-  bodyTextItem: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurface },
-  bodyTextWeight: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+  bodyTextItem: { flex: 1, fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurface },
+  bodyTextWeight: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
 
   stepsWrap: { gap: 16 },
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
@@ -573,17 +573,17 @@ const S = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: P.primary + '40',
     marginTop: 2,
   },
-  stepNumberText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', color: P.primary },
-  stepContentText: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 22 },
+  stepNumberText: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
+  stepContentText: { flex: 1, fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, lineHeight: 22 },
   tipsWrap: { gap: 8, paddingTop: 4 },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  tipText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 20 },
+  tipText: { flex: 1, fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, lineHeight: 20 },
 
   videoBox: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: P.surfaceContainerLowest, padding: 14, borderRadius: 16 },
   videoIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', alignItems: 'center', justifyContent: 'center' },
   videoTextWrap: { flex: 1 },
-  videoTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface },
-  videoSub: { fontSize: 12, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+  videoTitle: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
+  videoSub: { fontSize: 12, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant },
   sourceRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -593,7 +593,7 @@ const S = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
-  sourceText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+  sourceText: { flex: 1, fontSize: 12, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant },
 
   floatBottomBtn: {
     position: 'absolute', left: 24, right: 24, zIndex: 100,
@@ -604,5 +604,5 @@ const S = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     paddingVertical: 18,
   },
-  addBtnText: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
+  addBtnText: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onPrimary },
 });

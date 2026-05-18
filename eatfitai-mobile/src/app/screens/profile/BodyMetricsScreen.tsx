@@ -1,4 +1,4 @@
-// BodyMetricsScreen — "Hồ sơ thể chất"
+﻿// BodyMetricsScreen — "Hồ sơ thể chất"
 // Emerald Nebula 3D: Basic info card + Weight goals section
 
 import React, { useEffect, useMemo } from 'react';
@@ -316,7 +316,7 @@ const S = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     letterSpacing: -0.3,
   },
@@ -337,7 +337,7 @@ const S = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
 
@@ -361,7 +361,7 @@ const S = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant + '80',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -369,7 +369,7 @@ const S = StyleSheet.create({
   },
   nicknameValue: {
     fontSize: 26,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
 
@@ -382,14 +382,14 @@ const S = StyleSheet.create({
   },
   tripleValue: {
     fontSize: 22,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
   },
 
   /* Goal row */
   goalLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
     flexShrink: 1,
   },
@@ -402,7 +402,7 @@ const S = StyleSheet.create({
   },
   goalWeight: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
   },
 
@@ -419,13 +419,13 @@ const S = StyleSheet.create({
   },
   infoRowLabel: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurfaceVariant,
     flexShrink: 1,
   },
   infoRowValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: P.onSurface,
     flexShrink: 0,
     marginLeft: 8,
@@ -443,7 +443,7 @@ const S = StyleSheet.create({
   },
   ctaBtnText: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: P.primary,
   },
 });

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WelcomeHeader – Compact Emerald Nebula header bar
  */
 import React from 'react';
@@ -142,13 +142,13 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.primary,
     letterSpacing: 0.2,
   },
   name: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
     letterSpacing: -0.1,
   },
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   streakText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
   },
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     fontSize: 10,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 13,
     textTransform: 'uppercase',
   },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   companionMessage: {
     marginTop: 2,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 16,
   },
   companionCtaHitbox: {
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   companionCta: {
     fontSize: 12,
-    fontWeight: '900',
+    fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 16,
   },
 });

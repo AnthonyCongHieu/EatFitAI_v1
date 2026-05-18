@@ -170,7 +170,7 @@ export const Chip = ({
             {
               color: colorConfig.textColor,
               fontSize: sizeConfig.fontSize,
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'BeVietnamPro_600SemiBold',
             },
           ]}
         >
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   label: {
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
   },
   closeButton: {
     marginLeft: 4,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'BeVietnamPro_700Bold',
   },
 });
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * QuickActionsOverlay – Full-screen blur overlay with 2×2 bento grid
  * Triggered by the floating AI robot FAB on the HomeScreen.
  *
@@ -305,14 +305,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
     letterSpacing: -0.5,
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: C.textMuted,
     letterSpacing: 0.1,
   },
@@ -350,13 +350,13 @@ const styles = StyleSheet.create({
   },
   reminderTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
     letterSpacing: -0.2,
   },
   reminderSubtitle: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
     color: C.textMuted,
     letterSpacing: 0.1,
   },
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   /* Label */
   actionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     letterSpacing: 1.5,
     color: C.onSurface,
     textAlign: 'center',
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     letterSpacing: 2,
     color: C.textMuted,
     textTransform: 'uppercase',

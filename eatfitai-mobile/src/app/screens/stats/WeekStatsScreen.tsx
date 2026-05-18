@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+﻿import { useCallback, useEffect, useMemo } from 'react';
 import {
   RefreshControl,
   StyleSheet,
@@ -299,7 +299,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 tickLabels: {
                   fill: theme.colors.textSecondary,
                   fontSize: 10,
-                  fontWeight: '500',
+                  fontFamily: 'BeVietnamPro_500Medium',
                 },
                 grid: { stroke: 'transparent' },
               }}

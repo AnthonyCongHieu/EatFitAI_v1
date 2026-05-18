@@ -1,4 +1,4 @@
-// PrivacyPolicyScreen — Emerald Nebula Design
+﻿// PrivacyPolicyScreen — Emerald Nebula Design
 // Chính sách bảo mật: Hero card, Quick Facts, 10 Sections, Contact
 
 import React from 'react';
@@ -205,7 +205,7 @@ const PrivacyPolicyScreen = ({ navigation: _navigation }: Props): React.ReactEle
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Ionicons name="mail-outline" size={20} color={EN.primary} />
             <View>
-              <ThemedText style={{ fontWeight: '600', fontSize: 15, color: EN.onSurface }}>
+              <ThemedText style={{ fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15, color: EN.onSurface }}>
                 support@eatfitai.com
               </ThemedText>
               <ThemedText style={{ fontSize: 12, color: EN.textMuted }}>
@@ -223,7 +223,7 @@ const PrivacyPolicyScreen = ({ navigation: _navigation }: Props): React.ReactEle
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Ionicons name="globe-outline" size={20} color={EN.cyan} />
             <View>
-              <ThemedText style={{ fontWeight: '600', fontSize: 15, color: EN.onSurface }}>
+              <ThemedText style={{ fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15, color: EN.onSurface }}>
                 eatfitai.com
               </ThemedText>
               <ThemedText style={{ fontSize: 12, color: EN.textMuted }}>
@@ -263,7 +263,7 @@ const S = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: EN.onSurface,
     letterSpacing: -0.3,
   },
@@ -294,7 +294,7 @@ const S = StyleSheet.create({
   },
   badgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: EN.primary,
     letterSpacing: 0.3,
   },
@@ -302,13 +302,13 @@ const S = StyleSheet.create({
   /* Section */
   cardTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: EN.onSurface,
     marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'BeVietnamPro_700Bold',
     color: EN.onSurface,
     marginBottom: 8,
   },

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp } from 'react-native-reanimated';
@@ -66,7 +66,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
       position: 'absolute',
       top: -20,
       fontSize: 10,
-      fontWeight: '600',
+      fontFamily: 'BeVietnamPro_600SemiBold',
     },
     legendRow: {
       flexDirection: 'row',

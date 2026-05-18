@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+﻿import { View, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   percentageText: {
-    fontWeight: '500',
+    fontFamily: 'BeVietnamPro_500Medium',
   },
 });
 

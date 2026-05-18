@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SubScreenLayout — Unified layout wrapper for all push-navigated sub-screens.
  *
  * Header pattern matched EXACTLY with ProfileScreen:
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontFamily: 'BeVietnamPro_600SemiBold',
     color: EN.primaryContainer, // #22c55e — ProfileScreen exact
     letterSpacing: -0.3,        // ProfileScreen exact
   },
