@@ -798,20 +798,166 @@ def _safe_int(value: Any) -> int:
         return 0
 
 
-def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
-    api_key = os.getenv("YOUTUBE_DATA_API_KEY", "").strip()
-    if not api_key:
+def _youtube_web_search_fallback_enabled() -> bool:
+    return os.getenv("YOUTUBE_WEB_SEARCH_FALLBACK_ENABLED", "true").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+
+
+def _extract_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        if isinstance(value.get("simpleText"), str):
+            return value["simpleText"].strip()
+        runs = value.get("runs")
+        if isinstance(runs, list):
+            return "".join(str(run.get("text") or "") for run in runs if isinstance(run, dict)).strip()
+    return ""
+
+
+def _iter_video_renderers(value: Any):
+    if isinstance(value, dict):
+        renderer = value.get("videoRenderer")
+        if isinstance(renderer, dict):
+            yield renderer
+        for child in value.values():
+            yield from _iter_video_renderers(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _iter_video_renderers(child)
+
+
+def _extract_balanced_json_object(text: str, marker: str) -> Optional[Dict[str, Any]]:
+    marker_index = text.find(marker)
+    if marker_index < 0:
         return None
 
-    cache_key = f"youtube:{_normalize_search_text(recipe_name)}"
-    cached = _youtube_video_cache.get(cache_key)
-    if cached is not None:
-        try:
-            parsed = json.loads(cached)
-            return parsed if isinstance(parsed, dict) else None
-        except json.JSONDecodeError:
-            logger.warning("Invalid YouTube recipe video cache entry recipe=%s", recipe_name)
+    start = text.find("{", marker_index + len(marker))
+    if start < 0:
+        return None
 
+    depth = 0
+    in_string = False
+    escape = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    parsed = json.loads(text[start : index + 1])
+                    return parsed if isinstance(parsed, dict) else None
+                except json.JSONDecodeError:
+                    return None
+
+    return None
+
+
+def _validate_youtube_oembed(video_id: str) -> Optional[Dict[str, Any]]:
+    if not video_id:
+        return None
+
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    try:
+        response = requests.get(
+            "https://www.youtube.com/oembed",
+            params={"url": url, "format": "json"},
+            headers={"User-Agent": "EatFitAI/1.0 recipe-video-validator"},
+            timeout=6,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning("YouTube oEmbed validation failed video=%s: %s", video_id, exc)
+        return None
+
+    return {
+        "videoId": video_id,
+        "title": str(data.get("title") or "").strip(),
+        "channelTitle": str(data.get("author_name") or "").strip(),
+        "channelId": "",
+        "url": url,
+        "thumbnailUrl": data.get("thumbnail_url"),
+        "trustScore": 0.0,
+    }
+
+
+def _find_youtube_video_from_web(recipe_name: str) -> Optional[Dict[str, Any]]:
+    try:
+        response = requests.get(
+            "https://www.youtube.com/results",
+            params={"search_query": f"cách nấu {recipe_name}", "hl": "vi", "gl": "VN"},
+            headers={
+                "Accept-Language": "vi-VN,vi;q=0.9,en;q=0.8",
+                "User-Agent": "Mozilla/5.0 EatFitAI recipe research bot",
+            },
+            timeout=8,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        logger.warning("YouTube web recipe lookup failed: %s", exc)
+        return None
+
+    initial_data = _extract_balanced_json_object(response.text, "ytInitialData")
+    if not initial_data:
+        logger.warning("YouTube web recipe lookup missing initial data recipe=%s", recipe_name)
+        return None
+
+    best_renderer: Optional[Dict[str, Any]] = None
+    best_score = 0.0
+    for renderer in _iter_video_renderers(initial_data):
+        video_id = str(renderer.get("videoId") or "").strip()
+        if not video_id:
+            continue
+
+        title = _extract_text(renderer.get("title"))
+        channel_title = _extract_text(renderer.get("ownerText")) or _extract_text(renderer.get("shortBylineText"))
+        score = _title_relevance_score(recipe_name, title, channel_title)
+        if score > best_score:
+            best_renderer = renderer
+            best_score = score
+
+    if not best_renderer or best_score < 0.75:
+        return None
+
+    video_id = str(best_renderer.get("videoId") or "").strip()
+    validated = _validate_youtube_oembed(video_id)
+    if not validated:
+        return None
+
+    title = _extract_text(best_renderer.get("title")) or validated["title"]
+    channel_title = _extract_text(best_renderer.get("ownerText")) or _extract_text(best_renderer.get("shortBylineText")) or validated["channelTitle"]
+    thumbnails = ((best_renderer.get("thumbnail") or {}).get("thumbnails") or [])
+    thumb = thumbnails[-1].get("url") if thumbnails and isinstance(thumbnails[-1], dict) else validated.get("thumbnailUrl")
+    validated.update(
+        {
+            "title": title,
+            "channelTitle": channel_title,
+            "thumbnailUrl": thumb,
+            "trustScore": round(best_score, 3),
+        }
+    )
+    return validated
+
+
+def _find_youtube_video_with_data_api(recipe_name: str, api_key: str) -> Optional[Dict[str, Any]]:
     trusted_channel_ids = _csv_env_set("TRUSTED_YOUTUBE_CHANNEL_IDS")
     try:
         search_response = requests.get(
@@ -853,7 +999,7 @@ def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
         videos_response.raise_for_status()
         videos = videos_response.json().get("items", [])
     except requests.RequestException as exc:
-        logger.warning("YouTube recipe lookup failed: %s", exc)
+        logger.warning("YouTube Data API recipe lookup failed: %s", exc)
         return None
 
     best: Optional[Dict[str, Any]] = None
@@ -897,9 +1043,47 @@ def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
             best_score = score
 
     min_score = 1.15 if trusted_channel_ids else 0.85
-    result = best if best and best_score >= min_score else None
+    return best if best and best_score >= min_score else None
+
+
+def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
+    cache_key = f"youtube:{_normalize_search_text(recipe_name)}"
+    cached = _youtube_video_cache.get(cache_key)
+    if cached is not None:
+        try:
+            parsed = json.loads(cached)
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            logger.warning("Invalid YouTube recipe video cache entry recipe=%s", recipe_name)
+
+    result: Optional[Dict[str, Any]] = None
+    api_key = os.getenv("YOUTUBE_DATA_API_KEY", "").strip()
+    if api_key:
+        result = _find_youtube_video_with_data_api(recipe_name, api_key)
+
+    if result is None and _youtube_web_search_fallback_enabled():
+        result = _find_youtube_video_from_web(recipe_name)
+
     _youtube_video_cache.set(cache_key, json.dumps(result, ensure_ascii=False), ttl=86400)
     return result
+
+
+def _build_researched_fallback_guide(recipe_name: str, ingredients: list[dict]) -> Dict[str, Any]:
+    fallback = _generate_fallback_instructions(recipe_name, ingredients)
+    fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
+
+    youtube_video = _find_youtube_video(recipe_name)
+    if youtube_video:
+        fallback["guideStatus"] = "researched_fallback"
+        fallback["sourceUrls"] = [youtube_video["url"]]
+        fallback["youtubeVideo"] = youtube_video
+        fallback["source"] = "youtube_research_fallback"
+    else:
+        fallback["guideStatus"] = "fallback"
+        fallback["sourceUrls"] = []
+        fallback["youtubeVideo"] = None
+
+    return fallback
 
 
 def get_cooking_guide(
@@ -910,12 +1094,7 @@ def get_cooking_guide(
         ensure_gemini_service_available()
     except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
         logger.warning("Recipe guide fallback due to Gemini unavailable: %s", exc)
-        fallback = _generate_fallback_instructions(recipe_name, ingredients)
-        fallback["guideStatus"] = "fallback"
-        fallback["sourceUrls"] = []
-        fallback["youtubeVideo"] = None
-        fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
-        return fallback
+        return _build_researched_fallback_guide(recipe_name, ingredients)
 
     response_metadata: Dict[str, Any] = {}
     response = query_gemini(
@@ -958,12 +1137,7 @@ def get_cooking_guide(
                 len(source_urls),
             )
 
-    fallback = _generate_fallback_instructions(recipe_name, ingredients)
-    fallback["guideStatus"] = "fallback"
-    fallback["sourceUrls"] = []
-    fallback["youtubeVideo"] = None
-    fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
-    return fallback
+    return _build_researched_fallback_guide(recipe_name, ingredients)
 
 
 def get_cooking_instructions(
