@@ -53,9 +53,12 @@ export interface RecipeSuggestion {
   sourceUrls?: string[];
   youtubeVideo?: RecipeYoutubeVideo | null;
   prepItems?: string[];
+  disclaimer?: string;
   availableIngredients?: string[];
   matchedIngredients: string[];
   missingIngredients: string[];
+  extraIngredients?: string[];
+  requiredIngredients?: string[];
   allIngredients: string[];
 }
 

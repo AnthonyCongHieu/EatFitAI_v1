@@ -70,16 +70,39 @@ public static class RecipeIngredientEligibility
             .GroupBy(item => item.Key, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First().Label, StringComparer.Ordinal);
 
+    private static readonly IReadOnlyDictionary<string, string> VietnameseCatalogKindByNormalizedKey =
+        VietnameseFoodCatalog.LoadFoodSeeds()
+            .SelectMany(seed => BuildKeys(seed).Select(key => new { Key = key, seed.Kind }))
+            .Where(item => !string.IsNullOrWhiteSpace(item.Key))
+            .GroupBy(item => item.Key, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First().Kind, StringComparer.Ordinal);
+
     public static bool IsIngredientKey(string? value)
     {
         var label = ResolveCatalogLabel(value);
-        return label != null && IngredientLabels.Contains(label);
+        if (label != null)
+        {
+            return IngredientLabels.Contains(label);
+        }
+
+        return string.Equals(
+            ResolveVietnameseCatalogKind(value),
+            "ingredient",
+            StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsFinishedDishKey(string? value)
     {
         var label = ResolveCatalogLabel(value);
-        return label != null && !IngredientLabels.Contains(label);
+        if (label != null)
+        {
+            return !IngredientLabels.Contains(label);
+        }
+
+        return string.Equals(
+            ResolveVietnameseCatalogKind(value),
+            "finished_dish",
+            StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsIngredientFood(FoodItem food)
@@ -107,11 +130,33 @@ public static class RecipeIngredientEligibility
         return LabelByNormalizedKey.TryGetValue(key, out var label) ? label : null;
     }
 
+    private static string? ResolveVietnameseCatalogKind(string? value)
+    {
+        var key = AiVisionLabelCatalog.NormalizeKey(value);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return null;
+        }
+
+        return VietnameseCatalogKindByNormalizedKey.TryGetValue(key, out var kind) ? kind : null;
+    }
+
     private static IEnumerable<string> BuildKeys(AiVisionLabelCatalog.Entry entry)
     {
         yield return AiVisionLabelCatalog.NormalizeKey(entry.Label);
         yield return AiVisionLabelCatalog.NormalizeKey(entry.DisplayNameVi);
         foreach (var alias in entry.Aliases)
+        {
+            yield return AiVisionLabelCatalog.NormalizeKey(alias);
+        }
+    }
+
+    private static IEnumerable<string> BuildKeys(VietnameseFoodCatalog.FoodSeed seed)
+    {
+        yield return AiVisionLabelCatalog.NormalizeKey(seed.Slug.Replace('-', ' '));
+        yield return AiVisionLabelCatalog.NormalizeKey(seed.FoodName);
+        yield return AiVisionLabelCatalog.NormalizeKey(seed.FoodNameEn);
+        foreach (var alias in seed.Aliases)
         {
             yield return AiVisionLabelCatalog.NormalizeKey(alias);
         }

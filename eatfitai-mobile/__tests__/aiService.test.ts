@@ -303,6 +303,20 @@ describe('aiService', () => {
     });
   });
 
+  it('buildRecipeSuggestionRequest allows auto recipe discovery without ingredients', () => {
+    const request = buildRecipeSuggestionRequest({
+      ingredients: [],
+      mode: 'auto',
+      maxResults: 12,
+    });
+
+    expect(request).toEqual({
+      mode: 'auto',
+      availableIngredients: [],
+      maxResults: 12,
+    });
+  });
+
   it('normalizes production recipe guide fields from suggestion payloads', async () => {
     mockedApiClient.post.mockResolvedValue({
       data: [
@@ -315,6 +329,9 @@ describe('aiService', () => {
           PrepItems: ['Rửa rau', 'Cắt thịt'],
           SourceUrls: ['https://example.com/recipe'],
           YoutubeVideo: { videoId: 'abc', url: 'https://www.youtube.com/watch?v=abc' },
+          RequiredIngredients: ['Thịt gà', 'Cà rốt', 'Hành tây'],
+          ExtraIngredients: ['Tỏi'],
+          Disclaimer: 'Gợi ý chỉ mang tính tham khảo; không phải khuyến nghị của chuyên gia.',
           AvailableIngredients: ['Thịt gà', 'Cà rốt'],
           MatchedIngredients: ['Thịt gà', 'Cà rốt'],
           MissingIngredients: [],
@@ -337,6 +354,9 @@ describe('aiService', () => {
       prepItems: ['Rửa rau', 'Cắt thịt'],
       sourceUrls: ['https://example.com/recipe'],
       youtubeVideo: { videoId: 'abc' },
+      requiredIngredients: ['Thịt gà', 'Cà rốt', 'Hành tây'],
+      extraIngredients: ['Tỏi'],
+      disclaimer: 'Gợi ý chỉ mang tính tham khảo; không phải khuyến nghị của chuyên gia.',
       availableIngredients: ['Thịt gà', 'Cà rốt'],
     });
   });

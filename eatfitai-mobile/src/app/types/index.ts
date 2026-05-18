@@ -51,7 +51,10 @@ export type RootStackParamList = {
     currentGrams?: number;
     availableIngredients?: string[];
     missingIngredients?: string[];
+    extraIngredients?: string[];
+    requiredIngredients?: string[];
     prepItems?: string[];
+    disclaimer?: string;
   };
   NutritionInsights: undefined;
   VisionHistory: undefined;

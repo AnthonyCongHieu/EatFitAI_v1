@@ -1,0 +1,5243 @@
+[
+  {
+    "slug": "pho-bo",
+    "recipeName": "Phở bò",
+    "description": "Công thức gợi ý cho Phở bò, dùng nguyên liệu chính: mì/phở, thịt bò.",
+    "imageKey": "recipe-images/v1/thumb/pho-bo.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Phở bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Phở bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Phở bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Ph%E1%BB%9F+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Ph%E1%BB%9F+b%C3%B2"
+  },
+  {
+    "slug": "pho-ga",
+    "recipeName": "Phở gà",
+    "description": "Công thức gợi ý cho Phở gà, dùng nguyên liệu chính: mì/phở, thịt gà.",
+    "imageKey": "recipe-images/v1/thumb/pho-ga.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Phở gà; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Phở gà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Phở gà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Ph%E1%BB%9F+g%C3%A0"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Ph%E1%BB%9F+g%C3%A0"
+  },
+  {
+    "slug": "bun-bo-hue",
+    "recipeName": "Bún bò Huế",
+    "description": "Công thức gợi ý cho Bún bò Huế, dùng nguyên liệu chính: bún, thịt bò.",
+    "imageKey": null,
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún bò Huế; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún bò Huế ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún bò Huế, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+b%C3%B2+Hu%E1%BA%BF"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+b%C3%B2+Hu%E1%BA%BF"
+  },
+  {
+    "slug": "bun-rieu",
+    "recipeName": "Bún riêu",
+    "description": "Công thức gợi ý cho Bún riêu, dùng nguyên liệu chính: bún, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún riêu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún riêu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún riêu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+ri%C3%AAu"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+ri%C3%AAu"
+  },
+  {
+    "slug": "bun-mam",
+    "recipeName": "Bún mắm",
+    "description": "Công thức gợi ý cho Bún mắm, dùng nguyên liệu chính: bún, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún mắm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún mắm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún mắm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+m%E1%BA%AFm"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+m%E1%BA%AFm"
+  },
+  {
+    "slug": "hu-tieu",
+    "recipeName": "Hủ tiếu",
+    "description": "Công thức gợi ý cho Hủ tiếu, dùng nguyên liệu chính: mì/phở, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Hủ tiếu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Hủ tiếu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Hủ tiếu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=H%E1%BB%A7+ti%E1%BA%BFu"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+H%E1%BB%A7+ti%E1%BA%BFu"
+  },
+  {
+    "slug": "mi-quang",
+    "recipeName": "Mì Quảng",
+    "description": "Công thức gợi ý cho Mì Quảng, dùng nguyên liệu chính: mì/phở, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Mì Quảng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Mì Quảng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Mì Quảng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=M%C3%AC+Qu%E1%BA%A3ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+M%C3%AC+Qu%E1%BA%A3ng"
+  },
+  {
+    "slug": "cao-lau",
+    "recipeName": "Cao lầu",
+    "description": "Công thức gợi ý cho Cao lầu, dùng nguyên liệu chính: mì/phở, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cao lầu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cao lầu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cao lầu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Cao+l%E1%BA%A7u"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Cao+l%E1%BA%A7u"
+  },
+  {
+    "slug": "chao-long",
+    "recipeName": "Cháo lòng",
+    "description": "Công thức gợi ý cho Cháo lòng, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cháo lòng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cháo lòng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cháo lòng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Ch%C3%A1o+l%C3%B2ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Ch%C3%A1o+l%C3%B2ng"
+  },
+  {
+    "slug": "sup-cua",
+    "recipeName": "Súp cua",
+    "description": "Công thức gợi ý cho Súp cua, dùng nguyên liệu chính: cua, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "crab"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Súp cua; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Súp cua ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Súp cua, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=S%C3%BAp+cua"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+S%C3%BAp+cua"
+  },
+  {
+    "slug": "canh-bi-do",
+    "recipeName": "Canh bí đỏ",
+    "description": "Công thức gợi ý cho Canh bí đỏ, dùng nguyên liệu chính: bí đỏ, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pumpkin"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh bí đỏ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh bí đỏ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh bí đỏ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+b%C3%AD+%C4%91%E1%BB%8F"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+b%C3%AD+%C4%91%E1%BB%8F"
+  },
+  {
+    "slug": "canh-khoai-mo-tim",
+    "recipeName": "Canh khoai mỡ tím",
+    "description": "Công thức gợi ý cho Canh khoai mỡ tím, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/canh-khoai-mo-tim.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh khoai mỡ tím; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh khoai mỡ tím ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh khoai mỡ tím, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+khoai+m%E1%BB%A1+t%C3%ADm"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+khoai+m%E1%BB%A1+t%C3%ADm"
+  },
+  {
+    "slug": "canh-kho-qua-nhoi-thit",
+    "recipeName": "Canh khổ qua nhồi thịt",
+    "description": "Công thức gợi ý cho Canh khổ qua nhồi thịt, dùng nguyên liệu chính: thịt heo, khổ qua.",
+    "imageKey": "recipe-images/v1/thumb/canh-kho-qua-nhoi-thit.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "bitter_gourd"
+        ],
+        "grams": 180
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh khổ qua nhồi thịt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh khổ qua nhồi thịt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh khổ qua nhồi thịt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+kh%E1%BB%95+qua+nh%E1%BB%93i+th%E1%BB%8Bt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+kh%E1%BB%95+qua+nh%E1%BB%93i+th%E1%BB%8Bt"
+  },
+  {
+    "slug": "canh-cai-thao-thit-bam",
+    "recipeName": "Canh cải thảo thịt bằm",
+    "description": "Công thức gợi ý cho Canh cải thảo thịt bằm, dùng nguyên liệu chính: thịt heo, cải thảo/bắp cải.",
+    "imageKey": "recipe-images/v1/thumb/canh-cai-thao-thit-bam.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "cabbage"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh cải thảo thịt bằm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh cải thảo thịt bằm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh cải thảo thịt bằm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+c%E1%BA%A3i+th%E1%BA%A3o+th%E1%BB%8Bt+b%E1%BA%B1m"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+c%E1%BA%A3i+th%E1%BA%A3o+th%E1%BB%8Bt+b%E1%BA%B1m"
+  },
+  {
+    "slug": "canh-bau",
+    "recipeName": "Canh bầu",
+    "description": "Công thức gợi ý cho Canh bầu, dùng nguyên liệu chính: bầu, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/canh-bau.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bottle_gourd"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh bầu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh bầu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh bầu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+b%E1%BA%A7u"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+b%E1%BA%A7u"
+  },
+  {
+    "slug": "canh-rau-muong",
+    "recipeName": "Canh rau muống",
+    "description": "Công thức gợi ý cho Canh rau muống, dùng nguyên liệu chính: rau muống, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/canh-rau-muong.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "water_spinach"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh rau muống; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh rau muống ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh rau muống, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+rau+mu%E1%BB%91ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+rau+mu%E1%BB%91ng"
+  },
+  {
+    "slug": "canh-cai-thao",
+    "recipeName": "Canh cải thảo",
+    "description": "Công thức gợi ý cho Canh cải thảo, dùng nguyên liệu chính: cải thảo/bắp cải, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/canh-cai-thao.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "cabbage"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh cải thảo; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh cải thảo ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh cải thảo, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+c%E1%BA%A3i+th%E1%BA%A3o"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+c%E1%BA%A3i+th%E1%BA%A3o"
+  },
+  {
+    "slug": "canh-bi-do-tom",
+    "recipeName": "Canh bí đỏ tôm",
+    "description": "Công thức gợi ý cho Canh bí đỏ tôm, dùng nguyên liệu chính: tôm, bí đỏ.",
+    "imageKey": "recipe-images/v1/thumb/canh-bi-do-tom.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "pumpkin"
+        ],
+        "grams": 180
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh bí đỏ tôm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh bí đỏ tôm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh bí đỏ tôm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+b%C3%AD+%C4%91%E1%BB%8F+t%C3%B4m"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+b%C3%AD+%C4%91%E1%BB%8F+t%C3%B4m"
+  },
+  {
+    "slug": "canh-xuong-ham-cu-cai",
+    "recipeName": "Canh xương hầm củ cải",
+    "description": "Công thức gợi ý cho Canh xương hầm củ cải, dùng nguyên liệu chính: củ cải, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/canh-xuong-ham-cu-cai.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "radish"
+        ],
+        "grams": 160
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh xương hầm củ cải; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh xương hầm củ cải ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh xương hầm củ cải, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+x%C6%B0%C6%A1ng+h%E1%BA%A7m+c%E1%BB%A7+c%E1%BA%A3i"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+x%C6%B0%C6%A1ng+h%E1%BA%A7m+c%E1%BB%A7+c%E1%BA%A3i"
+  },
+  {
+    "slug": "canh-chua-ca",
+    "recipeName": "Canh chua cá",
+    "description": "Công thức gợi ý cho Canh chua cá, dùng nguyên liệu chính: cá, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/canh-chua-ca.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh chua cá; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh chua cá ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh chua cá, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+chua+c%C3%A1"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+chua+c%C3%A1"
+  },
+  {
+    "slug": "lau-hai-san",
+    "recipeName": "Lẩu hải sản",
+    "description": "Công thức gợi ý cho Lẩu hải sản, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/lau-hai-san.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Lẩu hải sản; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Lẩu hải sản ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Lẩu hải sản, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=L%E1%BA%A9u+h%E1%BA%A3i+s%E1%BA%A3n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+L%E1%BA%A9u+h%E1%BA%A3i+s%E1%BA%A3n"
+  },
+  {
+    "slug": "lau-bo",
+    "recipeName": "Lẩu bò",
+    "description": "Công thức gợi ý cho Lẩu bò, dùng nguyên liệu chính: thịt bò, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/lau-bo.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Lẩu bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Lẩu bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Lẩu bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=L%E1%BA%A9u+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+L%E1%BA%A9u+b%C3%B2"
+  },
+  {
+    "slug": "lau-ga",
+    "recipeName": "Lẩu gà",
+    "description": "Công thức gợi ý cho Lẩu gà, dùng nguyên liệu chính: thịt gà, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/lau-ga.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Lẩu gà; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Lẩu gà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Lẩu gà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=L%E1%BA%A9u+g%C3%A0"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+L%E1%BA%A9u+g%C3%A0"
+  },
+  {
+    "slug": "lau-nam",
+    "recipeName": "Lẩu nấm",
+    "description": "Công thức gợi ý cho Lẩu nấm, dùng nguyên liệu chính: nấm, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/lau-nam.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "mushroom"
+        ],
+        "grams": 120
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Lẩu nấm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Lẩu nấm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Lẩu nấm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=L%E1%BA%A9u+n%E1%BA%A5m"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+L%E1%BA%A9u+n%E1%BA%A5m"
+  },
+  {
+    "slug": "lau-ca",
+    "recipeName": "Lẩu cá",
+    "description": "Công thức gợi ý cho Lẩu cá, dùng nguyên liệu chính: cá, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/lau-ca.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Lẩu cá; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Lẩu cá ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Lẩu cá, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=L%E1%BA%A9u+c%C3%A1"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+L%E1%BA%A9u+c%C3%A1"
+  },
+  {
+    "slug": "lau-chua-cay-sa-ot",
+    "recipeName": "Lẩu chua cay sả ớt",
+    "description": "Công thức gợi ý cho Lẩu chua cay sả ớt, dùng nguyên liệu chính: sả, ớt.",
+    "imageKey": "recipe-images/v1/thumb/lau-chua-cay-sa-ot.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Lẩu chua cay sả ớt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Lẩu chua cay sả ớt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Lẩu chua cay sả ớt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=L%E1%BA%A9u+chua+cay+s%E1%BA%A3+%E1%BB%9Bt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+L%E1%BA%A9u+chua+cay+s%E1%BA%A3+%E1%BB%9Bt"
+  },
+  {
+    "slug": "com-tam-suon",
+    "recipeName": "Cơm tấm sườn",
+    "description": "Công thức gợi ý cho Cơm tấm sườn, dùng nguyên liệu chính: cơm/gạo, sườn heo.",
+    "imageKey": "recipe-images/v1/thumb/com-tam-suon.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "pork_rib"
+        ],
+        "grams": 180
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm tấm sườn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm tấm sườn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm tấm sườn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+t%E1%BA%A5m+s%C6%B0%E1%BB%9Dn"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+t%E1%BA%A5m+s%C6%B0%E1%BB%9Dn"
+  },
+  {
+    "slug": "com-chien-hai-san",
+    "recipeName": "Cơm chiên hải sản",
+    "description": "Công thức gợi ý cho Cơm chiên hải sản, dùng nguyên liệu chính: cơm/gạo, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/com-chien-hai-san.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm chiên hải sản; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm chiên hải sản ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm chiên hải sản, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+h%E1%BA%A3i+s%E1%BA%A3n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+chi%C3%AAn+h%E1%BA%A3i+s%E1%BA%A3n"
+  },
+  {
+    "slug": "com-chien-trung",
+    "recipeName": "Cơm chiên trứng",
+    "description": "Công thức gợi ý cho Cơm chiên trứng, dùng nguyên liệu chính: cơm/gạo, trứng, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/com-chien-trung.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "egg"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm chiên trứng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm chiên trứng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm chiên trứng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+tr%E1%BB%A9ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+chi%C3%AAn+tr%E1%BB%A9ng"
+  },
+  {
+    "slug": "com-chien-bo",
+    "recipeName": "Cơm chiên bò",
+    "description": "Công thức gợi ý cho Cơm chiên bò, dùng nguyên liệu chính: cơm/gạo, thịt bò, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/com-chien-bo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm chiên bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm chiên bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm chiên bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+chi%C3%AAn+b%C3%B2"
+  },
+  {
+    "slug": "com-chien-ga",
+    "recipeName": "Cơm chiên gà",
+    "description": "Công thức gợi ý cho Cơm chiên gà, dùng nguyên liệu chính: cơm/gạo, thịt gà, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/com-chien-ga.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm chiên gà; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm chiên gà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm chiên gà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+g%C3%A0"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+chi%C3%AAn+g%C3%A0"
+  },
+  {
+    "slug": "com-ga",
+    "recipeName": "Cơm gà",
+    "description": "Công thức gợi ý cho Cơm gà, dùng nguyên liệu chính: cơm/gạo, thịt gà.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm gà; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm gà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm gà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+g%C3%A0"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+g%C3%A0"
+  },
+  {
+    "slug": "com-thit-kho-trung",
+    "recipeName": "Cơm thịt kho trứng",
+    "description": "Công thức gợi ý cho Cơm thịt kho trứng, dùng nguyên liệu chính: cơm/gạo, thịt heo, trứng.",
+    "imageKey": "recipe-images/v1/thumb/com-thit-kho-trung.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "egg"
+        ],
+        "grams": 100
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm thịt kho trứng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm thịt kho trứng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm thịt kho trứng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+th%E1%BB%8Bt+kho+tr%E1%BB%A9ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+th%E1%BB%8Bt+kho+tr%E1%BB%A9ng"
+  },
+  {
+    "slug": "com-ca-kho-to",
+    "recipeName": "Cơm cá kho tộ",
+    "description": "Công thức gợi ý cho Cơm cá kho tộ, dùng nguyên liệu chính: cơm/gạo, cá.",
+    "imageKey": "recipe-images/v1/thumb/com-ca-kho-to.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm cá kho tộ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm cá kho tộ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm cá kho tộ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+c%C3%A1+kho+t%E1%BB%99"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+c%C3%A1+kho+t%E1%BB%99"
+  },
+  {
+    "slug": "com-bo-luc-lac",
+    "recipeName": "Cơm bò lúc lắc",
+    "description": "Công thức gợi ý cho Cơm bò lúc lắc, dùng nguyên liệu chính: cơm/gạo, thịt bò.",
+    "imageKey": "recipe-images/v1/thumb/com-bo-luc-lac.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm bò lúc lắc; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm bò lúc lắc ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm bò lúc lắc, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+b%C3%B2+l%C3%BAc+l%E1%BA%AFc"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+b%C3%B2+l%C3%BAc+l%E1%BA%AFc"
+  },
+  {
+    "slug": "com-suon-nuong",
+    "recipeName": "Cơm sườn nướng",
+    "description": "Công thức gợi ý cho Cơm sườn nướng, dùng nguyên liệu chính: cơm/gạo, sườn heo.",
+    "imageKey": "recipe-images/v1/thumb/com-suon-nuong.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "pork_rib"
+        ],
+        "grams": 180
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm sườn nướng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm sườn nướng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm sườn nướng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+s%C6%B0%E1%BB%9Dn+n%C6%B0%E1%BB%9Bng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+s%C6%B0%E1%BB%9Dn+n%C6%B0%E1%BB%9Bng"
+  },
+  {
+    "slug": "com-tom-rim",
+    "recipeName": "Cơm tôm rim",
+    "description": "Công thức gợi ý cho Cơm tôm rim, dùng nguyên liệu chính: cơm/gạo, tôm.",
+    "imageKey": "recipe-images/v1/thumb/com-tom-rim.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm tôm rim; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm tôm rim ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm tôm rim, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+t%C3%B4m+rim"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+t%C3%B4m+rim"
+  },
+  {
+    "slug": "com-dau-hu-sot-ca",
+    "recipeName": "Cơm đậu hũ sốt cà",
+    "description": "Công thức gợi ý cho Cơm đậu hũ sốt cà, dùng nguyên liệu chính: cơm/gạo, đậu hũ, ớt.",
+    "imageKey": "recipe-images/v1/thumb/com-dau-hu-sot-ca.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "tofu"
+        ],
+        "grams": 160
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm đậu hũ sốt cà; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm đậu hũ sốt cà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm đậu hũ sốt cà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+%C4%91%E1%BA%ADu+h%C5%A9+s%E1%BB%91t+c%C3%A0"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+%C4%91%E1%BA%ADu+h%C5%A9+s%E1%BB%91t+c%C3%A0"
+  },
+  {
+    "slug": "com-rau-cu-xao",
+    "recipeName": "Cơm rau củ xào",
+    "description": "Công thức gợi ý cho Cơm rau củ xào, dùng nguyên liệu chính: cơm/gạo, bông cải xanh, sả.",
+    "imageKey": "recipe-images/v1/thumb/com-rau-cu-xao.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm rau củ xào; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm rau củ xào ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm rau củ xào, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+rau+c%E1%BB%A7+x%C3%A0o"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+rau+c%E1%BB%A7+x%C3%A0o"
+  },
+  {
+    "slug": "com-bo-ne",
+    "recipeName": "Cơm bò né",
+    "description": "Công thức gợi ý cho Cơm bò né, dùng nguyên liệu chính: cơm/gạo, thịt bò.",
+    "imageKey": "recipe-images/v1/thumb/com-bo-ne.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm bò né; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm bò né ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm bò né, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+b%C3%B2+n%C3%A9"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+b%C3%B2+n%C3%A9"
+  },
+  {
+    "slug": "com-thit-nuong-sa",
+    "recipeName": "Cơm thịt nướng sả",
+    "description": "Công thức gợi ý cho Cơm thịt nướng sả, dùng nguyên liệu chính: cơm/gạo, thịt heo.",
+    "imageKey": "recipe-images/v1/thumb/com-thit-nuong-sa.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm thịt nướng sả; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm thịt nướng sả ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm thịt nướng sả, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
+  },
+  {
+    "slug": "bun-cha",
+    "recipeName": "Bún chả",
+    "description": "Công thức gợi ý cho Bún chả, dùng nguyên liệu chính: bún, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún chả; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún chả ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún chả, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+ch%E1%BA%A3"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+ch%E1%BA%A3"
+  },
+  {
+    "slug": "bun-dau",
+    "recipeName": "Bún đậu",
+    "description": "Công thức gợi ý cho Bún đậu, dùng nguyên liệu chính: bún, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún đậu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún đậu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún đậu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+%C4%91%E1%BA%ADu"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+%C4%91%E1%BA%ADu"
+  },
+  {
+    "slug": "bun-thit-nuong",
+    "recipeName": "Bún thịt nướng",
+    "description": "Công thức gợi ý cho Bún thịt nướng, dùng nguyên liệu chính: bún, thịt heo.",
+    "imageKey": "recipe-images/v1/thumb/bun-thit-nuong.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún thịt nướng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún thịt nướng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún thịt nướng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng"
+  },
+  {
+    "slug": "bun-bo-xao",
+    "recipeName": "Bún bò xào",
+    "description": "Công thức gợi ý cho Bún bò xào, dùng nguyên liệu chính: bún, thịt bò, sả.",
+    "imageKey": "recipe-images/v1/thumb/bun-bo-xao.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún bò xào; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún bò xào ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún bò xào, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+b%C3%B2+x%C3%A0o"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+b%C3%B2+x%C3%A0o"
+  },
+  {
+    "slug": "bun-tom-nuong",
+    "recipeName": "Bún tôm nướng",
+    "description": "Công thức gợi ý cho Bún tôm nướng, dùng nguyên liệu chính: bún, tôm.",
+    "imageKey": "recipe-images/v1/thumb/bun-tom-nuong.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún tôm nướng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún tôm nướng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún tôm nướng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+t%C3%B4m+n%C6%B0%E1%BB%9Bng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+t%C3%B4m+n%C6%B0%E1%BB%9Bng"
+  },
+  {
+    "slug": "bun-cha-gio",
+    "recipeName": "Bún chả giò",
+    "description": "Công thức gợi ý cho Bún chả giò, dùng nguyên liệu chính: bún, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/bun-cha-gio.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún chả giò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún chả giò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún chả giò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+ch%E1%BA%A3+gi%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+ch%E1%BA%A3+gi%C3%B2"
+  },
+  {
+    "slug": "mi-xao-bo",
+    "recipeName": "Mì xào bò",
+    "description": "Công thức gợi ý cho Mì xào bò, dùng nguyên liệu chính: mì/phở, thịt bò, sả.",
+    "imageKey": "recipe-images/v1/thumb/mi-xao-bo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Mì xào bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Mì xào bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Mì xào bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=M%C3%AC+x%C3%A0o+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+M%C3%AC+x%C3%A0o+b%C3%B2"
+  },
+  {
+    "slug": "mi-xao-hai-san",
+    "recipeName": "Mì xào hải sản",
+    "description": "Công thức gợi ý cho Mì xào hải sản, dùng nguyên liệu chính: mì/phở, sả, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/mi-xao-hai-san.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Mì xào hải sản; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Mì xào hải sản ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Mì xào hải sản, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=M%C3%AC+x%C3%A0o+h%E1%BA%A3i+s%E1%BA%A3n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+M%C3%AC+x%C3%A0o+h%E1%BA%A3i+s%E1%BA%A3n"
+  },
+  {
+    "slug": "hu-tieu-xao",
+    "recipeName": "Hủ tiếu xào",
+    "description": "Công thức gợi ý cho Hủ tiếu xào, dùng nguyên liệu chính: mì/phở, sả, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/hu-tieu-xao.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Hủ tiếu xào; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Hủ tiếu xào ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Hủ tiếu xào, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=H%E1%BB%A7+ti%E1%BA%BFu+x%C3%A0o"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+H%E1%BB%A7+ti%E1%BA%BFu+x%C3%A0o"
+  },
+  {
+    "slug": "hu-tieu-nam-vang",
+    "recipeName": "Hủ tiếu Nam Vang",
+    "description": "Công thức gợi ý cho Hủ tiếu Nam Vang, dùng nguyên liệu chính: mì/phở, nấm.",
+    "imageKey": "recipe-images/v1/thumb/hu-tieu-nam-vang.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "mushroom"
+        ],
+        "grams": 120
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Hủ tiếu Nam Vang; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Hủ tiếu Nam Vang ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Hủ tiếu Nam Vang, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=H%E1%BB%A7+ti%E1%BA%BFu+Nam+Vang"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+H%E1%BB%A7+ti%E1%BA%BFu+Nam+Vang"
+  },
+  {
+    "slug": "nui-xao-bo",
+    "recipeName": "Nui xào bò",
+    "description": "Công thức gợi ý cho Nui xào bò, dùng nguyên liệu chính: mì/phở, thịt bò, sả.",
+    "imageKey": "recipe-images/v1/thumb/nui-xao-bo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "noodles"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Nui xào bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Nui xào bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Nui xào bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Nui+x%C3%A0o+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Nui+x%C3%A0o+b%C3%B2"
+  },
+  {
+    "slug": "bun-nuoc-leo-ca",
+    "recipeName": "Bún nước lèo cá",
+    "description": "Công thức gợi ý cho Bún nước lèo cá, dùng nguyên liệu chính: bún, cá.",
+    "imageKey": "recipe-images/v1/thumb/bun-nuoc-leo-ca.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún nước lèo cá; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún nước lèo cá ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún nước lèo cá, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+n%C6%B0%E1%BB%9Bc+l%C3%A8o+c%C3%A1"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+n%C6%B0%E1%BB%9Bc+l%C3%A8o+c%C3%A1"
+  },
+  {
+    "slug": "bun-xao-rau-cu",
+    "recipeName": "Bún xào rau củ",
+    "description": "Công thức gợi ý cho Bún xào rau củ, dùng nguyên liệu chính: bún, bông cải xanh, sả.",
+    "imageKey": "recipe-images/v1/thumb/bun-xao-rau-cu.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún xào rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún xào rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún xào rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+x%C3%A0o+rau+c%E1%BB%A7"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+x%C3%A0o+rau+c%E1%BB%A7"
+  },
+  {
+    "slug": "thit-kho-tau",
+    "recipeName": "Thịt kho tàu",
+    "description": "Công thức gợi ý cho Thịt kho tàu, dùng nguyên liệu chính: thịt heo, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/thit-kho-tau.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Thịt kho tàu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Thịt kho tàu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Thịt kho tàu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+kho+t%C3%A0u"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Th%E1%BB%8Bt+kho+t%C3%A0u"
+  },
+  {
+    "slug": "ca-kho-to",
+    "recipeName": "Cá kho tộ",
+    "description": "Công thức gợi ý cho Cá kho tộ, dùng nguyên liệu chính: cá, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cá kho tộ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cá kho tộ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cá kho tộ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C3%A1+kho+t%E1%BB%99"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C3%A1+kho+t%E1%BB%99"
+  },
+  {
+    "slug": "bo-kho",
+    "recipeName": "Bò kho",
+    "description": "Công thức gợi ý cho Bò kho, dùng nguyên liệu chính: thịt bò, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bò kho; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bò kho ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bò kho, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%B2+kho"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B2+kho"
+  },
+  {
+    "slug": "ga-kho-gung",
+    "recipeName": "Gà kho gừng",
+    "description": "Công thức gợi ý cho Gà kho gừng, dùng nguyên liệu chính: thịt gà, gừng.",
+    "imageKey": "recipe-images/v1/thumb/ga-kho-gung.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "ginger"
+        ],
+        "grams": 10
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gà kho gừng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gà kho gừng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gà kho gừng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%C3%A0+kho+g%E1%BB%ABng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%C3%A0+kho+g%E1%BB%ABng"
+  },
+  {
+    "slug": "suon-kho-chua-ngot",
+    "recipeName": "Sườn kho chua ngọt",
+    "description": "Công thức gợi ý cho Sườn kho chua ngọt, dùng nguyên liệu chính: sườn heo, bắp, ớt.",
+    "imageKey": "recipe-images/v1/thumb/suon-kho-chua-ngot.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork_rib"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "corn"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Sườn kho chua ngọt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Sườn kho chua ngọt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Sườn kho chua ngọt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=S%C6%B0%E1%BB%9Dn+kho+chua+ng%E1%BB%8Dt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+S%C6%B0%E1%BB%9Dn+kho+chua+ng%E1%BB%8Dt"
+  },
+  {
+    "slug": "tom-rim-man-ngot",
+    "recipeName": "Tôm rim mặn ngọt",
+    "description": "Công thức gợi ý cho Tôm rim mặn ngọt, dùng nguyên liệu chính: tôm, bắp, ớt.",
+    "imageKey": "recipe-images/v1/thumb/tom-rim-man-ngot.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "corn"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Tôm rim mặn ngọt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Tôm rim mặn ngọt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Tôm rim mặn ngọt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=T%C3%B4m+rim+m%E1%BA%B7n+ng%E1%BB%8Dt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+T%C3%B4m+rim+m%E1%BA%B7n+ng%E1%BB%8Dt"
+  },
+  {
+    "slug": "ca-kho-tieu",
+    "recipeName": "Cá kho tiêu",
+    "description": "Công thức gợi ý cho Cá kho tiêu, dùng nguyên liệu chính: cá, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/ca-kho-tieu.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cá kho tiêu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cá kho tiêu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cá kho tiêu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C3%A1+kho+ti%C3%AAu"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C3%A1+kho+ti%C3%AAu"
+  },
+  {
+    "slug": "thit-kho-sa-ot",
+    "recipeName": "Thịt kho sả ớt",
+    "description": "Công thức gợi ý cho Thịt kho sả ớt, dùng nguyên liệu chính: thịt heo, sả, ớt.",
+    "imageKey": "recipe-images/v1/thumb/thit-kho-sa-ot.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Thịt kho sả ớt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Thịt kho sả ớt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Thịt kho sả ớt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+kho+s%E1%BA%A3+%E1%BB%9Bt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Th%E1%BB%8Bt+kho+s%E1%BA%A3+%E1%BB%9Bt"
+  },
+  {
+    "slug": "dau-hu-kho-nam",
+    "recipeName": "Đậu hũ kho nấm",
+    "description": "Công thức gợi ý cho Đậu hũ kho nấm, dùng nguyên liệu chính: đậu hũ, nấm.",
+    "imageKey": "recipe-images/v1/thumb/dau-hu-kho-nam.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "tofu"
+        ],
+        "grams": 160
+      },
+      {
+        "keys": [
+          "mushroom"
+        ],
+        "grams": 120
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Đậu hũ kho nấm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Đậu hũ kho nấm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Đậu hũ kho nấm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+h%C5%A9+kho+n%E1%BA%A5m"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+%C4%90%E1%BA%ADu+h%C5%A9+kho+n%E1%BA%A5m"
+  },
+  {
+    "slug": "bo-kho-que-hoi",
+    "recipeName": "Bò kho quế hồi",
+    "description": "Công thức gợi ý cho Bò kho quế hồi, dùng nguyên liệu chính: thịt bò, hoa hồi, quế.",
+    "imageKey": "recipe-images/v1/thumb/bo-kho-que-hoi.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "star_anise"
+        ],
+        "grams": 3
+      },
+      {
+        "keys": [
+          "cinnamon"
+        ],
+        "grams": 3
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bò kho quế hồi; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bò kho quế hồi ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bò kho quế hồi, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%B2+kho+qu%E1%BA%BF+h%E1%BB%93i"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B2+kho+qu%E1%BA%BF+h%E1%BB%93i"
+  },
+  {
+    "slug": "ga-kho-nuoc-dua",
+    "recipeName": "Gà kho nước dừa",
+    "description": "Công thức gợi ý cho Gà kho nước dừa, dùng nguyên liệu chính: thịt gà, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/ga-kho-nuoc-dua.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gà kho nước dừa; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gà kho nước dừa ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gà kho nước dừa, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%C3%A0+kho+n%C6%B0%E1%BB%9Bc+d%E1%BB%ABa"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%C3%A0+kho+n%C6%B0%E1%BB%9Bc+d%E1%BB%ABa"
+  },
+  {
+    "slug": "bot-chien",
+    "recipeName": "Bột chiên",
+    "description": "Công thức gợi ý cho Bột chiên, dùng nguyên liệu chính: tỏi, ớt.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bột chiên; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bột chiên ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bột chiên, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%E1%BB%99t+chi%C3%AAn"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%E1%BB%99t+chi%C3%AAn"
+  },
+  {
+    "slug": "banh-xeo",
+    "recipeName": "Bánh xèo",
+    "description": "Công thức gợi ý cho Bánh xèo, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh xèo; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh xèo ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh xèo, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+x%C3%A8o"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+x%C3%A8o"
+  },
+  {
+    "slug": "banh-khot",
+    "recipeName": "Bánh khọt",
+    "description": "Công thức gợi ý cho Bánh khọt, dùng nguyên liệu chính: ớt, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh khọt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh khọt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh khọt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+kh%E1%BB%8Dt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+kh%E1%BB%8Dt"
+  },
+  {
+    "slug": "cha-gio",
+    "recipeName": "Chả giò",
+    "description": "Công thức gợi ý cho Chả giò, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Chả giò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Chả giò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Chả giò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Ch%E1%BA%A3+gi%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Ch%E1%BA%A3+gi%C3%B2"
+  },
+  {
+    "slug": "bo-la-lot",
+    "recipeName": "Bò lá lốt",
+    "description": "Công thức gợi ý cho Bò lá lốt, dùng nguyên liệu chính: thịt bò, ớt.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bò lá lốt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bò lá lốt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bò lá lốt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%B2+l%C3%A1+l%E1%BB%91t"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B2+l%C3%A1+l%E1%BB%91t"
+  },
+  {
+    "slug": "bo-ne",
+    "recipeName": "Bò né",
+    "description": "Công thức gợi ý cho Bò né, dùng nguyên liệu chính: thịt bò, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/bo-ne.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bò né; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bò né ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bò né, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%B2+n%C3%A9"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B2+n%C3%A9"
+  },
+  {
+    "slug": "bo-luc-lac",
+    "recipeName": "Bò lúc lắc",
+    "description": "Công thức gợi ý cho Bò lúc lắc, dùng nguyên liệu chính: thịt bò, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/bo-luc-lac.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bò lúc lắc; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bò lúc lắc ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bò lúc lắc, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%B2+l%C3%BAc+l%E1%BA%AFc"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B2+l%C3%BAc+l%E1%BA%AFc"
+  },
+  {
+    "slug": "trung-chien",
+    "recipeName": "Trứng chiên",
+    "description": "Công thức gợi ý cho Trứng chiên, dùng nguyên liệu chính: trứng, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "egg"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Trứng chiên; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Trứng chiên ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Trứng chiên, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Tr%E1%BB%A9ng+chi%C3%AAn"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+chi%C3%AAn"
+  },
+  {
+    "slug": "trung-chien-ca-chua",
+    "recipeName": "Trứng chiên cà chua",
+    "description": "Công thức gợi ý cho Trứng chiên cà chua, dùng nguyên liệu chính: cá, trứng, cà chua.",
+    "imageKey": "recipe-images/v1/thumb/trung-chien-ca-chua.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "egg"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "tomato"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Trứng chiên cà chua; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Trứng chiên cà chua ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Trứng chiên cà chua, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Tr%E1%BB%A9ng+chi%C3%AAn+c%C3%A0+chua"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+chi%C3%AAn+c%C3%A0+chua"
+  },
+  {
+    "slug": "rau-muong-xao-toi",
+    "recipeName": "Rau muống xào tỏi",
+    "description": "Công thức gợi ý cho Rau muống xào tỏi, dùng nguyên liệu chính: rau muống, sả, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/rau-muong-xao-toi.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "water_spinach"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Rau muống xào tỏi; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Rau muống xào tỏi ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Rau muống xào tỏi, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Rau+mu%E1%BB%91ng+x%C3%A0o+t%E1%BB%8Fi"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Rau+mu%E1%BB%91ng+x%C3%A0o+t%E1%BB%8Fi"
+  },
+  {
+    "slug": "cai-thia-xao-nam",
+    "recipeName": "Cải thìa xào nấm",
+    "description": "Công thức gợi ý cho Cải thìa xào nấm, dùng nguyên liệu chính: cải thìa, nấm, sả.",
+    "imageKey": "recipe-images/v1/thumb/cai-thia-xao-nam.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bokchoy"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "mushroom"
+        ],
+        "grams": 120
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cải thìa xào nấm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cải thìa xào nấm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cải thìa xào nấm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%E1%BA%A3i+th%C3%ACa+x%C3%A0o+n%E1%BA%A5m"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%E1%BA%A3i+th%C3%ACa+x%C3%A0o+n%E1%BA%A5m"
+  },
+  {
+    "slug": "bong-cai-xao-bo",
+    "recipeName": "Bông cải xào bò",
+    "description": "Công thức gợi ý cho Bông cải xào bò, dùng nguyên liệu chính: thịt bò, bông cải xanh, sả.",
+    "imageKey": "recipe-images/v1/thumb/bong-cai-xao-bo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bông cải xào bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bông cải xào bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bông cải xào bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%B4ng+c%E1%BA%A3i+x%C3%A0o+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B4ng+c%E1%BA%A3i+x%C3%A0o+b%C3%B2"
+  },
+  {
+    "slug": "ca-tim-xao-toi",
+    "recipeName": "Cà tím xào tỏi",
+    "description": "Công thức gợi ý cho Cà tím xào tỏi, dùng nguyên liệu chính: cá, cà tím, sả.",
+    "imageKey": "recipe-images/v1/thumb/ca-tim-xao-toi.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "eggplant"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cà tím xào tỏi; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cà tím xào tỏi ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cà tím xào tỏi, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C3%A0+t%C3%ADm+x%C3%A0o+t%E1%BB%8Fi"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C3%A0+t%C3%ADm+x%C3%A0o+t%E1%BB%8Fi"
+  },
+  {
+    "slug": "dau-que-xao-thit-bo",
+    "recipeName": "Đậu que xào thịt bò",
+    "description": "Công thức gợi ý cho Đậu que xào thịt bò, dùng nguyên liệu chính: thịt bò, thịt heo, đậu que.",
+    "imageKey": "recipe-images/v1/thumb/dau-que-xao-thit-bo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "long_beans"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Đậu que xào thịt bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Đậu que xào thịt bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Đậu que xào thịt bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+que+x%C3%A0o+th%E1%BB%8Bt+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+%C4%90%E1%BA%ADu+que+x%C3%A0o+th%E1%BB%8Bt+b%C3%B2"
+  },
+  {
+    "slug": "tom-xao-rau-cu",
+    "recipeName": "Tôm xào rau củ",
+    "description": "Công thức gợi ý cho Tôm xào rau củ, dùng nguyên liệu chính: tôm, bông cải xanh, sả.",
+    "imageKey": "recipe-images/v1/thumb/tom-xao-rau-cu.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Tôm xào rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Tôm xào rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Tôm xào rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=T%C3%B4m+x%C3%A0o+rau+c%E1%BB%A7"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+T%C3%B4m+x%C3%A0o+rau+c%E1%BB%A7"
+  },
+  {
+    "slug": "muc-xao-sa-te",
+    "recipeName": "Mực xào sa tế",
+    "description": "Công thức gợi ý cho Mực xào sa tế, dùng nguyên liệu chính: mực, sả, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/muc-xao-sa-te.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "squid"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Mực xào sa tế; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Mực xào sa tế ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Mực xào sa tế, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=M%E1%BB%B1c+x%C3%A0o+sa+t%E1%BA%BF"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+M%E1%BB%B1c+x%C3%A0o+sa+t%E1%BA%BF"
+  },
+  {
+    "slug": "ga-xao-sa-ot",
+    "recipeName": "Gà xào sả ớt",
+    "description": "Công thức gợi ý cho Gà xào sả ớt, dùng nguyên liệu chính: thịt gà, sả, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/ga-xao-sa-ot.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gà xào sả ớt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gà xào sả ớt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gà xào sả ớt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%C3%A0+x%C3%A0o+s%E1%BA%A3+%E1%BB%9Bt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%C3%A0+x%C3%A0o+s%E1%BA%A3+%E1%BB%9Bt"
+  },
+  {
+    "slug": "com-chien-rau-cu",
+    "recipeName": "Cơm chiên rau củ",
+    "description": "Công thức gợi ý cho Cơm chiên rau củ, dùng nguyên liệu chính: cơm/gạo, bông cải xanh, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/com-chien-rau-cu.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm chiên rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm chiên rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm chiên rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+rau+c%E1%BB%A7"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+chi%C3%AAn+rau+c%E1%BB%A7"
+  },
+  {
+    "slug": "khoai-lang-chien",
+    "recipeName": "Khoai lang chiên",
+    "description": "Công thức gợi ý cho Khoai lang chiên, dùng nguyên liệu chính: khoai lang, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/khoai-lang-chien.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "sweet_potato"
+        ],
+        "grams": 160
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Khoai lang chiên; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Khoai lang chiên ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Khoai lang chiên, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Khoai+lang+chi%C3%AAn"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Khoai+lang+chi%C3%AAn"
+  },
+  {
+    "slug": "khoai-tay-chien",
+    "recipeName": "Khoai tây chiên",
+    "description": "Công thức gợi ý cho Khoai tây chiên, dùng nguyên liệu chính: khoai tây, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/khoai-tay-chien.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "potato"
+        ],
+        "grams": 120
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Khoai tây chiên; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Khoai tây chiên ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Khoai tây chiên, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Khoai+t%C3%A2y+chi%C3%AAn"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Khoai+t%C3%A2y+chi%C3%AAn"
+  },
+  {
+    "slug": "dau-hu-chien-sa",
+    "recipeName": "Đậu hũ chiên sả",
+    "description": "Công thức gợi ý cho Đậu hũ chiên sả, dùng nguyên liệu chính: đậu hũ, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/dau-hu-chien-sa.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "tofu"
+        ],
+        "grams": 160
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Đậu hũ chiên sả; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Đậu hũ chiên sả ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Đậu hũ chiên sả, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+h%C5%A9+chi%C3%AAn+s%E1%BA%A3"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+%C4%90%E1%BA%ADu+h%C5%A9+chi%C3%AAn+s%E1%BA%A3"
+  },
+  {
+    "slug": "goi-cuon",
+    "recipeName": "Gỏi cuốn",
+    "description": "Công thức gợi ý cho Gỏi cuốn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "banh_trang"
+        ],
+        "grams": 40
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gỏi cuốn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gỏi cuốn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gỏi cuốn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%E1%BB%8Fi+cu%E1%BB%91n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%E1%BB%8Fi+cu%E1%BB%91n"
+  },
+  {
+    "slug": "banh-cuon",
+    "recipeName": "Bánh cuốn",
+    "description": "Công thức gợi ý cho Bánh cuốn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "banh_trang"
+        ],
+        "grams": 40
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh cuốn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh cuốn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh cuốn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+cu%E1%BB%91n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+cu%E1%BB%91n"
+  },
+  {
+    "slug": "thit-ba-chi-hap-khoai-mon",
+    "recipeName": "Thịt ba chỉ hấp khoai môn",
+    "description": "Công thức gợi ý cho Thịt ba chỉ hấp khoai môn, dùng nguyên liệu chính: thịt heo, thịt ba chỉ.",
+    "imageKey": null,
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "pork_belly"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Thịt ba chỉ hấp khoai môn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Thịt ba chỉ hấp khoai môn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Thịt ba chỉ hấp khoai môn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+ba+ch%E1%BB%89+h%E1%BA%A5p+khoai+m%C3%B4n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Th%E1%BB%8Bt+ba+ch%E1%BB%89+h%E1%BA%A5p+khoai+m%C3%B4n"
+  },
+  {
+    "slug": "ca-hap-gung-hanh",
+    "recipeName": "Cá hấp gừng hành",
+    "description": "Công thức gợi ý cho Cá hấp gừng hành, dùng nguyên liệu chính: cá, gừng, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/ca-hap-gung-hanh.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "ginger"
+        ],
+        "grams": 10
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cá hấp gừng hành; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cá hấp gừng hành ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cá hấp gừng hành, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C3%A1+h%E1%BA%A5p+g%E1%BB%ABng+h%C3%A0nh"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C3%A1+h%E1%BA%A5p+g%E1%BB%ABng+h%C3%A0nh"
+  },
+  {
+    "slug": "ga-hap-sa",
+    "recipeName": "Gà hấp sả",
+    "description": "Công thức gợi ý cho Gà hấp sả, dùng nguyên liệu chính: thịt gà, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/ga-hap-sa.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gà hấp sả; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gà hấp sả ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gà hấp sả, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%C3%A0+h%E1%BA%A5p+s%E1%BA%A3"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%C3%A0+h%E1%BA%A5p+s%E1%BA%A3"
+  },
+  {
+    "slug": "tom-hap-sa",
+    "recipeName": "Tôm hấp sả",
+    "description": "Công thức gợi ý cho Tôm hấp sả, dùng nguyên liệu chính: tôm, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/tom-hap-sa.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Tôm hấp sả; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Tôm hấp sả ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Tôm hấp sả, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=T%C3%B4m+h%E1%BA%A5p+s%E1%BA%A3"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+T%C3%B4m+h%E1%BA%A5p+s%E1%BA%A3"
+  },
+  {
+    "slug": "rau-cu-hap",
+    "recipeName": "Rau củ hấp",
+    "description": "Công thức gợi ý cho Rau củ hấp, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/rau-cu-hap.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Rau củ hấp; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Rau củ hấp ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Rau củ hấp, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Rau+c%E1%BB%A7+h%E1%BA%A5p"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Rau+c%E1%BB%A7+h%E1%BA%A5p"
+  },
+  {
+    "slug": "cuon-banh-trang-thit-heo",
+    "recipeName": "Cuốn bánh tráng thịt heo",
+    "description": "Công thức gợi ý cho Cuốn bánh tráng thịt heo, dùng nguyên liệu chính: bánh tráng, thịt heo.",
+    "imageKey": "recipe-images/v1/thumb/cuon-banh-trang-thit-heo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "banh_trang"
+        ],
+        "grams": 40
+      },
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cuốn bánh tráng thịt heo; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cuốn bánh tráng thịt heo ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cuốn bánh tráng thịt heo, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Cu%E1%BB%91n+b%C3%A1nh+tr%C3%A1ng+th%E1%BB%8Bt+heo"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Cu%E1%BB%91n+b%C3%A1nh+tr%C3%A1ng+th%E1%BB%8Bt+heo"
+  },
+  {
+    "slug": "cuon-rau-cu-cham-nuoc-mam",
+    "recipeName": "Cuốn rau củ chấm nước mắm",
+    "description": "Công thức gợi ý cho Cuốn rau củ chấm nước mắm, dùng nguyên liệu chính: bánh tráng, bông cải xanh.",
+    "imageKey": "recipe-images/v1/thumb/cuon-rau-cu-cham-nuoc-mam.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "banh_trang"
+        ],
+        "grams": 40
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cuốn rau củ chấm nước mắm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cuốn rau củ chấm nước mắm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cuốn rau củ chấm nước mắm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Cu%E1%BB%91n+rau+c%E1%BB%A7+ch%E1%BA%A5m+n%C6%B0%E1%BB%9Bc+m%E1%BA%AFm"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Cu%E1%BB%91n+rau+c%E1%BB%A7+ch%E1%BA%A5m+n%C6%B0%E1%BB%9Bc+m%E1%BA%AFm"
+  },
+  {
+    "slug": "thit-nuong-sa",
+    "recipeName": "Thịt nướng sả",
+    "description": "Công thức gợi ý cho Thịt nướng sả, dùng nguyên liệu chính: thịt heo, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/thit-nuong-sa.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Thịt nướng sả; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Thịt nướng sả ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Thịt nướng sả, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
+  },
+  {
+    "slug": "suon-nuong",
+    "recipeName": "Sườn nướng",
+    "description": "Công thức gợi ý cho Sườn nướng, dùng nguyên liệu chính: sườn heo, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/suon-nuong.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pork_rib"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Sườn nướng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Sườn nướng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Sườn nướng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=S%C6%B0%E1%BB%9Dn+n%C6%B0%E1%BB%9Bng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+S%C6%B0%E1%BB%9Dn+n%C6%B0%E1%BB%9Bng"
+  },
+  {
+    "slug": "bo-nuong-la-lot",
+    "recipeName": "Bò nướng lá lốt",
+    "description": "Công thức gợi ý cho Bò nướng lá lốt, dùng nguyên liệu chính: thịt bò, ớt.",
+    "imageKey": "recipe-images/v1/thumb/bo-nuong-la-lot.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bò nướng lá lốt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bò nướng lá lốt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bò nướng lá lốt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%B2+n%C6%B0%E1%BB%9Bng+l%C3%A1+l%E1%BB%91t"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B2+n%C6%B0%E1%BB%9Bng+l%C3%A1+l%E1%BB%91t"
+  },
+  {
+    "slug": "tom-nuong-muoi-ot",
+    "recipeName": "Tôm nướng muối ớt",
+    "description": "Công thức gợi ý cho Tôm nướng muối ớt, dùng nguyên liệu chính: tôm, ớt.",
+    "imageKey": "recipe-images/v1/thumb/tom-nuong-muoi-ot.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Tôm nướng muối ớt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Tôm nướng muối ớt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Tôm nướng muối ớt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=T%C3%B4m+n%C6%B0%E1%BB%9Bng+mu%E1%BB%91i+%E1%BB%9Bt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+T%C3%B4m+n%C6%B0%E1%BB%9Bng+mu%E1%BB%91i+%E1%BB%9Bt"
+  },
+  {
+    "slug": "muc-nuong-sa-te",
+    "recipeName": "Mực nướng sa tế",
+    "description": "Công thức gợi ý cho Mực nướng sa tế, dùng nguyên liệu chính: mực, sả, ớt.",
+    "imageKey": "recipe-images/v1/thumb/muc-nuong-sa-te.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "squid"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Mực nướng sa tế; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Mực nướng sa tế ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Mực nướng sa tế, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=M%E1%BB%B1c+n%C6%B0%E1%BB%9Bng+sa+t%E1%BA%BF"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+M%E1%BB%B1c+n%C6%B0%E1%BB%9Bng+sa+t%E1%BA%BF"
+  },
+  {
+    "slug": "ca-nuong-giay-bac",
+    "recipeName": "Cá nướng giấy bạc",
+    "description": "Công thức gợi ý cho Cá nướng giấy bạc, dùng nguyên liệu chính: cá, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/ca-nuong-giay-bac.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cá nướng giấy bạc; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cá nướng giấy bạc ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cá nướng giấy bạc, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C3%A1+n%C6%B0%E1%BB%9Bng+gi%E1%BA%A5y+b%E1%BA%A1c"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C3%A1+n%C6%B0%E1%BB%9Bng+gi%E1%BA%A5y+b%E1%BA%A1c"
+  },
+  {
+    "slug": "ga-nuong-sa",
+    "recipeName": "Gà nướng sả",
+    "description": "Công thức gợi ý cho Gà nướng sả, dùng nguyên liệu chính: thịt gà, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/ga-nuong-sa.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gà nướng sả; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gà nướng sả ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gà nướng sả, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%C3%A0+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%C3%A0+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
+  },
+  {
+    "slug": "rau-cu-nuong",
+    "recipeName": "Rau củ nướng",
+    "description": "Công thức gợi ý cho Rau củ nướng, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/rau-cu-nuong.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Rau củ nướng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Rau củ nướng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Rau củ nướng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Rau+c%E1%BB%A7+n%C6%B0%E1%BB%9Bng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Rau+c%E1%BB%A7+n%C6%B0%E1%BB%9Bng"
+  },
+  {
+    "slug": "bap-nuong-hanh-mo",
+    "recipeName": "Bắp nướng hành mỡ",
+    "description": "Công thức gợi ý cho Bắp nướng hành mỡ, dùng nguyên liệu chính: bắp, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/bap-nuong-hanh-mo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "corn"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bắp nướng hành mỡ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bắp nướng hành mỡ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bắp nướng hành mỡ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%E1%BA%AFp+n%C6%B0%E1%BB%9Bng+h%C3%A0nh+m%E1%BB%A1"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%E1%BA%AFp+n%C6%B0%E1%BB%9Bng+h%C3%A0nh+m%E1%BB%A1"
+  },
+  {
+    "slug": "dau-hu-sot-ca-chua",
+    "recipeName": "Đậu hũ sốt cà chua",
+    "description": "Công thức gợi ý cho Đậu hũ sốt cà chua, dùng nguyên liệu chính: cá, đậu hũ, cà chua.",
+    "imageKey": "recipe-images/v1/thumb/dau-hu-sot-ca-chua.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "tofu"
+        ],
+        "grams": 160
+      },
+      {
+        "keys": [
+          "tomato"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Đậu hũ sốt cà chua; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Đậu hũ sốt cà chua ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Đậu hũ sốt cà chua, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+h%C5%A9+s%E1%BB%91t+c%C3%A0+chua"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+%C4%90%E1%BA%ADu+h%C5%A9+s%E1%BB%91t+c%C3%A0+chua"
+  },
+  {
+    "slug": "tempeh-xao-sa-ot",
+    "recipeName": "Tempeh xào sả ớt",
+    "description": "Công thức gợi ý cho Tempeh xào sả ớt, dùng nguyên liệu chính: tempeh, sả, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/tempeh-xao-sa-ot.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "tempeh"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Tempeh xào sả ớt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Tempeh xào sả ớt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Tempeh xào sả ớt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Tempeh+x%C3%A0o+s%E1%BA%A3+%E1%BB%9Bt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tempeh+x%C3%A0o+s%E1%BA%A3+%E1%BB%9Bt"
+  },
+  {
+    "slug": "rau-cu-luoc-cham-nuoc-mam",
+    "recipeName": "Rau củ luộc chấm nước mắm",
+    "description": "Công thức gợi ý cho Rau củ luộc chấm nước mắm, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/rau-cu-luoc-cham-nuoc-mam.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Rau củ luộc chấm nước mắm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Rau củ luộc chấm nước mắm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Rau củ luộc chấm nước mắm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Rau+c%E1%BB%A7+lu%E1%BB%99c+ch%E1%BA%A5m+n%C6%B0%E1%BB%9Bc+m%E1%BA%AFm"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Rau+c%E1%BB%A7+lu%E1%BB%99c+ch%E1%BA%A5m+n%C6%B0%E1%BB%9Bc+m%E1%BA%AFm"
+  },
+  {
+    "slug": "canh-nam-rau-cu",
+    "recipeName": "Canh nấm rau củ",
+    "description": "Công thức gợi ý cho Canh nấm rau củ, dùng nguyên liệu chính: nấm, bông cải xanh.",
+    "imageKey": "recipe-images/v1/thumb/canh-nam-rau-cu.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "mushroom"
+        ],
+        "grams": 120
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Canh nấm rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Canh nấm rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Canh nấm rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Canh+n%E1%BA%A5m+rau+c%E1%BB%A7"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+n%E1%BA%A5m+rau+c%E1%BB%A7"
+  },
+  {
+    "slug": "com-chien-chay",
+    "recipeName": "Cơm chiên chay",
+    "description": "Công thức gợi ý cho Cơm chiên chay, dùng nguyên liệu chính: cơm/gạo, tỏi.",
+    "imageKey": "recipe-images/v1/thumb/com-chien-chay.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cơm chiên chay; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cơm chiên chay ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cơm chiên chay, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+chay"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C6%A1m+chi%C3%AAn+chay"
+  },
+  {
+    "slug": "bun-rau-cu",
+    "recipeName": "Bún rau củ",
+    "description": "Công thức gợi ý cho Bún rau củ, dùng nguyên liệu chính: bún, bông cải xanh.",
+    "imageKey": "recipe-images/v1/thumb/bun-rau-cu.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "bun"
+        ],
+        "grams": 170
+      },
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bún rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bún rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bún rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%BAn+rau+c%E1%BB%A7"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+rau+c%E1%BB%A7"
+  },
+  {
+    "slug": "bap-cai-xao-toi",
+    "recipeName": "Bắp cải xào tỏi",
+    "description": "Công thức gợi ý cho Bắp cải xào tỏi, dùng nguyên liệu chính: cải thảo/bắp cải, bắp, sả.",
+    "imageKey": "recipe-images/v1/thumb/bap-cai-xao-toi.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "cabbage"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "corn"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "lemongrass"
+        ],
+        "grams": 12
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bắp cải xào tỏi; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bắp cải xào tỏi ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bắp cải xào tỏi, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%E1%BA%AFp+c%E1%BA%A3i+x%C3%A0o+t%E1%BB%8Fi"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%E1%BA%AFp+c%E1%BA%A3i+x%C3%A0o+t%E1%BB%8Fi"
+  },
+  {
+    "slug": "bi-do-ham-nam",
+    "recipeName": "Bí đỏ hầm nấm",
+    "description": "Công thức gợi ý cho Bí đỏ hầm nấm, dùng nguyên liệu chính: bí đỏ, nấm.",
+    "imageKey": "recipe-images/v1/thumb/bi-do-ham-nam.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "pumpkin"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "mushroom"
+        ],
+        "grams": 120
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bí đỏ hầm nấm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bí đỏ hầm nấm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bí đỏ hầm nấm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%AD+%C4%91%E1%BB%8F+h%E1%BA%A7m+n%E1%BA%A5m"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%AD+%C4%91%E1%BB%8F+h%E1%BA%A7m+n%E1%BA%A5m"
+  },
+  {
+    "slug": "khoai-lang-hap",
+    "recipeName": "Khoai lang hấp",
+    "description": "Công thức gợi ý cho Khoai lang hấp, dùng nguyên liệu chính: khoai lang, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/khoai-lang-hap.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "sweet_potato"
+        ],
+        "grams": 160
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Khoai lang hấp; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Khoai lang hấp ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Khoai lang hấp, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Khoai+lang+h%E1%BA%A5p"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Khoai+lang+h%E1%BA%A5p"
+  },
+  {
+    "slug": "banh-beo",
+    "recipeName": "Bánh bèo",
+    "description": "Công thức gợi ý cho Bánh bèo, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh bèo; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh bèo ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh bèo, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+b%C3%A8o"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+b%C3%A8o"
+  },
+  {
+    "slug": "banh-bo",
+    "recipeName": "Bánh bò",
+    "description": "Công thức gợi ý cho Bánh bò, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+b%C3%B2"
+  },
+  {
+    "slug": "banh-bot-loc",
+    "recipeName": "Bánh bột lọc",
+    "description": "Công thức gợi ý cho Bánh bột lọc, dùng nguyên liệu chính: ớt, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh bột lọc; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh bột lọc ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh bột lọc, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+b%E1%BB%99t+l%E1%BB%8Dc"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+b%E1%BB%99t+l%E1%BB%8Dc"
+  },
+  {
+    "slug": "banh-can",
+    "recipeName": "Bánh căn",
+    "description": "Công thức gợi ý cho Bánh căn, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh căn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh căn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh căn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+c%C4%83n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+c%C4%83n"
+  },
+  {
+    "slug": "banh-canh",
+    "recipeName": "Bánh canh",
+    "description": "Công thức gợi ý cho Bánh canh, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh canh; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh canh ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh canh, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+canh"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+canh"
+  },
+  {
+    "slug": "banh-chung",
+    "recipeName": "Bánh chưng",
+    "description": "Công thức gợi ý cho Bánh chưng, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh chưng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh chưng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh chưng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+ch%C6%B0ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+ch%C6%B0ng"
+  },
+  {
+    "slug": "banh-cong",
+    "recipeName": "Bánh cống",
+    "description": "Công thức gợi ý cho Bánh cống, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh cống; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh cống ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh cống, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+c%E1%BB%91ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+c%E1%BB%91ng"
+  },
+  {
+    "slug": "banh-da-lon",
+    "recipeName": "Bánh da lợn",
+    "description": "Công thức gợi ý cho Bánh da lợn, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh da lợn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh da lợn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh da lợn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+da+l%E1%BB%A3n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+da+l%E1%BB%A3n"
+  },
+  {
+    "slug": "banh-duc",
+    "recipeName": "Bánh đúc",
+    "description": "Công thức gợi ý cho Bánh đúc, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh đúc; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh đúc ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh đúc, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+%C4%91%C3%BAc"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+%C4%91%C3%BAc"
+  },
+  {
+    "slug": "banh-tet",
+    "recipeName": "Bánh tét",
+    "description": "Công thức gợi ý cho Bánh tét, dùng nguyên liệu chính: hành lá, tỏi.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      },
+      {
+        "keys": [
+          "garlic"
+        ],
+        "grams": 8
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh tét; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh tét ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh tét, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+t%C3%A9t"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+t%C3%A9t"
+  },
+  {
+    "slug": "banh-trang-tron",
+    "recipeName": "Bánh tráng trộn",
+    "description": "Công thức gợi ý cho Bánh tráng trộn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "imageKey": null,
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "banh_trang"
+        ],
+        "grams": 40
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh tráng trộn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh tráng trộn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh tráng trộn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+tr%C3%A1ng+tr%E1%BB%99n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+tr%C3%A1ng+tr%E1%BB%99n"
+  },
+  {
+    "slug": "banh-trang-cuon",
+    "recipeName": "Bánh tráng cuốn",
+    "description": "Công thức gợi ý cho Bánh tráng cuốn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/banh-trang-cuon.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Trung bình",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "banh_trang"
+        ],
+        "grams": 40
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Bánh tráng cuốn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Bánh tráng cuốn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Bánh tráng cuốn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=B%C3%A1nh+tr%C3%A1ng+cu%E1%BB%91n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%A1nh+tr%C3%A1ng+cu%E1%BB%91n"
+  },
+  {
+    "slug": "donut-me-rong-ruot",
+    "recipeName": "Donut mè rỗng ruột",
+    "description": "Công thức gợi ý cho Donut mè rỗng ruột, dùng nguyên liệu chính: ớt, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/donut-me-rong-ruot.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Donut mè rỗng ruột; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Donut mè rỗng ruột ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Donut mè rỗng ruột, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Donut+m%C3%A8+r%E1%BB%97ng+ru%E1%BB%99t"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Donut+m%C3%A8+r%E1%BB%97ng+ru%E1%BB%99t"
+  },
+  {
+    "slug": "xoi-man",
+    "recipeName": "Xôi mặn",
+    "description": "Công thức gợi ý cho Xôi mặn, dùng nguyên liệu chính: cơm/gạo, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/xoi-man.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Xôi mặn; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Xôi mặn ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Xôi mặn, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=X%C3%B4i+m%E1%BA%B7n"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+X%C3%B4i+m%E1%BA%B7n"
+  },
+  {
+    "slug": "xoi-dau",
+    "recipeName": "Xôi đậu",
+    "description": "Công thức gợi ý cho Xôi đậu, dùng nguyên liệu chính: cơm/gạo, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/xoi-dau.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Xôi đậu; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Xôi đậu ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Xôi đậu, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=X%C3%B4i+%C4%91%E1%BA%ADu"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+X%C3%B4i+%C4%91%E1%BA%ADu"
+  },
+  {
+    "slug": "xoi-ga",
+    "recipeName": "Xôi gà",
+    "description": "Công thức gợi ý cho Xôi gà, dùng nguyên liệu chính: cơm/gạo, thịt gà.",
+    "imageKey": "recipe-images/v1/thumb/xoi-ga.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Xôi gà; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Xôi gà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Xôi gà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=X%C3%B4i+g%C3%A0"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+X%C3%B4i+g%C3%A0"
+  },
+  {
+    "slug": "goi-cuon-tom-thit",
+    "recipeName": "Gỏi cuốn tôm thịt",
+    "description": "Công thức gợi ý cho Gỏi cuốn tôm thịt, dùng nguyên liệu chính: bánh tráng, thịt heo, tôm.",
+    "imageKey": "recipe-images/v1/thumb/goi-cuon-tom-thit.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "banh_trang"
+        ],
+        "grams": 40
+      },
+      {
+        "keys": [
+          "pork"
+        ],
+        "grams": 140
+      },
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gỏi cuốn tôm thịt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gỏi cuốn tôm thịt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gỏi cuốn tôm thịt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%E1%BB%8Fi+cu%E1%BB%91n+t%C3%B4m+th%E1%BB%8Bt"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%E1%BB%8Fi+cu%E1%BB%91n+t%C3%B4m+th%E1%BB%8Bt"
+  },
+  {
+    "slug": "goi-bap-cai",
+    "recipeName": "Gỏi bắp cải",
+    "description": "Công thức gợi ý cho Gỏi bắp cải, dùng nguyên liệu chính: cải thảo/bắp cải, bắp.",
+    "imageKey": "recipe-images/v1/thumb/goi-bap-cai.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "cabbage"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "corn"
+        ],
+        "grams": 100
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gỏi bắp cải; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gỏi bắp cải ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gỏi bắp cải, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%E1%BB%8Fi+b%E1%BA%AFp+c%E1%BA%A3i"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%E1%BB%8Fi+b%E1%BA%AFp+c%E1%BA%A3i"
+  },
+  {
+    "slug": "goi-dua-leo-ca-rot",
+    "recipeName": "Gỏi dưa leo cà rốt",
+    "description": "Công thức gợi ý cho Gỏi dưa leo cà rốt, dùng nguyên liệu chính: cá, dưa leo, cà rốt.",
+    "imageKey": "recipe-images/v1/thumb/goi-dua-leo-ca-rot.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "cucumber"
+        ],
+        "grams": 80
+      },
+      {
+        "keys": [
+          "carrot"
+        ],
+        "grams": 90
+      },
+      {
+        "keys": [
+          "chili"
+        ],
+        "grams": 6
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gỏi dưa leo cà rốt; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gỏi dưa leo cà rốt ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gỏi dưa leo cà rốt, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%E1%BB%8Fi+d%C6%B0a+leo+c%C3%A0+r%E1%BB%91t"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%E1%BB%8Fi+d%C6%B0a+leo+c%C3%A0+r%E1%BB%91t"
+  },
+  {
+    "slug": "salad-rau-cu",
+    "recipeName": "Salad rau củ",
+    "description": "Công thức gợi ý cho Salad rau củ, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/salad-rau-cu.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "broccoli"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Salad rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Salad rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Salad rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Salad+rau+c%E1%BB%A7"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Salad+rau+c%E1%BB%A7"
+  },
+  {
+    "slug": "salad-bo",
+    "recipeName": "Salad bò",
+    "description": "Công thức gợi ý cho Salad bò, dùng nguyên liệu chính: thịt bò, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/salad-bo.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "beef"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Salad bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Salad bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Salad bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Salad+b%C3%B2"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Salad+b%C3%B2"
+  },
+  {
+    "slug": "goi-xoai-tom-kho",
+    "recipeName": "Gỏi xoài tôm khô",
+    "description": "Công thức gợi ý cho Gỏi xoài tôm khô, dùng nguyên liệu chính: tôm, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/goi-xoai-tom-kho.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Gỏi xoài tôm khô; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Gỏi xoài tôm khô ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Gỏi xoài tôm khô, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=G%E1%BB%8Fi+xo%C3%A0i+t%C3%B4m+kh%C3%B4"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+G%E1%BB%8Fi+xo%C3%A0i+t%C3%B4m+kh%C3%B4"
+  },
+  {
+    "slug": "salad-trung",
+    "recipeName": "Salad trứng",
+    "description": "Công thức gợi ý cho Salad trứng, dùng nguyên liệu chính: trứng, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/salad-trung.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "egg"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Salad trứng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Salad trứng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Salad trứng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Salad+tr%E1%BB%A9ng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Salad+tr%E1%BB%A9ng"
+  },
+  {
+    "slug": "salad-khoai-tay",
+    "recipeName": "Salad khoai tây",
+    "description": "Công thức gợi ý cho Salad khoai tây, dùng nguyên liệu chính: khoai tây, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/salad-khoai-tay.webp",
+    "cookTimeMinutes": 35,
+    "difficulty": "Trung bình",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "potato"
+        ],
+        "grams": 120
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Salad khoai tây; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Salad khoai tây ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Salad khoai tây, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Salad+khoai+t%C3%A2y"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Salad+khoai+t%C3%A2y"
+  },
+  {
+    "slug": "chao-ga",
+    "recipeName": "Cháo gà",
+    "description": "Công thức gợi ý cho Cháo gà, dùng nguyên liệu chính: thịt gà, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/chao-ga.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "chicken"
+        ],
+        "grams": 150
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cháo gà; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cháo gà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cháo gà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=Ch%C3%A1o+g%C3%A0"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Ch%C3%A1o+g%C3%A0"
+  },
+  {
+    "slug": "tom-rim",
+    "recipeName": "Tôm rim",
+    "description": "Công thức gợi ý cho Tôm rim, dùng nguyên liệu chính: tôm, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/tom-rim.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "shrimp"
+        ],
+        "grams": 130
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Tôm rim; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Tôm rim ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Tôm rim, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=T%C3%B4m+rim"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+T%C3%B4m+rim"
+  },
+  {
+    "slug": "cua-soup",
+    "recipeName": "Súp cua",
+    "description": "Công thức gợi ý cho Súp cua, dùng nguyên liệu chính: cua, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/cua-soup.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 2,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "crab"
+        ],
+        "grams": 100
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 20
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Súp cua; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Súp cua ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Súp cua, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=S%C3%BAp+cua"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+S%C3%BAp+cua"
+  },
+  {
+    "slug": "ca-hap-gung",
+    "recipeName": "Cá hấp gừng",
+    "description": "Công thức gợi ý cho Cá hấp gừng, dùng nguyên liệu chính: cá, gừng.",
+    "imageKey": "recipe-images/v1/thumb/ca-hap-gung.webp",
+    "cookTimeMinutes": 25,
+    "difficulty": "Dễ",
+    "servingCount": 1,
+    "credibilityScore": 74,
+    "ingredients": [
+      {
+        "keys": [
+          "fish"
+        ],
+        "grams": 180
+      },
+      {
+        "keys": [
+          "ginger"
+        ],
+        "grams": 10
+      }
+    ],
+    "instructions": [
+      "Sơ chế nguyên liệu chính cho món Cá hấp gừng; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
+      "Nấu Cá hấp gừng ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
+      "Hoàn thiện Cá hấp gừng, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+    ],
+    "sourceUrls": [
+      "https://monngonmoingay.com/?s=C%C3%A1+h%E1%BA%A5p+g%E1%BB%ABng"
+    ],
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+C%C3%A1+h%E1%BA%A5p+g%E1%BB%ABng"
+  }
+]

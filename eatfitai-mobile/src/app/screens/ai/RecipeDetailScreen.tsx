@@ -64,6 +64,9 @@ const P = {
   macroF: '#f87171',
 };
 
+const DEFAULT_RECIPE_DISCLAIMER =
+  'Gợi ý chỉ mang tính tham khảo; không phải khuyến nghị của chuyên gia dinh dưỡng, bác sĩ hoặc đầu bếp chuyên nghiệp.';
+
 
 
 
@@ -251,6 +254,15 @@ const RecipeDetailScreen = (): React.ReactElement => {
     : route.params.prepItems ?? [];
   const availableIngredients = route.params.availableIngredients ?? [];
   const missingIngredients = route.params.missingIngredients ?? [];
+  const requiredIngredients = route.params.requiredIngredients?.length
+    ? route.params.requiredIngredients
+    : recipe.requiredIngredients?.length
+      ? recipe.requiredIngredients
+      : recipe.ingredients?.map((item) => item.foodName) ?? [];
+  const extraIngredients = route.params.extraIngredients?.length
+    ? route.params.extraIngredients
+    : recipe.extraIngredients ?? [];
+  const disclaimer = route.params.disclaimer || recipe.disclaimer || DEFAULT_RECIPE_DISCLAIMER;
   const guideSourceUrls = aiInstructions.sourceUrls?.length
     ? aiInstructions.sourceUrls
     : recipe.sourceUrls ?? [];
@@ -339,6 +351,11 @@ const RecipeDetailScreen = (): React.ReactElement => {
             </View>
           </Animated.View>
 
+          <Animated.View entering={FadeInDown.delay(150)} style={S.warningCard}>
+            <Ionicons name="information-circle-outline" size={18} color={P.onSurfaceVariant} />
+            <ThemedText style={S.warningText}>{disclaimer}</ThemedText>
+          </Animated.View>
+
           {/* Description */}
           {recipe.description && (
             <Animated.View entering={FadeInDown.delay(200)} style={S.glassCard}>
@@ -363,9 +380,15 @@ const RecipeDetailScreen = (): React.ReactElement => {
             </Animated.View>
           )}
 
-          {(availableIngredients.length > 0 || missingIngredients.length > 0) && (
+          {(requiredIngredients.length > 0 || availableIngredients.length > 0 || missingIngredients.length > 0 || extraIngredients.length > 0) && (
             <Animated.View entering={FadeInDown.delay(350)} style={S.glassCard}>
               <ThemedText style={S.sectionTitle}>Tình trạng nguyên liệu</ThemedText>
+              {requiredIngredients.length > 0 && (
+                <View style={S.ingredientStatusBlock}>
+                  <ThemedText style={S.ingredientStatusTitle}>Bắt buộc cho món này</ThemedText>
+                  <ThemedText style={S.bodyText}>{requiredIngredients.join(', ')}</ThemedText>
+                </View>
+              )}
               {availableIngredients.length > 0 && (
                 <View style={S.ingredientStatusBlock}>
                   <ThemedText style={S.ingredientStatusTitle}>Đã có</ThemedText>
@@ -376,6 +399,12 @@ const RecipeDetailScreen = (): React.ReactElement => {
                 <View style={S.ingredientStatusBlock}>
                   <ThemedText style={S.ingredientStatusTitle}>Còn thiếu</ThemedText>
                   <ThemedText style={S.bodyText}>{missingIngredients.join(', ')}</ThemedText>
+                </View>
+              )}
+              {extraIngredients.length > 0 && (
+                <View style={S.ingredientStatusBlock}>
+                  <ThemedText style={S.ingredientStatusTitle}>Nguyên liệu nhập thêm/chưa dùng</ThemedText>
+                  <ThemedText style={S.bodyText}>{extraIngredients.join(', ')}</ThemedText>
                 </View>
               )}
             </Animated.View>
@@ -440,23 +469,39 @@ const RecipeDetailScreen = (): React.ReactElement => {
           {/* Video Guide */}
           <Animated.View entering={FadeInDown.delay(500)} style={S.glassCard}>
             <ThemedText style={S.sectionTitle}>Video hướng dẫn</ThemedText>
-            <Pressable
-              onPress={() => Linking.openURL(youtubeUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(`cách nấu ${recipe.recipeName}`)}`)}
-              style={({ pressed }) => [S.videoBox, { opacity: pressed ? 0.8 : 1 }]}
-            >
-              <View style={S.videoIconBg}>
-                <Ionicons name="play" size={24} color="#ef4444" />
+            {youtubeUrl ? (
+              <Pressable
+                onPress={() => Linking.openURL(youtubeUrl)}
+                style={({ pressed }) => [S.videoBox, { opacity: pressed ? 0.8 : 1 }]}
+              >
+                <View style={S.videoIconBg}>
+                  <Ionicons name="play" size={24} color="#ef4444" />
+                </View>
+                <View style={S.videoTextWrap}>
+                  <ThemedText style={S.videoTitle} numberOfLines={1}>
+                    {youtubeVideo?.title || 'Xem video hướng dẫn'}
+                  </ThemedText>
+                  <ThemedText style={S.videoSub} numberOfLines={1}>
+                    {youtubeVideo?.channelTitle || 'Video YouTube đã xác thực cho món này'}
+                  </ThemedText>
+                </View>
+                <Ionicons name="open-outline" size={20} color={P.onSurfaceVariant} />
+              </Pressable>
+            ) : (
+              <View style={[S.videoBox, S.videoBoxDisabled]}>
+                <View style={S.videoIconBg}>
+                  <Ionicons name="alert-circle-outline" size={24} color={P.onSurfaceVariant} />
+                </View>
+                <View style={S.videoTextWrap}>
+                  <ThemedText style={S.videoTitle} numberOfLines={1}>
+                    Chưa có video đã xác thực
+                  </ThemedText>
+                  <ThemedText style={S.videoSub} numberOfLines={2}>
+                    EatFitAI sẽ không mở trang tìm kiếm chung để tránh nhầm video sai món.
+                  </ThemedText>
+                </View>
               </View>
-              <View style={S.videoTextWrap}>
-                <ThemedText style={S.videoTitle} numberOfLines={1}>
-                  {youtubeVideo?.title || (youtubeUrl ? 'Xem video hướng dẫn' : 'Tìm video trên YouTube')}
-                </ThemedText>
-                <ThemedText style={S.videoSub} numberOfLines={1}>
-                  {youtubeVideo?.channelTitle || 'Học cách nấu trực quan'}
-                </ThemedText>
-              </View>
-              <Ionicons name="open-outline" size={20} color={P.onSurfaceVariant} />
-            </Pressable>
+            )}
           </Animated.View>
 
           {guideSourceUrls.length > 0 && (
@@ -545,6 +590,23 @@ const S = StyleSheet.create({
     borderRadius: 24, padding: 20, gap: 12,
     borderWidth: 1, borderColor: P.glassBorder,
   },
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_500Medium',
+    color: P.onSurfaceVariant,
+    lineHeight: 18,
+  },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   sectionTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, marginBottom: 4 },
   statusBadge: {
@@ -580,6 +642,7 @@ const S = StyleSheet.create({
   tipText: { flex: 1, fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, lineHeight: 20 },
 
   videoBox: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: P.surfaceContainerLowest, padding: 14, borderRadius: 16 },
+  videoBoxDisabled: { opacity: 0.72 },
   videoIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', alignItems: 'center', justifyContent: 'center' },
   videoTextWrap: { flex: 1 },
   videoTitle: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
