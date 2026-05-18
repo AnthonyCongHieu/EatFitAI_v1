@@ -232,9 +232,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: 160,
-    height: 160,
-    borderRadius: 80, // Khớp với mask hình tròn của Android 12
+    width: 220,       // Tăng từ 160 lên 220 để hiển thị to, rõ nét và ko bị mờ
+    height: 220,
+    borderRadius: 110, // Bo tròn tương ứng để khớp khung hình
     overflow: 'hidden',
   },
 
