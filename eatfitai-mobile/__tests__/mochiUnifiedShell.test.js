@@ -21,31 +21,30 @@ describe('Unified MoChi shell and loading states', () => {
     expect(tabBarSource).toContain('primaryDockCore');
     expect(tabBarSource).toContain('primaryDockHalo');
     expect(tabBarSource).toContain('<MoChiSprite poseKey={dockPose}');
-    expect(tabBarSource).toContain("return 'faceCheerful'");
-    expect(tabBarSource).toContain("return 'secureFace'");
-    expect(tabBarSource).toContain('variant="face"');
+    expect(tabBarSource).toContain("return 'boxIdle'");
+    expect(tabBarSource).toContain("return 'weeklyReportNotice'");
+    expect(tabBarSource).toContain("return 'secureAccountFull'");
+    expect(tabBarSource).not.toContain('variant="face"');
     expect(tabBarSource).toContain("target: 'MoChiHub'");
   });
 
-  it('renders the MoChi hub as a radial action menu anchored to the mascot FAB', () => {
+  it('renders the MoChi hub as a compact action sheet anchored above the mascot dock', () => {
     const sheetSource = readSource('src/components/ui/SmartAddSheet.tsx');
 
     expect(sheetSource).toContain('DESIGN_TOKENS');
-    expect(sheetSource).toContain('radialMenu');
-    expect(sheetSource).toContain('radialAction');
-    expect(sheetSource).toContain('orbitScrim');
+    expect(sheetSource).toContain('sheetDock');
+    expect(sheetSource).toContain('actionGrid');
+    expect(sheetSource).toContain('actionCard');
     expect(sheetSource).toContain('diaryShortcut');
-    expect(sheetSource).toContain("top: 0");
-    expect(sheetSource).toContain("justifyContent: 'center'");
-    expect(sheetSource).toContain('QUÉT THỨC ĂN');
-    expect(sheetSource).toContain('THÊM BỮA');
-    expect(sheetSource).toContain('CÔNG THỨC');
-    expect(sheetSource).toContain('LƯỢNG NƯỚC');
+    expect(sheetSource).toContain('bottom: Math.max(insets.bottom, 10) + 96');
+    expect(sheetSource).toContain('Quét thức ăn');
+    expect(sheetSource).toContain('Thêm bữa');
+    expect(sheetSource).toContain('Công thức');
+    expect(sheetSource).toContain('Lượng nước');
     expect(sheetSource).not.toContain('quickGrid');
     expect(sheetSource).not.toContain('QuickAddHub');
     expect(sheetSource).not.toContain('Lối vào khác');
     expect(sheetSource).not.toContain('mascotAnchor');
-    expect(sheetSource).not.toContain('closeButton');
   });
 
   it('softens the home dashboard into the shared iOS glass language', () => {

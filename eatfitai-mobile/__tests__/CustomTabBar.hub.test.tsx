@@ -55,10 +55,20 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('../src/features/mochi/MoChiSprite', () => ({
   __esModule: true,
-  default: ({ testID }: { testID?: string }) => {
+  default: ({
+    poseKey,
+    size,
+    testID,
+    variant,
+  }: {
+    poseKey: string;
+    size: number;
+    testID?: string;
+    variant?: string;
+  }) => {
     const React = require('react');
     const { Text } = require('react-native');
-    return React.createElement(Text, { testID }, 'mochi');
+    return React.createElement(Text, { testID }, `mochi-${poseKey}-${size}-${variant ?? 'auto'}`);
   },
 }));
 
@@ -120,12 +130,19 @@ describe('CustomTabBar MoChi hub layout', () => {
     expect(screen.queryByTestId(TEST_IDS.navigation.addMealCommandButton)).toBeNull();
   });
 
+  it('renders the center dock with a larger non-face MoChi sprite', () => {
+    const screen = renderTabBar();
+
+    expect(screen.getByText('mochi-boxIdle-62-auto')).toBeTruthy();
+  });
+
   it('opens the hub sheet from the center button instead of navigating directly to scan', () => {
     const screen = renderTabBar();
 
     fireEvent.press(screen.getByTestId(TEST_IDS.navigation.mochiHubButton));
 
     expect(screen.getByTestId(TEST_IDS.navigation.mochiHubSheet)).toBeTruthy();
+    expect(screen.getByText('mochi-nutritionCoachNotice-62-auto')).toBeTruthy();
     expect(mockNavigateRoot).not.toHaveBeenCalledWith('AiCamera');
   });
 

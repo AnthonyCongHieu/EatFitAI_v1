@@ -54,5 +54,37 @@ MoChi coach moments must reserve their own space or use a collision-safe overlay
 ## Components
 Use full-body MoChi for coaching moments so the silhouette reads as a character. Use face sprites only for compact dock states and tiny status surfaces.
 
+## Surface Matrix
+MoChi has four approved surfaces:
+
+- Dock: always available, low-noise presence in the bottom navigation. Use for ambient companion states and tiny reactions.
+- Inline: the default instructional surface. Use for empty states, low data, profile gaps, search help, recipe states, and scan review states.
+- Overlay: rare, contextual, one short message, rendered by the shared `MoChiOverlayHost`. Use only after the policy layer confirms timing, cadence, dismiss history, and collision safety.
+- System notification: outside-app reminders only. It shares the same event IDs and cadence keys as in-app nudges, and local policy can suppress backend suggestions.
+
+## Interruption Rules
+Every MoChi moment must pass through `mochiNudgePolicy.ts` before choosing a surface.
+
+- Critical/system: offline, failed scan, failed search, or failed backend action. Prefer toast or inline; overlay only if the user needs immediate recovery.
+- Task: missing meal, hydration gap, incomplete profile, review scan result. Inline first; overlay only when the user returned after a relevant time window and ignored a useful next action.
+- Celebration: meal logged, streak, achievement. Use toast or dock reaction, not a blocking overlay.
+- Ambient: companionship only. Use dock pose or tiny inline affordance, never overlay.
+- Live/process: scanning, listening, searching. Exempt from daily caps, but never stack with another live MoChi message.
+
+## Cadence
+Default caps:
+
+- Do not show the same overlay more than once per 24 hours per event key.
+- Do not show more than two MoChi overlays in one app session.
+- Do not show more than three non-error transient MoChi messages per day.
+- If the user dismisses the same event twice without acting, suppress that event for three days.
+- Reset session-level overlay counts when the app leaves the foreground; keep persisted daily/dismiss memory.
+
+## Copy
+Vietnamese copy must remain valid UTF-8 and body-positive. One MoChi message equals one idea plus one next action. Prefer small, practical wording like “thêm nhanh”, “xem lại”, “ghi bữa này” over guilt or pressure. Overlay body text should fit in two short lines; inline body text should fit in three lines.
+
+## Collision Safety
+Overlays must be absolute, pointer-safe, and must not reserve layout space. They must not cover calorie numbers, date chips, primary buttons, text inputs, the bottom navigation, or active scan controls. If a screen cannot guarantee this, downgrade to inline.
+
 ## Do's and Don'ts
 Do show MoChi once for a context and let users dismiss it. Do not repeat the same coach every time the user navigates back and forth. Do not use looping green pulse effects as the main visual language.

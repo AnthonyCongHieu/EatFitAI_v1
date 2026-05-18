@@ -79,22 +79,22 @@ const TAB_BAR_HEIGHT = 60;
 
 const resolveMoChiDockPose = (currentRouteName: string): MoChiPoseKey => {
   if (currentRouteName === 'AiCamera') {
-    return 'faceThinking';
+    return 'scanThinkingFull';
   }
 
   if (currentRouteName === 'MealDiary') {
-    return 'scanSuccessFace';
+    return 'mealCoachFull';
   }
 
   if (currentRouteName === 'StatsTab') {
-    return 'faceDetermined';
+    return 'weeklyReportNotice';
   }
 
   if (currentRouteName === 'ProfileTab') {
-    return 'secureFace';
+    return 'secureAccountFull';
   }
 
-  return 'faceCheerful';
+  return 'boxIdle';
 };
 
 const CommandButton = ({
@@ -108,7 +108,7 @@ const CommandButton = ({
   isFocused: boolean;
   onPress: () => void;
   dockPose: MoChiPoseKey;
-  colors: { primary: string; primaryDark: string; onPrimary: string; textMuted: string; bg: string };
+  colors: { primary: string; onPrimary: string; textMuted: string; bg: string };
 }) => {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -142,9 +142,9 @@ const CommandButton = ({
       >
         {command.isPrimary ? (
           <View style={styles.primaryDockHalo}>
-            <View style={[styles.primaryDockCore, { shadowColor: colors.primaryDark }]}>
+            <View style={styles.primaryDockCore}>
               <View style={styles.primaryDockMascotPlate}>
-                <MoChiSprite poseKey={dockPose} size={58} variant="face" animated={false} />
+                <MoChiSprite poseKey={dockPose} size={62} animated={false} />
               </View>
             </View>
           </View>
@@ -184,7 +184,6 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const colors = {
     bg: isDark ? '#0a0e1a' : '#FFFFFF',
     primary: theme.colors.primary,
-    primaryDark: isDark ? '#38bdf8' : '#0F766E',
     onPrimary: isDark ? '#dbeafe' : '#0f172a',
     textMuted: theme.colors.textSecondary,
     onSurface: theme.colors.text,
@@ -223,7 +222,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
               key={command.target}
               command={command}
               colors={colors}
-              dockPose={isHubVisible ? 'faceThinking' : mochiDockPose}
+              dockPose={isHubVisible ? 'nutritionCoachNotice' : mochiDockPose}
               isFocused={current === command.target}
               onPress={() => runCommand(command)}
             />
@@ -285,9 +284,9 @@ const styles = StyleSheet.create({
     borderRadius: 41,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(226, 232, 240, 0.10)',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.20)',
+    borderColor: 'rgba(74, 222, 128, 0.22)',
   },
   primaryDockCore: {
     width: 72,
@@ -295,21 +294,24 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#101827',
+    backgroundColor: 'rgba(18, 26, 44, 0.96)',
     borderWidth: 2,
-    borderColor: 'rgba(226, 232, 240, 0.28)',
+    borderColor: 'rgba(52, 211, 153, 0.62)',
+    shadowColor: '#22C55E',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.32,
-    shadowRadius: 18,
+    shadowOpacity: 0.28,
+    shadowRadius: 20,
     elevation: 12,
   },
   primaryDockMascotPlate: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'rgba(23, 32, 51, 0.74)',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 222, 128, 0.16)',
     overflow: 'hidden',
   },
   commandLabel: {

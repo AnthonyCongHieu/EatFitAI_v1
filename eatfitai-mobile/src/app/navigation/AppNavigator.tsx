@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -18,6 +18,7 @@ import SplashScreen from '../screens/SplashScreen';
 import { t } from '../../i18n/vi';
 import { getActiveRouteName, navigationRef } from './navigationRef';
 import BottomCommandOverlay from '../../components/navigation/BottomCommandOverlay';
+import MoChiOverlayHost from '../../features/mochi/MoChiOverlayHost';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -151,6 +152,7 @@ const AppNavigator = (): React.ReactElement => {
   const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const init = useAuthStore((s) => s.init);
   const lastRouteNameRef = useRef<string | undefined>(undefined);
+  const [currentRouteName, setCurrentRouteName] = useState<string | undefined>(undefined);
 
   const isInAuthFlow = !isAuthenticated || needsOnboarding;
   const navigatorKey = isInitializing
@@ -181,6 +183,7 @@ const AppNavigator = (): React.ReactElement => {
           flushPendingNotificationNavigation();
           const routeName = getActiveRouteName();
           lastRouteNameRef.current = routeName;
+          setCurrentRouteName(routeName);
           if (routeName) {
             trackScreen(routeName, {
               flow: inferScreenFlow(routeName),
@@ -192,6 +195,7 @@ const AppNavigator = (): React.ReactElement => {
         onStateChange={() => {
           flushPendingNotificationNavigation();
           const routeName = getActiveRouteName();
+          setCurrentRouteName(routeName);
           if (!routeName || routeName === lastRouteNameRef.current) {
             return;
           }
@@ -394,6 +398,7 @@ const AppNavigator = (): React.ReactElement => {
           )}
           </Stack.Navigator>
         )}
+        {!isInAuthFlow && <MoChiOverlayHost currentRouteName={currentRouteName} />}
     </NavigationContainer>
   );
 };

@@ -102,28 +102,38 @@ describe('MoChi virtual pet experience', () => {
     expect(visionReviewSource).toContain('mochiEvent="meal_logged"');
   });
 
-  it('adds a transient MoChi companion peek to the meal diary without enabling the old island', () => {
+  it('routes transient MoChi coaching through a shared overlay host without enabling the old island', () => {
     const diarySource = readSource('src/app/screens/diary/MealDiaryScreen.tsx');
+    const appNavigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
+    const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
     const mochiDesignSource = readSource('DESIGN.md');
 
-    expect(diarySource).toContain('MoChiDiaryCompanionPeek');
-    expect(diarySource).toContain('mochiDiaryPeekShownThisSession');
-    expect(diarySource).toContain('showCompanionPeek');
-    expect(diarySource).toContain('setShowCompanionPeek(false)');
-    expect(diarySource).toContain('MOCHI_DIARY_PEEK_HIDE_MS');
-    expect(diarySource).toContain('MOCHI_DIARY_PEEK_MAX_SHOWS = 2');
-    expect(diarySource).toContain('MOCHI_DIARY_PEEK_STORAGE_KEY');
-    expect(diarySource).toContain('AsyncStorage.getItem');
-    expect(diarySource).toContain('<MoChiSprite');
-    expect(diarySource).toContain("variant=\"full\"");
-    expect(diarySource).toContain("poseKey={hasEntries ? 'tabletMeal' : 'mealCoachFull'}");
-    expect(diarySource).toContain('styles.companionStage');
+    expect(diarySource).not.toContain('MoChiDiaryCompanionPeek');
+    expect(diarySource).not.toContain('mochiDiaryPeekShownThisSession');
+    expect(diarySource).not.toContain('showCompanionPeek');
+    expect(diarySource).not.toContain('MOCHI_DIARY_PEEK_HIDE_MS');
+    expect(diarySource).not.toContain('MOCHI_DIARY_PEEK_MAX_SHOWS');
+    expect(diarySource).not.toContain('MOCHI_DIARY_PEEK_STORAGE_KEY');
+    expect(diarySource).not.toContain('AsyncStorage.getItem(MOCHI_DIARY_PEEK_STORAGE_KEY)');
+    expect(appNavigatorSource).toContain('MoChiOverlayHost');
+    expect(overlayHostSource).toContain('useMoChiNudgeContext');
+    expect(overlayHostSource).toContain('useMoChiSurfaceDecision');
+    expect(overlayHostSource).toContain('recordDecision');
+    expect(overlayHostSource).toContain('styles.companionStage');
+    expect(overlayHostSource).toContain('StyleSheet.absoluteFillObject');
+    expect(overlayHostSource).toContain('styles.companionOverlay');
+    expect(overlayHostSource).toContain('styles.companionSpeechTail');
+    expect(overlayHostSource).toContain('pointerEvents="box-none"');
+    expect(overlayHostSource).toContain('<MoChiSprite');
+    expect(overlayHostSource).toContain("variant=\"full\"");
+    expect(overlayHostSource).not.toContain('styles.companionSpritePlate');
     expect(diarySource).not.toContain('topOffset={insets.top + 108}');
-    expect(diarySource).toContain('Mochi đang đứng cạnh nhật ký');
-    expect(tabBarSource).toContain("return 'faceCheerful'");
-    expect(tabBarSource).toContain("return 'faceDetermined'");
+    expect(overlayHostSource).toContain('MoChi đang gợi ý');
+    expect(tabBarSource).toContain("return 'boxIdle'");
+    expect(tabBarSource).toContain("return 'weeklyReportNotice'");
+    expect(tabBarSource).not.toContain('variant="face"');
     expect(tabBarSource).not.toContain("backgroundColor: '#3fd56f'");
     expect(mochiDesignSource).toContain('name: EatFitAI MoChi Companion');
     expect(mochiDesignSource).toContain('Accent xanh chỉ là tín hiệu');
