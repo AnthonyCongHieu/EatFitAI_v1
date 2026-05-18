@@ -574,7 +574,11 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(2, result.ServingCount);
             Assert.Equal("recipe-images/v1/thumb/trung-xao-ca-chua.webp", result.ImageUrl);
             Assert.Equal("recipe-images/v1/medium/trung-xao-ca-chua.webp", result.ImageVariants!.MediumUrl);
-            Assert.Equal(new[] { "Chuẩn bị", "Xào chín" }, result.Instructions);
+            Assert.Equal(new[] { "Sơ chế nguyên liệu", "Nấu chín trên lửa vừa", "Nêm lại và hoàn thiện" }, result.Instructions);
+            Assert.Equal(new[] { "https://monngonmoingay.com/cong-thuc-demo" }, result.SourceUrls);
+            Assert.Equal("https://www.youtube.com/watch?v=abc", result.VideoUrl);
+            Assert.Equal("https://www.youtube.com/watch?v=abc", result.YoutubeVideo!.Url);
+            Assert.Equal("stored", result.GuideStatus);
             Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, result.RequiredIngredients);
             Assert.Contains("không phải khuyến nghị của chuyên gia", result.Disclaimer);
         }

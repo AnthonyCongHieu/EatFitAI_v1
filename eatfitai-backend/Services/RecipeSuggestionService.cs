@@ -456,9 +456,20 @@ namespace EatFitAI.API.Services
                 })
                 .ToList();
 
-            var instructions = ParseInstructions(recipe.InstructionsJson) ?? TryGetRecipeInstructions(recipe);
-            var rawVideoUrl = recipe.VideoUrl ?? TryGetRecipeVideoUrl(recipe);
+            var guide = _recipeGuideService == null
+                ? null
+                : await _recipeGuideService.GetCookingGuideAsync(recipe.RecipeId, cancellationToken);
+            var instructions = guide?.Steps is { Count: > 0 }
+                ? guide.Steps
+                : ParseInstructions(recipe.InstructionsJson) ?? TryGetRecipeInstructions(recipe);
+            var sourceUrls = guide?.SourceUrls is { Count: > 0 }
+                ? guide.SourceUrls
+                : ParseInstructions(recipe.SourceUrlsJson) ?? new List<string>();
+            var rawVideoUrl = guide?.YoutubeVideo?.Url ?? recipe.VideoUrl ?? TryGetRecipeVideoUrl(recipe);
             var videoUrl = IsDirectYoutubeVideoUrl(rawVideoUrl) ? rawVideoUrl : null;
+            var youtubeVideo = videoUrl == null
+                ? null
+                : guide?.YoutubeVideo ?? new RecipeYoutubeVideoDto { Url = videoUrl };
             var requiredIngredients = ingredientDetails
                 .Select(ingredient => ingredient.FoodName)
                 .ToList();
@@ -481,6 +492,9 @@ namespace EatFitAI.API.Services
                 CredibilityScore = recipe.CredibilityScore,
                 Instructions = instructions,
                 VideoUrl = videoUrl,
+                YoutubeVideo = youtubeVideo,
+                GuideStatus = guide?.GuideStatus,
+                SourceUrls = sourceUrls,
                 Ingredients = ingredientDetails,
                 RequiredIngredients = requiredIngredients,
                 Disclaimer = RecipeDisclaimer
