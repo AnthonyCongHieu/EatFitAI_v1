@@ -130,10 +130,10 @@ describe('CustomTabBar MoChi hub layout', () => {
     expect(screen.queryByTestId(TEST_IDS.navigation.addMealCommandButton)).toBeNull();
   });
 
-  it('renders the center dock with a larger non-face MoChi sprite', () => {
+  it('renders the center dock with a calm non-face MoChi sprite', () => {
     const screen = renderTabBar();
 
-    expect(screen.getByText('mochi-boxIdle-62-auto')).toBeTruthy();
+    expect(screen.getByText('mochi-boxIdle-54-auto')).toBeTruthy();
   });
 
   it('opens the hub sheet from the center button instead of navigating directly to scan', () => {
@@ -142,7 +142,7 @@ describe('CustomTabBar MoChi hub layout', () => {
     fireEvent.press(screen.getByTestId(TEST_IDS.navigation.mochiHubButton));
 
     expect(screen.getByTestId(TEST_IDS.navigation.mochiHubSheet)).toBeTruthy();
-    expect(screen.getByText('mochi-nutritionCoachNotice-62-auto')).toBeTruthy();
+    expect(screen.getByText('mochi-nutritionCoachNotice-54-auto')).toBeTruthy();
     expect(mockNavigateRoot).not.toHaveBeenCalledWith('AiCamera');
   });
 

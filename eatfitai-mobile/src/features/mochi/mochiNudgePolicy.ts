@@ -58,6 +58,7 @@ export interface MoChiSurfaceDecisionInput {
   preferredSurface?: Exclude<MoChiSurface, 'none'>;
   hasStrongTiming?: boolean;
   isCollisionSafe?: boolean;
+  bypassOverlayCooldown?: boolean;
   activeLiveEventKey?: string | null;
   backendDecision?: NotificationDecision | null;
   memory?: MoChiPolicyMemory | null;
@@ -69,6 +70,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const DISMISS_SUPPRESSION_MS = 3 * DAY_MS;
 const MAX_SESSION_OVERLAYS = 2;
 const MAX_DAILY_TRANSIENT_MESSAGES = 3;
+
+const VISIBLE_TARGET_INLINE_EVENTS: Partial<Record<string, Set<MoChiPetEventType>>> = {
+  MealDiary: new Set<MoChiPetEventType>(['meal_reminder']),
+};
 
 const LIVE_EVENTS = new Set<MoChiPetEventType>([
   'scan_processing',
@@ -121,6 +126,17 @@ const addMsIso = (date: Date, ms: number): string =>
 
 const getCadenceKey = (eventType: MoChiPetEventType, routeName?: string | null): string =>
   `${eventType}:${routeName ?? 'global'}`;
+
+const hasVisibleInlineTarget = (
+  routeName: string | null | undefined,
+  eventType: MoChiPetEventType,
+): boolean => {
+  if (!routeName) {
+    return false;
+  }
+
+  return VISIBLE_TARGET_INLINE_EVENTS[routeName]?.has(eventType) ?? false;
+};
 
 export const createEmptyMoChiPolicyMemory = (now: Date = new Date()): MoChiPolicyMemory => ({
   dayKey: getDayKey(now),
@@ -258,6 +274,10 @@ export const resolveMoChiSurfaceDecision = (
       );
     }
 
+    if (hasVisibleInlineTarget(input.routeName, input.eventType)) {
+      return makeDecision(input, 'inline', category, cadenceKey, priority, 'visible-target-inline');
+    }
+
     if (!input.hasStrongTiming) {
       return makeDecision(input, 'inline', category, cadenceKey, priority, 'weak-timing');
     }
@@ -271,7 +291,11 @@ export const resolveMoChiSurfaceDecision = (
     }
 
     const lastShownAt = parseTime(record?.lastShownAt);
-    if (lastShownAt && now.getTime() - lastShownAt < DAY_MS) {
+    if (
+      !input.bypassOverlayCooldown
+      && lastShownAt
+      && now.getTime() - lastShownAt < DAY_MS
+    ) {
       return makeDecision(input, 'inline', category, cadenceKey, priority, 'overlay-cooldown');
     }
 

@@ -19,6 +19,12 @@ import { t } from '../../i18n/vi';
 import { getActiveRouteName, navigationRef } from './navigationRef';
 import BottomCommandOverlay from '../../components/navigation/BottomCommandOverlay';
 import MoChiOverlayHost from '../../features/mochi/MoChiOverlayHost';
+import MoChiTutorialHost from '../../features/mochi/tutorial/MoChiTutorialHost';
+import { useMoChiReminderOrchestrator } from '../../features/mochi/mochiReminderOrchestrator';
+import {
+  MoChiTutorialProvider,
+  useMoChiTutorial,
+} from '../../features/mochi/tutorial/MoChiTutorialContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -145,6 +151,22 @@ const AiCameraWithBottomBar = (props: any): React.ReactElement => {
   );
 };
 
+const AuthenticatedMoChiSurfaces = ({
+  currentRouteName,
+}: {
+  currentRouteName?: string | null;
+}): React.ReactElement => {
+  const { isTutorialVisible } = useMoChiTutorial();
+  useMoChiReminderOrchestrator(true);
+
+  return (
+    <>
+      {!isTutorialVisible && <MoChiOverlayHost currentRouteName={currentRouteName} />}
+      <MoChiTutorialHost currentRouteName={currentRouteName} />
+    </>
+  );
+};
+
 const AppNavigator = (): React.ReactElement => {
   const { navigationTheme, theme } = useAppTheme();
   const isInitializing = useAuthStore((s) => s.isInitializing);
@@ -175,7 +197,8 @@ const AppNavigator = (): React.ReactElement => {
   }, [init]);
 
   return (
-    <NavigationContainer
+    <MoChiTutorialProvider enabled={!isInitializing && !isInAuthFlow}>
+      <NavigationContainer
         key={navigatorKey}
         ref={navigationRef}
         theme={navigationTheme}
@@ -398,8 +421,11 @@ const AppNavigator = (): React.ReactElement => {
           )}
           </Stack.Navigator>
         )}
-        {!isInAuthFlow && <MoChiOverlayHost currentRouteName={currentRouteName} />}
-    </NavigationContainer>
+        {!isInAuthFlow && (
+          <AuthenticatedMoChiSurfaces currentRouteName={currentRouteName} />
+        )}
+      </NavigationContainer>
+    </MoChiTutorialProvider>
   );
 };
 

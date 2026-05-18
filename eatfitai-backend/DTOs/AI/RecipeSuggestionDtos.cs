@@ -12,6 +12,8 @@ namespace EatFitAI.API.DTOs.AI
         public List<string> AvailableIngredients { get; set; } = new();
         public List<int> AvailableFoodItemIds { get; set; } = new();
         public List<RecipeIngredientHintDto> IngredientHints { get; set; } = new();
+        public string? Mode { get; set; } = "auto";
+        public string? Date { get; set; }
         public int? MealTypeId { get; set; }
         public int? MaxCookingTimeMinutes { get; set; }
         public int? MinMatchedIngredients { get; set; } = 1;
@@ -59,8 +61,15 @@ namespace EatFitAI.API.DTOs.AI
         public decimal MatchScore { get; set; }
         public int MissingIngredientCount { get; set; }
         public List<string> ScoreReasons { get; set; } = new();
+        public string SuggestionGroup { get; set; } = "needsMore";
+        public bool CanCookNow { get; set; }
+        public string? GuideStatus { get; set; }
+        public List<string> SourceUrls { get; set; } = new();
+        public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }
+        public List<string> PrepItems { get; set; } = new();
         
         // Lists for user reference
+        public List<string> AvailableIngredients { get; set; } = new();
         public List<string> MatchedIngredients { get; set; } = new();
         public List<string> MissingIngredients { get; set; } = new();
         public List<string> AllIngredients { get; set; } = new();
@@ -159,6 +168,7 @@ namespace EatFitAI.API.DTOs.AI
         public List<string> Steps { get; set; } = new();
         public int? CookingTimeMinutes { get; set; }
         public string? Difficulty { get; set; }
+        public List<string> PrepItems { get; set; } = new();
         public List<string> Tips { get; set; } = new();
         public List<string> SourceUrls { get; set; } = new();
         public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }

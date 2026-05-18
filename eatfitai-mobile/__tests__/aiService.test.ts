@@ -1,4 +1,8 @@
-import { aiService, normalizeMappedFoodItem } from '../src/services/aiService';
+import {
+  aiService,
+  buildRecipeSuggestionRequest,
+  normalizeMappedFoodItem,
+} from '../src/services/aiService';
 import apiClient, {
   aiApiClient,
   fetchWithAuthRetry,
@@ -265,6 +269,92 @@ describe('aiService', () => {
     });
   });
 
+  it('buildRecipeSuggestionRequest only keeps food item ids for currently selected chips', () => {
+    const request = buildRecipeSuggestionRequest({
+      ingredients: ['Chicken'],
+      availableFoodItemIds: [1, 2],
+      ingredientHints: [
+        { name: 'Chicken', foodItemId: 1, confidence: 0.9 },
+        { name: 'Rice', foodItemId: 2, confidence: 0.8 },
+      ],
+      maxResults: 12,
+    });
+
+    expect(request).toEqual({
+      mode: 'auto',
+      availableIngredients: ['Chicken'],
+      availableFoodItemIds: [1],
+      ingredientHints: [{ name: 'Chicken', foodItemId: 1, confidence: 0.9 }],
+      maxResults: 12,
+    });
+  });
+
+  it('buildRecipeSuggestionRequest preserves daily recommendation mode without ingredients', () => {
+    const request = buildRecipeSuggestionRequest({
+      ingredients: [],
+      mode: 'daily_recommendation',
+      maxResults: 6,
+    });
+
+    expect(request).toEqual({
+      mode: 'daily_recommendation',
+      availableIngredients: [],
+      maxResults: 6,
+    });
+  });
+
+  it('normalizes production recipe guide fields from suggestion payloads', async () => {
+    mockedApiClient.post.mockResolvedValue({
+      data: [
+        {
+          RecipeId: 3,
+          RecipeName: 'Gà xào rau củ',
+          SuggestionGroup: 'readyNow',
+          CanCookNow: true,
+          GuideStatus: 'generated',
+          PrepItems: ['Rửa rau', 'Cắt thịt'],
+          SourceUrls: ['https://example.com/recipe'],
+          YoutubeVideo: { videoId: 'abc', url: 'https://www.youtube.com/watch?v=abc' },
+          AvailableIngredients: ['Thịt gà', 'Cà rốt'],
+          MatchedIngredients: ['Thịt gà', 'Cà rốt'],
+          MissingIngredients: [],
+          AllIngredients: ['Thịt gà', 'Cà rốt'],
+        },
+      ],
+    });
+
+    const result = await aiService.suggestRecipesEnhanced({
+      mode: 'ingredient_combo',
+      availableIngredients: ['Thịt gà', 'Cà rốt'],
+    });
+
+    expect(result[0]).toMatchObject({
+      recipeId: 3,
+      recipeName: 'Gà xào rau củ',
+      suggestionGroup: 'readyNow',
+      canCookNow: true,
+      guideStatus: 'generated',
+      prepItems: ['Rửa rau', 'Cắt thịt'],
+      sourceUrls: ['https://example.com/recipe'],
+      youtubeVideo: { videoId: 'abc' },
+      availableIngredients: ['Thịt gà', 'Cà rốt'],
+    });
+  });
+
+  it('does not fall back to stale food ids when selected chips no longer have matched ids', () => {
+    const request = buildRecipeSuggestionRequest({
+      ingredients: ['Chicken'],
+      availableFoodItemIds: [1, 2],
+      ingredientHints: [{ name: 'Chicken', foodItemId: null, confidence: null }],
+    });
+
+    expect(request).toEqual({
+      mode: 'auto',
+      availableIngredients: ['Chicken'],
+      ingredientHints: [{ name: 'Chicken', foodItemId: null, confidence: null }],
+    });
+  });
+
   it('getRecipeDetail normalizes instructions and video fields', async () => {
     mockedApiClient.get.mockResolvedValue({
       data: {
@@ -445,6 +535,7 @@ describe('aiService', () => {
       expect.any(Function),
     );
     expect(result).toEqual({
+      prepItems: [],
       steps: ['Step 1', 'Step 2'],
       cookingTime: '30 minutes',
       difficulty: 'Easy',

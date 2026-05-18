@@ -18,6 +18,9 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import MoChiSprite from '../../features/mochi/MoChiSprite';
 import SmartAddSheet from '../ui/SmartAddSheet';
 import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
+import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
+import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
+import type { MoChiTutorialTargetId } from '../../features/mochi/tutorial/mochiTutorialCatalog';
 
 type CommandTarget = 'HomeTab' | 'MealDiary' | 'MoChiHub' | 'StatsTab' | 'ProfileTab';
 
@@ -75,7 +78,7 @@ const COMMAND_ITEMS: CommandItem[] = [
   },
 ];
 
-const TAB_BAR_HEIGHT = 60;
+const TAB_BAR_HEIGHT = 58;
 
 const resolveMoChiDockPose = (currentRouteName: string): MoChiPoseKey => {
   if (currentRouteName === 'AiCamera') {
@@ -118,7 +121,13 @@ const CommandButton = ({
       ? colors.primary
       : colors.textMuted;
 
-  return (
+  const tutorialTargetId: MoChiTutorialTargetId | null = command.target === 'MoChiHub'
+    ? 'mochi_hub'
+    : command.target === 'StatsTab'
+      ? 'stats_tab'
+      : null;
+
+  const button = (
     <Pressable
       style={styles.commandButton}
       onPress={onPress}
@@ -144,7 +153,7 @@ const CommandButton = ({
           <View style={styles.primaryDockHalo}>
             <View style={styles.primaryDockCore}>
               <View style={styles.primaryDockMascotPlate}>
-                <MoChiSprite poseKey={dockPose} size={62} animated={false} />
+                <MoChiSprite poseKey={dockPose} size={54} animated={false} />
               </View>
             </View>
           </View>
@@ -173,12 +182,24 @@ const CommandButton = ({
       </Animated.View>
     </Pressable>
   );
+
+  if (!tutorialTargetId) {
+    return button;
+  }
+
+  return (
+    <MoChiTutorialTarget targetId={tutorialTargetId} style={styles.tutorialTarget}>
+      {button}
+    </MoChiTutorialTarget>
+  );
 };
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
   const { theme } = useAppTheme();
   const [isHubVisible, setIsHubVisible] = React.useState(false);
+  const { activeSheetTarget } = useMoChiTutorial();
+  const sheetOpenedByTutorialRef = React.useRef(false);
   const isDark = theme.mode === 'dark';
 
   const colors = {
@@ -212,6 +233,22 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
       console.warn(`[navigation] Root navigator is not ready for ${command.target} command.`);
     }
   };
+
+  React.useEffect(() => {
+    const tutorialNeedsSheet =
+      activeSheetTarget === 'quick_add_search' || activeSheetTarget === 'quick_add_scan';
+
+    if (tutorialNeedsSheet && !isHubVisible) {
+      sheetOpenedByTutorialRef.current = true;
+      setIsHubVisible(true);
+      return;
+    }
+
+    if (!tutorialNeedsSheet && sheetOpenedByTutorialRef.current) {
+      sheetOpenedByTutorialRef.current = false;
+      setIsHubVisible(false);
+    }
+  }, [activeSheetTarget, isHubVisible]);
 
   return (
     <View style={styles.outerWrapper} pointerEvents="box-none">
@@ -264,6 +301,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: TAB_BAR_HEIGHT,
   },
+  tutorialTarget: {
+    flex: 1,
+    height: TAB_BAR_HEIGHT,
+  },
   commandInner: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -272,16 +313,16 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   primaryDock: {
-    width: 86,
-    height: 88,
-    borderRadius: 43,
-    marginTop: -34,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    marginTop: -24,
     backgroundColor: 'transparent',
   },
   primaryDockHalo: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(16, 185, 129, 0.08)',
@@ -289,9 +330,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(74, 222, 128, 0.22)',
   },
   primaryDockCore: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(18, 26, 44, 0.96)',
@@ -304,9 +345,9 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   primaryDockMascotPlate: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(23, 32, 51, 0.74)',

@@ -6,6 +6,8 @@ export interface RecipeSuggestionRequest {
   availableIngredients: string[];
   availableFoodItemIds?: number[];
   ingredientHints?: RecipeIngredientHint[];
+  mode?: 'auto' | 'ingredient_combo' | 'daily_recommendation';
+  date?: string;
   mealTypeId?: number;
   maxCookingTimeMinutes?: number;
   minMatchedIngredients?: number;
@@ -45,6 +47,13 @@ export interface RecipeSuggestion {
   matchScore?: number;
   scoreReasons?: string[];
   missingIngredientCount?: number;
+  suggestionGroup?: 'readyNow' | 'needsMore' | 'dailyRecommendation' | string;
+  canCookNow?: boolean;
+  guideStatus?: string;
+  sourceUrls?: string[];
+  youtubeVideo?: RecipeYoutubeVideo | null;
+  prepItems?: string[];
+  availableIngredients?: string[];
   matchedIngredients: string[];
   missingIngredients: string[];
   allIngredients: string[];
@@ -64,6 +73,7 @@ export interface RecipeDetail extends RecipeSuggestion {
 export interface RecipeCookingGuide {
   recipeId?: number;
   recipeName?: string;
+  prepItems?: string[];
   steps: string[];
   cookingTimeMinutes?: number;
   difficulty?: string;

@@ -18,11 +18,13 @@ class RecipeResearchTests(unittest.TestCase):
             patch(
                 "nutrition_llm.query_gemini",
                 return_value=(
-                    '{"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
+                    '{"prepItems":["Rửa rau","Cắt hành"],'
+                    '"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
                     '"cookingTimeMinutes":25,"difficulty":"Dễ",'
                     '"tips":["Nêm sau"],"sourceUrls":["https://example.com/recipe"]}'
                 ),
             ),
+            patch("nutrition_llm._is_reachable_source_url", return_value=True),
             patch(
                 "nutrition_llm._find_youtube_video",
                 return_value={
@@ -37,6 +39,7 @@ class RecipeResearchTests(unittest.TestCase):
             result = get_cooking_guide("Trứng áp chảo", [{"foodName": "Trứng", "grams": 100}])
 
         self.assertEqual(result["guideStatus"], "generated")
+        self.assertEqual(result["prepItems"], ["Rửa rau", "Cắt hành"])
         self.assertEqual(result["steps"][0], "Sơ chế")
         self.assertEqual(result["youtubeVideo"]["videoId"], "abc")
 
@@ -47,11 +50,94 @@ class RecipeResearchTests(unittest.TestCase):
                 "nutrition_llm.query_gemini",
                 return_value='{"steps":["Sơ chế","Nấu"],"sourceUrls":[]}',
             ),
+            patch("nutrition_llm._is_reachable_source_url", return_value=True),
         ):
             result = get_cooking_guide("Trứng áp chảo", [{"foodName": "Trứng", "grams": 100}])
 
         self.assertEqual(result["guideStatus"], "fallback")
         self.assertGreaterEqual(len(result["steps"]), 3)
+
+    def test_get_cooking_guide_falls_back_without_live_youtube_video(self) -> None:
+        with (
+            patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),
+            patch("nutrition_llm.ensure_gemini_service_available"),
+            patch(
+                "nutrition_llm.query_gemini",
+                return_value=(
+                    '{"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
+                    '"cookingTimeMinutes":25,"difficulty":"Dễ",'
+                    '"tips":["Nêm sau"],"sourceUrls":["https://example.com/recipe"]}'
+                ),
+            ),
+            patch("nutrition_llm._is_reachable_source_url", return_value=True),
+            patch("nutrition_llm._find_youtube_video", return_value=None),
+        ):
+            result = get_cooking_guide("Trứng áp chảo", [{"foodName": "Trứng", "grams": 100}])
+
+        self.assertEqual(result["guideStatus"], "fallback")
+        self.assertIsNone(result["youtubeVideo"])
+
+    def test_get_cooking_guide_falls_back_when_source_is_not_reachable(self) -> None:
+        with (
+            patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),
+            patch("nutrition_llm.ensure_gemini_service_available"),
+            patch(
+                "nutrition_llm.query_gemini",
+                return_value=(
+                    '{"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
+                    '"cookingTimeMinutes":25,"difficulty":"Dễ",'
+                    '"tips":["Nêm sau"],"sourceUrls":["https://example.com/recipe"]}'
+                ),
+            ),
+            patch("nutrition_llm._is_reachable_source_url", return_value=False),
+        ):
+            result = get_cooking_guide("Trứng áp chảo", [{"foodName": "Trứng", "grams": 100}])
+
+        self.assertEqual(result["guideStatus"], "fallback")
+
+    def test_get_cooking_guide_uses_grounding_metadata_sources_when_available(self) -> None:
+        def grounded_response(*_args, **kwargs):
+            metadata_sink = kwargs["metadata_sink"]
+            metadata_sink.update(
+                {
+                    "candidates": [
+                        {
+                            "groundingMetadata": {
+                                "groundingChunks": [
+                                    {"web": {"uri": "https://example.com/grounded-recipe"}}
+                                ]
+                            }
+                        }
+                    ]
+                }
+            )
+            return (
+                '{"prepItems":["Rửa rau"],'
+                '"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
+                '"cookingTimeMinutes":25,"difficulty":"Dễ",'
+                '"tips":["Nêm sau"],"sourceUrls":["https://untrusted.invalid/recipe"]}'
+            )
+
+        with (
+            patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),
+            patch("nutrition_llm.ensure_gemini_service_available"),
+            patch("nutrition_llm.query_gemini", side_effect=grounded_response),
+            patch("nutrition_llm._is_reachable_source_url", return_value=True),
+            patch(
+                "nutrition_llm._find_youtube_video",
+                return_value={
+                    "videoId": "abc",
+                    "title": "Cách nấu",
+                    "channelTitle": "Trusted",
+                    "url": "https://www.youtube.com/watch?v=abc",
+                    "thumbnailUrl": "https://i.ytimg.com/vi/abc/hqdefault.jpg",
+                },
+            ),
+        ):
+            result = get_cooking_guide("Trứng áp chảo", [{"foodName": "Trứng", "grams": 100}])
+
+        self.assertEqual(result["guideStatus"], "generated")
+        self.assertEqual(result["sourceUrls"], ["https://example.com/grounded-recipe"])
 
 
 if __name__ == "__main__":

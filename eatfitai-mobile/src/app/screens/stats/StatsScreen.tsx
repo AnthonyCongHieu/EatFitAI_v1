@@ -52,6 +52,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
+import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
 import type { RootStackParamList } from '../../types';
 import { waterService, type WaterIntakeData, type MonthlyWaterData, type WeeklyWaterData } from '../../../services/waterService';
@@ -573,6 +574,9 @@ const StatsScreen = (): React.ReactElement => {
           />
         }
       >
+        {activeTab === 'today' && todayCal <= 0 && (
+          <MoChiInlineNotice mochiEvent="stats_low_data" compact tone="calm" />
+        )}
 
         {/* ═══════════ TODAY ═══════════ */}
         {activeTab === 'today' && (

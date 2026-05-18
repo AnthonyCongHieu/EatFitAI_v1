@@ -56,6 +56,7 @@ import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 import { snapRulerOffset } from '../../../utils/rulerSnap';
+import { markMoChiTutorialPending } from '../../../features/mochi/tutorial/mochiTutorialStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -776,11 +777,23 @@ const OnboardingScreen = (): React.ReactElement => {
         return;
       }
 
+      const shouldQueueMoChiTutorial = useAuthStore.getState().needsOnboarding;
+
       // Mark onboarding complete in local storage only after server sync succeeds
       await AsyncStorage.multiSet([
         ['onboarding_complete', 'true'],
         [AUTH_NEEDS_ONBOARDING_KEY, 'false'],
       ]);
+
+      if (shouldQueueMoChiTutorial) {
+        try {
+          await markMoChiTutorialPending();
+        } catch (tutorialError) {
+          if (__DEV__) {
+            logger.warn('[Onboarding] Failed to queue MoChi tutorial:', tutorialError);
+          }
+        }
+      }
 
       useAuthStore.setState({ isAuthenticated: true, needsOnboarding: false });
 

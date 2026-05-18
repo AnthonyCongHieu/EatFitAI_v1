@@ -14,6 +14,7 @@ type MoChiInlineNoticeProps = {
   ctaLabel?: string;
   compact?: boolean;
   hideSprite?: boolean;
+  tone?: 'standard' | 'calm';
 };
 
 const MoChiInlineNotice = ({
@@ -23,17 +24,20 @@ const MoChiInlineNotice = ({
   ctaLabel,
   compact = false,
   hideSprite = false,
+  tone = 'standard',
 }: MoChiInlineNoticeProps): React.ReactElement => {
   const EN = useEN();
   const state = getMoChiEventState(mochiEvent);
   const experience = getMoChiExperience(mochiEvent);
-  const spriteSize = compact ? 80 : 102;
+  const isCalm = tone === 'calm';
+  const spriteSize = isCalm ? 70 : compact ? 80 : 102;
 
   return (
     <View
       style={[
         styles.root,
         compact && styles.compact,
+        isCalm && styles.calm,
         { backgroundColor: EN.glassBg, borderColor: EN.outlineVariant },
       ]}
     >
@@ -41,10 +45,16 @@ const MoChiInlineNotice = ({
         <MoChiSprite poseKey={state.poseKey} size={spriteSize} animated={!compact} />
       )}
       <View style={styles.copy}>
-        <ThemedText style={[styles.title, { color: EN.primary }]}>{title ?? experience.title}</ThemedText>
-        <ThemedText style={[styles.dialogue, { color: EN.onSurface }]}>{message ?? state.dialogue}</ThemedText>
+        <ThemedText style={[styles.title, isCalm && styles.titleCalm, { color: EN.primary }]}>
+          {title ?? experience.title}
+        </ThemedText>
+        <ThemedText style={[styles.dialogue, isCalm && styles.dialogueCalm, { color: EN.onSurface }]}>
+          {message ?? state.dialogue}
+        </ThemedText>
         {(ctaLabel ?? experience.ctaLabel) && (
-          <ThemedText style={[styles.cta, { color: EN.primary }]}>{ctaLabel ?? experience.ctaLabel}</ThemedText>
+          <ThemedText style={[styles.cta, isCalm && styles.ctaCalm, { color: EN.primary }]}>
+            {ctaLabel ?? experience.ctaLabel}
+          </ThemedText>
         )}
       </View>
     </View>
@@ -66,6 +76,11 @@ const styles = StyleSheet.create({
   compact: {
     paddingVertical: 8,
   },
+  calm: {
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   copy: {
     flex: 1,
     gap: 4,
@@ -77,16 +92,29 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
+  titleCalm: {
+    fontSize: 13,
+    letterSpacing: 0,
+    textTransform: 'none',
+  },
   dialogue: {
     fontSize: 13,
     fontWeight: '600',
     color: '#dee1f7',
     lineHeight: 18,
   },
+  dialogueCalm: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
   cta: {
     fontSize: 12,
     fontWeight: '800',
     color: '#4BE277',
+    lineHeight: 16,
+  },
+  ctaCalm: {
+    fontSize: 12,
     lineHeight: 16,
   },
 });

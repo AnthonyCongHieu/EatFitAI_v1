@@ -19,6 +19,10 @@ import {
 import type { AuthResponse } from '../types';
 import type { AuthTokensResponse } from '../types/auth';
 import { t } from '../i18n/vi';
+import {
+  MOCHI_TUTORIAL_PENDING_KEY,
+  MOCHI_TUTORIAL_STATUS_KEY,
+} from '../features/mochi/tutorial/mochiTutorialStorage';
 
 type AuthUser = { id: string; email: string; name?: string };
 
@@ -461,6 +465,8 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         AUTH_NEEDS_ONBOARDING_KEY,
         ONBOARDING_COMPLETE_KEY,
         AUTH_USER_KEY,
+        MOCHI_TUTORIAL_PENDING_KEY,
+        MOCHI_TUTORIAL_STATUS_KEY,
       ]);
       setAccessTokenMem(null);
       await clearProfileCache();

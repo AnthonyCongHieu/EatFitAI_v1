@@ -78,6 +78,8 @@ class SimpleCache:
 
 # Global cache instances
 _general_cache = SimpleCache(default_ttl=300)
+_source_validation_cache = SimpleCache(default_ttl=3600)
+_youtube_video_cache = SimpleCache(default_ttl=86400)
 
 # ============== GEMINI API CLIENT ==============
 
@@ -120,16 +122,28 @@ def query_gemini(
     response_schema: Optional[Dict[str, Any]] = None,
     thinking_budget: Optional[int] = None,
     tools: Optional[list[Dict[str, Any]]] = None,
+    metadata_sink: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
     """
     Query Gemini API với cache support.
     Returns None nếu lỗi.
     """
+    cache_key = prompt if metadata_sink is None else f"{prompt}\n__with_response_metadata__"
     # Check cache
     if use_cache:
-        cached = _general_cache.get(prompt)
+        cached = _general_cache.get(cache_key)
         if cached:
             logger.info("Gemini cache hit - returning cached response")
+            if metadata_sink is not None:
+                try:
+                    envelope = json.loads(cached)
+                    if isinstance(envelope, dict) and "text" in envelope:
+                        metadata = envelope.get("metadata")
+                        if isinstance(metadata, dict):
+                            metadata_sink.update(metadata)
+                        return str(envelope.get("text") or "")
+                except json.JSONDecodeError:
+                    logger.warning("Invalid Gemini metadata cache envelope")
             return cached
     
     try:
@@ -141,13 +155,22 @@ def query_gemini(
             response_schema=response_schema,
             thinking_budget=thinking_budget,
             tools=tools,
+            response_metadata_callback=(
+                (lambda payload: metadata_sink.update(payload)) if metadata_sink is not None else None
+            ),
         )
         
         if response:
             
             # Lưu cache
-            if use_cache:
-                _general_cache.set(prompt, response, cache_ttl)
+            if use_cache and metadata_sink is None:
+                _general_cache.set(cache_key, response, cache_ttl)
+            elif use_cache:
+                _general_cache.set(
+                    cache_key,
+                    json.dumps({"text": response, "metadata": metadata_sink or {}}, ensure_ascii=False),
+                    cache_ttl,
+                )
             
             return response
         logger.warning("Gemini returned empty response")
@@ -581,10 +604,11 @@ RECIPE_GUIDE_SCHEMA: Dict[str, Any] = {
         "steps": {"type": "array", "items": {"type": "string"}},
         "cookingTimeMinutes": {"type": "integer"},
         "difficulty": {"type": "string"},
+        "prepItems": {"type": "array", "items": {"type": "string"}},
         "tips": {"type": "array", "items": {"type": "string"}},
         "sourceUrls": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["steps", "cookingTimeMinutes", "difficulty", "tips", "sourceUrls"],
+    "required": ["prepItems", "steps", "cookingTimeMinutes", "difficulty", "tips", "sourceUrls"],
 }
 
 DEFAULT_TRUSTED_RECIPE_DOMAINS = {
@@ -672,13 +696,44 @@ def _is_trusted_source_url(url: str) -> bool:
     return any(host == domain or host.endswith(f".{domain}") for domain in trusted_domains)
 
 
+def _is_reachable_source_url(url: str) -> bool:
+    cached = _source_validation_cache.get(url)
+    if cached is not None:
+        return bool(cached)
+
+    reachable = False
+    try:
+        response = requests.head(url, allow_redirects=True, timeout=4)
+        reachable = 200 <= response.status_code < 400
+        if response.status_code == 405:
+            response = requests.get(url, allow_redirects=True, timeout=4, stream=True)
+            reachable = 200 <= response.status_code < 400
+    except requests.RequestException as exc:
+        logger.warning("Recipe source validation failed url=%s error=%s", url, exc)
+
+    _source_validation_cache.set(url, reachable, ttl=3600)
+    return reachable
+
+
 def _trusted_source_urls(source_urls: Any) -> list[str]:
     urls = _coerce_string_list(source_urls, max_items=5)
     trusted: list[str] = []
     for url in urls:
-        if _is_trusted_source_url(url) and url not in trusted:
+        if _is_trusted_source_url(url) and _is_reachable_source_url(url) and url not in trusted:
             trusted.append(url)
     return trusted
+
+
+def _grounded_source_urls(response_metadata: Dict[str, Any]) -> list[str]:
+    urls: list[str] = []
+    for candidate in response_metadata.get("candidates") or []:
+        grounding_metadata = candidate.get("groundingMetadata") or {}
+        for chunk in grounding_metadata.get("groundingChunks") or []:
+            web = chunk.get("web") or {}
+            uri = str(web.get("uri") or "").strip()
+            if uri and uri not in urls:
+                urls.append(uri)
+    return _trusted_source_urls(urls)
 
 
 def _recipe_tools() -> list[Dict[str, Any]]:
@@ -707,7 +762,7 @@ YÊU CẦU:
 - 3-7 bước, mỗi bước đủ rõ để nấu được trên bếp gia đình.
 
 CHỈ trả lời JSON hợp lệ:
-{{"steps":["..."],"cookingTimeMinutes":25,"difficulty":"Dễ","tips":["..."],"sourceUrls":["https://..."]}}"""
+{{"prepItems":["Rửa sạch nguyên liệu","Cắt thái trước khi nấu"],"steps":["..."],"cookingTimeMinutes":25,"difficulty":"Dễ","tips":["..."],"sourceUrls":["https://..."]}}"""
 
 
 def _normalize_search_text(value: str) -> str:
@@ -740,6 +795,15 @@ def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
     if not api_key:
         return None
 
+    cache_key = f"youtube:{_normalize_search_text(recipe_name)}"
+    cached = _youtube_video_cache.get(cache_key)
+    if cached is not None:
+        try:
+            parsed = json.loads(cached)
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            logger.warning("Invalid YouTube recipe video cache entry recipe=%s", recipe_name)
+
     trusted_channel_ids = _csv_env_set("TRUSTED_YOUTUBE_CHANNEL_IDS")
     try:
         search_response = requests.get(
@@ -751,7 +815,10 @@ def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
                 "maxResults": 5,
                 "order": "relevance",
                 "relevanceLanguage": "vi",
+                "regionCode": "VN",
                 "safeSearch": "moderate",
+                "videoEmbeddable": "true",
+                "videoSyndicated": "true",
                 "key": api_key,
             },
             timeout=8,
@@ -769,7 +836,7 @@ def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
         videos_response = requests.get(
             "https://www.googleapis.com/youtube/v3/videos",
             params={
-                "part": "snippet,statistics",
+                "part": "snippet,statistics,status",
                 "id": ",".join(video_ids[:5]),
                 "key": api_key,
             },
@@ -785,6 +852,12 @@ def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
     best_score = 0.0
     for item in videos:
         snippet = item.get("snippet", {})
+        status = item.get("status", {}) or {}
+        if status and status.get("privacyStatus") not in {None, "public"}:
+            continue
+        if status and status.get("embeddable") is False:
+            continue
+
         channel_id = str(snippet.get("channelId") or "").strip()
         if trusted_channel_ids and channel_id.lower() not in trusted_channel_ids:
             continue
@@ -816,7 +889,9 @@ def _find_youtube_video(recipe_name: str) -> Optional[Dict[str, Any]]:
             best_score = score
 
     min_score = 1.15 if trusted_channel_ids else 0.85
-    return best if best and best_score >= min_score else None
+    result = best if best and best_score >= min_score else None
+    _youtube_video_cache.set(cache_key, json.dumps(result, ensure_ascii=False), ttl=86400)
+    return result
 
 
 def get_cooking_guide(
@@ -834,31 +909,39 @@ def get_cooking_guide(
         fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
         return fallback
 
+    response_metadata: Dict[str, Any] = {}
     response = query_gemini(
         _build_recipe_guide_prompt(recipe_name, ingredients, description),
         cache_ttl=_recipe_cache_ttl_seconds(),
         response_schema=RECIPE_GUIDE_SCHEMA,
         thinking_budget=0,
         tools=_recipe_tools(),
+        metadata_sink=response_metadata,
     )
 
     if response:
         parsed = _extract_json_object(response)
         if parsed:
             steps = _coerce_string_list(parsed.get("steps"), max_items=7)
-            source_urls = _trusted_source_urls(parsed.get("sourceUrls"))
+            grounded_source_urls = _grounded_source_urls(response_metadata)
+            source_urls = grounded_source_urls or _trusted_source_urls(parsed.get("sourceUrls"))
             if len(steps) >= 3 and source_urls:
-                return {
-                    "recipeName": recipe_name,
-                    "steps": steps,
-                    "cookingTimeMinutes": _coerce_positive_int(parsed.get("cookingTimeMinutes")) or 25,
-                    "difficulty": str(parsed.get("difficulty") or "Dễ").strip(),
-                    "tips": _coerce_string_list(parsed.get("tips"), max_items=5),
-                    "sourceUrls": source_urls,
-                    "youtubeVideo": _find_youtube_video(recipe_name),
-                    "guideStatus": "generated",
-                    "source": "gemini_grounded",
-                }
+                youtube_video = _find_youtube_video(recipe_name)
+                if not youtube_video:
+                    logger.warning("Rejected recipe guide without live YouTube video recipe=%s", recipe_name)
+                else:
+                    return {
+                        "recipeName": recipe_name,
+                        "steps": steps,
+                        "cookingTimeMinutes": _coerce_positive_int(parsed.get("cookingTimeMinutes")) or 25,
+                        "difficulty": str(parsed.get("difficulty") or "Dễ").strip(),
+                        "prepItems": _coerce_string_list(parsed.get("prepItems"), max_items=6),
+                        "tips": _coerce_string_list(parsed.get("tips"), max_items=5),
+                        "sourceUrls": source_urls,
+                        "youtubeVideo": youtube_video,
+                        "guideStatus": "generated",
+                        "source": "gemini_grounded",
+                    }
 
             logger.warning(
                 "Rejected recipe guide without enough steps or trusted sources recipe=%s steps=%s sources=%s",
@@ -907,6 +990,10 @@ def _generate_fallback_instructions(recipe_name: str, ingredients: list[dict]) -
         ],
         "cookingTime": "20-30 phút",
         "difficulty": "Trung bình",
+        "prepItems": [
+            f"Chuẩn bị: {', '.join(ing_names)}",
+            "Rửa sạch, để ráo và cắt thái trước khi nấu",
+        ],
         "source": "fallback",
         "note": "AI đang bận, vui lòng thử lại sau để có hướng dẫn chi tiết hơn"
     }

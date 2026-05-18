@@ -31,6 +31,7 @@ import { subscriptionService } from '../../services/subscriptionService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
+import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
 import { TEST_IDS } from '../../testing/testIds';
@@ -142,6 +143,7 @@ const ProfileScreen = (): React.ReactElement => {
   // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = useEN();
   const { mode, toggleTheme } = useAppTheme();
+  const { startTutorial } = useMoChiTutorial();
 
   const logout = useAuthStore((s) => s.logout);
   const { profile, fetchProfile, isLoading } = useProfileStore((state) => ({
@@ -177,6 +179,11 @@ const ProfileScreen = (): React.ReactElement => {
     setLogoutConfirmOpen(false);
     void logout();
   }, [logout]);
+
+  const handleMoChiTutorialPress = useCallback(() => {
+    navigation.navigate('AppTabs', { screen: 'HomeTab' });
+    setTimeout(() => startTutorial({ source: 'manual' }), 220);
+  }, [navigation, startTutorial]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -457,6 +464,12 @@ const ProfileScreen = (): React.ReactElement => {
             icon="images-outline"
             label="Phòng MoChi"
             onPress={() => navigation.navigate('MoChiPoseGallery')}
+          />
+          <MenuRow
+            icon="help-circle-outline"
+            label="Xem hướng dẫn MoChi"
+            onPress={handleMoChiTutorialPress}
+            testID={TEST_IDS.profile.mochiTutorialButton}
           />
           <MenuRow
             icon="information-circle-outline"

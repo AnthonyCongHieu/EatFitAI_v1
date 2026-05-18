@@ -16,7 +16,9 @@ import type {
   RecipeCookingGuide,
   RecipeDetail,
   RecipeIngredientDetail,
+  RecipeIngredientHint,
   RecipeSuggestion,
+  RecipeSuggestionRequest,
 } from '../types/aiEnhanced';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
@@ -48,6 +50,19 @@ export type IngredientItem = {
 };
 
 export type SuggestedRecipe = RecipeSuggestion;
+
+export type BuildRecipeSuggestionRequestInput = Omit<
+  RecipeSuggestionRequest,
+  'availableIngredients' | 'availableFoodItemIds' | 'ingredientHints'
+> & {
+  ingredients: string[];
+  availableFoodItemIds?: number[];
+  ingredientHints?: RecipeIngredientHint[];
+};
+
+export type BuiltRecipeSuggestionRequest = RecipeSuggestionRequest & {
+  mode: NonNullable<RecipeSuggestionRequest['mode']>;
+};
 
 export type NutritionTarget = {
   calories: number;
@@ -99,6 +114,53 @@ const readField = (source: any, ...keys: string[]): unknown => {
 const toStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item).trim()).filter(Boolean);
+};
+
+const normalizeRecipeIngredientName = (value: string | null | undefined): string =>
+  (value ?? '').trim().toLocaleLowerCase('vi-VN');
+
+const uniqueNumbers = (values: (number | null | undefined)[]): number[] => {
+  const seen = new Set<number>();
+  const result: number[] = [];
+
+  values.forEach((value) => {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+      return;
+    }
+
+    if (!seen.has(value)) {
+      seen.add(value);
+      result.push(value);
+    }
+  });
+
+  return result;
+};
+
+export const buildRecipeSuggestionRequest = ({
+  ingredients,
+  availableFoodItemIds,
+  ingredientHints,
+  ...rest
+}: BuildRecipeSuggestionRequestInput): BuiltRecipeSuggestionRequest => {
+  const availableIngredients = ingredients.map((item) => item.trim()).filter(Boolean);
+  const selectedNames = new Set(availableIngredients.map(normalizeRecipeIngredientName));
+  const filteredHints = (ingredientHints ?? []).filter((hint) =>
+    selectedNames.has(normalizeRecipeIngredientName(hint.name)),
+  );
+  const hintFoodItemIds = uniqueNumbers(filteredHints.map((hint) => hint.foodItemId ?? null));
+  const allowedFoodItemIds = new Set(uniqueNumbers(availableFoodItemIds ?? []));
+  const filteredFoodItemIds = ingredientHints !== undefined
+    ? hintFoodItemIds.filter((id) => allowedFoodItemIds.size === 0 || allowedFoodItemIds.has(id))
+    : uniqueNumbers(availableFoodItemIds ?? []);
+
+  return {
+    mode: 'auto',
+    availableIngredients,
+    ...(filteredFoodItemIds.length > 0 ? { availableFoodItemIds: filteredFoodItemIds } : {}),
+    ...(filteredHints.length > 0 ? { ingredientHints: filteredHints } : {}),
+    ...rest,
+  };
 };
 
 const normalizeFoodTrustSummary = (value: unknown): MappedFoodItem['trustSummary'] => {
@@ -390,6 +452,25 @@ const normalizeRecipeSuggestionItem = (item: RecipeSuggestionApiItem | any): Rec
     'missingIngredientCount',
     'MissingIngredientCount',
   ),
+  suggestionGroup: (() => {
+    const rawGroup = item?.suggestionGroup ?? item?.SuggestionGroup;
+    return typeof rawGroup === 'string' && rawGroup.trim().length > 0
+      ? rawGroup.trim()
+      : undefined;
+  })(),
+  canCookNow: Boolean(item?.canCookNow ?? item?.CanCookNow),
+  guideStatus: (() => {
+    const rawStatus = item?.guideStatus ?? item?.GuideStatus;
+    return typeof rawStatus === 'string' && rawStatus.trim().length > 0
+      ? rawStatus.trim()
+      : undefined;
+  })(),
+  sourceUrls: normalizeStringArray(item?.sourceUrls ?? item?.SourceUrls) ?? [],
+  youtubeVideo: item?.youtubeVideo ?? item?.YoutubeVideo ?? null,
+  prepItems: normalizeStringArray(item?.prepItems ?? item?.PrepItems) ?? [],
+  availableIngredients: normalizeStringArray(
+    item?.availableIngredients ?? item?.AvailableIngredients,
+  ) ?? [],
   matchedIngredients: normalizeStringArray(item?.matchedIngredients ?? item?.MatchedIngredients) ?? [],
   missingIngredients: normalizeStringArray(item?.missingIngredients ?? item?.MissingIngredients) ?? [],
   allIngredients: normalizeStringArray(item?.allIngredients ?? item?.AllIngredients) ?? [],
@@ -461,6 +542,7 @@ const normalizeRecipeCookingGuide = (data: any): RecipeCookingGuide => ({
     typeof (data?.recipeName ?? data?.RecipeName) === 'string'
       ? String(data.recipeName ?? data.RecipeName).trim()
       : undefined,
+  prepItems: normalizeStringArray(data?.prepItems ?? data?.PrepItems) ?? [],
   steps: normalizeStringArray(data?.steps ?? data?.Steps) ?? [],
   cookingTimeMinutes:
     toNumber(data?.cookingTimeMinutes ?? data?.CookingTimeMinutes) ?? undefined,
@@ -578,7 +660,7 @@ const buildLocalNutritionTarget = (
 const buildFallbackCookingInstructions = (
   recipeName: string,
   ingredients: { foodName: string; grams: number }[],
-): { steps: string[]; cookingTime?: string; difficulty?: string } => {
+): { prepItems?: string[]; steps: string[]; cookingTime?: string; difficulty?: string } => {
   const ingredientNames = ingredients
     .map((item) => item.foodName)
     .filter(Boolean)
@@ -589,6 +671,7 @@ const buildFallbackCookingInstructions = (
       : 'các nguyên liệu đã chuẩn bị';
 
   return {
+    prepItems: [`Chuẩn bị ${ingredientText}.`],
     steps: [
       `Sơ chế và cân định lượng ${ingredientText}.`,
       `Làm nóng chảo hoặc nồi, sau đó cho nguyên liệu vào theo thứ tự để nấu món ${recipeName}.`,
@@ -956,7 +1039,7 @@ export const aiService = {
     recipeName: string,
     ingredients: { foodName: string; grams: number }[],
     description?: string,
-  ): Promise<{ steps: string[]; cookingTime?: string; difficulty?: string }> {
+  ): Promise<{ prepItems?: string[]; steps: string[]; cookingTime?: string; difficulty?: string }> {
     try {
       const baseUrl = getApiBaseUrl();
       const response = await fetchWithAuthRetry(
@@ -989,6 +1072,7 @@ export const aiService = {
 
       const data = await response.json();
       return {
+        prepItems: Array.isArray(data.prepItems) ? data.prepItems : [],
         steps: Array.isArray(data.steps) ? data.steps : [],
         cookingTime: data.cookingTime,
         difficulty: data.difficulty,

@@ -4,7 +4,7 @@
  * floating add button, pull-to-refresh.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -40,7 +40,10 @@ import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
+import { useSmartReminders } from '../../../hooks/useSmartReminders';
+import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
+import { MEAL_DIARY_INLINE_NUDGE_COPY } from '../../../features/mochi/useMoChiNudgeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -150,12 +153,30 @@ const MealDiaryScreen = (): React.ReactElement => {
   const [refreshing, setRefreshing] = useState(false);
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [selectedDate]);
+  const isSelectedDateToday = useMemo(() => isToday(selectedDate), [selectedDate]);
 
   /* ─── Data fetching ─── */
   const { data: daySummary, isLoading, refetch } = useQuery<DaySummary>({
     queryKey: ['meal-diary', dateKey],
     queryFn: () => diaryService.getDayCombined(dateKey),
   });
+
+  const { reminders: mochiReminders } = useSmartReminders({
+    enabled: isSelectedDateToday && !isLoading,
+  });
+
+  const activeMealNudgeType = useMemo<MealTypeId | null>(() => {
+    if (!isSelectedDateToday) {
+      return null;
+    }
+
+    const reminder = mochiReminders.find((item) => item.type === 'meal' && /^meal-\d+$/.test(item.id));
+    const mealType = Number(reminder?.id.replace('meal-', ''));
+
+    return ([1, 2, 3, 4] as MealTypeId[]).includes(mealType as MealTypeId)
+      ? (mealType as MealTypeId)
+      : null;
+  }, [isSelectedDateToday, mochiReminders]);
 
   const entries = useMemo(() => {
     if (!daySummary?.meals) return [];
@@ -422,12 +443,21 @@ const MealDiaryScreen = (): React.ReactElement => {
             </Animated.View>
 
             {/* ── Meal Sections ── */}
-            {mealGroups.map((group, gIdx) => (
+            {mealGroups.map((group, gIdx) => {
+              const showInlineMealNudge =
+                group.entries.length === 0 && activeMealNudgeType === group.mealType;
+              const mealCardHeight = group.entries.length > 0
+                ? 300
+                : showInlineMealNudge
+                  ? 262
+                  : 180;
+
+              return (
               <Animated.View
                 key={group.mealType}
                 entering={FadeInUp.delay(200 + gIdx * 80).springify()}
               >
-                <Tilt3DCard width={cardWidth} height={group.entries.length > 0 ? 300 : 180} maxTilt={5} showReflection={false} useDeviceMotion={true} activeTouch={false}>
+                <Tilt3DCard width={cardWidth} height={mealCardHeight} maxTilt={5} showReflection={false} useDeviceMotion={true} activeTouch={false}>
                   <View style={styles.mealCard}>
                     {/* Meal Header */}
                     <Pressable
@@ -530,6 +560,23 @@ const MealDiaryScreen = (): React.ReactElement => {
                     ) : (
                       /* Empty state for this meal */
                       <View style={styles.mealEmptyWrap}>
+                        {showInlineMealNudge && (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${MEAL_DIARY_INLINE_NUDGE_COPY.title}. ${MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel}`}
+                            onPress={() => handleAddManual(group.mealType)}
+                            style={styles.mealInlineNudge}
+                          >
+                            <MoChiInlineNotice
+                              mochiEvent="meal_reminder"
+                              title={MEAL_DIARY_INLINE_NUDGE_COPY.title}
+                              message={MEAL_DIARY_INLINE_NUDGE_COPY.message}
+                              ctaLabel={MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel}
+                              compact
+                              tone="calm"
+                            />
+                          </Pressable>
+                        )}
                         <Pressable
                           style={({ pressed }) => [
                             styles.mealEmptyBtn,
@@ -549,7 +596,8 @@ const MealDiaryScreen = (): React.ReactElement => {
                   </View>
                 </Tilt3DCard>
               </Animated.View>
-            ))}
+              );
+            })}
           </>
         )}
       </ScrollView>
@@ -885,6 +933,9 @@ const styles = StyleSheet.create({
   mealEmptyWrap: {
     padding: 12,
     gap: 10,
+  },
+  mealInlineNudge: {
+    width: '100%',
   },
   mealEmptyBtn: {
     width: '100%',

@@ -19,6 +19,8 @@ import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../app/types';
 import { TEST_IDS } from '../../testing/testIds';
+import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
+import type { MoChiTutorialTargetId } from '../../features/mochi/tutorial/mochiTutorialCatalog';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type QuickAction = {
@@ -50,6 +52,18 @@ const DESIGN_TOKENS = {
   label: '#eef2ff',
   meta: '#9fb0c8',
   radiusFull: 999,
+};
+
+const getTutorialTargetId = (testID?: string): MoChiTutorialTargetId | null => {
+  if (testID === TEST_IDS.home.quickAddSearchButton) {
+    return 'quick_add_search';
+  }
+
+  if (testID === TEST_IDS.home.quickAddScanButton) {
+    return 'quick_add_scan';
+  }
+
+  return null;
 };
 
 export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, testID }) => {
@@ -213,29 +227,49 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
             </View>
 
             <View style={styles.actionGrid}>
-              {actions.map((action) => (
-                <Pressable
-                  key={action.title}
-                  testID={action.testID}
-                  accessibilityRole="button"
-                  accessibilityLabel={action.title}
-                  onPress={action.onPress}
-                  style={({ pressed }) => [
-                    styles.actionCard,
-                    pressed && styles.actionPressed,
-                  ]}
-                >
-                  <View style={styles.actionIconGlass}>
-                    <Ionicons name={action.icon} size={22} color={theme.colors.primary} />
+              {actions.map((action) => {
+                const tutorialTargetId = getTutorialTargetId(action.testID);
+                const actionCard = (
+                  <Pressable
+                    testID={action.testID}
+                    accessibilityRole="button"
+                    accessibilityLabel={action.title}
+                    onPress={action.onPress}
+                    style={({ pressed }) => [
+                      styles.actionCard,
+                      pressed && styles.actionPressed,
+                    ]}
+                  >
+                    <View style={styles.actionIconGlass}>
+                      <Ionicons name={action.icon} size={22} color={theme.colors.primary} />
+                    </View>
+                    <View style={styles.actionCopy}>
+                      <ThemedText style={styles.actionLabel} numberOfLines={2}>
+                        {action.title}
+                      </ThemedText>
+                      <ThemedText style={styles.actionMeta}>{action.meta}</ThemedText>
+                    </View>
+                  </Pressable>
+                );
+
+                if (tutorialTargetId) {
+                  return (
+                    <MoChiTutorialTarget
+                      key={action.title}
+                      targetId={tutorialTargetId}
+                      style={styles.actionTarget}
+                    >
+                      {actionCard}
+                    </MoChiTutorialTarget>
+                  );
+                }
+
+                return (
+                  <View key={action.title} style={styles.actionTarget}>
+                    {actionCard}
                   </View>
-                  <View style={styles.actionCopy}>
-                    <ThemedText style={styles.actionLabel} numberOfLines={2}>
-                      {action.title}
-                    </ThemedText>
-                    <ThemedText style={styles.actionMeta}>{action.meta}</ThemedText>
-                  </View>
-                </Pressable>
-              ))}
+                );
+              })}
             </View>
 
             <Pressable
@@ -331,8 +365,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
-  actionCard: {
+  actionTarget: {
     width: '48.4%',
+  },
+  actionCard: {
+    width: '100%',
     minHeight: 78,
     flexDirection: 'row',
     alignItems: 'center',

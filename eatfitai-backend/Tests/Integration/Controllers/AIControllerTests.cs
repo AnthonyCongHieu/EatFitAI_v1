@@ -221,6 +221,9 @@ public class AIControllerTests : IClassFixture<WebApplicationFactory<Program>>
         {
             RecipeName = "Trứng gà áp chảo",
             Description = "Recipe suggestion smoke fixture",
+            InstructionsJson = "[\"Sơ chế trứng và thịt gà\",\"Áp chảo thịt gà đến khi chín\",\"Cho trứng vào hoàn thiện món\"]",
+            SourceUrlsJson = "[\"https://monngonmoingay.com/cong-thuc-demo\"]",
+            VideoUrl = "https://www.youtube.com/watch?v=abc",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             IsDeleted = false

@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '../../../components/ThemedText';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import AppImage from '../../../components/ui/AppImage';
-import { aiService } from '../../../services/aiService';
+import { aiService, buildRecipeSuggestionRequest } from '../../../services/aiService';
 import { sanitizeFoodImageUrl } from '../../../utils/imageHelpers';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
@@ -112,6 +112,8 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('best');
+  const requestedMode = route.params?.mode ?? 'auto';
+  const isDailyRecommendation = requestedMode === 'daily_recommendation';
   const displayedRecipes = useMemo(() => {
     const sorted = [...recipes];
     sorted.sort((a, b) => {
@@ -128,11 +130,34 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
     });
     return sorted;
   }, [recipes, sortMode]);
-  const featuredRecipe = displayedRecipes[0] ?? null;
+  const groupedSections = useMemo(() => {
+    if (isDailyRecommendation) {
+      return [
+        {
+          key: 'dailyRecommendation',
+          title: 'Gợi ý hôm nay',
+          items: displayedRecipes,
+        },
+      ];
+    }
+
+    return [
+      {
+        key: 'readyNow',
+        title: 'Nấu ngay',
+        items: displayedRecipes.filter((recipe) => recipe.suggestionGroup === 'readyNow'),
+      },
+      {
+        key: 'needsMore',
+        title: 'Cần mua thêm',
+        items: displayedRecipes.filter((recipe) => recipe.suggestionGroup !== 'readyNow'),
+      },
+    ].filter((section) => section.items.length > 0);
+  }, [displayedRecipes, isDailyRecommendation]);
 
   async function searchRecipes(overrideIngredients?: string[]) {
     const ingredientsToUse = overrideIngredients ?? ingredients;
-    if (ingredientsToUse.length === 0) return;
+    if (ingredientsToUse.length === 0 && !isDailyRecommendation) return;
 
     setLoading(true);
     setError(null);
@@ -145,12 +170,13 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
         );
         return existing ?? { name, confidence: null, foodItemId: null };
       });
-      const results = await aiService.suggestRecipesEnhanced({
-        availableIngredients: ingredientsToUse,
+      const results = await aiService.suggestRecipesEnhanced(buildRecipeSuggestionRequest({
+        ingredients: ingredientsToUse,
+        mode: requestedMode,
         availableFoodItemIds: route.params?.availableFoodItemIds,
         ingredientHints,
         maxResults: 12,
-      });
+      }));
       setRecipes(results);
       if (results.length === 0) {
         setError('Không tìm thấy công thức nào phù hợp.');
@@ -176,10 +202,10 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       return;
     }
 
-    if ((route.params?.ingredients?.length ?? 0) > 0) {
+    if ((route.params?.ingredients?.length ?? 0) > 0 || route.params?.mode === 'daily_recommendation') {
       void searchRecipes(route.params.ingredients);
     }
-  }, [route.params?.recipes, route.params?.ingredients, route.params?.availableFoodItemIds, route.params?.ingredientHints]);
+  }, [route.params?.recipes, route.params?.ingredients, route.params?.availableFoodItemIds, route.params?.ingredientHints, route.params?.mode]);
 
   const addIngredient = (ing?: string) => {
     const val = (ing ?? newIngredient).trim();
@@ -196,6 +222,57 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       addIngredient(ing);
     }
   };
+
+  const openRecipeDetail = (recipe: RecipeSuggestion) => {
+    navigation.navigate('RecipeDetail', {
+      recipeId: recipe.recipeId,
+      recipeName: recipe.recipeName,
+      availableIngredients: recipe.availableIngredients,
+      missingIngredients: recipe.missingIngredients,
+      prepItems: recipe.prepItems,
+    });
+  };
+
+  const renderRecipeGrid = (items: RecipeSuggestion[]) => (
+    <View style={S.gridContainer}>
+      {items.map((item, idx) => (
+        <Animated.View
+          key={item.recipeId}
+          entering={FadeInDown.delay((idx + 1) * 100).springify()}
+          style={S.gridItem}
+        >
+          <TouchableOpacity
+            style={S.gridCard}
+            activeOpacity={0.8}
+            onPress={() => openRecipeDetail(item)}
+          >
+            <View style={S.gridImageFrame}>
+              <RecipeImage recipe={item} style={S.gridImageWrap} />
+              <View style={S.glassOverlayTag}>
+                <ThemedText style={S.tagTextSmall}>
+                  {item.canCookNow ? 'Nấu ngay' : `${Math.round(item.matchScore || item.matchPercentage)} điểm`}
+                </ThemedText>
+              </View>
+            </View>
+            <View style={S.gridCardBody}>
+              <ThemedText style={S.gridTitle} numberOfLines={2}>{item.recipeName}</ThemedText>
+              <ThemedText style={S.gridReason} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
+              <View style={S.gridMetrics}>
+                <View style={S.metric}>
+                  <Ionicons name="time-outline" size={12} color={P.onSurfaceVariant} />
+                  <ThemedText style={S.metricTextSmall}>{getRecipeTimeLabel(item)}</ThemedText>
+                </View>
+                <View style={S.metric}>
+                  <Ionicons name="flame-outline" size={12} color={P.primary} />
+                  <ThemedText style={S.metricTextSmall}>{Math.round(item.totalCalories)}</ThemedText>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      ))}
+    </View>
+  );
 
   const renderSkeleton = () => (
     <View style={S.skeletonWrap}>
@@ -218,7 +295,9 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn}>
             <Ionicons name="arrow-back" size={24} color={P.primary} />
           </TouchableOpacity>
-          <ThemedText style={S.headerTitle}>Gợi ý công thức</ThemedText>
+          <ThemedText style={S.headerTitle}>
+            {isDailyRecommendation ? 'Hôm nay nên ăn gì' : 'Gợi ý công thức'}
+          </ThemedText>
         </View>
       </View>
 
@@ -272,14 +351,14 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
         )}
 
         {/* Action Button If Ingredients Exist */}
-        {ingredients.length > 0 && (
+        {(ingredients.length > 0 || isDailyRecommendation) && (
           <TouchableOpacity
             style={S.mainActionBtn}
             onPress={() => searchRecipes()}
             disabled={loading}
           >
             <ThemedText style={S.mainActionBtnText}>
-              {loading ? 'Đang tìm...' : 'Khám phá công thức'}
+              {loading ? 'Đang tìm...' : isDailyRecommendation ? 'Gợi ý món hôm nay' : 'Khám phá công thức'}
             </ThemedText>
           </TouchableOpacity>
         )}
@@ -299,7 +378,9 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
               <MoChiInlineNotice mochiEvent="recipe_empty" compact />
               <Ionicons name="restaurant-outline" size={64} color={P.onSurfaceVariant} />
               <ThemedText style={S.emptyText}>
-                Hãy nhập nguyên liệu phía trên để{'\n'}chúng tôi lên thực đơn cho bạn!
+                {isDailyRecommendation
+                  ? 'Chạm vào nút phía trên để xem món phù hợp cho hôm nay.'
+                  : <>Hãy nhập nguyên liệu phía trên để{'\n'}chúng tôi lên thực đơn cho bạn!</>}
               </ThemedText>
             </View>
           ) : (
@@ -326,104 +407,15 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                   );
                 })}
               </ScrollView>
-              {featuredRecipe && (
-              <Animated.View entering={FadeInDown.springify()} style={S.featuredCard}>
-                <View style={S.featuredContent}>
-                  <RecipeImage recipe={featuredRecipe} style={S.featuredImageWrap} />
-                  <View style={S.featuredDetails}>
-                    <View style={S.aiBadge}>
-                      <Ionicons name="checkmark-circle-outline" size={12} color={P.primary} />
-                      <ThemedText style={S.aiBadgeText}>PHÙ HỢP NGUYÊN LIỆU</ThemedText>
-                    </View>
-                    <ThemedText style={S.featuredTitle} numberOfLines={2}>
-                      {featuredRecipe.recipeName}
-                    </ThemedText>
-                    <ThemedText style={S.reasonText} numberOfLines={2}>
-                      {getPrimaryReason(featuredRecipe)}
-                    </ThemedText>
-                    <View style={S.tagsRow}>
-                      <View style={S.tagSubBadge}>
-                        <ThemedText style={S.tagText}>Trùng {featuredRecipe.matchedIngredientsCount}/{featuredRecipe.totalIngredientsCount}</ThemedText>
-                      </View>
-                      <View style={S.tagSubBadge}>
-                        <ThemedText style={S.tagText}>{Math.round(featuredRecipe.matchScore || featuredRecipe.matchPercentage || 0)} điểm</ThemedText>
-                      </View>
-                      <View style={S.tagSubBadge}>
-                        <ThemedText style={S.tagText}>Thiếu {featuredRecipe.missingIngredientCount ?? featuredRecipe.missingIngredients.length}</ThemedText>
-                      </View>
-                    </View>
-                    <View style={S.metricsRow}>
-                      <View style={S.metric}>
-                        <Ionicons name="time-outline" size={14} color={P.onSurfaceVariant} />
-                        <ThemedText style={S.metricText}>{getRecipeTimeLabel(featuredRecipe)}</ThemedText>
-                      </View>
-                      <View style={S.metric}>
-                        <Ionicons name="flame-outline" size={14} color={P.onSurfaceVariant} />
-                        <ThemedText style={S.metricText}>{Math.round(featuredRecipe.totalCalories || 0)} kcal</ThemedText>
-                      </View>
-                      {!!featuredRecipe.difficulty && (
-                        <View style={S.metric}>
-                          <Ionicons name="speedometer-outline" size={14} color={P.onSurfaceVariant} />
-                          <ThemedText style={S.metricText}>{featuredRecipe.difficulty}</ThemedText>
-                        </View>
-                      )}
-                    </View>
-                    <TouchableOpacity
-                      style={S.viewRecipeBtn}
-                      onPress={() => navigation.navigate('RecipeDetail', { recipeId: featuredRecipe.recipeId, recipeName: featuredRecipe.recipeName })}
-                    >
-                      <ThemedText style={S.viewRecipeBtnText}>Xem Công Thức</ThemedText>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Animated.View>
-              )}
-
-              {/* Grid 2 Columns for Explore More */}
-              {displayedRecipes.length > 1 && (
-                <View style={S.exploreSection}>
+              {groupedSections.map((section) => (
+                <View key={section.key} style={S.groupSection}>
                   <View style={S.exploreHeader}>
-                    <ThemedText style={S.exploreTitle}>Khám phá thêm</ThemedText>
-                    <ThemedText style={S.exploreLink}>Xem tất cả</ThemedText>
+                    <ThemedText style={S.exploreTitle}>{section.title}</ThemedText>
+                    <ThemedText style={S.exploreLink}>{section.items.length} món</ThemedText>
                   </View>
-                  <View style={S.gridContainer}>
-                    {displayedRecipes.slice(1).map((item, idx) => (
-                      <Animated.View
-                        key={item.recipeId}
-                        entering={FadeInDown.delay((idx + 1) * 100).springify()}
-                        style={S.gridItem}
-                      >
-                        <TouchableOpacity
-                          style={S.gridCard}
-                          activeOpacity={0.8}
-                          onPress={() => navigation.navigate('RecipeDetail', { recipeId: item.recipeId, recipeName: item.recipeName })}
-                        >
-                          <View style={S.gridImageFrame}>
-                            <RecipeImage recipe={item} style={S.gridImageWrap} />
-                            <View style={S.glassOverlayTag}>
-                              <ThemedText style={S.tagTextSmall}>{Math.round(item.matchScore || item.matchPercentage)} điểm</ThemedText>
-                            </View>
-                          </View>
-                          <View style={S.gridCardBody}>
-                            <ThemedText style={S.gridTitle} numberOfLines={2}>{item.recipeName}</ThemedText>
-                            <ThemedText style={S.gridReason} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
-                            <View style={S.gridMetrics}>
-                              <View style={S.metric}>
-                                <Ionicons name="time-outline" size={12} color={P.onSurfaceVariant} />
-                                <ThemedText style={S.metricTextSmall}>{getRecipeTimeLabel(item)}</ThemedText>
-                              </View>
-                              <View style={S.metric}>
-                                <Ionicons name="flame-outline" size={12} color={P.primary} />
-                                <ThemedText style={S.metricTextSmall}>{Math.round(item.totalCalories)}</ThemedText>
-                              </View>
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      </Animated.View>
-                    ))}
-                  </View>
+                  {renderRecipeGrid(section.items)}
                 </View>
-              )}
+              ))}
             </>
           )}
         </View>
@@ -571,6 +563,7 @@ const S = StyleSheet.create({
   viewRecipeBtnText: { fontSize: 15, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
 
   /* Grid Area */
+  groupSection: { gap: 16, marginBottom: 24 },
   exploreSection: { gap: 16 },
   exploreHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   exploreTitle: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', color: P.onSurfaceVariant },

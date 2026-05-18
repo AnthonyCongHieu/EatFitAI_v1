@@ -865,9 +865,9 @@ namespace EatFitAI.API.Data
         private static readonly RecipeSeed[] RecipeSeeds =
         [
             new("Cơm gà xào rau củ", "Bữa chính cân bằng với thịt gà, cơm và rau xanh dễ chuẩn bị.", 25, "Dễ", 1, 82, "com-ga-xao-rau-cu", [I(150, "chicken"), I(180, "rice"), I(100, "broccoli"), I(60, "carrot")]),
-            new("Cá hồi nướng khoai lang", "Giàu đạm và chất béo tốt, ăn cùng khoai lang để no lâu.", 30, "Trung bình", 1, 86, "ca-hoi-nuong-khoai-lang", [I(180, "salmon"), I(200, "sweet_potato"), I(80, "spinach")]),
+            new("Cá nướng khoai lang", "Giàu đạm và chất béo tốt, ăn cùng khoai lang để no lâu.", 30, "Trung bình", 1, 86, "ca-nuong-khoai-lang", [I(180, "fish"), I(200, "sweet_potato"), I(80, "spinach")]),
             new("Salad trứng rau xanh", "Bữa sáng hoặc bữa phụ giàu protein, nhẹ bụng.", 15, "Dễ", 1, 80, "salad-trung-rau-xanh", [I(110, "egg"), I(80, "spinach"), I(80, "cucumber"), I(60, "tomato")]),
-            new("Smoothie bowl chuối sữa chua", "Bữa sáng nhanh với sữa chua, chuối và hạt béo vừa đủ.", 10, "Dễ", 1, 78, "smoothie-bowl-chuoi-sua-chua", [I(200, "Greek Yogurt", "yogurt"), I(120, "banana"), I(20, "Almonds")]),
+            new("Trứng xào cà chua", "Bữa sáng nhanh, dùng nguyên liệu phổ biến và nấu được trong vài phút.", 12, "Dễ", 1, 78, "trung-xao-ca-chua", [I(110, "egg"), I(120, "tomato"), I(20, "green_onion")]),
             new("Gà nướng rau xanh", "Bữa tối ít tinh bột, phù hợp ngày cần ưu tiên protein.", 35, "Dễ", 1, 83, "ga-nuong-rau-xanh", [I(200, "chicken"), I(120, "broccoli"), I(100, "spinach")]),
             new("Ức gà áp chảo sốt cà chua", "Món đạm nạc dùng với cà chua và hành tây, vị thanh.", 22, "Dễ", 1, 82, "uc-ga-ap-chao-sot-ca-chua", [I(180, "chicken"), I(120, "tomato"), I(50, "onion"), I(8, "garlic")]),
             new("Bò xào bông cải xanh", "Bữa chính giàu sắt và protein, nấu nhanh trong chảo nóng.", 20, "Dễ", 1, 82, "bo-xao-bong-cai-xanh", [I(160, "beef"), I(160, "broccoli"), I(60, "bell_pepper"), I(8, "garlic")]),

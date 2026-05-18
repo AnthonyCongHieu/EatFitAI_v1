@@ -20,6 +20,7 @@ const C = C_STATIC;
 
 interface WelcomeHeaderProps {
   streakCount?: number;
+  unreadNotificationCount?: number;
   onNotificationPress?: () => void;
   onAvatarPress?: () => void;
   onSettingsPress?: () => void;
@@ -48,6 +49,7 @@ const getStreakColor = (streak: number) => {
 
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   streakCount = 0,
+  unreadNotificationCount = 0,
   onNotificationPress,
   onSettingsPress,
   onStreakPress,
@@ -109,7 +111,9 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
           accessibilityLabel="Xem thông báo"
         >
           <Ionicons name="notifications-outline" size={22} color={C.textMuted} />
-          <View style={[styles.bellDot, { backgroundColor: C.danger, borderColor: C.bg }]} />
+          {unreadNotificationCount > 0 && (
+            <View style={[styles.bellDot, { backgroundColor: C.danger, borderColor: C.bg }]} />
+          )}
         </Pressable>
       </View>
     </Animated.View>

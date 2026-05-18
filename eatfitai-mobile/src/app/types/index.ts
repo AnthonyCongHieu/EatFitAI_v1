@@ -40,9 +40,19 @@ export type RootStackParamList = {
     ingredients?: string[];
     availableFoodItemIds?: number[];
     ingredientHints?: import('../../types/aiEnhanced').RecipeIngredientHint[];
+    mode?: 'auto' | 'ingredient_combo' | 'daily_recommendation';
     recipes?: import('../../services/aiService').SuggestedRecipe[];
   };
-  RecipeDetail: { recipeId: number; recipeName: string; defaultMealType?: number; diaryEntryId?: string; currentGrams?: number };
+  RecipeDetail: {
+    recipeId: number;
+    recipeName: string;
+    defaultMealType?: number;
+    diaryEntryId?: string;
+    currentGrams?: number;
+    availableIngredients?: string[];
+    missingIngredients?: string[];
+    prepItems?: string[];
+  };
   NutritionInsights: undefined;
   VisionHistory: undefined;
   NutritionSettings: undefined;

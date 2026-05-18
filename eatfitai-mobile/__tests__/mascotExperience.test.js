@@ -83,18 +83,30 @@ describe('MoChi virtual pet experience', () => {
     expect(testIdsSource).not.toContain('mochiPreviewScreen');
   });
 
-  it('keeps the first-login tutorial and core flows wired to MoChi sprites', () => {
-    const tutorialSource = readSource('src/components/home/HomeFirstLoginTutorial.tsx');
+  it('keeps the app-wide tutorial and core flows wired to MoChi sprites', () => {
+    const tutorialCatalogSource = readSource(
+      'src/features/mochi/tutorial/mochiTutorialCatalog.ts',
+    );
+    const tutorialHostSource = readSource('src/features/mochi/tutorial/MoChiTutorialHost.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
     const scanSource = readSource('src/app/screens/ai/AIScanScreen.tsx');
     const visionReviewSource = readSource(
       'src/app/screens/meals/AddMealFromVisionScreen.tsx',
     );
 
-    expect(tutorialSource).toContain('MascotCharacter');
-    expect(tutorialSource).toContain("mascotState: 'wave'");
-    expect(tutorialSource).toContain("mascotState: 'thinking'");
-    expect(homeSource).toContain('HomeFirstLoginTutorial');
+    expect(tutorialCatalogSource).toContain('MOCHI_TUTORIAL_STEPS');
+    expect(tutorialCatalogSource).toContain("targetId: 'mochi_hub'");
+    expect(tutorialCatalogSource).toContain("targetId: 'quick_add_search'");
+    expect(tutorialCatalogSource).toContain("targetId: 'quick_add_scan'");
+    expect(tutorialCatalogSource).toContain("targetId: 'home_water'");
+    expect(tutorialCatalogSource).toContain("targetId: 'stats_tab'");
+    expect(tutorialHostSource).toContain('MoChiSprite');
+    expect(tutorialHostSource).toContain('Bỏ qua');
+    expect(tutorialHostSource).toContain('SHEET_MODAL_SETTLE_MS');
+    expect(tutorialHostSource).toContain('MeasuringTargetCard');
+    expect(tutorialHostSource).toContain('styles.spotlightRing');
+    expect(tutorialHostSource).toContain('styles.progressRail');
+    expect(homeSource).not.toContain('HomeFirstLoginTutorial');
     expect(homeSource).toContain('mochiEvent="water_added"');
     expect(scanSource).toContain('ScanProgressCard');
     expect(scanSource).toContain('mochiEvent="scan_empty"');
@@ -106,8 +118,16 @@ describe('MoChi virtual pet experience', () => {
     const diarySource = readSource('src/app/screens/diary/MealDiaryScreen.tsx');
     const appNavigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
+    const inlineNoticeSource = readSource('src/features/mochi/MoChiInlineNotice.tsx');
+    const nudgeContextSource = readSource('src/features/mochi/useMoChiNudgeContext.ts');
+    const surfaceDecisionSource = readSource('src/features/mochi/useMoChiSurfaceDecision.ts');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
+    const smartAddSheetSource = readSource('src/components/ui/SmartAddSheet.tsx');
+    const tutorialContextSource = readSource(
+      'src/features/mochi/tutorial/MoChiTutorialContext.tsx',
+    );
+    const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
     const mochiDesignSource = readSource('DESIGN.md');
 
     expect(diarySource).not.toContain('MoChiDiaryCompanionPeek');
@@ -126,17 +146,53 @@ describe('MoChi virtual pet experience', () => {
     expect(overlayHostSource).toContain('styles.companionOverlay');
     expect(overlayHostSource).toContain('styles.companionSpeechTail');
     expect(overlayHostSource).toContain('pointerEvents="box-none"');
+    expect(overlayHostSource).toContain('resolveMoChiTopOverlayOffset');
+    expect(overlayHostSource).toContain('DENSE_TOP_HEADER_ROUTES');
+    expect(overlayHostSource).toContain('DEFAULT_TOP_HEADER_CLEARANCE');
     expect(overlayHostSource).toContain('<MoChiSprite');
     expect(overlayHostSource).toContain("variant=\"full\"");
     expect(overlayHostSource).not.toContain('styles.companionSpritePlate');
     expect(diarySource).not.toContain('topOffset={insets.top + 108}');
-    expect(overlayHostSource).toContain('MoChi đang gợi ý');
+    expect(diarySource).toContain('MoChiInlineNotice');
+    expect(diarySource).toContain('tone="calm"');
+    expect(inlineNoticeSource).toContain('titleCalm');
+    expect(inlineNoticeSource).toContain('tone === \'calm\'');
+    expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.title');
+    expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.message');
+    expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel');
+    expect(nudgeContextSource).toContain('Bữa này còn trống');
+    expect(nudgeContextSource).toContain('Thêm bữa gần nhất để nhật ký hôm nay liền mạch hơn.');
+    expect(nudgeContextSource).toContain('Ghi bữa');
+    expect(nudgeContextSource).toContain("preferredSurface: 'inline'");
+    expect(nudgeContextSource).not.toContain("preferredSurface: 'overlay'");
+    expect(surfaceDecisionSource).not.toContain('isCollisionSafe: true');
+    expect(appNavigatorSource).toContain('MoChiTutorialProvider');
+    expect(appNavigatorSource).toContain('MoChiTutorialHost');
+    expect(appNavigatorSource).toContain('AuthenticatedMoChiSurfaces');
+    expect(tutorialContextSource).toContain('shouldAutoStartMoChiTutorial');
+    expect(tutorialContextSource).toContain('autoStartCheckedRef.current = false');
+    expect(tutorialContextSource).toContain('markMoChiTutorialSkipped().catch');
+    expect(tutorialContextSource).toContain('activeSheetTarget');
+    expect(tabBarSource).toContain('MoChiTutorialTarget');
+    expect(tabBarSource).toContain("'mochi_hub'");
+    expect(tabBarSource).toContain("'stats_tab'");
+    expect(smartAddSheetSource).toContain("'quick_add_search'");
+    expect(smartAddSheetSource).toContain("'quick_add_scan'");
+    expect(profileSource).toContain('Xem hướng dẫn MoChi');
+    expect(profileSource).toContain('startTutorial');
+    expect(overlayHostSource).toContain('MoChi đang nhắc bạn');
     expect(tabBarSource).toContain("return 'boxIdle'");
     expect(tabBarSource).toContain("return 'weeklyReportNotice'");
     expect(tabBarSource).not.toContain('variant="face"');
+    expect(tabBarSource).toContain('const TAB_BAR_HEIGHT = 58');
+    expect(tabBarSource).toContain('size={54}');
+    expect(tabBarSource).toContain('marginTop: -24');
     expect(tabBarSource).not.toContain("backgroundColor: '#3fd56f'");
     expect(mochiDesignSource).toContain('name: EatFitAI MoChi Companion');
-    expect(mochiDesignSource).toContain('Accent xanh chỉ là tín hiệu');
+    expect(mochiDesignSource).toContain('MealDiary missing-meal nudges are inline by default');
+    expect(mochiDesignSource).toContain('overlay is forbidden over meal cards and bottom navigation');
+    expect(mochiDesignSource).toContain('## First-Run Tutorial');
+    expect(mochiDesignSource).toContain('A + C + D composition');
     expect(navigatorSource).not.toContain('MoChiIslandHost');
   });
 

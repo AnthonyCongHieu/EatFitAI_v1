@@ -143,6 +143,17 @@ describe('useAuthStore', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/api/profile');
   });
 
+  it('clears per-session tutorial state on logout so another account can receive onboarding help', async () => {
+    await useAuthStore.getState().logout();
+
+    expect(AsyncStorage.multiRemove).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        '@eatfitai_mochi_tutorial_pending_v1',
+        '@eatfitai_mochi_tutorial_v1',
+      ]),
+    );
+  });
+
   it('surfaces Google config errors from the native setup stage', async () => {
     (googleAuthService.configure as jest.Mock).mockResolvedValue(false);
 

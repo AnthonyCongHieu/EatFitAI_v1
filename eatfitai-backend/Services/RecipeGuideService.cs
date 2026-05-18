@@ -167,7 +167,8 @@ public sealed class RecipeGuideService : IRecipeGuideService
             SourceUrls = ParseStringList(recipe.SourceUrlsJson),
             YoutubeVideo = string.IsNullOrWhiteSpace(recipe.VideoUrl)
                 ? null
-                : new RecipeYoutubeVideoDto { Url = recipe.VideoUrl }
+                : new RecipeYoutubeVideoDto { Url = recipe.VideoUrl },
+            PrepItems = steps.Take(2).ToList()
         };
     }
 
@@ -193,13 +194,18 @@ public sealed class RecipeGuideService : IRecipeGuideService
                 $"Làm nóng chảo hoặc nồi, sau đó nấu món {recipe.RecipeName} ở lửa vừa.",
                 "Nếm lại, điều chỉnh gia vị và hoàn thiện món ăn trước khi dùng."
             ],
+            PrepItems =
+            [
+                $"Chuẩn bị {ingredientText}.",
+                "Rửa sạch, để ráo và cắt thái trước khi nấu."
+            ],
             GuideStatus = "fallback"
         };
     }
 
     private static bool IsUsableGeneratedGuide(RecipeCookingGuideDto? guide)
     {
-        return guide is { Steps.Count: >= 3, SourceUrls.Count: > 0 };
+        return guide is { Steps.Count: >= 3, SourceUrls.Count: > 0, YoutubeVideo.Url.Length: > 0 };
     }
 
     private bool IsFresh(DateTime? enhancedAt)

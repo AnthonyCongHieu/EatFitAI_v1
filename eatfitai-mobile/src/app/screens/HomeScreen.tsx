@@ -26,7 +26,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../../components/ThemedText';
 import Screen from '../../components/Screen';
 import { useDiaryStore } from '../../store/useDiaryStore';
-import { useAuthStore } from '../../store/useAuthStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
@@ -42,9 +41,13 @@ import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
 import { waterService, type WaterIntakeData } from '../../services/waterService';
 import type { AppTabsParamList } from '../navigation/AppTabs';
-import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
+import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
+import {
+  selectUnreadMoChiNotificationCount,
+  useMoChiNotificationInboxStore,
+} from '../../features/mochi/mochiNotificationInbox';
 import { formatBusinessDate } from '../../utils/businessDate';
 import { useEN } from '../../theme/emeraldNebula';
 
@@ -258,8 +261,6 @@ const HomeScreen = (): React.ReactElement => {
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
   const deleteEntry = useDiaryStore((s) => s.deleteEntry);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const queryClient = useQueryClient();
   const { isLoading, isFetching, isError, refetch } = useQuery<DaySummary | null>({
     queryKey: ['home-summary'],
@@ -272,6 +273,8 @@ const HomeScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
   const [showWaterMoChi, setShowWaterMoChi] = useState(false);
+  const notificationInboxItems = useMoChiNotificationInboxStore((state) => state.items);
+  const unreadNotificationCount = selectUnreadMoChiNotificationCount(notificationInboxItems);
 
   useEffect(() => {
     if (!showWaterMoChi) {
@@ -536,6 +539,7 @@ const HomeScreen = (): React.ReactElement => {
         {/* ══════════ HEADER ══════════ */}
         <WelcomeHeader
           streakCount={currentStreak}
+          unreadNotificationCount={unreadNotificationCount}
           onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}
           onNotificationPress={() => navigation.navigate('NotificationCenter')}
           onStreakPress={() => navigation.navigate('Achievements')}
@@ -829,41 +833,43 @@ const HomeScreen = (): React.ReactElement => {
           entering={FadeInUp.delay(400).springify()}
           onLayout={(e) => setWaterCardY(e.nativeEvent.layout.y)}
         >
-          <View style={[styles.waterCard, styles.glassWaterCard]}>
-            {/* Left: icon + label + value */}
-            <View style={styles.waterLeft}>
-              <Ionicons name="water" size={28} color="#0EA5E9" />
-              <View style={styles.waterLabelWrap}>
-                <ThemedText style={styles.waterTitle}>Uống nước</ThemedText>
-                <ThemedText style={styles.waterValue}>{waterAmount} ml</ThemedText>
+          <MoChiTutorialTarget targetId="home_water">
+            <View style={[styles.waterCard, styles.glassWaterCard]}>
+              {/* Left: icon + label + value */}
+              <View style={styles.waterLeft}>
+                <Ionicons name="water" size={28} color="#0EA5E9" />
+                <View style={styles.waterLabelWrap}>
+                  <ThemedText style={styles.waterTitle}>Uống nước</ThemedText>
+                  <ThemedText style={styles.waterValue}>{waterAmount} ml</ThemedText>
+                </View>
+              </View>
+
+              {/* Right: pill controls */}
+              <View style={styles.waterPill}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.waterPillBtn,
+                    pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
+                  ]}
+                  onPress={handleSubtractWater}
+                >
+                  <WaterGlassIcon isPlus={false} />
+                </Pressable>
+
+                <View style={styles.waterPillDivider} />
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.waterPillBtn,
+                    pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
+                  ]}
+                  onPress={handleAddWater}
+                >
+                  <WaterGlassIcon isPlus={true} />
+                </Pressable>
               </View>
             </View>
-
-            {/* Right: pill controls */}
-            <View style={styles.waterPill}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.waterPillBtn,
-                  pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
-                ]}
-                onPress={handleSubtractWater}
-              >
-                <WaterGlassIcon isPlus={false} />
-              </Pressable>
-
-              <View style={styles.waterPillDivider} />
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.waterPillBtn,
-                  pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
-                ]}
-                onPress={handleAddWater}
-              >
-                <WaterGlassIcon isPlus={true} />
-              </Pressable>
-            </View>
-          </View>
+          </MoChiTutorialTarget>
           {showWaterMoChi && (
             <View style={styles.moChiWaterNotice}>
               <MoChiInlineNotice mochiEvent="water_added" compact hideSprite />
@@ -871,10 +877,6 @@ const HomeScreen = (): React.ReactElement => {
           )}
         </Animated.View>
       </Screen>
-      <HomeFirstLoginTutorial
-        isAuthenticated={isAuthenticated}
-        needsOnboarding={needsOnboarding}
-      />
     </View>
   );
 };

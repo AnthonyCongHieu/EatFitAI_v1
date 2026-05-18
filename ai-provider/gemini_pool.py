@@ -846,6 +846,7 @@ class GeminiPoolManager:
         response_schema: Optional[Dict[str, Any]] = None,
         thinking_budget: Optional[int] = None,
         tools: Optional[List[Dict[str, Any]]] = None,
+        response_metadata_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> str:
         probe_targets: List[GeminiPoolEntry] = []
         with self._lock:
@@ -911,6 +912,7 @@ class GeminiPoolManager:
                     response_schema=response_schema,
                     thinking_budget=thinking_budget,
                     tools=tools,
+                    response_metadata_callback=response_metadata_callback,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1132,6 +1134,7 @@ class GeminiPoolManager:
         response_schema: Optional[Dict[str, Any]],
         thinking_budget: Optional[int],
         tools: Optional[List[Dict[str, Any]]],
+        response_metadata_callback: Optional[Callable[[Dict[str, Any]], None]],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
@@ -1148,6 +1151,7 @@ class GeminiPoolManager:
                     response_schema=response_schema,
                     thinking_budget=thinking_budget,
                     tools=tools,
+                    response_metadata_callback=response_metadata_callback,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1170,6 +1174,7 @@ class GeminiPoolManager:
         response_schema: Optional[Dict[str, Any]],
         thinking_budget: Optional[int],
         tools: Optional[List[Dict[str, Any]]],
+        response_metadata_callback: Optional[Callable[[Dict[str, Any]], None]],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
@@ -1220,6 +1225,8 @@ class GeminiPoolManager:
             self._raise_for_error_response(entry, response)
 
         data = response.json()
+        if response_metadata_callback is not None:
+            response_metadata_callback(data)
         actual_tokens = _extract_total_tokens(data)
         with self._lock:
             entry.reconcile_usage(_utcnow(), request_id, estimated_tokens, actual_tokens)

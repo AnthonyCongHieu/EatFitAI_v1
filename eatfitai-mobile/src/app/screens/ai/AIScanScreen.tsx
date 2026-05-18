@@ -49,6 +49,10 @@ import { IngredientBasketFab } from '../../../components/scan/IngredientBasketFa
 import { IngredientBasketSheet } from '../../../components/scan/IngredientBasketSheet';
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
 import { getVisionFoodDisplayName } from '../../../utils/translate';
+import {
+  isFinishedDishLabel,
+  isRecipeIngredientEligibleLabel,
+} from '../../../utils/recipeEligibility';
 import { TEST_IDS } from '../../../testing/testIds';
 import {
   calculateVisionDefaultMacroTotals,
@@ -546,7 +550,23 @@ const AIScanScreen: React.FC = () => {
         return;
       }
 
-      validItems.forEach((item) => {
+      const ingredientItems = validItems.filter((item) =>
+        isRecipeIngredientEligibleLabel(item.label),
+      );
+      const finishedDishItems = validItems.filter((item) => isFinishedDishLabel(item.label));
+
+      if (ingredientItems.length === 0 && finishedDishItems.length > 0) {
+        navigation.navigate('RecipeSuggestions', { mode: 'daily_recommendation' });
+        Toast.show({
+          type: 'info',
+          text1: 'Đây là món đã nấu xong',
+          text2: 'Mở gợi ý món nên ăn hôm nay thay vì thêm vào giỏ nguyên liệu',
+          visibilityTime: 1800,
+        });
+        return;
+      }
+
+      ingredientItems.forEach((item) => {
         addIngredient({
           name: getVisionFoodDisplayName(item),
           confidence: item.confidence,
@@ -558,15 +578,15 @@ const AIScanScreen: React.FC = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: 'success',
-        text1: validItems.length > 1 ? 'Đã thêm các món vào giỏ' : 'Đã thêm vào giỏ',
+        text1: ingredientItems.length > 1 ? 'Đã thêm các nguyên liệu vào giỏ' : 'Đã thêm vào giỏ',
         text2:
-          validItems.length > 1
-            ? `${validItems.length} món/nguyên liệu đã được ghi nhận`
-            : getVisionFoodDisplayName(validItems[0]!),
+          ingredientItems.length > 1
+            ? `${ingredientItems.length} nguyên liệu đã được ghi nhận`
+            : getVisionFoodDisplayName(ingredientItems[0]!),
         visibilityTime: 1500,
       });
     },
-    [addIngredient, capturedUri],
+    [addIngredient, capturedUri, navigation],
   );
 
   const handleGramModalConfirm = useCallback(() => {

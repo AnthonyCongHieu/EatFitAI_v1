@@ -34,6 +34,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
 
 type AiCookingInstructions = {
+  prepItems?: string[];
   steps: string[];
   cookingTimeMinutes?: number;
   difficulty?: string;
@@ -102,9 +103,10 @@ const RecipeDetailScreen = (): React.ReactElement => {
     if (!recipe) return;
 
     const fetchAiInstructions = async () => {
-      setAiInstructions((prev) => ({
-        ...prev,
-        steps: recipe.instructions ?? prev.steps,
+        setAiInstructions((prev) => ({
+          ...prev,
+          prepItems: route.params.prepItems ?? prev.prepItems,
+          steps: recipe.instructions ?? prev.steps,
         sourceUrls: recipe.sourceUrls ?? prev.sourceUrls,
         youtubeVideo: recipe.youtubeVideo ?? prev.youtubeVideo,
         guideStatus: recipe.guideStatus ?? prev.guideStatus,
@@ -114,6 +116,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
       try {
         const result = await aiService.getRecipeCookingGuide(recipe.recipeId);
         setAiInstructions({
+          prepItems: result.prepItems,
           steps: result.steps,
           cookingTimeMinutes: result.cookingTimeMinutes,
           difficulty: result.difficulty,
@@ -142,6 +145,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
             recipe.description,
           );
           setAiInstructions({
+            prepItems: result.prepItems,
             steps: result.steps,
             difficulty: result.difficulty,
             isLoading: false,
@@ -242,6 +246,11 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const guideSteps = aiInstructions.steps.length > 0
     ? aiInstructions.steps
     : recipe.instructions ?? [];
+  const prepItems = aiInstructions.prepItems?.length
+    ? aiInstructions.prepItems
+    : route.params.prepItems ?? [];
+  const availableIngredients = route.params.availableIngredients ?? [];
+  const missingIngredients = route.params.missingIngredients ?? [];
   const guideSourceUrls = aiInstructions.sourceUrls?.length
     ? aiInstructions.sourceUrls
     : recipe.sourceUrls ?? [];
@@ -348,6 +357,38 @@ const RecipeDetailScreen = (): React.ReactElement => {
                     <View style={S.ingDot} />
                     <ThemedText style={S.bodyTextItem}>{ing.foodName}</ThemedText>
                     <ThemedText style={S.bodyTextWeight}>{ing.grams}g</ThemedText>
+                  </View>
+                ))}
+              </View>
+            </Animated.View>
+          )}
+
+          {(availableIngredients.length > 0 || missingIngredients.length > 0) && (
+            <Animated.View entering={FadeInDown.delay(350)} style={S.glassCard}>
+              <ThemedText style={S.sectionTitle}>Tình trạng nguyên liệu</ThemedText>
+              {availableIngredients.length > 0 && (
+                <View style={S.ingredientStatusBlock}>
+                  <ThemedText style={S.ingredientStatusTitle}>Đã có</ThemedText>
+                  <ThemedText style={S.bodyText}>{availableIngredients.join(', ')}</ThemedText>
+                </View>
+              )}
+              {missingIngredients.length > 0 && (
+                <View style={S.ingredientStatusBlock}>
+                  <ThemedText style={S.ingredientStatusTitle}>Còn thiếu</ThemedText>
+                  <ThemedText style={S.bodyText}>{missingIngredients.join(', ')}</ThemedText>
+                </View>
+              )}
+            </Animated.View>
+          )}
+
+          {prepItems.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(375)} style={S.glassCard}>
+              <ThemedText style={S.sectionTitle}>Chuẩn bị</ThemedText>
+              <View style={S.ingredientsWrap}>
+                {prepItems.map((item) => (
+                  <View key={item} style={S.ingredientRow}>
+                    <View style={S.ingDot} />
+                    <ThemedText style={S.bodyTextItem}>{item}</ThemedText>
                   </View>
                 ))}
               </View>
@@ -516,6 +557,8 @@ const S = StyleSheet.create({
   },
   statusBadgeText: { fontSize: 10, fontFamily: 'Inter_700Bold', color: P.primary },
   bodyText: { fontSize: 14, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, lineHeight: 22 },
+  ingredientStatusBlock: { gap: 4 },
+  ingredientStatusTitle: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
 
   ingredientsWrap: { gap: 10 },
   ingredientRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },

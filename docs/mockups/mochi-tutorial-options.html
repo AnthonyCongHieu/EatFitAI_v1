@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EatFitAI MoChi Tutorial Mockups</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --panel: #101a2b;
+      --panel-2: #172235;
+      --text: #f5fbff;
+      --muted: #9fb0c5;
+      --line: rgba(181, 203, 227, 0.16);
+      --green: #51e278;
+      --green-2: #96f6b0;
+      --blue: #76c7ff;
+      --amber: #ffd166;
+      --danger: #ff6b6b;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+      font-family: Inter, "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(81, 226, 120, 0.16), transparent 32%),
+        radial-gradient(circle at 80% 0%, rgba(118, 199, 255, 0.13), transparent 30%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .mode-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(16, 26, 43, 0.72);
+      backdrop-filter: blur(18px);
+    }
+
+    .tab {
+      border: 0;
+      border-radius: 13px;
+      padding: 10px 14px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      color: #052e16;
+      background: var(--green);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .phone-wrap {
+      position: sticky;
+      top: 20px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: rgba(16, 26, 43, 0.52);
+      box-shadow: var(--shadow);
+    }
+
+    .phone {
+      position: relative;
+      width: min(392px, 100%);
+      aspect-ratio: 392 / 844;
+      overflow: hidden;
+      border: 10px solid #030711;
+      border-radius: 42px;
+      background: #07111f;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .status {
+      height: 34px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 22px;
+      color: rgba(255,255,255,0.74);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .home {
+      height: calc(100% - 34px);
+      display: flex;
+      flex-direction: column;
+      padding: 12px 16px 96px;
+      gap: 14px;
+      background:
+        radial-gradient(circle at 50% 8%, rgba(81, 226, 120, 0.12), transparent 28%),
+        linear-gradient(180deg, #081425, #07111f 48%, #07111f);
+    }
+
+    .home-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hello {
+      font-size: 22px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(81, 226, 120, 0.14);
+      border: 1px solid rgba(81, 226, 120, 0.38);
+      color: var(--green-2);
+      font-weight: 900;
+    }
+
+    .summary-card {
+      padding: 16px;
+      min-height: 154px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(81,226,120,0.16), rgba(118,199,255,0.08));
+      border: 1px solid rgba(81, 226, 120, 0.18);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .calories {
+      margin: 8px 0 12px;
+      font-size: 42px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .macro-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .macro {
+      padding: 10px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .macro strong {
+      display: block;
+      color: var(--text);
+      font-size: 16px;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .quick {
+      min-height: 92px;
+      padding: 13px;
+      border-radius: 22px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+
+    .quick .icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 10px;
+      color: #052e16;
+      background: var(--green);
+      font-weight: 900;
+    }
+
+    .quick h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+
+    .quick p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .water-card {
+      margin-top: auto;
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(118, 199, 255, 0.09);
+      border: 1px solid rgba(118, 199, 255, 0.18);
+    }
+
+    .water-title {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .bar {
+      height: 9px;
+      margin-top: 12px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+
+    .bar div {
+      height: 100%;
+      width: 52%;
+      border-radius: inherit;
+      background: var(--blue);
+    }
+
+    .nav {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      height: 72px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      align-items: center;
+      padding: 8px;
+      border-radius: 28px;
+      background: rgba(10, 17, 30, 0.92);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(20px);
+    }
+
+    .nav-item {
+      height: 54px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      gap: 2px;
+    }
+
+    .nav-item strong {
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .nav-item.mochi {
+      color: #052e16;
+      background: var(--green);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .option-visual {
+      display: none;
+    }
+
+    .option-visual.active {
+      display: block;
+    }
+
+    .scrim {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 14, 0.70);
+    }
+
+    .spotlight {
+      position: absolute;
+      border: 2px solid var(--green);
+      border-radius: 26px;
+      box-shadow: 0 0 0 999px rgba(2, 6, 14, 0.70), 0 0 26px rgba(81, 226, 120, 0.62);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .spot-chip {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      padding: 9px 13px;
+      border-radius: 999px;
+      background: var(--green);
+      color: #052e16;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .coach {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      padding: 14px;
+      border-radius: 22px;
+      background: #101a2b;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.36);
+      pointer-events: auto;
+    }
+
+    .coach.top {
+      top: 72px;
+    }
+
+    .coach.bottom {
+      bottom: 102px;
+    }
+
+    .coach-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mochi-face {
+      width: 72px;
+      height: 72px;
+      flex: 0 0 auto;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 48% 32%, #f8fff4, #c8ffd4 62%, #64df86);
+      color: #052e16;
+      font-size: 34px;
+      box-shadow: inset 0 -8px 20px rgba(5,46,22,0.16);
+    }
+
+    .coach h2 {
+      margin: 0 0 5px;
+      font-size: 17px;
+      line-height: 1.22;
+    }
+
+    .coach p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .coach-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+    }
+
+    .dot.on {
+      width: 24px;
+      border-radius: 99px;
+      background: var(--green);
+    }
+
+    .next {
+      border: 1px solid rgba(81, 226, 120, 0.45);
+      border-radius: 13px;
+      padding: 9px 12px;
+      background: rgba(81,226,120,0.12);
+      color: var(--green-2);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .sheet {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 90px;
+      border-radius: 28px;
+      padding: 16px;
+      background: #101a2b;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+    }
+
+    .sheet-handle {
+      width: 42px;
+      height: 4px;
+      margin: 0 auto 14px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.22);
+    }
+
+    .split-card {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 86px;
+      padding: 18px;
+      border-radius: 28px;
+      background: linear-gradient(145deg, #111c2f, #0e1828);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+      pointer-events: auto;
+    }
+
+    .split-target-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .split-target {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .split-target.active {
+      color: #052e16;
+      background: var(--green);
+    }
+
+    .path-line {
+      position: absolute;
+      left: 50%;
+      top: 96px;
+      bottom: 118px;
+      width: 3px;
+      border-radius: 99px;
+      background: linear-gradient(180deg, var(--green), var(--blue));
+      opacity: 0.68;
+    }
+
+    .path-node {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--green);
+      background: #0c1728;
+      color: var(--green);
+      font-weight: 900;
+      box-shadow: 0 0 20px rgba(81,226,120,0.36);
+    }
+
+    .path-node.done {
+      background: var(--green);
+      color: #052e16;
+    }
+
+    .path-node.n1 { left: 38px; top: 118px; }
+    .path-node.n2 { right: 44px; top: 238px; }
+    .path-node.n3 { left: 52px; top: 364px; }
+    .path-node.n4 { right: 38px; top: 492px; }
+
+    .path-card {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 102px;
+      padding: 14px;
+      border-radius: 22px;
+      background: #101a2b;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+    }
+
+    .option-panel {
+      min-height: 720px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: rgba(16, 26, 43, 0.52);
+      box-shadow: var(--shadow);
+    }
+
+    .option-content {
+      display: none;
+    }
+
+    .option-content.active {
+      display: block;
+    }
+
+    .option-content h2 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .option-content > p {
+      margin: 0 0 18px;
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .score {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .score small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .score strong {
+      font-size: 24px;
+      color: var(--green-2);
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .note {
+      padding: 15px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--line);
+    }
+
+    .note h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .note ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .recommend {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(81,226,120,0.10);
+      border: 1px solid rgba(81,226,120,0.26);
+      color: #d8ffe2;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 960px) {
+      .topbar {
+        display: block;
+      }
+
+      .mode-tabs {
+        margin-top: 18px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .phone-wrap {
+        position: relative;
+        top: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        padding: 16px;
+      }
+
+      .score-grid,
+      .notes {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div>
+        <h1>MoChi Tutorial Focus Mockups</h1>
+        <p class="subtitle">Bốn hướng điều hướng người dùng thao tác thật. Mục tiêu là giúp người mới hiểu luồng chính mà không che nội dung quan trọng, không tạo cảm giác bị ép, và giữ giọng MoChi ấm nhưng gọn.</p>
+      </div>
+      <nav class="mode-tabs" aria-label="Chọn mẫu tutorial">
+        <button class="tab active" data-option="spotlight">A. Spotlight thật</button>
+        <button class="tab" data-option="sheet">B. Coach sheet</button>
+        <button class="tab" data-option="split">C. Step card</button>
+        <button class="tab" data-option="path">D. Path map</button>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <div class="phone-wrap">
+        <div class="phone" aria-label="Mobile preview">
+          <div class="status"><span>9:41</span><span>5G 82%</span></div>
+          <div class="home">
+            <div class="home-head">
+              <div class="hello">Hôm nay mình<br />ăn nhẹ nhàng nhé</div>
+              <div class="avatar">M</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Còn lại hôm nay</div>
+              <div class="calories">1,245</div>
+              <div class="macro-row">
+                <div class="macro"><strong>82g</strong>Đạm</div>
+                <div class="macro"><strong>146g</strong>Carbs</div>
+                <div class="macro"><strong>42g</strong>Béo</div>
+              </div>
+            </div>
+            <div class="quick-grid">
+              <div class="quick">
+                <div class="icon">+</div>
+                <h3>Thêm bữa</h3>
+                <p>Tìm món hoặc tự ghi nhanh.</p>
+              </div>
+              <div class="quick">
+                <div class="icon">◎</div>
+                <h3>Scan</h3>
+                <p>Chụp món rồi kiểm tra khẩu phần.</p>
+              </div>
+            </div>
+            <div class="water-card">
+              <div class="water-title"><span>Uống nước</span><span>1.2 / 2.2L</span></div>
+              <div class="bar"><div></div></div>
+            </div>
+          </div>
+          <div class="nav">
+            <div class="nav-item"><strong>⌂</strong>Home</div>
+            <div class="nav-item"><strong>◉</strong>Scan</div>
+            <div class="nav-item mochi"><strong>●</strong>MoChi</div>
+            <div class="nav-item"><strong>▤</strong>Nhật ký</div>
+            <div class="nav-item"><strong>↗</strong>Stats</div>
+          </div>
+
+          <div class="overlay option-visual active" data-option="spotlight">
+            <div class="spotlight" style="left: 149px; bottom: 18px; width: 94px; height: 76px;">
+              <div class="spot-chip">Chạm MoChi</div>
+            </div>
+            <div class="coach top">
+              <div class="coach-row">
+                <div class="mochi-face">•</div>
+                <div>
+                  <h2>Gặp MoChi</h2>
+                  <p>Mỗi khi cần gợi ý bước nhỏ tiếp theo, MoChi sẽ ở đây. Chạm vùng đang sáng để thử.</p>
+                </div>
+              </div>
+              <div class="coach-actions">
+                <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <button class="next">Xem bước sau</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="overlay option-visual" data-option="sheet">
+            <div class="scrim"></div>
+            <div class="spotlight" style="left: 245px; top: 498px; width: 118px; height: 76px;">
+              <div class="spot-chip">Uống nước</div>
+            </div>
+            <div class="sheet">
+              <div class="sheet-handle"></div>
+              <div class="coach-row">
+                <div class="mochi-face">•</div>
+                <div>
+                  <h2>Một nhịp nước</h2>
+                  <p>Chạm thẻ nước khi bạn vừa uống xong. MoChi chỉ nhắc nhẹ, không chen vào thao tác chính.</p>
+                </div>
+              </div>
+              <div class="coach-actions">
+                <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot on"></span><span class="dot"></span></div>
+                <button class="next">Đã hiểu</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="overlay option-visual" data-option="split">
+            <div class="scrim"></div>
+            <div class="split-card">
+              <div class="coach-row">
+                <div class="mochi-face">•</div>
+                <div>
+                  <h2>Bắt đầu bằng một việc</h2>
+                  <p>MoChi cho bạn xem các luồng chính trước, rồi mới bật focus từng nút khi cần.</p>
+                </div>
+              </div>
+              <div class="split-target-list">
+                <div class="split-target active">1. Thêm bữa để tạo nhật ký đầu tiên</div>
+                <div class="split-target">2. Scan khi muốn nhanh</div>
+                <div class="split-target">3. Xem Stats khi đã có dữ liệu</div>
+              </div>
+              <div class="coach-actions">
+                <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+                <button class="next">Focus nút này</button>
+              </div>
+            </div>
+            <div class="spotlight" style="left: 114px; top: 398px; width: 164px; height: 74px;">
+              <div class="spot-chip">Thêm bữa</div>
+            </div>
+          </div>
+
+          <div class="overlay option-visual" data-option="path">
+            <div class="scrim"></div>
+            <div class="path-line"></div>
+            <div class="path-node done n1">1</div>
+            <div class="path-node n2">2</div>
+            <div class="path-node n3">3</div>
+            <div class="path-node n4">4</div>
+            <div class="path-card">
+              <div class="coach-row">
+                <div class="mochi-face">•</div>
+                <div>
+                  <h2>Đi theo lộ trình nhỏ</h2>
+                  <p>Hợp cho game hóa: người dùng thấy mình đang ở đâu trong chuỗi thao tác đầu tiên.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="option-panel">
+        <article class="option-content active" data-option="spotlight">
+          <h2>A. Spotlight thật vào nút cần chạm</h2>
+          <p>Đây là hướng gần nhất với yêu cầu “focus như game tutorial”: che nền, khoanh đúng target, và để thao tác chính là chạm vào vùng đang sáng. Bubble MoChi chỉ giải thích một ý, không chiếm vai trò nút Next.</p>
+          <div class="score-grid">
+            <div class="score"><small>Độ rõ thao tác</small><strong>9/10</strong></div>
+            <div class="score"><small>Production effort</small><strong>8/10</strong></div>
+            <div class="score"><small>Rủi ro che UI</small><strong>Trung bình</strong></div>
+          </div>
+          <div class="notes">
+            <div class="note">
+              <h3>Điểm mạnh</h3>
+              <ul>
+                <li>Dạy thao tác thật, không phải đọc hướng dẫn.</li>
+                <li>Phù hợp Home, Scan, Thêm bữa, Stats.</li>
+                <li>Có thể đo completion từng bước rõ ràng.</li>
+              </ul>
+            </div>
+            <div class="note">
+              <h3>Cần làm kỹ</h3>
+              <ul>
+                <li>Cần registry đo vị trí target thật bằng layout.</li>
+                <li>Phải có collision rules theo màn hình nhỏ.</li>
+                <li>Không nên chạy trên mọi màn cùng lúc.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="recommend">Khuyến nghị của mình: chọn A làm production v1 cho first-run tutorial, nhưng triển khai bằng target registry thay vì hard-code tọa độ.</div>
+        </article>
+
+        <article class="option-content" data-option="sheet">
+          <h2>B. Bottom coach sheet + spotlight nhẹ</h2>
+          <p>MoChi đứng trong bottom sheet, spotlight vẫn có nhưng sheet là trung tâm. Hướng này an toàn hơn cho layout, dễ responsive và ít che đầu màn hình.</p>
+          <div class="score-grid">
+            <div class="score"><small>Độ rõ thao tác</small><strong>7/10</strong></div>
+            <div class="score"><small>Production effort</small><strong>6/10</strong></div>
+            <div class="score"><small>Rủi ro che UI</small><strong>Thấp</strong></div>
+          </div>
+          <div class="notes">
+            <div class="note">
+              <h3>Điểm mạnh</h3>
+              <ul>
+                <li>Ít va chạm với header, input, toast.</li>
+                <li>Hợp giải thích setting hoặc trạng thái phức tạp.</li>
+                <li>Dễ làm accessible và dismissible.</li>
+              </ul>
+            </div>
+            <div class="note">
+              <h3>Điểm yếu</h3>
+              <ul>
+                <li>Cảm giác giống onboarding sheet hơn game tutorial.</li>
+                <li>Người dùng có thể bấm sheet thay vì target thật.</li>
+                <li>Không nổi bật bằng spotlight thật.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="recommend">Phù hợp làm fallback khi target ở vùng nguy hiểm hoặc màn hình quá nhỏ.</div>
+        </article>
+
+        <article class="option-content" data-option="split">
+          <h2>C. Step card trước, focus sau</h2>
+          <p>Người dùng thấy danh sách 3-4 bước chính trước rồi mới đi vào từng target. Hướng này phù hợp nếu muốn dạy “bản đồ app” trước khi bắt chạm.</p>
+          <div class="score-grid">
+            <div class="score"><small>Độ rõ thao tác</small><strong>8/10</strong></div>
+            <div class="score"><small>Production effort</small><strong>7/10</strong></div>
+            <div class="score"><small>Rủi ro che UI</small><strong>Trung bình</strong></div>
+          </div>
+          <div class="notes">
+            <div class="note">
+              <h3>Điểm mạnh</h3>
+              <ul>
+                <li>Dễ hiểu tổng quan luồng chính.</li>
+                <li>Tốt cho người dùng hoàn toàn mới.</li>
+                <li>Có thể dùng cho các flow dài như scan → review → diary.</li>
+              </ul>
+            </div>
+            <div class="note">
+              <h3>Điểm yếu</h3>
+              <ul>
+                <li>Nặng chữ hơn, dễ thành tutorial đọc.</li>
+                <li>Không nên dùng quá 1 lần đầu app.</li>
+                <li>Cần copy rất ngắn để không gây mệt.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="recommend">Dùng tốt cho màn “Giới thiệu luồng đầu tiên”, nhưng không nên là default cho mọi nudge.</div>
+        </article>
+
+        <article class="option-content" data-option="path">
+          <h2>D. Game-like path map</h2>
+          <p>Một bản đồ nhiệm vụ nhỏ với node 1-2-3-4. Hướng này vui và rõ tiến độ, nhưng dễ cảm giác game hóa quá tay nếu đặt lên app dinh dưỡng hằng ngày.</p>
+          <div class="score-grid">
+            <div class="score"><small>Độ rõ thao tác</small><strong>6/10</strong></div>
+            <div class="score"><small>Production effort</small><strong>8/10</strong></div>
+            <div class="score"><small>Rủi ro che UI</small><strong>Cao</strong></div>
+          </div>
+          <div class="notes">
+            <div class="note">
+              <h3>Điểm mạnh</h3>
+              <ul>
+                <li>Tạo cảm giác vui khi first-run.</li>
+                <li>Rất hợp achievement hoặc streak tutorial.</li>
+                <li>Dễ truyền cảm giác “mình đang tiến bộ”.</li>
+              </ul>
+            </div>
+            <div class="note">
+              <h3>Điểm yếu</h3>
+              <ul>
+                <li>Ít tập trung vào target thật.</li>
+                <li>Dễ che nhiều nội dung cùng lúc.</li>
+                <li>Có thể lệch tone nếu người dùng chỉ muốn ghi món nhanh.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="recommend">Không nên chọn làm tutorial chính; giữ cho achievements hoặc thử nghiệm gamification sau.</div>
+        </article>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const visuals = document.querySelectorAll('.option-visual');
+    const contents = document.querySelectorAll('.option-content');
+
+    function setOption(option) {
+      tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.option === option));
+      visuals.forEach((visual) => visual.classList.toggle('active', visual.dataset.option === option));
+      contents.forEach((content) => content.classList.toggle('active', content.dataset.option === option));
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => setOption(tab.dataset.option));
+    });
+  </script>
+</body>
+</html>

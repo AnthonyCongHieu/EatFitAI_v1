@@ -10,6 +10,14 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { navigateToStatsWeeklyReview } from '../app/navigation/navigationRef';
+import {
+  toMoChiNotificationItemFromPayload,
+  useMoChiNotificationInboxStore,
+} from '../features/mochi/mochiNotificationInbox';
+import {
+  notifyMoChiReminderSettingsChanged,
+  resolveMoChiSystemNotificationBehavior,
+} from '../features/mochi/mochiReminderOrchestrator';
 import logger from '../utils/logger';
 import apiClient from './apiClient';
 import { trackEvent } from './analytics';
@@ -33,13 +41,19 @@ if (isExpoGo) {
 
     // Config hiển thị notification khi app đang foreground
     notificationsModule.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
+      handleNotification: async (notification) => {
+        const isHandledByMoChi = isMoChiHandledNotification(
+          notification.request.content.data as Record<string, unknown> | undefined,
+        );
+
+        return {
+          shouldShowAlert: !isHandledByMoChi,
+          shouldPlaySound: !isHandledByMoChi,
+          shouldSetBadge: false,
+          shouldShowBanner: !isHandledByMoChi,
+          shouldShowList: true,
+        };
+      },
     });
     logger.info('[NotificationService] Native module loaded successfully');
   } catch (error) {
@@ -117,7 +131,12 @@ const WEEKLY_REVIEW_TIME = '08:30';
 type NotificationTarget = 'weekly-review';
 
 let notificationResponseSubscription: { remove: () => void } | null = null;
+let notificationReceivedSubscription: { remove: () => void } | null = null;
 let pendingNotificationTarget: NotificationTarget | null = null;
+
+export const isMoChiHandledNotification = (
+  data?: Record<string, unknown> | null,
+): boolean => typeof data?.mochiEventType === 'string';
 
 const getExpoProjectId = (): string | undefined => {
   const constantsWithEas = Constants as unknown as { easConfig?: { projectId?: string } };
@@ -202,23 +221,56 @@ const processNotificationResponse = (
   response: any,
   source: 'tap' | 'launch',
 ): void => {
+  const content = response?.notification?.request?.content;
+  const item = toMoChiNotificationItemFromPayload({
+    title: content?.title,
+    body: content?.body,
+    data: content?.data,
+    source,
+  });
+  if (item) {
+    const inbox = useMoChiNotificationInboxStore.getState();
+    inbox.upsertItem(item);
+    inbox.markRead(item.id);
+  }
+
   const target = resolveNotificationTarget(response);
   if (!target) {
     return;
   }
 
   handleNotificationTarget(target, source);
+  if (item) {
+    useMoChiNotificationInboxStore.getState().markActed(item.id);
+  }
 };
 
 const ensureNotificationResponseListener = (): void => {
-  if (!Notifications || notificationResponseSubscription) {
+  if (!Notifications) {
     return;
   }
 
-  notificationResponseSubscription =
-    Notifications.addNotificationResponseReceivedListener((response) => {
-      processNotificationResponse(response, 'tap');
-    });
+  if (!notificationResponseSubscription) {
+    notificationResponseSubscription =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        processNotificationResponse(response, 'tap');
+      });
+  }
+
+  if (!notificationReceivedSubscription) {
+    notificationReceivedSubscription =
+      Notifications.addNotificationReceivedListener((notification) => {
+        const item = toMoChiNotificationItemFromPayload({
+          title: notification.request.content.title,
+          body: notification.request.content.body,
+          data: notification.request.content.data as Record<string, unknown> | undefined,
+          source: 'foreground',
+        });
+        if (item) {
+          useMoChiNotificationInboxStore.getState().upsertItem(item);
+        }
+      });
+  }
 };
 
 export const flushPendingNotificationNavigation = (): void => {
@@ -266,7 +318,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('meal-reminders', {
         name: 'Nhắc nhở bữa ăn',
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: Notifications.AndroidImportance.DEFAULT,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF6B00',
       });
@@ -329,6 +381,48 @@ function parseTime(timeString: string): { hours: number; minutes: number } {
   };
 }
 
+const formatTime = (hours: number, minutes: number): string =>
+  `${String((hours + 24) % 24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+const addMinutesToTime = (timeString: string, minutesToAdd: number): string => {
+  const { hours, minutes } = parseTime(timeString);
+  const totalMinutes = hours * 60 + minutes + minutesToAdd;
+  const normalized = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  return formatTime(Math.floor(normalized / 60), normalized % 60);
+};
+
+const isTimeInsideQuietHours = (
+  time: string,
+  settings: NotificationSettings,
+): boolean => {
+  if (!settings.quietHoursEnabled) {
+    return false;
+  }
+
+  const current = parseTime(time);
+  const from = parseTime(settings.quietHoursFrom);
+  const to = parseTime(settings.quietHoursTo);
+  const currentMinutes = current.hours * 60 + current.minutes;
+  const fromMinutes = from.hours * 60 + from.minutes;
+  const toMinutes = to.hours * 60 + to.minutes;
+
+  if (fromMinutes === toMinutes) {
+    return false;
+  }
+
+  return fromMinutes < toMinutes
+    ? currentMinutes >= fromMinutes && currentMinutes < toMinutes
+    : currentMinutes >= fromMinutes || currentMinutes < toMinutes;
+};
+
+const resolveScheduledTime = (
+  requestedTime: string,
+  settings: NotificationSettings,
+): string =>
+  isTimeInsideQuietHours(requestedTime, settings)
+    ? settings.quietHoursTo
+    : requestedTime;
+
 /**
  * Schedule một notification hàng ngày vào giờ chỉ định
  */
@@ -337,6 +431,10 @@ async function scheduleDailyNotification(
   time: string,
   title: string,
   body: string,
+  options?: {
+    priority?: 'DEFAULT' | 'HIGH';
+    data?: Record<string, unknown>;
+  },
 ): Promise<string | null> {
   if (!Notifications) return null;
 
@@ -352,7 +450,11 @@ async function scheduleDailyNotification(
         title,
         body,
         sound: 'default',
-        priority: Notifications.AndroidNotificationPriority.HIGH,
+        priority:
+          options?.priority === 'HIGH'
+            ? Notifications.AndroidNotificationPriority.HIGH
+            : Notifications.AndroidNotificationPriority.DEFAULT,
+        data: options?.data,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -382,9 +484,14 @@ async function scheduleWeeklyReviewNotification(): Promise<string | null> {
         title: MEAL_MESSAGES.weekly.title,
         body: MEAL_MESSAGES.weekly.body,
         sound: 'default',
-        priority: Notifications.AndroidNotificationPriority.HIGH,
+        priority: Notifications.AndroidNotificationPriority.DEFAULT,
         data: {
           target: 'weekly-review',
+          mochiEventType: 'weekly_review',
+          mochiAction: 'viewProgress',
+          mochiCategory: 'report',
+          mochiSeverity: 'active',
+          ctaLabel: 'Xem báo cáo',
         },
       },
       trigger: {
@@ -445,6 +552,8 @@ export async function shouldNudgeFromBackend(input: {
 export async function scheduleNotifications(
   settings: NotificationSettings,
 ): Promise<void> {
+  notifyMoChiReminderSettingsChanged();
+
   // Nếu notifications bị tắt, cancel tất cả
   if (!settings.enabled) {
     await cancelAllMealNotifications();
@@ -460,44 +569,92 @@ export async function scheduleNotifications(
 
   // Schedule từng meal reminder
   if (settings.breakfastEnabled) {
+    const behavior = resolveMoChiSystemNotificationBehavior('meal_reminder');
     await scheduleDailyNotification(
       NOTIFICATION_IDS.breakfast,
-      settings.breakfastTime,
+      resolveScheduledTime(addMinutesToTime(settings.breakfastTime, 30), settings),
       MEAL_MESSAGES.breakfast.title,
       MEAL_MESSAGES.breakfast.body,
+      {
+        priority: behavior.androidPriority,
+        data: {
+          mochiEventType: 'meal_reminder',
+          mochiAction: 'addMeal',
+          mochiCategory: 'reminder',
+          mochiSeverity: 'active',
+          mealTypeId: 1,
+          ctaLabel: 'Ghi bữa',
+        },
+      },
     );
   } else {
     await cancelNotification(NOTIFICATION_IDS.breakfast);
   }
 
   if (settings.lunchEnabled) {
+    const behavior = resolveMoChiSystemNotificationBehavior('meal_reminder');
     await scheduleDailyNotification(
       NOTIFICATION_IDS.lunch,
-      settings.lunchTime,
+      resolveScheduledTime(addMinutesToTime(settings.lunchTime, 30), settings),
       MEAL_MESSAGES.lunch.title,
       MEAL_MESSAGES.lunch.body,
+      {
+        priority: behavior.androidPriority,
+        data: {
+          mochiEventType: 'meal_reminder',
+          mochiAction: 'addMeal',
+          mochiCategory: 'reminder',
+          mochiSeverity: 'active',
+          mealTypeId: 2,
+          ctaLabel: 'Ghi bữa',
+        },
+      },
     );
   } else {
     await cancelNotification(NOTIFICATION_IDS.lunch);
   }
 
   if (settings.dinnerEnabled) {
+    const behavior = resolveMoChiSystemNotificationBehavior('meal_reminder');
     await scheduleDailyNotification(
       NOTIFICATION_IDS.dinner,
-      settings.dinnerTime,
+      resolveScheduledTime(addMinutesToTime(settings.dinnerTime, 30), settings),
       MEAL_MESSAGES.dinner.title,
       MEAL_MESSAGES.dinner.body,
+      {
+        priority: behavior.androidPriority,
+        data: {
+          mochiEventType: 'meal_reminder',
+          mochiAction: 'addMeal',
+          mochiCategory: 'reminder',
+          mochiSeverity: 'active',
+          mealTypeId: 3,
+          ctaLabel: 'Ghi bữa',
+        },
+      },
     );
   } else {
     await cancelNotification(NOTIFICATION_IDS.dinner);
   }
 
   if (settings.snackEnabled) {
+    const behavior = resolveMoChiSystemNotificationBehavior('meal_reminder');
     await scheduleDailyNotification(
       NOTIFICATION_IDS.snack,
-      settings.snackTime,
+      resolveScheduledTime(addMinutesToTime(settings.snackTime, 30), settings),
       MEAL_MESSAGES.snack.title,
       MEAL_MESSAGES.snack.body,
+      {
+        priority: behavior.androidPriority,
+        data: {
+          mochiEventType: 'meal_reminder',
+          mochiAction: 'addMeal',
+          mochiCategory: 'reminder',
+          mochiSeverity: 'active',
+          mealTypeId: 4,
+          ctaLabel: 'Ghi bữa',
+        },
+      },
     );
   } else {
     await cancelNotification(NOTIFICATION_IDS.snack);
@@ -505,28 +662,49 @@ export async function scheduleNotifications(
 
   // Water reminder (Schedule at 10:00)
   if (settings.waterReminderEnabled) {
-    await scheduleDailyNotification(NOTIFICATION_IDS.water, '10:00', MEAL_MESSAGES.water.title, MEAL_MESSAGES.water.body);
+    const behavior = resolveMoChiSystemNotificationBehavior('water_reminder');
+    await scheduleDailyNotification(
+      NOTIFICATION_IDS.water,
+      resolveScheduledTime('10:00', settings),
+      MEAL_MESSAGES.water.title,
+      MEAL_MESSAGES.water.body,
+      {
+        priority: behavior.androidPriority,
+        data: {
+          mochiEventType: 'water_reminder',
+          mochiAction: 'addWater',
+          mochiCategory: 'reminder',
+          mochiSeverity: 'active',
+          ctaLabel: 'Ghi nước',
+        },
+      },
+    );
   } else {
     await cancelNotification(NOTIFICATION_IDS.water);
   }
 
-  // AI Recipe Suggestions (Schedule at 11:30, right before lunch logic)
-  if (settings.aiRecipeSuggestionsEnabled) {
-    await scheduleDailyNotification(NOTIFICATION_IDS.aiRecipes, '11:00', MEAL_MESSAGES.aiRecipes.title, MEAL_MESSAGES.aiRecipes.body);
-  } else {
-    await cancelNotification(NOTIFICATION_IDS.aiRecipes);
-  }
-
-  // AI Nutrition Tips (Schedule at 08:30)
-  if (settings.aiNutritionTipsEnabled) {
-    await scheduleDailyNotification(NOTIFICATION_IDS.aiTips, '08:30', MEAL_MESSAGES.aiTips.title, MEAL_MESSAGES.aiTips.body);
-  } else {
-    await cancelNotification(NOTIFICATION_IDS.aiTips);
-  }
+  await cancelNotification(NOTIFICATION_IDS.aiRecipes);
+  await cancelNotification(NOTIFICATION_IDS.aiTips);
 
   // Streak Watcher (Schedule at 21:00 to remind users if they haven't logged)
   if (settings.streakRiskEnabled) {
-    await scheduleDailyNotification(NOTIFICATION_IDS.streak, '21:00', MEAL_MESSAGES.streak.title, MEAL_MESSAGES.streak.body);
+    const behavior = resolveMoChiSystemNotificationBehavior('streak_unlocked');
+    await scheduleDailyNotification(
+      NOTIFICATION_IDS.streak,
+      resolveScheduledTime('21:00', settings),
+      MEAL_MESSAGES.streak.title,
+      MEAL_MESSAGES.streak.body,
+      {
+        priority: behavior.androidPriority,
+        data: {
+          mochiEventType: 'streak_unlocked',
+          mochiAction: 'viewDiary',
+          mochiCategory: 'reminder',
+          mochiSeverity: 'timeSensitive',
+          ctaLabel: 'Mở nhật ký',
+        },
+      },
+    );
   } else {
     await cancelNotification(NOTIFICATION_IDS.streak);
   }
@@ -546,6 +724,7 @@ export async function scheduleNotifications(
  * Cancel tất cả meal notifications
  */
 export async function cancelAllMealNotifications(): Promise<void> {
+  notifyMoChiReminderSettingsChanged();
   await cancelNotification(NOTIFICATION_IDS.breakfast);
   await cancelNotification(NOTIFICATION_IDS.lunch);
   await cancelNotification(NOTIFICATION_IDS.dinner);

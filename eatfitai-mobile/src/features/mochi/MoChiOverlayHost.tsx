@@ -5,12 +5,17 @@ import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../components/ThemedText';
-import { navigateRoot } from '../../app/navigation/navigationRef';
 import { useEN } from '../../theme/emeraldNebula';
 import MoChiSprite from './MoChiSprite';
 import { getMoChiExperience } from './mochiExperienceCatalog';
-import { useMoChiNudgeContext, type MoChiNudgeCandidate } from './useMoChiNudgeContext';
+import {
+  useMoChiNudgeContext,
+  type MoChiNudgeCandidate,
+} from './useMoChiNudgeContext';
 import { useMoChiSurfaceDecision } from './useMoChiSurfaceDecision';
+import { useMoChiTopNotificationCandidate } from './useMoChiTopNotificationCandidate';
+import { useMoChiNotificationInboxStore } from './mochiNotificationInbox';
+import { performMoChiNotificationAction } from './mochiNotificationActions';
 import type { MoChiSurfaceDecision } from './mochiNudgePolicy';
 
 type MoChiOverlayHostProps = {
@@ -22,26 +27,28 @@ type ActiveOverlay = {
   decision: MoChiSurfaceDecision;
 };
 
-const getActionTarget = (candidate: MoChiNudgeCandidate): (() => void) => {
-  if (candidate.eventType === 'water_reminder') {
-    return () => {
-      navigateRoot('AppTabs', {
-        screen: 'HomeTab',
-        params: {
-          source: 'water-quick-action',
-          focusWaterRequestId: Date.now(),
-        },
-      });
-    };
-  }
+const DEFAULT_TOP_HEADER_CLEARANCE = 76;
+const DENSE_TOP_HEADER_CLEARANCE = 108;
+const DENSE_TOP_HEADER_ROUTES = new Set([
+  'MealDiary',
+  'FoodSearch',
+  'NotificationCenter',
+  'NotificationsSettings',
+  'ProfileTab',
+]);
 
-  return () => {
-    navigateRoot('FoodSearch', {
-      autoFocus: true,
-      showQuickSuggestions: true,
-      returnToDiaryOnSave: true,
-    });
-  };
+export const resolveMoChiTopOverlayOffset = ({
+  topInset,
+  routeName,
+}: {
+  topInset: number;
+  routeName?: string | null;
+}): number => {
+  const routeClearance = DENSE_TOP_HEADER_ROUTES.has(routeName ?? '')
+    ? DENSE_TOP_HEADER_CLEARANCE
+    : DEFAULT_TOP_HEADER_CLEARANCE;
+
+  return Math.max(topInset, 10) + routeClearance;
 };
 
 const MoChiOverlayHost = ({
@@ -50,8 +57,12 @@ const MoChiOverlayHost = ({
   const EN = useEN();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const candidate = useMoChiNudgeContext(currentRouteName);
+  const inlineCandidate = useMoChiNudgeContext(currentRouteName);
+  const topNotificationCandidate = useMoChiTopNotificationCandidate(currentRouteName);
+  const candidate = topNotificationCandidate ?? inlineCandidate;
   const { decision, recordDecision } = useMoChiSurfaceDecision(candidate);
+  const markDismissed = useMoChiNotificationInboxStore((state) => state.markDismissed);
+  const markActed = useMoChiNotificationInboxStore((state) => state.markActed);
   const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay | null>(null);
 
   useEffect(() => {
@@ -78,8 +89,11 @@ const MoChiOverlayHost = ({
     }
 
     recordDecision(activeOverlay.decision, 'dismissed');
+    if (activeOverlay.candidate.inboxItemId) {
+      markDismissed(activeOverlay.candidate.inboxItemId);
+    }
     setActiveOverlay(null);
-  }, [activeOverlay, recordDecision]);
+  }, [activeOverlay, markDismissed, recordDecision]);
 
   const actOnOverlay = useCallback(() => {
     if (!activeOverlay) {
@@ -87,18 +101,37 @@ const MoChiOverlayHost = ({
     }
 
     recordDecision(activeOverlay.decision, 'acted');
+    if (activeOverlay.candidate.inboxItemId) {
+      markActed(activeOverlay.candidate.inboxItemId);
+    }
     setActiveOverlay(null);
-    getActionTarget(activeOverlay.candidate)();
-  }, [activeOverlay, recordDecision]);
+
+    performMoChiNotificationAction(
+      activeOverlay.candidate.notificationAction
+        ?? (activeOverlay.candidate.eventType === 'water_reminder' ? 'addWater' : 'addMeal'),
+      activeOverlay.candidate.mealTypeId,
+    );
+  }, [activeOverlay, markActed, recordDecision]);
 
   useEffect(() => {
-    if (!activeOverlay?.decision.autoHideMs) {
+    const autoHideMs = activeOverlay?.candidate.inboxItemId
+      ? activeOverlay.candidate.notificationCategory === 'report'
+        ? 6000
+        : 8000
+      : activeOverlay?.decision.autoHideMs;
+
+    if (!autoHideMs) {
       return;
     }
 
-    const timer = setTimeout(closeOverlay, activeOverlay.decision.autoHideMs);
+    const timer = setTimeout(closeOverlay, autoHideMs);
     return () => clearTimeout(timer);
-  }, [activeOverlay?.decision.autoHideMs, closeOverlay]);
+  }, [
+    activeOverlay?.candidate.inboxItemId,
+    activeOverlay?.candidate.notificationCategory,
+    activeOverlay?.decision.autoHideMs,
+    closeOverlay,
+  ]);
 
   if (!activeOverlay) {
     return null;
@@ -106,19 +139,22 @@ const MoChiOverlayHost = ({
 
   const experience = getMoChiExperience(activeOverlay.candidate.eventType);
   const stageWidth = Math.min(width - 24, 386);
-  const bottomOffset = Math.max(insets.bottom, 10) + 96;
+  const topOffset = resolveMoChiTopOverlayOffset({
+    topInset: insets.top,
+    routeName: currentRouteName ?? activeOverlay.candidate.routeName,
+  });
 
   return (
     <View pointerEvents="box-none" style={styles.companionOverlay}>
       <Animated.View
-        accessibilityLabel="MoChi đang gợi ý"
+        accessibilityLabel="MoChi đang nhắc bạn"
         entering={FadeInDown.duration(180)}
         exiting={FadeOutUp.duration(140)}
         pointerEvents="box-none"
         style={[
           styles.companionStage,
           {
-            bottom: bottomOffset,
+            top: topOffset,
             width: stageWidth,
           },
         ]}
@@ -132,7 +168,7 @@ const MoChiOverlayHost = ({
         >
           <MoChiSprite
             poseKey={experience.poseKey}
-            size={88}
+            size={84}
             variant="full"
             animated
             testID="mochi-overlay-sprite"
@@ -156,7 +192,7 @@ const MoChiOverlayHost = ({
             </ThemedText>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Ẩn gợi ý MoChi"
+              accessibilityLabel="Ẩn nhắc nhở MoChi"
               hitSlop={8}
               onPress={closeOverlay}
               style={styles.companionDismiss}
@@ -200,18 +236,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   companionSpriteHitbox: {
-    width: 86,
-    height: 96,
+    width: 82,
+    height: 92,
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
   companionSpeech: {
     flex: 1,
     minWidth: 0,
-    borderRadius: 22,
+    borderRadius: 20,
     borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 10,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
     shadowRadius: 18,
@@ -220,7 +256,7 @@ const styles = StyleSheet.create({
   companionSpeechTail: {
     position: 'absolute',
     left: -8,
-    bottom: 22,
+    bottom: 20,
     width: 0,
     height: 0,
     borderTopWidth: 8,

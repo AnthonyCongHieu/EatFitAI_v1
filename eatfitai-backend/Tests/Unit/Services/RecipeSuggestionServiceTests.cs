@@ -22,6 +22,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly Mock<ILogger<RecipeSuggestionService>> _loggerMock;
         private readonly IMemoryCache _cache;
         private readonly Mock<IUserPreferenceService> _userPreferenceMock;
+        private readonly Mock<IRecipeGuideService> _recipeGuideMock;
         private readonly RecipeSuggestionService _service;
 
         public RecipeSuggestionServiceTests()
@@ -35,6 +36,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             _loggerMock = new Mock<ILogger<RecipeSuggestionService>>();
             _cache = new MemoryCache(new MemoryCacheOptions());
             _userPreferenceMock = new Mock<IUserPreferenceService>();
+            _recipeGuideMock = new Mock<IRecipeGuideService>();
 
             // Mock default response for user preference
             _userPreferenceMock.Setup(s => s.GetUserPreferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -44,7 +46,16 @@ namespace EatFitAI.API.Tests.Unit.Services
                     Allergies = new List<string>() 
                 });
 
-            _service = new RecipeSuggestionService(_context, _loggerMock.Object, _cache, _userPreferenceMock.Object);
+            _recipeGuideMock
+                .Setup(s => s.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((int recipeId, CancellationToken _) => BuildProductionGuide(recipeId));
+
+            _service = new RecipeSuggestionService(
+                _context,
+                _loggerMock.Object,
+                _cache,
+                _userPreferenceMock.Object,
+                _recipeGuideMock.Object);
         }
 
         public void Dispose()
@@ -264,6 +275,181 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task SuggestRecipesAsync_SplitsReadyNowAndNeedsMoreGroups()
+        {
+            await SeedDatabaseAsync();
+            var egg = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 1);
+            var tomato = await _context.FoodItems.SingleAsync(item => item.FoodItemId == 2);
+
+            _context.Recipes.Add(new Recipe
+            {
+                RecipeId = 2,
+                RecipeName = "Trứng cà chua đủ nguyên liệu",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            _context.RecipeIngredients.AddRange(
+                new RecipeIngredient { RecipeId = 2, FoodItemId = egg.FoodItemId, Grams = 100 },
+                new RecipeIngredient { RecipeId = 2, FoodItemId = tomato.FoodItemId, Grams = 100 });
+            await _context.SaveChangesAsync();
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Trứng", "Cà chua" },
+                MaxResults = 5
+            });
+
+            Assert.Contains(result, item => item.RecipeName == "Trứng cà chua đủ nguyên liệu"
+                && item.CanCookNow
+                && item.SuggestionGroup == "readyNow");
+            Assert.Contains(result, item => item.RecipeName == "Trứng xào cà chua"
+                && !item.CanCookNow
+                && item.SuggestionGroup == "needsMore"
+                && item.MissingIngredients.Contains("Hành tây"));
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_IngredientComboIgnoresFinishedDishClasses()
+        {
+            await SeedDatabaseAsync();
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Phở" },
+                MaxResults = 5
+            });
+
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_AutoUsesDailyRecommendationForFinishedDishInput()
+        {
+            await SeedDatabaseAsync();
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "auto",
+                AvailableIngredients = new List<string> { "Phở" },
+                MaxResults = 5
+            });
+
+            var suggestion = Assert.Single(result);
+            Assert.Equal("dailyRecommendation", suggestion.SuggestionGroup);
+            Assert.False(suggestion.CanCookNow);
+            Assert.Equal(0, suggestion.MatchedIngredientsCount);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_AutoUsesDailyRecommendationForFinishedDishFoodItemIdInput()
+        {
+            await SeedDatabaseAsync();
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 9,
+                FoodName = "Phở",
+                FoodNameUnsigned = "pho",
+                CaloriesPer100g = 180,
+                ProteinPer100g = 9,
+                CarbPer100g = 24,
+                FatPer100g = 5,
+                IsActive = true,
+                IsDeleted = false
+            });
+            await _context.SaveChangesAsync();
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "auto",
+                AvailableFoodItemIds = new List<int> { 9 },
+                MaxResults = 5
+            });
+
+            var suggestion = Assert.Single(result);
+            Assert.Equal("dailyRecommendation", suggestion.SuggestionGroup);
+            Assert.False(suggestion.CanCookNow);
+            Assert.Equal(0, suggestion.MatchedIngredientsCount);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_FiltersDietaryAndAllergyIdsFromPreferences()
+        {
+            await SeedDatabaseAsync();
+            var pork = new FoodItem
+            {
+                FoodItemId = 4,
+                FoodName = "Thịt heo",
+                FoodNameUnsigned = "thit heo",
+                FoodNameEn = "pork",
+                CaloriesPer100g = 242,
+                ProteinPer100g = 27,
+                CarbPer100g = 0,
+                FatPer100g = 14,
+                IsActive = true,
+                IsDeleted = false
+            };
+            _context.FoodItems.Add(pork);
+            _context.Recipes.Add(new Recipe
+            {
+                RecipeId = 2,
+                RecipeName = "Thịt heo cà chua",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            _context.RecipeIngredients.AddRange(
+                new RecipeIngredient { RecipeId = 2, FoodItemId = pork.FoodItemId, Grams = 120 },
+                new RecipeIngredient { RecipeId = 2, FoodItemId = 2, Grams = 100 });
+            await _context.SaveChangesAsync();
+
+            _userPreferenceMock
+                .Setup(s => s.GetUserPreferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new UserPreferenceDto
+                {
+                    DietaryRestrictions = new List<string> { "halal", "no-pork" },
+                    Allergies = new List<string> { "egg" }
+                });
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                UserId = Guid.NewGuid(),
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Thịt heo", "Trứng", "Cà chua" },
+                MinMatchedIngredients = 1,
+                MaxResults = 10
+            });
+
+            Assert.DoesNotContain(result, item => item.AllIngredients.Contains("Thịt heo"));
+            Assert.DoesNotContain(result, item => item.AllIngredients.Contains("Trứng"));
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_HidesRecipesWithoutProductionGuide()
+        {
+            await SeedDatabaseAsync();
+            _recipeGuideMock
+                .Setup(s => s.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RecipeCookingGuideDto
+                {
+                    RecipeId = 1,
+                    Steps = new List<string> { "Sơ chế", "Nấu", "Hoàn thiện" },
+                    GuideStatus = "fallback",
+                    SourceUrls = new List<string>(),
+                    YoutubeVideo = null
+                });
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Trứng", "Cà chua" },
+                MaxResults = 5
+            });
+
+            Assert.Empty(result);
+        }
+
+        [Fact]
         public async Task GetRecipeDetailAsync_ReturnsRecipeMetadataAndImageVariants()
         {
             // Arrange
@@ -288,5 +474,24 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal("recipe-images/v1/medium/trung-xao-ca-chua.webp", result.ImageVariants!.MediumUrl);
             Assert.Equal(new[] { "Chuẩn bị", "Xào chín" }, result.Instructions);
         }
+
+        private static RecipeCookingGuideDto BuildProductionGuide(int recipeId) => new()
+        {
+            RecipeId = recipeId,
+            Steps = new List<string> { "Sơ chế nguyên liệu", "Nấu chín trên lửa vừa", "Nêm lại và hoàn thiện" },
+            CookingTimeMinutes = 20,
+            Difficulty = "Dễ",
+            Tips = new List<string> { "Nấu lửa vừa để không cháy" },
+            SourceUrls = new List<string> { "https://monngonmoingay.com/cong-thuc-demo" },
+            YoutubeVideo = new RecipeYoutubeVideoDto
+            {
+                VideoId = "abc",
+                Title = "Cách nấu món demo",
+                ChannelTitle = "Trusted",
+                Url = "https://www.youtube.com/watch?v=abc",
+                ThumbnailUrl = "https://i.ytimg.com/vi/abc/hqdefault.jpg"
+            },
+            GuideStatus = "stored"
+        };
     }
 }

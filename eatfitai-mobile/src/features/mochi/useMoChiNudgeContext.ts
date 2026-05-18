@@ -2,6 +2,11 @@ import { useMemo } from 'react';
 
 import { useSmartReminders } from '../../hooks/useSmartReminders';
 import { getMoChiExperience } from './mochiExperienceCatalog';
+import type {
+  MoChiNotificationAction,
+  MoChiNotificationCategory,
+  MoChiNotificationSeverity,
+} from './mochiNotificationInbox';
 import type { MoChiPetEventType } from './mochiPetEngine';
 import type { MoChiSurface } from './mochiNudgePolicy';
 
@@ -10,6 +15,14 @@ export interface MoChiNudgeCandidate {
   routeName: string;
   preferredSurface: Exclude<MoChiSurface, 'none'>;
   hasStrongTiming: boolean;
+  isCollisionSafe: boolean;
+  placement?: 'top' | 'inline';
+  inboxItemId?: string;
+  notificationAction?: MoChiNotificationAction;
+  notificationCategory?: MoChiNotificationCategory;
+  notificationSeverity?: MoChiNotificationSeverity;
+  mealTypeId?: number;
+  bypassOverlayCooldown?: boolean;
   title: string;
   message: string;
   ctaLabel?: string;
@@ -17,8 +30,11 @@ export interface MoChiNudgeCandidate {
 
 const MEAL_ROUTE_NAMES = new Set(['MealDiary']);
 
-const buildReminderMessage = (label: string): string =>
-  `Bạn chưa ghi ${label.toLowerCase()}. Thêm nhanh để nhật ký hôm nay liền mạch.`;
+export const MEAL_DIARY_INLINE_NUDGE_COPY = {
+  title: 'Bữa này còn trống',
+  message: 'Thêm bữa gần nhất để nhật ký hôm nay liền mạch hơn.',
+  ctaLabel: 'Ghi bữa',
+} as const;
 
 export const useMoChiNudgeContext = (
   currentRouteName?: string | null,
@@ -44,14 +60,21 @@ export const useMoChiNudgeContext = (
     return {
       eventType,
       routeName: currentRouteName,
-      preferredSurface: 'overlay',
-      hasStrongTiming: true,
-      title: experience.title,
+      preferredSurface: 'inline',
+      hasStrongTiming: false,
+      isCollisionSafe: false,
+      title:
+        reminder.type === 'meal'
+          ? MEAL_DIARY_INLINE_NUDGE_COPY.title
+          : experience.title,
       message:
         reminder.type === 'meal'
-          ? buildReminderMessage(reminder.label)
+          ? MEAL_DIARY_INLINE_NUDGE_COPY.message
           : reminder.message,
-      ctaLabel: experience.ctaLabel,
+      ctaLabel:
+        reminder.type === 'meal'
+          ? MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel
+          : experience.ctaLabel,
     };
   }, [currentRouteName, reminders]);
 };

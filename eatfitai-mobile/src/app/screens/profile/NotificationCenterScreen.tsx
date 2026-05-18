@@ -1,12 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { getScheduledNotifications } from '../../../services/notificationService';
+import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
+import {
+  selectUnreadMoChiNotificationCount,
+  useMoChiNotificationInboxStore,
+  type MoChiNotificationItem,
+} from '../../../features/mochi/mochiNotificationInbox';
+import { performMoChiNotificationAction } from '../../../features/mochi/mochiNotificationActions';
 import type { RootStackParamList } from '../../types';
 import { useEN } from '../../../theme/emeraldNebula';
 
@@ -24,84 +30,57 @@ const P_STATIC = {
 };
 const P = P_STATIC;
 
-type NotificationPreview = {
-  id: string;
-  title: string;
-  body: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  tone: string;
-};
-
-const FALLBACK_NOTIFICATIONS: NotificationPreview[] = [
-  {
-    id: 'meal-reminder',
-    title: 'Nhắc ghi bữa',
-    body: 'Các nhắc nhở bữa ăn sẽ xuất hiện ở đây khi đến giờ.',
-    icon: 'restaurant-outline',
-    tone: '#4be277',
-  },
-  {
-    id: 'water-reminder',
-    title: 'Uống nước',
-    body: 'MoChi sẽ gom các nhắc uống nước quan trọng trong trung tâm này.',
-    icon: 'water-outline',
-    tone: '#38bdf8',
-  },
-  {
-    id: 'weekly-review',
-    title: 'Báo cáo tiến độ',
-    body: 'Khi có báo cáo tuần hoặc cảnh báo cần xem, bạn sẽ thấy tại đây.',
-    icon: 'bar-chart-outline',
-    tone: '#a78bfa',
-  },
-];
-
-const buildNotificationPreviews = (scheduled: any[]): NotificationPreview[] => {
-  if (!scheduled.length) {
-    return FALLBACK_NOTIFICATIONS;
+const getNotificationVisual = (
+  item: MoChiNotificationItem,
+): { icon: keyof typeof Ionicons.glyphMap; tone: string } => {
+  if (item.eventType === 'water_reminder') {
+    return { icon: 'water-outline', tone: '#38bdf8' };
   }
 
-  return scheduled.slice(0, 8).map((item, index) => {
-    const content = item?.content ?? item?.request?.content ?? {};
-    return {
-      id: String(item?.identifier ?? item?.request?.identifier ?? `scheduled-${index}`),
-      title: String(content.title ?? 'Thông báo EatFitAI'),
-      body: String(content.body ?? 'Thông báo đã được lên lịch.'),
-      icon: 'notifications-outline',
-      tone: P.primary,
-    };
-  });
+  if (item.category === 'report') {
+    return { icon: 'bar-chart-outline', tone: '#a78bfa' };
+  }
+
+  if (item.category === 'tip') {
+    return { icon: 'sparkles-outline', tone: '#f59e0b' };
+  }
+
+  return { icon: 'restaurant-outline', tone: '#4be277' };
+};
+
+const getNotificationStateLabel = (item: MoChiNotificationItem): string => {
+  if (item.resolvedAt) {
+    return 'Đã xong';
+  }
+
+  if (item.readAt) {
+    return 'Đã xem';
+  }
+
+  return 'Mới';
 };
 
 const NotificationCenterScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
-  // eslint-disable-next-line @typescript-eslint/no-shadow
-  const P = { ...P_STATIC, ...useEN() };
-  const [scheduled, setScheduled] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const palette = { ...P_STATIC, ...useEN() };
+  const items = useMoChiNotificationInboxStore((state) => state.items);
+  const markRead = useMoChiNotificationInboxStore((state) => state.markRead);
+  const markActed = useMoChiNotificationInboxStore((state) => state.markActed);
+  const unreadCount = useMemo(() => selectUnreadMoChiNotificationCount(items), [items]);
 
-  const loadNotifications = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const nextScheduled = await getScheduledNotifications();
-      setScheduled(Array.isArray(nextScheduled) ? nextScheduled : []);
-    } finally {
-      setIsLoading(false);
+  const handleOpenItem = (item: MoChiNotificationItem) => {
+    if (item.resolvedAt) {
+      markRead(item.id);
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    void loadNotifications();
-  }, [loadNotifications]);
-
-  const notifications = useMemo(
-    () => buildNotificationPreviews(scheduled),
-    [scheduled],
-  );
+    markActed(item.id);
+    performMoChiNotificationAction(item.action, item.mealTypeId);
+  };
 
   return (
-    <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]}>
+    <View style={[S.container, { paddingTop: insets.top, backgroundColor: palette.bg }]}>
       <View style={S.header}>
         <Pressable
           style={S.headerButton}
@@ -109,7 +88,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
           accessibilityRole="button"
           accessibilityLabel="Quay lại"
         >
-          <Ionicons name="chevron-back" size={24} color={P.primary} />
+          <Ionicons name="chevron-back" size={24} color={palette.primary} />
         </Pressable>
         <View style={S.headerCopy}>
           <ThemedText style={S.headerTitle}>Thông báo</ThemedText>
@@ -121,7 +100,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
           accessibilityRole="button"
           accessibilityLabel="Cài đặt thông báo"
         >
-          <Ionicons name="settings-outline" size={21} color={P.onSurface} />
+          <Ionicons name="settings-outline" size={21} color={palette.onSurface} />
         </Pressable>
       </View>
 
@@ -131,37 +110,68 @@ const NotificationCenterScreen = (): React.ReactElement => {
       >
         <View style={S.summaryCard}>
           <View style={S.summaryIcon}>
-            <Ionicons name="notifications" size={24} color={P.primary} />
+            <Ionicons name="notifications" size={24} color={palette.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <ThemedText style={S.summaryTitle}>
-              {scheduled.length > 0 ? 'Thông báo đã lên lịch' : 'Chưa có thông báo mới'}
+              {unreadCount > 0 ? `${unreadCount} việc mới cần xem` : 'Đã xem hết thông báo'}
             </ThemedText>
             <ThemedText style={S.summaryText}>
-              {scheduled.length > 0
-                ? `${scheduled.length} thông báo đang chờ được gửi.`
-                : 'Khi có nhắc bữa, nước hoặc báo cáo cần xem, EatFitAI sẽ gom ở đây.'}
+              {unreadCount > 0
+                ? 'MoChi chỉ giữ lại các nhắc nhở có hành động rõ ràng hoặc báo cáo cần kiểm tra.'
+                : 'Khi có nhắc bữa, nước hoặc báo cáo quan trọng, chúng sẽ nằm ở đây.'}
             </ThemedText>
           </View>
         </View>
 
-        {isLoading ? (
-          <View style={S.loadingBox}>
-            <ActivityIndicator color={P.primary} />
-          </View>
+        {items.length === 0 ? (
+          <MoChiInlineNotice
+            mochiEvent="weekly_review"
+            title="Chưa có việc cần xem"
+            message="Khi có nhắc nhở quan trọng, MoChi sẽ gom lại ở đây để bạn xử lý khi tiện."
+            compact
+            tone="calm"
+          />
         ) : (
           <View style={S.list}>
-            {notifications.map((item) => (
-              <View key={item.id} style={S.notificationRow}>
-                <View style={[S.notificationIcon, { backgroundColor: item.tone + '18' }]}>
-                  <Ionicons name={item.icon} size={20} color={item.tone} />
-                </View>
-                <View style={S.notificationCopy}>
-                  <ThemedText style={S.notificationTitle}>{item.title}</ThemedText>
-                  <ThemedText style={S.notificationBody}>{item.body}</ThemedText>
-                </View>
-              </View>
-            ))}
+            {items.map((item) => {
+              const visual = getNotificationVisual(item);
+              const isUnread = !item.readAt && !item.resolvedAt;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => handleOpenItem(item)}
+                  style={[
+                    S.notificationRow,
+                    isUnread && S.notificationRowUnread,
+                    item.resolvedAt && S.notificationRowResolved,
+                  ]}
+                >
+                  <View style={[S.notificationIcon, { backgroundColor: visual.tone + '18' }]}>
+                    <Ionicons name={visual.icon} size={20} color={visual.tone} />
+                  </View>
+                  <View style={S.notificationCopy}>
+                    <View style={S.notificationTitleRow}>
+                      <ThemedText style={S.notificationTitle} numberOfLines={1}>
+                        {item.title}
+                      </ThemedText>
+                      <ThemedText style={[S.notificationState, isUnread && { color: palette.primary }]}>
+                        {getNotificationStateLabel(item)}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={S.notificationBody} numberOfLines={2}>
+                      {item.body}
+                    </ThemedText>
+                    {item.ctaLabel && !item.resolvedAt && (
+                      <ThemedText style={[S.notificationCta, { color: palette.primary }]}>
+                        {item.ctaLabel}
+                      </ThemedText>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -241,10 +251,6 @@ const S = StyleSheet.create({
     lineHeight: 19,
     color: P.onSurfaceVariant,
   },
-  loadingBox: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
   list: {
     gap: 10,
   },
@@ -252,13 +258,19 @@ const S = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 76,
+    minHeight: 84,
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 12,
     backgroundColor: P.surfaceContainerLow,
     borderWidth: 1,
     borderColor: P.outline,
+  },
+  notificationRowUnread: {
+    borderColor: 'rgba(75,226,119,0.24)',
+  },
+  notificationRowResolved: {
+    opacity: 0.72,
   },
   notificationIcon: {
     width: 42,
@@ -271,16 +283,33 @@ const S = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  notificationTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   notificationTitle: {
+    flex: 1,
+    minWidth: 0,
     fontSize: 15,
     fontWeight: '800',
     color: P.onSurface,
+  },
+  notificationState: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: P.onSurfaceVariant,
   },
   notificationBody: {
     marginTop: 3,
     fontSize: 13,
     lineHeight: 18,
     color: P.onSurfaceVariant,
+  },
+  notificationCta: {
+    marginTop: 5,
+    fontSize: 12,
+    fontWeight: '800',
   },
 });
 

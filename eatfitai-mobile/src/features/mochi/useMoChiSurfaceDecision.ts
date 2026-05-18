@@ -88,7 +88,8 @@ export const useMoChiSurfaceDecision = (
       routeName: candidate.routeName,
       preferredSurface: candidate.preferredSurface,
       hasStrongTiming: candidate.hasStrongTiming,
-      isCollisionSafe: true,
+      isCollisionSafe: candidate.isCollisionSafe,
+      bypassOverlayCooldown: candidate.bypassOverlayCooldown,
       memory,
       session: sessionRef.current,
     });
