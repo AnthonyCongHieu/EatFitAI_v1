@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -240,6 +240,7 @@ const AppNavigator = (): React.ReactElement => {
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: theme.colors.background },
+                animation: 'slide_from_right',
               }}
             >
           {isInAuthFlow ? (
