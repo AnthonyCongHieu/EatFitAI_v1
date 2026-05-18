@@ -59,6 +59,44 @@ public sealed class SupabaseSchemaBootstrapper
             ADD COLUMN IF NOT EXISTS "OutputJson" text NULL,
             ADD COLUMN IF NOT EXISTS "DurationMs" integer NULL;
 
+        ALTER TABLE IF EXISTS "Recipe"
+            ADD COLUMN IF NOT EXISTS "ImageUrl" varchar(500) NULL,
+            ADD COLUMN IF NOT EXISTS "CookTimeMinutes" integer NULL,
+            ADD COLUMN IF NOT EXISTS "Difficulty" varchar(40) NULL,
+            ADD COLUMN IF NOT EXISTS "ServingCount" integer NULL,
+            ADD COLUMN IF NOT EXISTS "InstructionsJson" text NULL,
+            ADD COLUMN IF NOT EXISTS "VideoUrl" varchar(500) NULL,
+            ADD COLUMN IF NOT EXISTS "SourceUrlsJson" text NULL,
+            ADD COLUMN IF NOT EXISTS "CredibilityScore" integer NULL,
+            ADD COLUMN IF NOT EXISTS "EnhancedAt" timestamp(3) with time zone NULL;
+
+        DO $$
+        BEGIN
+            IF to_regclass('public."Recipe"') IS NOT NULL THEN
+                UPDATE "Recipe"
+                SET "CredibilityScore" = 70
+                WHERE "CredibilityScore" IS NULL;
+
+                ALTER TABLE "Recipe"
+                    ALTER COLUMN "CredibilityScore" SET DEFAULT 70,
+                    ALTER COLUMN "CredibilityScore" SET NOT NULL;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'Recipe'
+                      AND column_name = 'Instructions'
+                ) THEN
+                    UPDATE "Recipe"
+                    SET "InstructionsJson" = "Instructions"
+                    WHERE "InstructionsJson" IS NULL
+                      AND "Instructions" IS NOT NULL
+                      AND btrim("Instructions") <> '';
+                END IF;
+            END IF;
+        END $$;
+
         NOTIFY pgrst, 'reload schema';
         """;
 
