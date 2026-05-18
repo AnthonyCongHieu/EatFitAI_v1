@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -145,16 +145,16 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
       onPress: () => navigateAfterClose('RecipeSuggestions', {}),
     },
     {
-      title: 'Lượng nước',
-      meta: 'Về thẻ nước',
-      icon: 'water',
+      title: 'Giọng nói',
+      meta: 'Trợ lý AI',
+      icon: 'mic',
       position: 'lowerLeft',
       onPress: () =>
         navigateAfterClose('AppTabs', {
-          screen: 'HomeTab',
+          screen: 'VoiceTab',
           params: {
-            focusWaterRequestId: Date.now(),
-            source: 'water-quick-action',
+            autoStart: true,
+            source: 'sheet-hub',
           },
         }),
     },
