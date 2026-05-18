@@ -184,7 +184,10 @@ def query_gemini(
     except (GeminiQuotaExhaustedError, GeminiUnavailableError):
         raise
     except GeminiPoolError as exc:
-        logger.error(f"Gemini pool rejected request: {exc}")
+        if exc.code == "gemini_request_invalid":
+            logger.warning("Gemini returned unusable response, falling back: %s", exc)
+        else:
+            logger.error(f"Gemini pool rejected request: {exc}")
         return None
     except Exception as exc:
         logger.error(f"Gemini query failed: {exc}")
