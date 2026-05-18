@@ -551,6 +551,24 @@ Decision:
   out, immediately probe/download output and build a V4 checkpoint dataset
   before pushing any further resume run.
 
+2026-05-18 V4 checkpoint handoff after version 6 timeout:
+
+- Version 6 was confirmed as `CANCEL_ACKNOWLEDGED` after Kaggle's 12-hour
+  execution limit, but downloadable outputs were still available.
+- Downloaded outputs contained `last.pt`, `best.pt`, `results.csv`, and
+  `args.yaml`; `results.csv` reached epoch 8 before timeout.
+- Packaged the recovered outputs as private dataset
+  `hiuinhcng/eatfitai-yolo11m-v4-checkpoint`.
+- Updated the V4 train kernel to mount that V4 checkpoint dataset and default
+  to `resume` mode instead of starting another finetune pass from the old V1
+  checkpoint.
+- Version 7 was pushed before the new dataset finished processing; Kaggle
+  omitted the unresolved dataset source from that run.
+- After dataset processing completed and file listing succeeded, pushed
+  version 8 with the V4 checkpoint dataset attached. Kaggle metadata confirms
+  `hiuinhcng/eatfitai-yolo11m-v4-checkpoint` is mounted and version 8 is
+  currently `RUNNING`.
+
 ## Source Links
 
 - Food-101 / ETH Zurich via Hugging Face:

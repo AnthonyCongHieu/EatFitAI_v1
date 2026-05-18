@@ -49,7 +49,7 @@ class CheckpointPlan:
 
 
 def checkpoint_mode() -> str:
-    mode = os.environ.get("EATFITAI_YOLO_CHECKPOINT_MODE", "finetune").strip().lower()
+    mode = os.environ.get("EATFITAI_YOLO_CHECKPOINT_MODE", "resume").strip().lower()
     if mode in {"resume", "finetune", "none"}:
         return mode
     raise ValueError("EATFITAI_YOLO_CHECKPOINT_MODE must be one of: resume, finetune, none")

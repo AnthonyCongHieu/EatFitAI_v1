@@ -330,7 +330,7 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
         self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build-v3", train_metadata["kernel_sources"])
         self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
 
-    def test_clean_v4_class_expansion_train_kernel_uses_mounted_output_and_finetune_train(self):
+    def test_clean_v4_class_expansion_train_kernel_uses_mounted_output_and_resume_train(self):
         import kaggle_yolo11m_clean_v4_class_expansion_train as v4_train
 
         train_source = (DATASET_V2_DIR / "kaggle_yolo11m_clean_v4_class_expansion_train.py").read_text(encoding="utf-8")
@@ -346,10 +346,11 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
         self.assertEqual(train_metadata["code_file"], "kaggle_yolo11m_clean_v4_class_expansion_train.py")
         self.assertEqual(train_metadata["id"], "hiuinhcng/eatfitai-yolo11m-clean-v4-class-expansion")
         self.assertIn("hiuinhcng/eatfitai-v4-clean-train-artifact", train_metadata["kernel_sources"])
-        self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
+        self.assertIn("hiuinhcng/eatfitai-yolo11m-v4-checkpoint", train_metadata["dataset_sources"])
         self.assertEqual(v4_train.RUN_NAME, "yolo11m-eatfitai-clean-v4-class-expansion")
         self.assertEqual(v4_train.TRAIN_EPOCHS, 150)
         self.assertTrue(v4_train.SKIP_SMOKE_BY_DEFAULT)
+        self.assertEqual(v4_train.checkpoint_mode(), "resume")
 
     def test_clean_v4_train_finds_mounted_clean_build_directory(self):
         import kaggle_yolo11m_clean_v4_class_expansion_train as v4_train
