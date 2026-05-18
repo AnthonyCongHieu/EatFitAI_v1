@@ -147,12 +147,17 @@ def query_gemini(
             return cached
     
     try:
+        # Gemini rejects tool/grounding requests when structured JSON response
+        # controls are also set. Keep the JSON contract in the prompt and let
+        # the existing parser/fallback validate tool-backed responses.
+        response_mime_type = None if tools else "application/json"
+        effective_response_schema = None if tools else response_schema
         response = _get_gemini_pool().generate_text(
             prompt,
             temperature=0.1,
             max_output_tokens=500,
-            response_mime_type="application/json",
-            response_schema=response_schema,
+            response_mime_type=response_mime_type,
+            response_schema=effective_response_schema,
             thinking_budget=thinking_budget,
             tools=tools,
             response_metadata_callback=(

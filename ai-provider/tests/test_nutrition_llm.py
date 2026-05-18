@@ -12,6 +12,7 @@ from nutrition_llm import (
     calculate_nutrition_mifflin,
     get_nutrition_advice,
     get_nutrition_advice_gemini,
+    query_gemini,
     try_parse_add_food_regex,
     try_parse_ask_calories_regex,
     try_parse_weight_regex,
@@ -137,6 +138,32 @@ class NutritionLlmTests(unittest.TestCase):
         self.assertEqual(result["protein"], 126)
         self.assertEqual(result["carbs"], 346)
         self.assertEqual(result["fat"], 70)
+
+    def test_query_gemini_omits_json_response_controls_when_tools_are_used(self) -> None:
+        class FakePool:
+            def __init__(self) -> None:
+                self.kwargs = None
+
+            def generate_text(self, *_args, **kwargs) -> str:
+                self.kwargs = kwargs
+                return '{"steps":[]}'
+
+        pool = FakePool()
+        schema = {"type": "object", "properties": {"steps": {"type": "array"}}}
+        tools = [{"googleSearch": {}}]
+
+        with patch("nutrition_llm._get_gemini_pool", return_value=pool):
+            result = query_gemini(
+                "return json",
+                use_cache=False,
+                response_schema=schema,
+                tools=tools,
+            )
+
+        self.assertEqual(result, '{"steps":[]}')
+        self.assertIsNone(pool.kwargs["response_mime_type"])
+        self.assertIsNone(pool.kwargs["response_schema"])
+        self.assertEqual(pool.kwargs["tools"], tools)
 
     def test_voice_regex_accepts_unaccented_smoke_phrases(self) -> None:
         calories = try_parse_ask_calories_regex("hom nay toi an bao nhieu calo")
