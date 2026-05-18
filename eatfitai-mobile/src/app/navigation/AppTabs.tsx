@@ -3,9 +3,10 @@
 // Uses CustomTabBar for Emerald Nebula design
 
 import type { ComponentType } from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import CustomTabBar from '../../components/navigation/CustomTabBar';
+import BottomCommandOverlay from '../../components/navigation/BottomCommandOverlay';
 
 export type AppTabsParamList = {
   HomeTab:
@@ -29,7 +30,7 @@ export type AppTabsParamList = {
   ProfileTab: undefined;
 };
 
-const Tab = createBottomTabNavigator<AppTabsParamList>();
+const Stack = createNativeStackNavigator<AppTabsParamList>();
 
 const lazyScreen = (
   loader: () => { default: ComponentType<any> },
@@ -44,28 +45,24 @@ const getStatsNavigator = lazyScreen(() => require('./StatsNavigator'));
 const getProfileScreen = lazyScreen(() => require('../screens/ProfileScreen'));
 /* eslint-enable @typescript-eslint/no-require-imports */
 
+const HomeWithBar = (props: any) => { const S = getHomeScreen(); return <BottomCommandOverlay activeRouteName="HomeTab"><S {...props} /></BottomCommandOverlay>; };
+const VoiceWithBar = (props: any) => { const S = getVoiceScreen(); return <BottomCommandOverlay activeRouteName="VoiceTab"><S {...props} /></BottomCommandOverlay>; };
+const StatsWithBar = (props: any) => { const S = getStatsNavigator(); return <BottomCommandOverlay activeRouteName="StatsTab"><S {...props} /></BottomCommandOverlay>; };
+const ProfileWithBar = (props: any) => { const S = getProfileScreen(); return <BottomCommandOverlay activeRouteName="ProfileTab"><S {...props} /></BottomCommandOverlay>; };
+
 const AppTabs = (): React.ReactElement => {
   return (
-    <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
+    <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          elevation: 0,
-          backgroundColor: 'transparent',
-          borderTopWidth: 0,
-        },
+        animation: 'slide_from_right'
       }}
     >
-      <Tab.Screen name="HomeTab" getComponent={getHomeScreen} />
-      <Tab.Screen name="VoiceTab" getComponent={getVoiceScreen} />
-      <Tab.Screen name="StatsTab" getComponent={getStatsNavigator} />
-      <Tab.Screen name="ProfileTab" getComponent={getProfileScreen} />
-    </Tab.Navigator>
+      <Stack.Screen name="HomeTab" component={HomeWithBar} />
+      <Stack.Screen name="VoiceTab" component={VoiceWithBar} />
+      <Stack.Screen name="StatsTab" component={StatsWithBar} />
+      <Stack.Screen name="ProfileTab" component={ProfileWithBar} />
+    </Stack.Navigator>
   );
 };
 

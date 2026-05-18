@@ -1,4 +1,4 @@
-﻿// ProfileScreen — Emerald Nebula 3D Design v2
+// ProfileScreen — Emerald Nebula 3D Design v2
 // Hồ sơ: Hero avatar + PRO badge + Metrics strip + Grouped menu actions
 
 import { useEffect, useState, useCallback } from 'react';
@@ -11,6 +11,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -42,7 +43,7 @@ import {
   hasProfileCompletionGaps,
 } from './profile/profileCompletion';
 
-const P = {
+const P_STATIC = {
   bg: '#0e1322',
   surface: '#0e1322',
   surfaceLow: '#161b2b',
@@ -90,6 +91,7 @@ interface MenuRowProps {
   showChevron?: boolean;
   chevronColor?: string;
   testID?: string;
+  rightElement?: React.ReactNode;
 }
 
 const MenuRow = ({
@@ -102,6 +104,7 @@ const MenuRow = ({
   showChevron = true,
   chevronColor,
   testID,
+  rightElement,
 }: MenuRowProps) => {
   const palette = useEN();
   const resolvedLabelColor = labelColor ?? palette.onSurface;
@@ -127,9 +130,11 @@ const MenuRow = ({
       <ThemedText style={[S.menuLabel, { color: resolvedLabelColor }]} numberOfLines={1}>
         {label}
       </ThemedText>
-      {showChevron && (
+      {rightElement ? (
+        rightElement
+      ) : showChevron ? (
         <Ionicons name="chevron-forward" size={18} color={resolvedChevronColor} />
-      )}
+      ) : null}
     </Pressable>
   );
 };
@@ -153,6 +158,18 @@ const ProfileScreen = (): React.ReactElement => {
   }));
 
   const [refreshing, setRefreshing] = useState(false);
+  const [isDarkLocal, setIsDarkLocal] = useState(mode === 'dark');
+
+  useEffect(() => {
+    setIsDarkLocal(mode === 'dark');
+  }, [mode]);
+
+  const handleToggleTheme = useCallback((newVal: boolean) => {
+    setIsDarkLocal(newVal);
+    // Defer global theme update to prevent JS thread from blocking the native switch animation
+    setTimeout(() => { toggleTheme(); }, 350);
+  }, [toggleTheme]);
+
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
@@ -349,11 +366,11 @@ const ProfileScreen = (): React.ReactElement => {
           </Pressable>
 
           {/* Name */}
-          <ThemedText style={S.heroName}>{displayName}</ThemedText>
+          <ThemedText style={[S.heroName, { color: P.onSurface }]}>{displayName}</ThemedText>
 
           {/* Member badge */}
-          <View style={S.proBadge}>
-            <ThemedText style={S.proBadgeText}>Thành viên {memberLabel}</ThemedText>
+          <View style={[S.proBadge, { backgroundColor: P.surfaceHigh }]}>
+            <ThemedText style={[S.proBadgeText, { color: P.primary }]}>Thành viên {memberLabel}</ThemedText>
           </View>
         </Animated.View>
 
@@ -368,27 +385,27 @@ const ProfileScreen = (): React.ReactElement => {
             pointerEvents="none"
           />
           <View style={S.metricCol}>
-            <ThemedText style={S.metricLabel}>CÂN NẶNG</ThemedText>
+            <ThemedText style={[S.metricLabel, { color: P.onSurfaceVariant }]}>CÂN NẶNG</ThemedText>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <ThemedText style={S.metricValue}>
+              <ThemedText style={[S.metricValue, { color: P.onSurface }]}>
                 {profile?.weightKg ?? '--'}
               </ThemedText>
-              <ThemedText style={S.metricUnit}> kg</ThemedText>
+              <ThemedText style={[S.metricUnit, { color: P.onSurfaceVariant }]}> kg</ThemedText>
             </View>
           </View>
           <View style={S.metricDivider} />
           <View style={S.metricCol}>
-            <ThemedText style={S.metricLabel}>CHIỀU CAO</ThemedText>
+            <ThemedText style={[S.metricLabel, { color: P.onSurfaceVariant }]}>CHIỀU CAO</ThemedText>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <ThemedText style={S.metricValue}>
+              <ThemedText style={[S.metricValue, { color: P.onSurface }]}>
                 {profile?.heightCm ?? '--'}
               </ThemedText>
-              <ThemedText style={S.metricUnit}> cm</ThemedText>
+              <ThemedText style={[S.metricUnit, { color: P.onSurfaceVariant }]}> cm</ThemedText>
             </View>
           </View>
           <View style={S.metricDivider} />
           <View style={S.metricCol}>
-            <ThemedText style={S.metricLabel}>BMI</ThemedText>
+            <ThemedText style={[S.metricLabel, { color: P.onSurfaceVariant }]}>BMI</ThemedText>
             {bmi ? (
               <ThemedText style={[
                 S.metricBMIValue,
@@ -400,7 +417,7 @@ const ProfileScreen = (): React.ReactElement => {
                 {bmi.toFixed(1)}
               </ThemedText>
             ) : (
-              <ThemedText style={S.metricValue}>--</ThemedText>
+              <ThemedText style={[S.metricValue, { color: P.onSurface }]}>--</ThemedText>
             )}
           </View>
         </Animated.View>
@@ -454,11 +471,19 @@ const ProfileScreen = (): React.ReactElement => {
           <MenuRow
             icon={mode === 'dark' ? 'moon-outline' : 'sunny-outline'}
             label={mode === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'}
-            onPress={toggleTheme}
+            onPress={() => handleToggleTheme(!isDarkLocal)}
             iconBg={P.surfaceHighest}
             iconColor={mode === 'dark' ? '#fbbf24' : '#f59e0b'}
             labelColor={P.onSurface}
-            chevronColor={P.onSurfaceVariant}
+            showChevron={false}
+            rightElement={
+              <Switch
+                value={isDarkLocal}
+                onValueChange={handleToggleTheme}
+                trackColor={{ false: P.surfaceHighest, true: P.primary }}
+                thumbColor={'#fff'}
+              />
+            }
           />
           <MenuRow
             icon="images-outline"
@@ -652,14 +677,14 @@ const S = StyleSheet.create({
     justifyContent: 'center',
   },
   headerActionBtn: {
-    backgroundColor: P.surfaceContainerLow,
+    backgroundColor: P_STATIC.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: P.glassBorder,
+    borderColor: P_STATIC.glassBorder,
   },
   headerTitle: {
     fontSize: 17,
     fontFamily: 'BeVietnamPro_600SemiBold',
-    color: P.primaryContainer,
+    color: P_STATIC.primaryContainer,
     letterSpacing: -0.3,
   },
 
@@ -676,7 +701,7 @@ const S = StyleSheet.create({
   },
   avatarContainer: {
     marginBottom: 18,
-    shadowColor: P.primary,
+    shadowColor: P_STATIC.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 24,
@@ -689,11 +714,11 @@ const S = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: P.primaryContainer,
+    backgroundColor: P_STATIC.primaryContainer,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: P.surface,
+    borderColor: P_STATIC.surface,
   },
   actionOverlay: {
     flex: 1,
@@ -709,7 +734,7 @@ const S = StyleSheet.create({
     maxWidth: 430,
     alignSelf: 'center',
     borderRadius: 24,
-    backgroundColor: P.surfaceContainer,
+    backgroundColor: P_STATIC.surfaceContainer,
     borderWidth: 1,
     borderColor: 'rgba(75,226,119,0.18)',
     paddingTop: 10,
@@ -742,9 +767,9 @@ const S = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: P.surfaceContainerHigh,
+    backgroundColor: P_STATIC.surfaceContainerHigh,
     borderWidth: 1,
-    borderColor: P.primary + '40',
+    borderColor: P_STATIC.primary + '40',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -760,12 +785,12 @@ const S = StyleSheet.create({
   sheetTitle: {
     fontSize: 17,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.onSurface,
+    color: P_STATIC.onSurface,
   },
   sheetSubtitle: {
     marginTop: 2,
     fontSize: 13,
-    color: P.onSurfaceVariant,
+    color: P_STATIC.onSurfaceVariant,
   },
   sheetActions: {
     gap: 8,
@@ -775,7 +800,7 @@ const S = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.045)',
     borderWidth: 1,
-    borderColor: P.glassBorder,
+    borderColor: P_STATIC.glassBorder,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -788,7 +813,7 @@ const S = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: P.primary + '16',
+    backgroundColor: P_STATIC.primary + '16',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -796,10 +821,10 @@ const S = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: 'BeVietnamPro_600SemiBold',
-    color: P.onSurface,
+    color: P_STATIC.onSurface,
   },
   sheetDangerAction: {
-    backgroundColor: P.errorContainer,
+    backgroundColor: P_STATIC.errorContainer,
     borderColor: 'rgba(255,180,171,0.16)',
   },
   sheetDangerIcon: {
@@ -816,7 +841,7 @@ const S = StyleSheet.create({
   },
   logoutSheet: {
     borderRadius: 24,
-    backgroundColor: P.surfaceContainer,
+    backgroundColor: P_STATIC.surfaceContainer,
     borderWidth: 1,
     borderColor: 'rgba(255,180,171,0.18)',
     padding: 20,
@@ -831,7 +856,7 @@ const S = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: P.errorContainer,
+    backgroundColor: P_STATIC.errorContainer,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -839,14 +864,14 @@ const S = StyleSheet.create({
   logoutTitle: {
     fontSize: 19,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.onSurface,
+    color: P_STATIC.onSurface,
     textAlign: 'center',
     marginBottom: 8,
   },
   logoutBody: {
     fontSize: 14,
     lineHeight: 20,
-    color: P.onSurfaceVariant,
+    color: P_STATIC.onSurfaceVariant,
     textAlign: 'center',
     marginBottom: 18,
   },
@@ -867,7 +892,7 @@ const S = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 16,
-    backgroundColor: P.errorContainer,
+    backgroundColor: P_STATIC.errorContainer,
     borderWidth: 1,
     borderColor: 'rgba(255,180,171,0.24)',
     alignItems: 'center',
@@ -876,12 +901,12 @@ const S = StyleSheet.create({
   logoutCancelText: {
     fontSize: 14,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.onSurface,
+    color: P_STATIC.onSurface,
   },
   logoutConfirmText: {
     fontSize: 14,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.error,
+    color: P_STATIC.error,
   },
   avatarGradientRing: {
     width: 112,
@@ -896,22 +921,22 @@ const S = StyleSheet.create({
     height: 104,
     borderRadius: 52,
     borderWidth: 4,
-    borderColor: P.surface,
+    borderColor: P_STATIC.surface,
   },
   avatarPlaceholder: {
     width: 104,
     height: 104,
     borderRadius: 52,
     borderWidth: 4,
-    borderColor: P.surface,
-    backgroundColor: P.surfaceContainerHigh,
+    borderColor: P_STATIC.surface,
+    backgroundColor: P_STATIC.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroName: {
     fontSize: 24,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.onSurface,
+    color: P_STATIC.onSurface,
     letterSpacing: -0.5,
     marginBottom: 10,
   },
@@ -922,10 +947,10 @@ const S = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: P.primaryContainer + '18',
+    backgroundColor: P_STATIC.primaryContainer + '18',
     borderWidth: 1,
-    borderColor: P.primary + '30',
-    shadowColor: P.primary,
+    borderColor: P_STATIC.primary + '30',
+    shadowColor: P_STATIC.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -934,7 +959,7 @@ const S = StyleSheet.create({
   proBadgeText: {
     fontSize: 13,
     fontFamily: 'BeVietnamPro_600SemiBold',
-    color: P.primary,
+    color: P_STATIC.primary,
     letterSpacing: 0.3,
   },
 
@@ -945,9 +970,9 @@ const S = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderRadius: 16,
-    backgroundColor: P.glassBg,
+    backgroundColor: P_STATIC.glassBg,
     borderTopWidth: 1,
-    borderTopColor: P.glassBorder,
+    borderTopColor: P_STATIC.glassBorder,
     marginBottom: 28,
     overflow: 'hidden',
   },
@@ -963,7 +988,7 @@ const S = StyleSheet.create({
   metricLabel: {
     fontSize: 10,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.onSurfaceVariant,
+    color: P_STATIC.onSurfaceVariant,
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 6,
@@ -971,22 +996,22 @@ const S = StyleSheet.create({
   metricValue: {
     fontSize: 18,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.onSurface,
+    color: P_STATIC.onSurface,
   },
   metricUnit: {
     fontSize: 13,
     fontFamily: 'BeVietnamPro_400Regular',
-    color: P.onSurfaceVariant,
+    color: P_STATIC.onSurfaceVariant,
   },
   metricDivider: {
     width: 1,
     height: 40,
-    backgroundColor: P.surfaceContainerHighest,
+    backgroundColor: P_STATIC.surfaceContainerHighest,
   },
   metricBMIValue: {
     fontSize: 18,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: P.primary,
+    color: P_STATIC.primary,
     textShadowColor: 'rgba(75, 226, 119, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
@@ -996,7 +1021,7 @@ const S = StyleSheet.create({
   /* ═══ MENU GROUPS ═══ */
   menuGroup: {
     borderRadius: 16,
-    backgroundColor: P.surfaceContainerLow,
+    backgroundColor: P_STATIC.surfaceContainerLow,
     padding: 8,
     gap: 4,
     overflow: 'hidden',
@@ -1008,9 +1033,9 @@ const S = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 12,
-    backgroundColor: P.glassBg,
+    backgroundColor: P_STATIC.glassBg,
     borderTopWidth: 1,
-    borderTopColor: P.glassBorder,
+    borderTopColor: P_STATIC.glassBorder,
   },
   menuIconWrap: {
     width: 40,
@@ -1034,7 +1059,7 @@ const S = StyleSheet.create({
   footerText: {
     fontSize: 11,
     fontFamily: 'BeVietnamPro_500Medium',
-    color: P.onSurfaceVariant + '50',
+    color: P_STATIC.onSurfaceVariant + '50',
     letterSpacing: 0.5,
   },
 });

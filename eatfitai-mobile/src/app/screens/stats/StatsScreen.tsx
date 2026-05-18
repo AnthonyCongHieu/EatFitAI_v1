@@ -1,4 +1,4 @@
-﻿/**
+/**
  * StatsScreen — Emerald Nebula 3D unified stats
  * Faithfully follows the HTML template design reference.
  *
@@ -529,7 +529,7 @@ const StatsScreen = (): React.ReactElement => {
       {/* ══════ APP BAR ══════ */}
       <View style={S.appBar}>
         <View style={S.appBarSide} />
-        <ThemedText style={S.appBarTitle}>Thống kê</ThemedText>
+        <ThemedText style={[S.appBarTitle, { color: P.onSurface }]}>Thống kê</ThemedText>
         <View style={S.appBarSide} />
       </View>
 
@@ -552,7 +552,7 @@ const StatsScreen = (): React.ReactElement => {
                 style={[S.tabBtn, on && S.tabBtnOn, on && { backgroundColor: P.primaryContainer }]}
                 testID={testID}
               >
-                <ThemedText style={[S.tabTxt, { color: P.textSlate400 }, on && S.tabTxtOn]}>{label}</ThemedText>
+                <ThemedText style={[S.tabTxt, { color: P.onSurfaceVariant }, on && S.tabTxtOn, on && { color: P.onPrimary }]}>{label}</ThemedText>
               </Pressable>
             );
           })}
@@ -661,6 +661,7 @@ const StatsScreen = (): React.ReactElement => {
                       valueColor="#34d399" /* emerald-400 */
                       gradientFrom="#10b981" /* emerald-500 */
                       gradientTo="#6ee7b7" /* emerald-300 */
+                      P={P}
                     />
                     {/* Carbs: secondary gradient */}
                     <MacroBar
@@ -670,7 +671,8 @@ const StatsScreen = (): React.ReactElement => {
                       valueColor={P.secondary}
                       gradientFrom={P.secondary}
                       gradientTo={P.secondaryFixed}
-                    />
+              P={P}
+            />
                     {/* Fat: tertiary gradient */}
                     <MacroBar
                       label="CHẤT BÉO"
@@ -679,7 +681,8 @@ const StatsScreen = (): React.ReactElement => {
                       valueColor={P.tertiaryContainer}
                       gradientFrom={P.tertiaryContainer}
                       gradientTo={P.tertiaryFixed}
-                    />
+              P={P}
+            />
                   </View>
                 </View>
               </Tilt3DCard>
@@ -765,7 +768,7 @@ const StatsScreen = (): React.ReactElement => {
                       <View style={S.waterIconBox}>
                         <Ionicons name="water" size={20} color="#0EA5E9" />
                       </View>
-                      <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
+                      <ThemedText style={[S.waterLabel, { color: P.textSlate500 }]}>LƯỢNG NƯỚC</ThemedText>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                       <ThemedText style={[S.waterBig, { color: P.onSurface }]}>
@@ -843,11 +846,11 @@ const StatsScreen = (): React.ReactElement => {
           <>
             {/* Week nav */}
             <Animated.View entering={FadeInDown.delay(100).springify()}>
-              <View style={S.weekNav}>
+              <View style={[S.weekNav, { backgroundColor: P.surfaceContainerLow }]}>
                 <Pressable onPress={goToPreviousWeek} style={S.wkBtn}>
                   <Ionicons name="chevron-back" size={20} color={P.primary} />
                 </Pressable>
-                <ThemedText style={S.wkTitle}>
+                <ThemedText style={[S.wkTitle, { color: P.onSurface }]}>
                   {formatWeekRangeLabel(selectedWeekDate)}
                 </ThemedText>
                 <Pressable
@@ -917,7 +920,7 @@ const StatsScreen = (): React.ReactElement => {
                       </Svg>
                       {/* Center text */}
                       <View style={S.ringCenter}>
-                        <ThemedText style={S.ringBig}>
+                        <ThemedText style={[S.ringBig, { color: P.onSurface }]}>
                           {wkTotalCal.toLocaleString()}
                         </ThemedText>
                         <ThemedText style={[S.wkRingUnit]}>
@@ -941,7 +944,7 @@ const StatsScreen = (): React.ReactElement => {
                     <View style={{ width: 1, backgroundColor: P.glassBorder, height: '100%' }} />
                     <View style={{ alignItems: 'center' }}>
                       <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 11, fontFamily: 'BeVietnamPro_700Bold', letterSpacing: 0.5 }}>ĐẠT MỤC TIÊU</ThemedText>
-                      <ThemedText style={{ color: '#4BE277', fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', marginTop: 2 }}>{daysOnTrack} <ThemedText style={{ fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: '#4BE277' }}>ngày</ThemedText></ThemedText>
+                      <ThemedText style={{ color: P.primary, fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', marginTop: 2 }}>{daysOnTrack} <ThemedText style={{ fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P.primary }}>ngày</ThemedText></ThemedText>
                     </View>
                   </View>
                 </View>
@@ -1379,7 +1382,7 @@ const StatsScreen = (): React.ReactElement => {
                   useDeviceMotion
                   activeTouch={false}
                 >
-                  <View style={S.mthHeatCard}>
+                  <View style={[S.mthHeatCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
                     {isLoadingMonth ? (
                       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }}>
                         <ThemedText style={{ color: P.textSlate400, fontSize: 13, fontFamily: 'BeVietnamPro_700Bold', textAlign: 'center' }}>
@@ -1412,7 +1415,7 @@ const StatsScreen = (): React.ReactElement => {
                               });
                               const cal = dData?.calories || 0;
                               if (cal > 0) {
-                                txtColor = '#fff';
+                                
                                 opacity = 1;
                                 const pct = cal / targetCal;
                                 if (pct < 0.3) bgColor = '#3f3f46'; // Rất ít
@@ -1651,15 +1654,16 @@ const MacroBar = ({
   valueColor: string;
   gradientFrom: string;
   gradientTo: string;
+  P: any;
 }) => (
   <View style={S.mBar}>
     <View style={S.mBarHead}>
-      <ThemedText style={S.mBarLabel}>{label}</ThemedText>
+      <ThemedText style={[S.mBarLabel, { color: P.textSlate500 }]}>{label}</ThemedText>
       <ThemedText style={[S.mBarValue, { color: valueColor }]}>
         {Math.round(value)}/{target}g
       </ThemedText>
     </View>
-    <View style={S.mBarTrack}>
+    <View style={[S.mBarTrack, { backgroundColor: P.surfaceContainerLowest }]}>
       <LinearGradient
         colors={[gradientFrom, gradientTo]}
         start={{ x: 0, y: 0 }}
@@ -1761,7 +1765,7 @@ const S = StyleSheet.create({
   ringBig: {
     fontSize: 32,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: '#fff',
+    color: P.onSurface,
     letterSpacing: -1.5,
     lineHeight: 38,
   },
@@ -1918,7 +1922,7 @@ const S = StyleSheet.create({
     flexShrink: 1,
     fontSize: 18,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: '#fff',
+    color: P.onSurface,
     lineHeight: 24,
   },
   weeklyReviewBadge: {
@@ -1950,7 +1954,7 @@ const S = StyleSheet.create({
   weeklyReviewMetricValue: {
     fontSize: 16,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: '#fff',
+    color: P.onSurface,
     marginBottom: 4,
   },
   weeklyReviewMetricLabel: {
@@ -2003,7 +2007,7 @@ const S = StyleSheet.create({
   weeklyReviewButtonText: {
     fontSize: 12,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: '#fff',
+    color: P.onPrimary,
   },
 
   chartCard: {

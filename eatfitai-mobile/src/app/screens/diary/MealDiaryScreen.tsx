@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MealDiaryScreen — Full meal diary with Emerald Nebula 3D aesthetic
  * Features: Week strip, daily summary card, meal group cards with tilt,
  * floating add button, pull-to-refresh.
@@ -44,13 +44,14 @@ import { useSmartReminders } from '../../../hooks/useSmartReminders';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
 import { MEAL_DIARY_INLINE_NUDGE_COPY } from '../../../features/mochi/useMoChiNudgeContext';
+import { useEN } from '../../../theme/emeraldNebula';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette (synced with HomeScreen)
    ═══════════════════════════════════════════════ */
-const C = {
+const C_STATIC = {
   bg: '#0a0e1a',
   surfaceLow: '#111827',
   surface: '#1a1f2f',
@@ -74,8 +75,8 @@ const C = {
 const MEAL_ICONS: Record<MealTypeId, { icon: string; color: string }> = {
   1: { icon: 'sunny-outline', color: '#fbbf24' },      // Breakfast - amber
   2: { icon: 'sunny', color: '#34d399' },               // Lunch - emerald
-  3: { icon: 'moon-outline', color: C.indigo },          // Dinner - indigo
-  4: { icon: 'cafe-outline', color: C.rose },            // Snack - rose
+  3: { icon: 'moon-outline', color: C_STATIC.indigo },          // Dinner - indigo
+  4: { icon: 'cafe-outline', color: C_STATIC.rose },            // Snack - rose
 };
 
 const MEAL_ADD_LABELS: Record<MealTypeId, string> = {
@@ -141,6 +142,23 @@ const MealDiaryScreen = (): React.ReactElement => {
   const route = useRoute<RouteProp<RootStackParamList, 'MealDiary'>>();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const EN = useEN();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
+  const C = {
+    ...C_STATIC,
+    bg: EN.bg,
+    surfaceLow: EN.surfaceLow,
+    surface: EN.surface,
+    surfaceHigh: EN.surfaceHigh,
+    surfaceHighest: EN.surfaceHighest,
+    primary: EN.primary,
+    primaryContainer: EN.primaryContainer,
+    onSurface: EN.onSurface,
+    textMuted: EN.textMuted,
+    outline: EN.outline,
+    outlineVariant: EN.outlineVariant,
+    danger: EN.danger,
+  };
 
   const initialDate = useMemo(() => {
     const paramDate = route.params?.selectedDate;
@@ -316,12 +334,12 @@ const MealDiaryScreen = (): React.ReactElement => {
      ═══════════════════════════════════════════════ */
   return (
     <View
-      style={[styles.root, { paddingTop: insets.top }]}
+      style={[styles.root, { paddingTop: insets.top, backgroundColor: C.bg }]}
       testID={TEST_IDS.mealDiary.screen}
       nativeID={TEST_IDS.mealDiary.screen}
       collapsable={false}
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle={(EN.bg as string) === '#F8FBF7' ? 'dark-content' : 'light-content'} backgroundColor="transparent" translucent />
       <LinearGradient
         colors={[C.surfaceLow, C.bg, C.bg]}
         locations={[0, 0.25, 1]}
@@ -338,7 +356,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           >
             <Ionicons name="arrow-back" size={22} color={C.textMuted} />
           </Pressable>
-          <ThemedText style={styles.headerTitle}>Nhật ký ăn uống</ThemedText>
+          <ThemedText style={[styles.headerTitle, { color: C.onSurface }]}>Nhật ký ăn uống</ThemedText>
           <Pressable
             onPress={() => setShowDatePicker(true)}
             style={styles.headerBtn}
@@ -360,15 +378,15 @@ const MealDiaryScreen = (): React.ReactElement => {
               style={styles.weekDay}
               onPress={() => handleDateSelect(day)}
             >
-              <ThemedText style={[styles.weekDayLabel, selected && styles.weekDayLabelSelected]}>
+              <ThemedText style={[styles.weekDayLabel, { color: C.textMuted }, selected && { color: C.onSurface }]}>
                 {VIET_DAYS[day.getDay()]}
               </ThemedText>
-              <View style={[styles.weekDayNumWrap, selected && styles.weekDayNumWrapSelected]}>
-                <ThemedText style={[styles.weekDayNum, selected && styles.weekDayNumSelected]}>
+              <View style={[styles.weekDayNumWrap, selected && { backgroundColor: C.primaryContainer, shadowColor: C.primary }]}>
+                <ThemedText style={[styles.weekDayNum, { color: C.onSurface }, selected && styles.weekDayNumSelected]}>
                   {day.getDate()}
                 </ThemedText>
               </View>
-              {today && !selected && <View style={styles.weekTodayDot} />}
+              {today && !selected && <View style={[styles.weekTodayDot, { backgroundColor: C.primary }]} />}
             </Pressable>
           );
         })}
@@ -412,30 +430,30 @@ const MealDiaryScreen = (): React.ReactElement => {
             {/* ── Daily Summary ── */}
             <Animated.View entering={FadeInDown.delay(150).springify()}>
               <Tilt3DCard width={cardWidth} height={140} maxTilt={6} showReflection={false} useDeviceMotion={true} activeTouch={false}>
-                <View style={styles.summaryCard}>
+                <View style={[styles.summaryCard, { backgroundColor: C.surfaceLow, borderColor: C.outline }]}>
                   {/* Top row */}
                   <View style={styles.summaryTopRow}>
                     <View>
-                      <ThemedText style={styles.summaryCalories}>
+                      <ThemedText style={[styles.summaryCalories, { color: C.primary }]}>
                         {Math.round(totals.calories).toLocaleString()} kcal
                       </ThemedText>
-                      <ThemedText style={styles.summaryRemaining}>
+                      <ThemedText style={[styles.summaryRemaining, { color: C.textMuted }]}>
                         {Math.round(remaining).toLocaleString()} còn lại
                       </ThemedText>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <ThemedText style={styles.summaryTargetLabel}>MỤC TIÊU HÀNG NGÀY</ThemedText>
-                      <ThemedText style={styles.summaryTargetValue}>
+                      <ThemedText style={[styles.summaryTargetLabel, { color: C.textMuted }]}>MỤC TIÊU HÀNG NGÀY</ThemedText>
+                      <ThemedText style={[styles.summaryTargetValue, { color: C.onSurface }]}>
                         {Math.round(targetCalories).toLocaleString()} kcal
                       </ThemedText>
                     </View>
                   </View>
 
                   {/* Progress bar */}
-                  <View style={styles.progressTrack}>
+                  <View style={[styles.progressTrack, { backgroundColor: C.surfaceHighest }]}>
                     <Animated.View
                       entering={FadeIn.delay(400)}
-                      style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]}
+                      style={[styles.progressFill, { width: `${Math.round(progress * 100)}%`, backgroundColor: C.primary, shadowColor: C.primary }]}
                     />
                   </View>
                 </View>
@@ -458,7 +476,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                 entering={FadeInUp.delay(200 + gIdx * 80).springify()}
               >
                 <Tilt3DCard width={cardWidth} height={mealCardHeight} maxTilt={5} showReflection={false} useDeviceMotion={true} activeTouch={false}>
-                  <View style={styles.mealCard}>
+                  <View style={[styles.mealCard, { backgroundColor: C.surfaceHigh, borderColor: C.outline }]}>
                     {/* Meal Header */}
                     <Pressable
                       testID={TEST_IDS.mealDiary.addManualButton}
@@ -477,7 +495,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                           size={20}
                           color={MEAL_ICONS[group.mealType].color}
                         />
-                        <ThemedText style={styles.mealTitle}>{group.title}</ThemedText>
+                        <ThemedText style={[styles.mealTitle, { color: C.onSurface }]}>{group.title}</ThemedText>
                       </View>
                       <View style={styles.mealHeaderActions}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -486,7 +504,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                              <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="leaf" size={12} color="#3b82f6" /> {Math.round(group.totalCarbs || 0)}g</ThemedText>
                              <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="water" size={12} color="#fbbf24" /> {Math.round(group.totalFat || 0)}g</ThemedText>
                            </View>
-                           <ThemedText style={styles.mealCalories}>
+                           <ThemedText style={[styles.mealCalories, { color: C.primary }]}>
                              {Math.round(group.totalCalories)} kcal
                            </ThemedText>
                         </View>
@@ -497,7 +515,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                     {group.entries.length > 0 ? (
                       <View style={styles.mealContent}>
                         {group.entries.map((entry) => (
-                          <View key={entry.id} style={{ borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 12, overflow: 'hidden' }}>
+                          <View key={entry.id} style={{ borderRadius: 16, borderWidth: 1, borderColor: C.outline, marginBottom: 12, overflow: 'hidden' }}>
                             <Swipeable
                               rightActions={[
                               {
@@ -528,7 +546,7 @@ const MealDiaryScreen = (): React.ReactElement => {
 
                               {/* Info */}
                               <View style={[styles.entryInfo, { marginLeft: 12, justifyContent: 'space-between', paddingVertical: 2 }]}>
-                                <ThemedText style={[styles.entryName, { fontSize: 16, fontWeight: '700' }]} numberOfLines={1}>
+                                <ThemedText style={[styles.entryName, { fontSize: 16, fontWeight: '700', color: C.onSurface }]} numberOfLines={1}>
                                   {entry.foodName}
                                 </ThemedText>
                                 <ThemedText style={{ color: C.textMuted, fontSize: 13, marginTop: 4 }}>
@@ -587,7 +605,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                           <View style={styles.mealEmptyIcon}>
                             <Ionicons name="add" size={24} color={C.primary} />
                           </View>
-                          <ThemedText style={styles.mealEmptyText}>
+                          <ThemedText style={[styles.mealEmptyText, { color: C.textMuted }]}>
                             {MEAL_ADD_LABELS[group.mealType]}
                           </ThemedText>
                         </Pressable>
@@ -655,16 +673,16 @@ const MealDiaryScreen = (): React.ReactElement => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: C_STATIC.bg,
   },
 
   /* ─── Header ─── */
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: C.surfaceLow,
+    backgroundColor: C_STATIC.surfaceLow,
     borderBottomWidth: 1,
-    borderBottomColor: C.outline,
+    borderBottomColor: C_STATIC.outline,
   },
   headerRow: {
     flexDirection: 'row',
@@ -681,7 +699,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.primary,
+    color: C_STATIC.primary,
     letterSpacing: -0.3,
   },
 
@@ -700,12 +718,12 @@ const styles = StyleSheet.create({
   weekDayLabel: {
     fontSize: 10,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   weekDayLabelSelected: {
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
     fontFamily: 'BeVietnamPro_700Bold',
   },
   weekDayNumWrap: {
@@ -716,8 +734,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   weekDayNumWrapSelected: {
-    backgroundColor: C.primaryContainer,
-    shadowColor: C.primary,
+    backgroundColor: C_STATIC.primaryContainer,
+    shadowColor: C_STATIC.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 10,
@@ -726,16 +744,16 @@ const styles = StyleSheet.create({
   weekDayNum: {
     fontSize: 16,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
   },
   weekDayNumSelected: {
-    color: C.onPrimary,
+    color: C_STATIC.onPrimary,
   },
   weekTodayDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     marginTop: -2,
   },
 
@@ -749,9 +767,9 @@ const styles = StyleSheet.create({
   loadingSkeletonCard: {
     width: '100%',
     borderRadius: 22,
-    backgroundColor: C.surfaceLow,
+    backgroundColor: C_STATIC.surfaceLow,
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: C_STATIC.outline,
     padding: 18,
     gap: 12,
   },
@@ -759,13 +777,13 @@ const styles = StyleSheet.create({
     width: '42%',
     height: 18,
     borderRadius: 9,
-    backgroundColor: C.surfaceHighest,
+    backgroundColor: C_STATIC.surfaceHighest,
   },
   loadingSkeletonLine: {
     width: '100%',
     height: 12,
     borderRadius: 6,
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: C_STATIC.surfaceHigh,
   },
   loadingSkeletonLineShort: {
     width: '68%',
@@ -773,11 +791,11 @@ const styles = StyleSheet.create({
 
   /* ─── Summary Card ─── */
   summaryCard: {
-    backgroundColor: C.surfaceLow,
+    backgroundColor: C_STATIC.surfaceLow,
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: C_STATIC.outline,
     overflow: 'hidden',
   },
   summaryTopRow: {
@@ -789,40 +807,40 @@ const styles = StyleSheet.create({
   summaryCalories: {
     fontSize: 28,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.primary,
+    color: C_STATIC.primary,
     letterSpacing: -1,
     lineHeight: 38,
   },
   summaryRemaining: {
     fontSize: 13,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     marginTop: 2,
   },
   summaryTargetLabel: {
     fontSize: 9,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   summaryTargetValue: {
     fontSize: 15,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
     marginTop: 2,
   },
   progressTrack: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: C.surfaceHighest,
+    backgroundColor: C_STATIC.surfaceHighest,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 5,
-    backgroundColor: C.primary,
-    shadowColor: C.primary,
+    backgroundColor: C_STATIC.primary,
+    shadowColor: C_STATIC.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -830,11 +848,11 @@ const styles = StyleSheet.create({
 
   /* ─── Meal Card ─── */
   mealCard: {
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: C_STATIC.surfaceHigh,
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: C_STATIC.outline,
   },
   mealHeader: {
     flexDirection: 'row',
@@ -857,12 +875,12 @@ const styles = StyleSheet.create({
   mealTitle: {
     fontSize: 15,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
   },
   mealCalories: {
     fontSize: 14,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.primary,
+    color: C_STATIC.primary,
   },
 
   /* ─── Meal content (with entries) ─── */
@@ -883,7 +901,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: C.surfaceHighest,
+    backgroundColor: C_STATIC.surfaceHighest,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -897,18 +915,18 @@ const styles = StyleSheet.create({
   entryName: {
     fontSize: 15,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.onSurface,
+    color: C_STATIC.onSurface,
   },
   entryQuantity: {
     fontSize: 13,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
     marginTop: 2,
   },
   entryCalories: {
     fontSize: 14,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.primary,
+    color: C_STATIC.primary,
   },
 
   /* ─── Macro pills ─── */
@@ -941,7 +959,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 2,
     borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
-    borderColor: C.outlineVariant,
+    borderColor: C_STATIC.outlineVariant,
     borderRadius: 16,
     paddingVertical: 24,
     alignItems: 'center',
@@ -959,7 +977,7 @@ const styles = StyleSheet.create({
   mealEmptyText: {
     fontSize: 14,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.textMuted,
+    color: C_STATIC.textMuted,
   },
   copyDayButton: {
     marginTop: 12,
@@ -968,7 +986,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 999,
@@ -976,7 +994,7 @@ const styles = StyleSheet.create({
   copyDayButtonText: {
     fontSize: 13,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.onPrimary,
+    color: C_STATIC.onPrimary,
   },
   copyMealButton: {
     flexDirection: 'row',
@@ -993,7 +1011,7 @@ const styles = StyleSheet.create({
   copyMealButtonText: {
     fontSize: 13,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.primary,
+    color: C_STATIC.primary,
   },
 
   /* ─── Floating AI Robot FAB ─── */
@@ -1007,12 +1025,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: C_STATIC.surfaceHigh,
     borderWidth: 2,
     borderColor: 'rgba(75, 226, 119, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: C.primary,
+    shadowColor: C_STATIC.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -1066,7 +1084,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     opacity: 0.6,
   },
   fabDot: {
@@ -1074,9 +1092,9 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     borderWidth: 2,
-    borderColor: C.bg,
+    borderColor: C_STATIC.bg,
   },
 
   /* ─── Back to Today ─── */
@@ -1087,11 +1105,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: C.primary,
+    backgroundColor: C_STATIC.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 99,
-    shadowColor: C.primary,
+    shadowColor: C_STATIC.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -1112,7 +1130,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   datePickerContainer: {
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: C_STATIC.surfaceHigh,
     borderRadius: 20,
     overflow: 'hidden',
   },

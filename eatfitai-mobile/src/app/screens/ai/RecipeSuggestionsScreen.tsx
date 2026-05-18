@@ -20,6 +20,7 @@ import { aiService, buildRecipeSuggestionRequest } from '../../../services/aiSer
 import { sanitizeFoodImageUrl } from '../../../utils/imageHelpers';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
+import { useEN } from '../../../theme/emeraldNebula';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
@@ -29,7 +30,7 @@ type SortMode = 'best' | 'fast' | 'protein' | 'missing';
 
 
 
-const P = {
+const P_STATIC = {
   primary: '#4be277',
   primaryContainer: '#22c55e',
   surface: '#0e1322',
@@ -84,7 +85,7 @@ const RecipeImage = ({
   if (!imageUrl) {
     return (
       <View style={[style, S.imageFallback]}>
-        <Ionicons name="restaurant-outline" size={34} color={P.onSurfaceVariant} />
+        <Ionicons name="restaurant-outline" size={34} color={P_STATIC.onSurfaceVariant} />
       </View>
     );
   }
@@ -103,6 +104,22 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
+  const EN = useEN();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
+  const P = {
+    ...P_STATIC,
+    primary: EN.primary,
+    primaryContainer: EN.primaryContainer,
+    surface: EN.bg,
+    surfaceContainerLow: EN.surfaceLow,
+    surfaceContainerHigh: EN.surfaceHigh,
+    surfaceContainerLowest: EN.surfaceLow,
+    onSurface: EN.onSurface,
+    onSurfaceVariant: EN.onSurfaceVariant,
+    glassBorder: EN.glassBorder,
+    glassHeader: EN.glassBg,
+    danger: EN.danger,
+  };
 
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
@@ -242,7 +259,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           style={S.gridItem}
         >
           <TouchableOpacity
-            style={S.gridCard}
+            style={[S.gridCard, { backgroundColor: P.surfaceContainerHigh, borderColor: P.glassBorder }]}
             activeOpacity={0.8}
             onPress={() => openRecipeDetail(item)}
           >
@@ -255,8 +272,8 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
               </View>
             </View>
             <View style={S.gridCardBody}>
-              <ThemedText style={S.gridTitle} numberOfLines={2}>{item.recipeName}</ThemedText>
-              <ThemedText style={S.gridReason} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
+              <ThemedText style={[S.gridTitle, { color: P.onSurface }]} numberOfLines={2}>{item.recipeName}</ThemedText>
+              <ThemedText style={[S.gridReason, { color: P.onSurfaceVariant }]} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
               <View style={S.gridMetrics}>
                 <View style={S.metric}>
                   <Ionicons name="time-outline" size={12} color={P.onSurfaceVariant} />
@@ -288,14 +305,14 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   );
 
   return (
-    <View style={S.container}>
+    <View style={[S.container, { backgroundColor: P.surface }]}>
       {/* ═══ Header ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[S.header, { paddingTop: insets.top + 10, backgroundColor: P.glassHeader }]}>
         <View style={S.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn}>
             <Ionicons name="arrow-back" size={24} color={P.primary} />
           </TouchableOpacity>
-          <ThemedText style={S.headerTitle}>
+          <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>
             {isDailyRecommendation ? 'Hôm nay nên ăn gì' : 'Gợi ý công thức'}
           </ThemedText>
         </View>
@@ -308,10 +325,10 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       >
         {/* ═══ Search Section ═══ */}
         <View style={S.searchSection}>
-          <View style={S.searchBox}>
+          <View style={[S.searchBox, { backgroundColor: P.surfaceContainerLowest, borderColor: P.glassBorder }]}>
             <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={S.searchIcon} />
             <TextInput
-              style={S.searchInput}
+              style={[S.searchInput, { color: P.onSurface }]}
               placeholder="Nhập nguyên liệu (VD: Thịt gà)..."
               placeholderTextColor={P.onSurfaceVariant}
               value={newIngredient}
@@ -410,8 +427,8 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
               {groupedSections.map((section) => (
                 <View key={section.key} style={S.groupSection}>
                   <View style={S.exploreHeader}>
-                    <ThemedText style={S.exploreTitle}>{section.title}</ThemedText>
-                    <ThemedText style={S.exploreLink}>{section.items.length} món</ThemedText>
+                    <ThemedText style={[S.exploreTitle, { color: P.onSurfaceVariant }]}>{section.title}</ThemedText>
+                    <ThemedText style={[S.exploreLink, { color: P.primary }]}>{section.items.length} món</ThemedText>
                   </View>
                   {renderRecipeGrid(section.items)}
                 </View>
@@ -430,12 +447,12 @@ export default RecipeSuggestionsScreen;
 
 /* ═══ Styles ═══ */
 const S = StyleSheet.create({
-  container: { flex: 1, backgroundColor: P.surface },
+  container: { flex: 1, backgroundColor: P_STATIC.surface },
   header: {
     position: 'absolute',
     top: 0, left: 0, right: 0,
     zIndex: 50,
-    backgroundColor: P.glassHeader,
+    backgroundColor: P_STATIC.glassHeader,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -444,22 +461,22 @@ const S = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 17, color: P.onSurface, letterSpacing: -0.3 },
+  headerTitle: { fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 17, color: P_STATIC.onSurface, letterSpacing: -0.3 },
   scrollContent: { paddingHorizontal: 20 },
 
   searchSection: { marginBottom: 16 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: P.surfaceContainerLowest,
+    backgroundColor: P_STATIC.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: P.glassBorder,
+    borderColor: P_STATIC.glassBorder,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
   searchIcon: { marginRight: 12 },
-  searchInput: { flex: 1, fontSize: 16, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurface },
+  searchInput: { flex: 1, fontSize: 16, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurface },
   addBtnInside: { marginLeft: 8 },
 
   chipsSection: { marginHorizontal: -20, marginBottom: 24 },
@@ -468,26 +485,26 @@ const S = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 99,
-    backgroundColor: P.surfaceContainerHigh,
+    backgroundColor: P_STATIC.surfaceContainerHigh,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  chipBadgeActive: { backgroundColor: P.primary },
-  chipBadgeText: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant },
-  chipBadgeTextActive: { color: P.onPrimary },
+  chipBadgeActive: { backgroundColor: P_STATIC.primary },
+  chipBadgeText: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P_STATIC.onSurfaceVariant },
+  chipBadgeTextActive: { color: P_STATIC.onPrimary },
 
   mainActionBtn: {
-    backgroundColor: P.primary,
+    backgroundColor: P_STATIC.primary,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: P.primary,
+    shadowColor: P_STATIC.primary,
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 5,
   },
-  mainActionBtnText: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onPrimary },
+  mainActionBtnText: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onPrimary },
 
   resultsWrap: { minHeight: 400 },
   sortChipsSection: { marginHorizontal: -20, marginBottom: 16 },
@@ -496,37 +513,37 @@ const S = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: P.surfaceContainerLowest,
+    backgroundColor: P_STATIC.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: P.glassBorder,
+    borderColor: P_STATIC.glassBorder,
   },
   sortChipActive: {
-    backgroundColor: P.primary,
-    borderColor: P.primary,
+    backgroundColor: P_STATIC.primary,
+    borderColor: P_STATIC.primary,
   },
-  sortChipText: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurfaceVariant },
-  sortChipTextActive: { color: P.onPrimary },
+  sortChipText: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onSurfaceVariant },
+  sortChipTextActive: { color: P_STATIC.onPrimary },
   imageFallback: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: P.surfaceContainerLow,
+    backgroundColor: P_STATIC.surfaceContainerLow,
   },
 
   /* Featured Card */
   featuredCard: {
-    backgroundColor: P.surfaceContainerHigh,
+    backgroundColor: P_STATIC.surfaceContainerHigh,
     borderRadius: 32,
     borderWidth: 1,
-    borderColor: P.glassBorder,
+    borderColor: P_STATIC.glassBorder,
     marginBottom: 32,
-    shadowColor: P.primary,
+    shadowColor: P_STATIC.primary,
     shadowOpacity: 0.15,
     shadowRadius: 30,
     elevation: 10,
     overflow: 'hidden',
   },
   featuredContent: { flexDirection: 'column' },
-  featuredImageWrap: { height: 200, width: '100%', backgroundColor: P.surfaceContainerLow },
+  featuredImageWrap: { height: 200, width: '100%', backgroundColor: P_STATIC.surfaceContainerLow },
   cardImageFull: { width: '100%', height: '100%', resizeMode: 'cover' },
   featuredDetails: { padding: 24, gap: 16 },
   aiBadge: {
@@ -534,17 +551,17 @@ const S = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: P.primary + '20',
+    backgroundColor: P_STATIC.primary + '20',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 99,
   },
-  aiBadgeText: { fontSize: 10, fontFamily: 'BeVietnamPro_700Bold', color: P.primary, letterSpacing: 0.5 },
-  featuredTitle: { fontSize: 26, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, lineHeight: 32 },
-  reasonText: { fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, lineHeight: 20 },
+  aiBadgeText: { fontSize: 10, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.primary, letterSpacing: 0.5 },
+  featuredTitle: { fontSize: 26, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onSurface, lineHeight: 32 },
+  reasonText: { fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant, lineHeight: 20 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagSubBadge: {
-    backgroundColor: P.surfaceContainerLowest,
+    backgroundColor: P_STATIC.surfaceContainerLowest,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -552,52 +569,52 @@ const S = StyleSheet.create({
   tagText: { fontSize: 11, fontFamily: 'BeVietnamPro_600SemiBold', color: '#96d59d' },
   metricsRow: { flexDirection: 'row', gap: 24, paddingVertical: 8 },
   metric: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metricText: { fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant },
+  metricText: { fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant },
   viewRecipeBtn: {
     width: '100%',
-    backgroundColor: P.primary,
+    backgroundColor: P_STATIC.primary,
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
   },
-  viewRecipeBtnText: { fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', color: P.onPrimary },
+  viewRecipeBtnText: { fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onPrimary },
 
   /* Grid Area */
   groupSection: { gap: 16, marginBottom: 24 },
   exploreSection: { gap: 16 },
   exploreHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  exploreTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurfaceVariant },
-  exploreLink: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.primary },
+  exploreTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onSurfaceVariant },
+  exploreLink: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P_STATIC.primary },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   gridItem: { width: '47%' },
   gridCard: {
-    backgroundColor: P.surfaceContainerHigh,
+    backgroundColor: P_STATIC.surfaceContainerHigh,
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: P.glassBorder,
+    borderColor: P_STATIC.glassBorder,
   },
-  gridImageFrame: { height: 130, width: '100%', position: 'relative', backgroundColor: P.surfaceContainerLow },
+  gridImageFrame: { height: 130, width: '100%', position: 'relative', backgroundColor: P_STATIC.surfaceContainerLow },
   gridImageWrap: { height: '100%', width: '100%' },
   glassOverlayTag: {
     position: 'absolute',
     bottom: 10, left: 10,
-    backgroundColor: P.primary + 'E6', // translucent primary
+    backgroundColor: P_STATIC.primary + 'E6', // translucent primary
     paddingHorizontal: 8, paddingVertical: 4,
     borderRadius: 6,
   },
-  tagTextSmall: { fontSize: 9, fontFamily: 'BeVietnamPro_700Bold', color: P.onPrimary },
+  tagTextSmall: { fontSize: 9, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onPrimary },
   gridCardBody: { padding: 12, gap: 8 },
-  gridTitle: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, lineHeight: 20 },
-  gridReason: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, lineHeight: 16 },
+  gridTitle: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onSurface, lineHeight: 20 },
+  gridReason: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant, lineHeight: 16 },
   gridMetrics: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  metricTextSmall: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant },
+  metricTextSmall: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant },
 
   /* Empty & Loading States */
   centerEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
-  emptyText: { marginTop: 16, textAlign: 'center', color: P.onSurfaceVariant, fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', lineHeight: 22 },
+  emptyText: { marginTop: 16, textAlign: 'center', color: P_STATIC.onSurfaceVariant, fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', lineHeight: 22 },
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  errorText: { marginTop: 12, color: P.danger, fontFamily: 'BeVietnamPro_600SemiBold', textAlign: 'center' },
+  errorText: { marginTop: 12, color: P_STATIC.danger, fontFamily: 'BeVietnamPro_600SemiBold', textAlign: 'center' },
   skeletonWrap: { gap: 16 },
-  skeletonCard: { height: 180, borderRadius: 24, backgroundColor: P.surfaceContainerHigh, opacity: 0.5 },
+  skeletonCard: { height: 180, borderRadius: 24, backgroundColor: P_STATIC.surfaceContainerHigh, opacity: 0.5 },
 });

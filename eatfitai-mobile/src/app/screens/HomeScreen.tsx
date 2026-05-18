@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -135,10 +135,11 @@ const getWeekDays = (): Date[] => {
 };
 
 /* ─── WeekDayStrip Component ─── */
-const WeekDayStrip = ({ selectedDate, onSelectDate }: { selectedDate: Date; onSelectDate: (d: Date) => void }) => {
+type WeekPalette = { surfaceLow: string; outline: string; textMuted: string; onSurface: string; primary: string };
+const WeekDayStrip = ({ selectedDate, onSelectDate, palette }: { selectedDate: Date; onSelectDate: (d: Date) => void; palette: WeekPalette }) => {
   const days = useMemo(() => getWeekDays(), []);
   return (
-    <View style={weekStyles.container}>
+    <View style={[weekStyles.container, { backgroundColor: palette.surfaceLow, borderColor: palette.outline }]}>
       {days.map((day) => {
         const selected = isSameDay(day, selectedDate);
         const today = isToday(day);
@@ -148,15 +149,15 @@ const WeekDayStrip = ({ selectedDate, onSelectDate }: { selectedDate: Date; onSe
             style={weekStyles.dayBtn}
             onPress={() => onSelectDate(day)}
           >
-            <ThemedText style={[weekStyles.dayLabel, selected && weekStyles.dayLabelSelected]}>
+            <ThemedText style={[weekStyles.dayLabel, { color: palette.textMuted }, selected && { color: palette.onSurface, fontFamily: 'BeVietnamPro_700Bold' }]}>
               {VIET_DAYS[day.getDay()]}
             </ThemedText>
-            <View style={[weekStyles.dayNumContainer, selected && weekStyles.dayNumContainerSelected]}>
-              <ThemedText style={[weekStyles.dayNum, selected && weekStyles.dayNumSelected]}>
+            <View style={[weekStyles.dayNumContainer, selected && { backgroundColor: palette.primary }]}>
+              <ThemedText style={[weekStyles.dayNum, { color: palette.onSurface }, selected && weekStyles.dayNumSelected]}>
                 {day.getDate()}
               </ThemedText>
             </View>
-            {today && !selected && <View style={weekStyles.todayDot} />}
+            {today && !selected && <View style={[weekStyles.todayDot, { backgroundColor: palette.primary }]} />}
           </Pressable>
         );
       })}
@@ -168,11 +169,9 @@ const weekStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: C_STATIC.surfaceLow,
     borderRadius: 16,
     padding: 6,
     borderWidth: 1,
-    borderColor: C_STATIC.outline,
   },
   dayBtn: {
     flex: 1,
@@ -184,12 +183,7 @@ const weekStyles = StyleSheet.create({
   dayLabel: {
     fontSize: 10,
     fontFamily: 'BeVietnamPro_600SemiBold',
-    color: C_STATIC.textMuted,
     textTransform: 'uppercase',
-  },
-  dayLabelSelected: {
-    color: C_STATIC.onSurface,
-    fontFamily: 'BeVietnamPro_700Bold',
   },
   dayNumContainer: {
     width: 34,
@@ -199,15 +193,9 @@ const weekStyles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  dayNumContainerSelected: {
-    borderRadius: 999,
-    backgroundColor: C_STATIC.primary,
-    overflow: 'hidden',
-  },
   dayNum: {
     fontSize: 15,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C_STATIC.onSurface,
   },
   dayNumSelected: {
     color: '#003915',
@@ -216,7 +204,6 @@ const weekStyles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: C_STATIC.primary,
     marginTop: -2,
   },
 });
@@ -554,7 +541,7 @@ const HomeScreen = (): React.ReactElement => {
   }
 
   return (
-    <View style={styles.screenBg}>
+    <View style={[styles.screenBg, { backgroundColor: C.bg }]}>
       {/* Background gradient */}
       <LinearGradient
         colors={[C.surfaceLow, C.bg, C.bg] as readonly [string, string, string]}
@@ -613,9 +600,10 @@ const HomeScreen = (): React.ReactElement => {
             width={cardWidth}
             height={210}
             showReflection={false}
+            /* Tilt3D wrapper does not affect inner colors */
             useDeviceMotion={true}
             activeTouch={false}
-            style={[styles.dashboardCard, styles.glassDashboardCard]}
+            style={[styles.dashboardCard, styles.glassDashboardCard, { borderColor: C.outline, backgroundColor: C.surfaceHigh }]}
           >
             {/* Ambient glow top-right */}
             <View style={styles.dashGlow} pointerEvents="none" />
@@ -656,28 +644,28 @@ const HomeScreen = (): React.ReactElement => {
                 </Svg>
                 {/* Center text */}
                 <View style={styles.ringCenter}>
-                  <ThemedText style={styles.ringValue}>
+                  <ThemedText style={[styles.ringValue, { color: C.onSurface }]}>
                     {Math.round(remainingCalories).toLocaleString()}
                   </ThemedText>
-                  <ThemedText style={styles.ringLabel}>calo còn lại</ThemedText>
+                  <ThemedText style={[styles.ringLabel, { color: C.textMuted }]}>calo còn lại</ThemedText>
                 </View>
               </View>
 
               {/* ── Right: Macro bars ── */}
               <View style={styles.macroSection}>
-                <ThemedText style={styles.macroTarget}>
+                <ThemedText style={[styles.macroTarget, { color: C.primary }]}>
                   Mục tiêu: {Math.round(targetCalories).toLocaleString()} kcal
                 </ThemedText>
 
                 {/* Protein */}
                 <View style={styles.macroRow}>
                   <View style={styles.macroLabelRow}>
-                    <ThemedText style={styles.macroName}>ĐẠM</ThemedText>
-                    <ThemedText style={styles.macroValue}>
+                    <ThemedText style={[styles.macroName, { color: C.onSurface }]}>ĐẠM</ThemedText>
+                    <ThemedText style={[styles.macroValue, { color: C.textMuted }]}>
                       {Math.round(protein)}g / {targetProtein}g
                     </ThemedText>
                   </View>
-                  <View style={styles.macroTrack}>
+                  <View style={[styles.macroTrack, { backgroundColor: C.surfaceHighest }]}>
                     <View
                       style={[
                         styles.macroFill,
@@ -693,12 +681,12 @@ const HomeScreen = (): React.ReactElement => {
                 {/* Carbs */}
                 <View style={styles.macroRow}>
                   <View style={styles.macroLabelRow}>
-                    <ThemedText style={styles.macroName}>TINH BỘT</ThemedText>
-                    <ThemedText style={styles.macroValue}>
+                    <ThemedText style={[styles.macroName, { color: C.onSurface }]}>TINH BỘT</ThemedText>
+                    <ThemedText style={[styles.macroValue, { color: C.textMuted }]}>
                       {Math.round(carbs)}g / {targetCarbs}g
                     </ThemedText>
                   </View>
-                  <View style={styles.macroTrack}>
+                  <View style={[styles.macroTrack, { backgroundColor: C.surfaceHighest }]}>
                     <View
                       style={[
                         styles.macroFill,
@@ -714,12 +702,12 @@ const HomeScreen = (): React.ReactElement => {
                 {/* Fat */}
                 <View style={styles.macroRow}>
                   <View style={styles.macroLabelRow}>
-                    <ThemedText style={styles.macroName}>CHẤT BÉO</ThemedText>
-                    <ThemedText style={styles.macroValue}>
+                    <ThemedText style={[styles.macroName, { color: C.onSurface }]}>CHẤT BÉO</ThemedText>
+                    <ThemedText style={[styles.macroValue, { color: C.textMuted }]}>
                       {Math.round(fat)}g / {targetFat}g
                     </ThemedText>
                   </View>
-                  <View style={styles.macroTrack}>
+                  <View style={[styles.macroTrack, { backgroundColor: C.surfaceHighest }]}>
                     <View
                       style={[
                         styles.macroFill,
@@ -738,7 +726,7 @@ const HomeScreen = (): React.ReactElement => {
 
         {/* ══════════ WEEK DAY SELECTOR ══════════ */}
         <Animated.View entering={FadeInUp.delay(300).springify()}>
-          <WeekDayStrip selectedDate={selectedDate} onSelectDate={(d) => {
+          <WeekDayStrip palette={C} selectedDate={selectedDate} onSelectDate={(d) => {
             setSelectedDate(d);
             // Refetch diary for the selected date
             const dateStr = formatBusinessDate(d);
@@ -755,11 +743,11 @@ const HomeScreen = (): React.ReactElement => {
         <View>
           {/* Section header */}
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>
+            <ThemedText style={[styles.sectionTitle, { color: C.onSurface }]}>
               {isToday(selectedDate) ? 'Nhật ký hôm nay' : `Nhật ký ${formatShortDate(selectedDate)}`}
             </ThemedText>
             <Pressable onPress={() => navigation.navigate('MealDiary')} testID={TEST_IDS.home.diaryButton}>
-              <ThemedText style={styles.seeAll}>XEM TẤT CẢ</ThemedText>
+              <ThemedText style={[styles.seeAll, { color: C.primary }]}>XEM TẤT CẢ</ThemedText>
             </Pressable>
           </View>
 
@@ -805,7 +793,7 @@ const HomeScreen = (): React.ReactElement => {
                       <View style={{ width: 20, alignItems: 'center', marginRight: 12 }}>
                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary, marginTop: 24 }} />
                         {!isLast && (
-                           <View style={{ width: 1, flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginTop: 8, marginBottom: -16 }} />
+                           <View style={{ width: 1, flex: 1, backgroundColor: C.outline, marginTop: 8, marginBottom: -16 }} />
                         )}
                       </View>
 
@@ -829,14 +817,14 @@ const HomeScreen = (): React.ReactElement => {
                         {/* Info */}
                         <View style={styles.entryInfo}>
                           <View style={styles.entryTopRow}>
-                            <ThemedText style={styles.entryMealLabel}>
+                            <ThemedText style={[styles.entryMealLabel, { color: C.primary }]}>
                               {getMealLabelFromEntry(entry).toUpperCase()} {timeStr ? `• ${timeStr}` : ''}
                             </ThemedText>
-                            <ThemedText style={styles.entryCalories}>
+                            <ThemedText style={[styles.entryCalories, { color: C.onSurface }]}>
                               {Math.round(entry.calories || 0)} kcal
                             </ThemedText>
                           </View>
-                          <ThemedText style={styles.entryFoodName} numberOfLines={1}>
+                          <ThemedText style={[styles.entryFoodName, { color: C.onSurface }]} numberOfLines={1}>
                             {entry.foodName}
                           </ThemedText>
                           <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, alignItems: 'center' }}>
@@ -863,10 +851,10 @@ const HomeScreen = (): React.ReactElement => {
               /* Empty state */
               <View style={styles.emptyState}>
                 {isToday(selectedDate) && <MoChiInlineNotice mochiEvent="diary_empty_today" compact />}
-                <ThemedText style={styles.emptyTitle}>
+                <ThemedText style={[styles.emptyTitle, { color: C.onSurface }]}>
                   {isToday(selectedDate) ? 'Chưa có món nào hôm nay' : 'Không có dữ liệu'}
                 </ThemedText>
-                <ThemedText style={styles.emptySubtitle}>
+                <ThemedText style={[styles.emptySubtitle, { color: C.textMuted }]}>
                   {isToday(selectedDate)
                     ? 'Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!'
                     : `Chưa có nhật ký cho ngày ${formatShortDate(selectedDate)}`}
@@ -882,43 +870,25 @@ const HomeScreen = (): React.ReactElement => {
           onLayout={(e) => setWaterCardY(e.nativeEvent.layout.y)}
         >
           <MoChiTutorialTarget targetId="home_water">
-            <View style={[styles.waterCard, styles.glassWaterCard]}>
-              {/* Left: icon + label + value */}
+            <Pressable
+              onPress={() => navigation.navigate('AppTabs' as any, { screen: 'VoiceTab', params: { source: 'home-hub' } } as any)}
+              style={({ pressed }) => [
+                styles.waterCard, styles.glassWaterCard,
+                { backgroundColor: C.surfaceHigh, borderColor: C.outline },
+                pressed && { opacity: 0.8 }
+              ]}
+            >
               <View style={styles.waterLeft}>
-                <Ionicons name="water" size={28} color="#0EA5E9" />
+                <Ionicons name="mic" size={28} color={C.primary} />
                 <View style={styles.waterLabelWrap}>
-                  <ThemedText style={styles.waterTitle}>Uống nước</ThemedText>
-                  <ThemedText style={styles.waterValue}>{waterAmount} ml</ThemedText>
+                  <ThemedText style={[styles.waterTitle, { color: C.onSurface }]}>Trợ lý MoChi</ThemedText>
+                  <ThemedText style={{ color: C.textMuted, fontSize: 13 }}>
+                    Chạm để trò chuyện giọng nói
+                  </ThemedText>
                 </View>
               </View>
-
-              {/* Right: pill controls */}
-              <View style={styles.waterPill}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.waterPillBtn,
-                    pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
-                  ]}
-                  onPress={handleSubtractWater}
-                >
-                  <WaterGlassIcon isPlus={false} />
-                </Pressable>
-
-                <View style={styles.waterPillDivider} />
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.waterPillBtn,
-                    pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
-                  ]}
-                  onPress={() => {
-                    void handleAddWater();
-                  }}
-                >
-                  <WaterGlassIcon isPlus={true} />
-                </Pressable>
-              </View>
-            </View>
+              <Ionicons name="chevron-forward" size={20} color={C.textMuted} />
+            </Pressable>
           </MoChiTutorialTarget>
           {homeWaterReminder && waterTargetInlineReady && (
             <Pressable
