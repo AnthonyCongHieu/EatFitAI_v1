@@ -23,6 +23,7 @@ public sealed class AdminOpsController : ControllerBase
     public async Task<IActionResult> GetTraffic(
         [FromQuery] string? window = "24h",
         [FromQuery] string? granularity = null,
+        [FromQuery] string? source = null,
         CancellationToken cancellationToken = default)
     {
         var overview = await _opsMetricsService.GetTrafficOverviewAsync(
@@ -30,6 +31,7 @@ public sealed class AdminOpsController : ControllerBase
             {
                 Window = window,
                 Granularity = granularity,
+                Source = source,
             },
             cancellationToken);
 

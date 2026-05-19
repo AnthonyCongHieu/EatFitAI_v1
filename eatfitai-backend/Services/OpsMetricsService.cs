@@ -84,6 +84,7 @@ public sealed class OpsMetricsBuffer : IOpsMetricsRecorder
         }
 
         if (value.StartsWith("/api/ai", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/api/aireview", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/api/voice", StringComparison.OrdinalIgnoreCase))
         {
             return "ai";
@@ -106,17 +107,30 @@ public sealed class OpsMetricsBuffer : IOpsMetricsRecorder
             return "/";
         }
 
+        if (value.StartsWith("/api/ai/vision/suggest-mapping/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/api/ai/vision/suggest-mapping/:label";
+        }
+
         value = GuidRegex.Replace(value, ":id");
         value = NumberSegmentRegex.Replace(value, "/:id");
 
+        var segmentLimit = IsAiPath(value) ? 5 : 4;
         var segments = value
             .Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Take(4)
+            .Take(segmentLimit)
             .ToArray();
 
         return segments.Length == 0
             ? "/"
             : "/" + string.Join('/', segments);
+    }
+
+    private static bool IsAiPath(string value)
+    {
+        return value.StartsWith("/api/ai", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/api/aireview", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/api/voice", StringComparison.OrdinalIgnoreCase);
     }
 
     private static DateTime TruncateToMinute(DateTime value)
@@ -234,9 +248,11 @@ public sealed class AdminOpsMetricsService
     {
         var (window, since) = ResolveWindow(query.Window);
         var granularity = ResolveGranularity(query.Granularity, DateTime.UtcNow - since);
+        var sourceFilter = NormalizeSourceFilter(query.Source);
         var rows = await _context.OpsMetricBuckets
             .AsNoTracking()
             .Where(row => row.Granularity == granularity && row.BucketStart >= since)
+            .Where(row => sourceFilter == "all" || row.Source == sourceFilter)
             .OrderBy(row => row.BucketStart)
             .ToListAsync(cancellationToken);
 
@@ -252,13 +268,14 @@ public sealed class AdminOpsMetricsService
             GeneratedAt = DateTime.UtcNow,
             Window = window,
             Granularity = granularity,
+            SourceFilter = sourceFilter,
             TotalRequests = totals.RequestCount,
             ErrorCount = totals.ErrorCount,
             ErrorRate = totals.RequestCount == 0 ? 0 : totals.ErrorCount / (double)totals.RequestCount,
             AverageLatencyMs = AverageLatency(totals),
             P95LatencyMs = EstimateP95(totals.Histogram),
             Timeline = timeline,
-            TopRoutes = BuildBreakdown(rows, row => row.RouteGroup, 10),
+            TopRoutes = BuildBreakdown(rows, row => row.RouteGroup, sourceFilter == "ai" ? 30 : 10),
             Sources = BuildBreakdown(rows, row => row.Source, 8),
             StatusClasses = BuildBreakdown(rows, row => row.StatusClass, 8),
         };
@@ -442,6 +459,20 @@ public sealed class AdminOpsMetricsService
         }
 
         return window <= TimeSpan.FromDays(30) ? "hour" : "day";
+    }
+
+    private static string NormalizeSourceFilter(string? value)
+    {
+        var normalized = value?.Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "admin" => "admin",
+            "ai" => "ai",
+            "api" => "api",
+            "health" => "health",
+            "mobile" => "mobile",
+            _ => "all",
+        };
     }
 
     private static DateTime TruncateToHour(DateTime value)
