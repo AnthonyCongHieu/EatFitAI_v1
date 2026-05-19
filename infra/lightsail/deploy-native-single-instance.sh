@@ -8,6 +8,7 @@ APP_ROOT="${APP_ROOT:-/opt/eatfitai}"
 PRIVATE_IP="${PRIVATE_IP:-}"
 BACKEND_PUBLIC_HOST="${BACKEND_PUBLIC_HOST:-eatfitai-api.duckdns.org}"
 AI_PUBLIC_HOST="${AI_PUBLIC_HOST:-eatfitai-ai.duckdns.org}"
+SKIP_SCHEMA_BOOTSTRAP="${SKIP_SCHEMA_BOOTSTRAP:-${EATFITAI_SKIP_SCHEMA_BOOTSTRAP:-0}}"
 
 if [ -z "${RELEASE_SHA}" ]; then
   echo "Usage: $0 <release-sha>" >&2
@@ -192,9 +193,13 @@ sleep 3
 systemctl is-active eatfitai-ai
 curl -fsS "http://${PRIVATE_IP}:5050/healthz" >/dev/null
 
-SCHEMA_REPORT="${APP_ROOT}/schema-bootstrap-$(date -u +%Y%m%dT%H%M%SZ).json"
-/usr/bin/python3 "${APP_ROOT}/run-backend-once.py" --schema-bootstrap --schema-bootstrap-report "${SCHEMA_REPORT}"
-echo "Schema bootstrap report written to ${SCHEMA_REPORT}."
+if [ "${SKIP_SCHEMA_BOOTSTRAP}" = "1" ]; then
+  echo "Skipping schema bootstrap because SKIP_SCHEMA_BOOTSTRAP=1."
+else
+  SCHEMA_REPORT="${APP_ROOT}/schema-bootstrap-$(date -u +%Y%m%dT%H%M%SZ).json"
+  /usr/bin/python3 "${APP_ROOT}/run-backend-once.py" --schema-bootstrap --schema-bootstrap-report "${SCHEMA_REPORT}"
+  echo "Schema bootstrap report written to ${SCHEMA_REPORT}."
+fi
 
 sudo systemctl restart eatfitai-backend
 BACKEND_READY_URL="http://127.0.0.1:10000/health/ready"
