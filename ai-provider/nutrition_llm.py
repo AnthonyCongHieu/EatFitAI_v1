@@ -123,6 +123,7 @@ def query_gemini(
     thinking_budget: Optional[int] = None,
     tools: Optional[list[Dict[str, Any]]] = None,
     metadata_sink: Optional[Dict[str, Any]] = None,
+    max_output_tokens: int = 500,
 ) -> Optional[str]:
     """
     Query Gemini API với cache support.
@@ -155,7 +156,7 @@ def query_gemini(
         response = _get_gemini_pool().generate_text(
             prompt,
             temperature=0.1,
-            max_output_tokens=500,
+            max_output_tokens=max_output_tokens,
             response_mime_type=response_mime_type,
             response_schema=effective_response_schema,
             thinking_budget=thinking_budget,
@@ -926,6 +927,7 @@ def get_cooking_guide(
         thinking_budget=0,
         tools=_recipe_tools(),
         metadata_sink=response_metadata,
+        max_output_tokens=1400,
     )
 
     if response:

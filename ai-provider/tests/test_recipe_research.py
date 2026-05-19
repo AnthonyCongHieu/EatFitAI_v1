@@ -142,10 +142,12 @@ class RecipeResearchTests(unittest.TestCase):
 
     def test_get_cooking_guide_prompt_requires_specific_seasoning_quantities(self) -> None:
         captured_prompt = ""
+        captured_kwargs = {}
 
         def capture_prompt(prompt, *_args, **_kwargs):
-            nonlocal captured_prompt
+            nonlocal captured_prompt, captured_kwargs
             captured_prompt = prompt
+            captured_kwargs = _kwargs
             return (
                 '{"prepItems":["Cân trứng 100g"],'
                 '"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
@@ -165,6 +167,7 @@ class RecipeResearchTests(unittest.TestCase):
         self.assertIn("định lượng gia vị", captured_prompt.lower())
         self.assertIn("nêm nếm", captured_prompt.lower())
         self.assertIn("100g", captured_prompt)
+        self.assertGreaterEqual(captured_kwargs["max_output_tokens"], 1200)
 
 
 if __name__ == "__main__":
