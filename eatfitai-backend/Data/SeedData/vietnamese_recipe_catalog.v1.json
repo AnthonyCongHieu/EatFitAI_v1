@@ -455,10 +455,10 @@
     "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+kh%E1%BB%95+qua+nh%E1%BB%93i+th%E1%BB%8Bt"
   },
   {
-    "slug": "canh-cai-thao-thit-bam",
-    "recipeName": "Canh cải thảo thịt bằm",
-    "description": "Công thức gợi ý cho Canh cải thảo thịt bằm, dùng nguyên liệu chính: thịt heo, cải thảo/bắp cải.",
-    "imageKey": "recipe-images/v1/thumb/canh-cai-thao-thit-bam.webp",
+    "slug": "canh-cai-thia",
+    "recipeName": "Canh cải thìa",
+    "description": "Công thức gợi ý cho Canh cải thìa, dùng nguyên liệu chính: thịt heo, cải thìa.",
+    "imageKey": "recipe-images/v1/thumb/canh-cai-thia.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
     "servingCount": 2,
@@ -472,22 +472,27 @@
       },
       {
         "keys": [
-          "cabbage"
+          "bokchoy"
         ],
         "grams": 150
       }
     ],
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Canh cải thảo thịt bằm; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Sơ chế nguyên liệu chính cho món Canh cải thìa; rửa sạch, để ráo và cắt miếng vừa ăn.",
       "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Canh cải thảo thịt bằm ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nấu Canh cải thìa ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
       "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Canh cải thảo thịt bằm, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Hoàn thiện Canh cải thìa, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
     ],
     "sourceUrls": [
-      "https://monngonmoingay.com/?s=Canh+c%E1%BA%A3i+th%E1%BA%A3o+th%E1%BB%8Bt+b%E1%BA%B1m"
+      "https://monngonmoingay.com/?s=Canh+c%E1%BA%A3i+th%C3%ACa"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+c%E1%BA%A3i+th%E1%BA%A3o+th%E1%BB%8Bt+b%E1%BA%B1m"
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+c%E1%BA%A3i+th%C3%ACa",
+    "aliases": [
+      "Canh cải thảo thịt bằm",
+      "Canh cải thừa thịt bằm",
+      "canh cai thao thit bam"
+    ]
   },
   {
     "slug": "canh-bau",
@@ -3857,10 +3862,10 @@
     "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Rau+c%E1%BB%A7+n%C6%B0%E1%BB%9Bng"
   },
   {
-    "slug": "bap-nuong-hanh-mo",
-    "recipeName": "Bắp nướng hành mỡ",
-    "description": "Công thức gợi ý cho Bắp nướng hành mỡ, dùng nguyên liệu chính: bắp, hành lá.",
-    "imageKey": "recipe-images/v1/thumb/bap-nuong-hanh-mo.webp",
+    "slug": "bap-xao-mo-hanh",
+    "recipeName": "Bắp xào mỡ hành",
+    "description": "Công thức gợi ý cho Bắp xào mỡ hành, dùng nguyên liệu chính: bắp, hành lá.",
+    "imageKey": "recipe-images/v1/thumb/bap-xao-mo-hanh.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
     "servingCount": 1,
@@ -3880,16 +3885,20 @@
       }
     ],
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Bắp nướng hành mỡ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Sơ chế nguyên liệu chính cho món Bắp xào mỡ hành; rửa sạch, để ráo và cắt miếng vừa ăn.",
       "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Bắp nướng hành mỡ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nấu Bắp xào mỡ hành ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
       "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Bắp nướng hành mỡ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Hoàn thiện Bắp xào mỡ hành, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
     ],
     "sourceUrls": [
-      "https://monngonmoingay.com/?s=B%E1%BA%AFp+n%C6%B0%E1%BB%9Bng+h%C3%A0nh+m%E1%BB%A1"
+      "https://monngonmoingay.com/?s=B%E1%BA%AFp+x%C3%A0o+m%E1%BB%A1+h%C3%A0nh"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%E1%BA%AFp+n%C6%B0%E1%BB%9Bng+h%C3%A0nh+m%E1%BB%A1"
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%E1%BA%AFp+x%C3%A0o+m%E1%BB%A1+h%C3%A0nh",
+    "aliases": [
+      "Bắp nướng hành mỡ",
+      "bap nuong hanh mo"
+    ]
   },
   {
     "slug": "dau-hu-sot-ca-chua",
@@ -4021,10 +4030,10 @@
     "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Rau+c%E1%BB%A7+lu%E1%BB%99c+ch%E1%BA%A5m+n%C6%B0%E1%BB%9Bc+m%E1%BA%AFm"
   },
   {
-    "slug": "canh-nam-rau-cu",
-    "recipeName": "Canh nấm rau củ",
-    "description": "Công thức gợi ý cho Canh nấm rau củ, dùng nguyên liệu chính: nấm, bông cải xanh.",
-    "imageKey": "recipe-images/v1/thumb/canh-nam-rau-cu.webp",
+    "slug": "canh-rau-cu",
+    "recipeName": "Canh rau củ",
+    "description": "Công thức gợi ý cho Canh rau củ, dùng nguyên liệu chính: nấm, bông cải xanh.",
+    "imageKey": "recipe-images/v1/thumb/canh-rau-cu.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
     "servingCount": 2,
@@ -4044,16 +4053,20 @@
       }
     ],
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Canh nấm rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
+      "Sơ chế nguyên liệu chính cho món Canh rau củ; rửa sạch, để ráo và cắt miếng vừa ăn.",
       "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Canh nấm rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
+      "Nấu Canh rau củ ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
       "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Canh nấm rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Hoàn thiện Canh rau củ, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
     ],
     "sourceUrls": [
-      "https://monngonmoingay.com/?s=Canh+n%E1%BA%A5m+rau+c%E1%BB%A7"
+      "https://monngonmoingay.com/?s=Canh+rau+c%E1%BB%A7"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+n%E1%BA%A5m+rau+c%E1%BB%A7"
+    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Canh+rau+c%E1%BB%A7",
+    "aliases": [
+      "Canh nấm rau củ",
+      "canh nam rau cu"
+    ]
   },
   {
     "slug": "com-chien-chay",

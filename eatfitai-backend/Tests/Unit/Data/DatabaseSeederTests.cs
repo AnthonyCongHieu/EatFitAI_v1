@@ -301,14 +301,119 @@ public class DatabaseSeederTests
         Assert.Equal(141, uniqueSlugs.Count);
         Assert.Equal(107, seeds.Count(seed => !string.IsNullOrWhiteSpace(seed.ImageKey)));
 
-        var canhCaiThao = Assert.Single(seeds, seed => seed.Slug == "canh-cai-thao-thit-bam");
-        Assert.Equal("Canh cải thảo thịt bằm", canhCaiThao.FoodName);
-        Assert.Contains("Canh cải thừa thịt bằm", canhCaiThao.Aliases);
+        var canhCaiThia = Assert.Single(seeds, seed => seed.Slug == "canh-cai-thia");
+        Assert.Equal("Canh cải thìa", canhCaiThia.FoodName);
+        Assert.Contains("Canh cải thảo thịt bằm", canhCaiThia.Aliases);
 
         Assert.Contains(seeds, seed => seed.FoodName == "Súp cua" && seed.Aliases.Contains("Cua soup"));
         Assert.All(
             seeds.Where(seed => !string.IsNullOrWhiteSpace(seed.ImageKey)),
             seed => Assert.StartsWith("recipe-images/v1/thumb/", seed.ImageKey));
+    }
+
+    [Fact]
+    public void VietnameseFoodCatalog_UsesDriveRecipeNamesForAmbiguousImages()
+    {
+        var foodSeeds = VietnameseFoodCatalog.LoadFoodSeeds(Directory.GetCurrentDirectory());
+        var recipeSeeds = VietnameseFoodCatalog.LoadRecipeSeeds(Directory.GetCurrentDirectory());
+
+        Assert.DoesNotContain(foodSeeds, seed => seed.Slug == "canh-cai-thao-thit-bam");
+        Assert.DoesNotContain(foodSeeds, seed => seed.Slug == "bap-nuong-hanh-mo");
+        Assert.DoesNotContain(foodSeeds, seed => seed.Slug == "canh-nam-rau-cu");
+        Assert.DoesNotContain(recipeSeeds, seed => seed.Slug == "canh-cai-thao-thit-bam");
+        Assert.DoesNotContain(recipeSeeds, seed => seed.Slug == "bap-nuong-hanh-mo");
+        Assert.DoesNotContain(recipeSeeds, seed => seed.Slug == "canh-nam-rau-cu");
+
+        var canhCaiThia = Assert.Single(foodSeeds, seed => seed.Slug == "canh-cai-thia");
+        Assert.Equal("Canh cải thìa", canhCaiThia.FoodName);
+        Assert.Equal("recipe-images/v1/thumb/canh-cai-thia.webp", canhCaiThia.ImageKey);
+
+        var bapXaoMoHanh = Assert.Single(foodSeeds, seed => seed.Slug == "bap-xao-mo-hanh");
+        Assert.Equal("Bắp xào mỡ hành", bapXaoMoHanh.FoodName);
+        Assert.Equal("recipe-images/v1/thumb/bap-xao-mo-hanh.webp", bapXaoMoHanh.ImageKey);
+
+        var canhRauCu = Assert.Single(foodSeeds, seed => seed.Slug == "canh-rau-cu");
+        Assert.Equal("Canh rau củ", canhRauCu.FoodName);
+        Assert.Equal("recipe-images/v1/thumb/canh-rau-cu.webp", canhRauCu.ImageKey);
+
+        Assert.Single(recipeSeeds, seed =>
+            seed.Slug == "canh-cai-thia"
+            && seed.RecipeName == "Canh cải thìa"
+            && seed.ImageKey == "recipe-images/v1/thumb/canh-cai-thia.webp");
+        Assert.Single(recipeSeeds, seed =>
+            seed.Slug == "bap-xao-mo-hanh"
+            && seed.RecipeName == "Bắp xào mỡ hành"
+            && seed.ImageKey == "recipe-images/v1/thumb/bap-xao-mo-hanh.webp");
+        Assert.Single(recipeSeeds, seed =>
+            seed.Slug == "canh-rau-cu"
+            && seed.RecipeName == "Canh rau củ"
+            && seed.ImageKey == "recipe-images/v1/thumb/canh-rau-cu.webp");
+    }
+
+    [Fact]
+    public void CatalogImageKeyResolver_UsesRecipeImagesAndExactFoodLabelsOnlyForRecipes()
+    {
+        Assert.Equal(
+            "recipe-images/v1/thumb/com-thit-kho-trung.webp",
+            CatalogImageKeyResolver.ResolveRecipeThumbnailKey(
+                "Cơm thịt kho trứng",
+                "recipe-images/v1/thumb/com-thit-kho-trung.webp",
+                new[] { "food-images/v2/thumb/rice.webp" }));
+
+        Assert.Equal(
+            "food-images/v2/thumb/steamed_pork_belly_taro.webp",
+            CatalogImageKeyResolver.ResolveRecipeThumbnailKey(
+                "Thịt ba chỉ hấp khoai môn",
+                null,
+                new[] { "food-images/v2/thumb/pork_belly.webp" }));
+
+        Assert.Null(CatalogImageKeyResolver.ResolveRecipeThumbnailKey(
+            "Gà nướng rau xanh",
+            null,
+            new[] { "food-images/v2/thumb/chicken.webp" }));
+        Assert.Null(CatalogImageKeyResolver.ResolveRecipeThumbnailKey(
+            "Sườn kho chua ngọt",
+            null,
+            new[] { "food-images/v2/thumb/pork_rib.webp" }));
+    }
+
+    [Fact]
+    public void VietnameseRecipeCatalog_ResolvesUniqueNonIngredientImageKeys()
+    {
+        var seeds = VietnameseFoodCatalog.LoadRecipeSeeds(Directory.GetCurrentDirectory());
+        var resolvedImages = seeds
+            .Select(seed => new
+            {
+                seed.RecipeName,
+                ImageKey = CatalogImageKeyResolver.ResolveRecipeThumbnailKey(seed.RecipeName, seed.ImageKey)
+            })
+            .ToList();
+
+        Assert.All(
+            resolvedImages,
+            item => Assert.False(
+                string.IsNullOrWhiteSpace(item.ImageKey),
+                $"Expected recipe image for {item.RecipeName}."));
+
+        var duplicateImages = resolvedImages
+            .GroupBy(item => item.ImageKey, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"{group.Key}: {string.Join(", ", group.Select(item => item.RecipeName))}")
+            .ToList();
+        Assert.Empty(duplicateImages);
+
+        var ingredientImageLabels = new[]
+        {
+            "rice",
+            "chicken",
+            "fish",
+            "pork_rib",
+            "pork_belly"
+        };
+        Assert.DoesNotContain(
+            resolvedImages,
+            item => ingredientImageLabels.Any(label =>
+                string.Equals(item.ImageKey, $"food-images/v2/thumb/{label}.webp", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -332,8 +437,8 @@ public class DatabaseSeederTests
         var comTamSuon = await context.FoodItems.SingleAsync(food => food.FoodName == "Cơm tấm sườn");
         Assert.Equal("recipe-images/v1/thumb/com-tam-suon.webp", comTamSuon.ThumbNail);
 
-        var canhCaiThao = await context.FoodItems.SingleAsync(food => food.FoodName == "Canh cải thảo thịt bằm");
-        Assert.Contains("canh cai thua thit bam", canhCaiThao.FoodNameUnsigned);
+        var canhCaiThia = await context.FoodItems.SingleAsync(food => food.FoodName == "Canh cải thìa");
+        Assert.Contains("canh cai thao thit bam", canhCaiThia.FoodNameUnsigned);
         Assert.Single(await context.FoodItems.Where(food => food.FoodName == "Súp cua").ToListAsync());
 
         var recipe = await context.Recipes
@@ -348,12 +453,115 @@ public class DatabaseSeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_UpgradesRenamedRecipeImageRowsWithoutDuplicatingThem()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+        var now = DateTime.UtcNow;
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            await context.FoodItems.AddRangeAsync(
+                new FoodItem
+                {
+                    FoodName = "Canh cải thảo thịt bằm",
+                    FoodNameUnsigned = "canh cai thao thit bam",
+                    ThumbNail = "recipe-images/v1/thumb/canh-cai-thao-thit-bam.webp",
+                    IsActive = true,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new FoodItem
+                {
+                    FoodName = "Bắp nướng hành mỡ",
+                    FoodNameUnsigned = "bap nuong hanh mo",
+                    ThumbNail = "recipe-images/v1/thumb/bap-nuong-hanh-mo.webp",
+                    IsActive = true,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new FoodItem
+                {
+                    FoodName = "Canh nấm rau củ",
+                    FoodNameUnsigned = "canh nam rau cu",
+                    ThumbNail = "recipe-images/v1/thumb/canh-nam-rau-cu.webp",
+                    IsActive = true,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            await context.Recipes.AddRangeAsync(
+                new Recipe
+                {
+                    RecipeName = "Canh cải thảo thịt bằm",
+                    ImageUrl = "recipe-images/v1/thumb/canh-cai-thao-thit-bam.webp",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new Recipe
+                {
+                    RecipeName = "Bắp nướng hành mỡ",
+                    ImageUrl = "recipe-images/v1/thumb/bap-nuong-hanh-mo.webp",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new Recipe
+                {
+                    RecipeName = "Canh nấm rau củ",
+                    ImageUrl = "recipe-images/v1/thumb/canh-nam-rau-cu.webp",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            await context.SaveChangesAsync();
+        }
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using var verifyScope = provider.CreateScope();
+        var verifyContext = verifyScope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+
+        var renamedFoods = await verifyContext.FoodItems
+            .Where(food =>
+                food.FoodName == "Canh cải thìa" ||
+                food.FoodName == "Bắp xào mỡ hành" ||
+                food.FoodName == "Canh rau củ" ||
+                food.FoodName == "Canh cải thảo thịt bằm" ||
+                food.FoodName == "Bắp nướng hành mỡ" ||
+                food.FoodName == "Canh nấm rau củ")
+            .ToListAsync();
+        Assert.Equal(3, renamedFoods.Count);
+        Assert.Single(renamedFoods, food => food.FoodName == "Canh cải thìa" && food.ThumbNail == "recipe-images/v1/thumb/canh-cai-thia.webp");
+        Assert.Single(renamedFoods, food => food.FoodName == "Bắp xào mỡ hành" && food.ThumbNail == "recipe-images/v1/thumb/bap-xao-mo-hanh.webp");
+        Assert.Single(renamedFoods, food => food.FoodName == "Canh rau củ" && food.ThumbNail == "recipe-images/v1/thumb/canh-rau-cu.webp");
+
+        var renamedRecipes = await verifyContext.Recipes
+            .Where(recipe =>
+                recipe.RecipeName == "Canh cải thìa" ||
+                recipe.RecipeName == "Bắp xào mỡ hành" ||
+                recipe.RecipeName == "Canh rau củ" ||
+                recipe.RecipeName == "Canh cải thảo thịt bằm" ||
+                recipe.RecipeName == "Bắp nướng hành mỡ" ||
+                recipe.RecipeName == "Canh nấm rau củ")
+            .ToListAsync();
+        Assert.Equal(3, renamedRecipes.Count);
+        Assert.Single(renamedRecipes, recipe => recipe.RecipeName == "Canh cải thìa" && recipe.ImageUrl == "recipe-images/v1/thumb/canh-cai-thia.webp");
+        Assert.Single(renamedRecipes, recipe => recipe.RecipeName == "Bắp xào mỡ hành" && recipe.ImageUrl == "recipe-images/v1/thumb/bap-xao-mo-hanh.webp");
+        Assert.Single(renamedRecipes, recipe => recipe.RecipeName == "Canh rau củ" && recipe.ImageUrl == "recipe-images/v1/thumb/canh-rau-cu.webp");
+    }
+
+    [Fact]
     public void RecipeIngredientEligibility_UsesVietnameseCatalogKinds()
     {
         Assert.True(RecipeIngredientEligibility.IsFinishedDishKey("Cơm tấm sườn"));
         Assert.False(RecipeIngredientEligibility.IsIngredientKey("Cơm tấm sườn"));
 
-        Assert.True(RecipeIngredientEligibility.IsFinishedDishKey("Canh cải thừa thịt bằm"));
+        Assert.True(RecipeIngredientEligibility.IsFinishedDishKey("Canh cải thìa"));
         Assert.True(RecipeIngredientEligibility.IsIngredientKey("Thịt bò"));
     }
 

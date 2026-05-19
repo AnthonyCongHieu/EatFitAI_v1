@@ -99,6 +99,14 @@ class FoodCatalogImageSyncTests(unittest.TestCase):
 
         self.assertTrue(args.db_only)
         self.assertFalse(args.apply)
+        self.assertFalse(args.upload_only)
+
+    def test_upload_only_mode_is_available_without_database_relink(self) -> None:
+        args = food_catalog_image_sync.build_parser().parse_args(["--upload-only"])
+
+        self.assertTrue(args.upload_only)
+        self.assertFalse(args.db_only)
+        self.assertFalse(args.apply)
 
     def test_load_recipe_catalog_entries_exposes_dedicated_recipe_images(self) -> None:
         catalog = food_catalog_image_sync.load_recipe_catalog_entries()
@@ -106,10 +114,10 @@ class FoodCatalogImageSyncTests(unittest.TestCase):
 
         self.assertEqual(len(catalog), 107)
         self.assertIn("com-tam-suon", entries_by_label)
-        self.assertIn("canh-cai-thao-thit-bam", entries_by_label)
-        self.assertIn("canh cai thua thit bam", {
+        self.assertIn("canh-cai-thia", entries_by_label)
+        self.assertIn("canh cai thao thit bam", {
             food_catalog_image_sync.normalize_key(alias)
-            for alias in entries_by_label["canh-cai-thao-thit-bam"].aliases
+            for alias in entries_by_label["canh-cai-thia"].aliases
         })
 
     def test_recipe_catalog_mapping_uses_recipe_image_keys(self) -> None:
@@ -156,7 +164,7 @@ class FoodCatalogImageSyncTests(unittest.TestCase):
         self.assertEqual(plan.by_label["hu-tieu-xao"].source_name, "hủ tíu xào.png")
         self.assertEqual(plan.by_label["cuon-banh-trang-thit-heo"].source_name, "bánh tráng cuốn thịt heo.png")
         self.assertEqual(plan.by_label["bo-ne"].source_name, "bò né.png")
-        self.assertIn("canh cải thìa.png", plan.unmatched_files)
+        self.assertEqual(plan.by_label["canh-cai-thia"].source_name, "canh cải thìa.png")
         self.assertNotIn("canh-cai-thao-thit-bam", plan.by_label)
 
 

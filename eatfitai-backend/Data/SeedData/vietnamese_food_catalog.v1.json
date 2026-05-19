@@ -286,12 +286,14 @@
     "missingNutrients": []
   },
   {
-    "slug": "canh-cai-thao-thit-bam",
-    "foodName": "Canh cải thảo thịt bằm",
+    "slug": "canh-cai-thia",
+    "foodName": "Canh cải thìa",
     "foodNameEn": null,
     "aliases": [
+      "Canh cải thảo thịt bằm",
       "Canh cải thừa thịt bằm",
-      "canh cai thao thit bam"
+      "canh cai thao thit bam",
+      "canh cai thia"
     ],
     "kind": "finished_dish",
     "caloriesPer100g": 65,
@@ -300,7 +302,7 @@
     "fatPer100g": 2,
     "defaultServingUnitName": "bowl",
     "defaultGrams": 450,
-    "imageKey": "recipe-images/v1/thumb/canh-cai-thao-thit-bam.webp",
+    "imageKey": "recipe-images/v1/thumb/canh-cai-thia.webp",
     "isVerified": false,
     "verifiedBy": "EatFitAI catalog estimate; needs nutrition review",
     "verificationStatus": "estimated",
@@ -2267,11 +2269,13 @@
     "missingNutrients": []
   },
   {
-    "slug": "bap-nuong-hanh-mo",
-    "foodName": "Bắp nướng hành mỡ",
+    "slug": "bap-xao-mo-hanh",
+    "foodName": "Bắp xào mỡ hành",
     "foodNameEn": null,
     "aliases": [
-      "bap nuong hanh mo"
+      "Bắp nướng hành mỡ",
+      "bap nuong hanh mo",
+      "bap xao mo hanh"
     ],
     "kind": "finished_dish",
     "caloriesPer100g": 185,
@@ -2280,7 +2284,7 @@
     "fatPer100g": 9,
     "defaultServingUnitName": "plate",
     "defaultGrams": 300,
-    "imageKey": "recipe-images/v1/thumb/bap-nuong-hanh-mo.webp",
+    "imageKey": "recipe-images/v1/thumb/bap-xao-mo-hanh.webp",
     "isVerified": false,
     "verifiedBy": "EatFitAI catalog estimate; needs nutrition review",
     "verificationStatus": "estimated",
@@ -2355,11 +2359,13 @@
     "missingNutrients": []
   },
   {
-    "slug": "canh-nam-rau-cu",
-    "foodName": "Canh nấm rau củ",
+    "slug": "canh-rau-cu",
+    "foodName": "Canh rau củ",
     "foodNameEn": null,
     "aliases": [
-      "canh nam rau cu"
+      "Canh nấm rau củ",
+      "canh nam rau cu",
+      "canh rau cu"
     ],
     "kind": "finished_dish",
     "caloriesPer100g": 85,
@@ -2368,7 +2374,7 @@
     "fatPer100g": 2,
     "defaultServingUnitName": "bowl",
     "defaultGrams": 450,
-    "imageKey": "recipe-images/v1/thumb/canh-nam-rau-cu.webp",
+    "imageKey": "recipe-images/v1/thumb/canh-rau-cu.webp",
     "isVerified": false,
     "verifiedBy": "EatFitAI catalog estimate; needs nutrition review",
     "verificationStatus": "estimated",

@@ -106,6 +106,7 @@ public static class VietnameseFoodCatalog
         public string Slug { get; set; } = string.Empty;
         public string RecipeName { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public List<string> Aliases { get; set; } = [];
         public string? ImageKey { get; set; }
         public int CookTimeMinutes { get; set; }
         public string Difficulty { get; set; } = "Dễ";
