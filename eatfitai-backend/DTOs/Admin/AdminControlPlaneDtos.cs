@@ -7,6 +7,7 @@ public sealed class AdminOpsTrafficQuery
     public string? Window { get; set; } = "24h";
     public string? Granularity { get; set; }
     public string? Source { get; set; }
+    public string? Route { get; set; }
 }
 
 public sealed class AdminOpsTrafficOverviewDto
@@ -15,6 +16,7 @@ public sealed class AdminOpsTrafficOverviewDto
     public string Window { get; set; } = "24h";
     public string Granularity { get; set; } = "hour";
     public string SourceFilter { get; set; } = "all";
+    public string? RouteFilter { get; set; }
     public long TotalRequests { get; set; }
     public long ErrorCount { get; set; }
     public double ErrorRate { get; set; }

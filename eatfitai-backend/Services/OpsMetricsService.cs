@@ -249,12 +249,18 @@ public sealed class AdminOpsMetricsService
         var (window, since) = ResolveWindow(query.Window);
         var granularity = ResolveGranularity(query.Granularity, DateTime.UtcNow - since);
         var sourceFilter = NormalizeSourceFilter(query.Source);
-        var rows = await _context.OpsMetricBuckets
+        var routeFilter = NormalizeRouteFilter(query.Route);
+        var sourceRows = await _context.OpsMetricBuckets
             .AsNoTracking()
             .Where(row => row.Granularity == granularity && row.BucketStart >= since)
             .Where(row => sourceFilter == "all" || row.Source == sourceFilter)
             .OrderBy(row => row.BucketStart)
             .ToListAsync(cancellationToken);
+        var rows = string.IsNullOrWhiteSpace(routeFilter)
+            ? sourceRows
+            : sourceRows
+                .Where(row => string.Equals(row.RouteGroup, routeFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
         var totals = Aggregate(rows);
         var timeline = rows
@@ -269,13 +275,14 @@ public sealed class AdminOpsMetricsService
             Window = window,
             Granularity = granularity,
             SourceFilter = sourceFilter,
+            RouteFilter = routeFilter,
             TotalRequests = totals.RequestCount,
             ErrorCount = totals.ErrorCount,
             ErrorRate = totals.RequestCount == 0 ? 0 : totals.ErrorCount / (double)totals.RequestCount,
             AverageLatencyMs = AverageLatency(totals),
             P95LatencyMs = EstimateP95(totals.Histogram),
             Timeline = timeline,
-            TopRoutes = BuildBreakdown(rows, row => row.RouteGroup, sourceFilter == "ai" ? 30 : 10),
+            TopRoutes = BuildBreakdown(sourceRows, row => row.RouteGroup, sourceFilter == "ai" ? 30 : 10),
             Sources = BuildBreakdown(rows, row => row.Source, 8),
             StatusClasses = BuildBreakdown(rows, row => row.StatusClass, 8),
         };
@@ -473,6 +480,24 @@ public sealed class AdminOpsMetricsService
             "mobile" => "mobile",
             _ => "all",
         };
+    }
+
+    private static string? NormalizeRouteFilter(string? value)
+    {
+        var normalized = value?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized) || normalized.Length > 220 || !normalized.StartsWith('/'))
+        {
+            return null;
+        }
+
+        return IsAiTrafficRoute(normalized) ? normalized : null;
+    }
+
+    private static bool IsAiTrafficRoute(string value)
+    {
+        return value.StartsWith("/api/ai", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/api/aireview", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/api/voice", StringComparison.OrdinalIgnoreCase);
     }
 
     private static DateTime TruncateToHour(DateTime value)
