@@ -90,6 +90,10 @@ services:
     envVars:
       - key: AI_PROVIDER_INTERNAL_TOKEN
         sync: false
+      - key: GEMINI_KEY_POOL_BACKEND_URL
+        sync: false
+      - key: GEMINI_KEY_POOL_REFRESH_SECONDS
+        value: "30"
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_API_KEY_PROJECT_ID

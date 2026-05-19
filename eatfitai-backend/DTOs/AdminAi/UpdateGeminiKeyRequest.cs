@@ -16,6 +16,9 @@ public class UpdateGeminiKeyRequest
     public string? Tier { get; set; }
     public string? Model { get; set; }
     public int? DailyQuotaLimit { get; set; }
+    public int? RpmLimit { get; set; }
+    public int? TpmLimit { get; set; }
+    public int? RpdLimit { get; set; }
     public string? ProjectId { get; set; }
     public string? Notes { get; set; }
 }

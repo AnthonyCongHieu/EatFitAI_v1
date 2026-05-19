@@ -333,6 +333,9 @@ namespace EatFitAI.API.Migrations
                     b.Property<int>("DailyRequestsUsed")
                         .HasColumnType("integer");
 
+                    b.Property<int>("DailyQuotaLimit")
+                        .HasColumnType("integer");
+
                     b.Property<string>("EncryptedApiKey")
                         .IsRequired()
                         .HasColumnType("text");
@@ -347,6 +350,38 @@ namespace EatFitAI.API.Migrations
 
                     b.Property<DateTime?>("LastUsedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProjectId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("RpdLimit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(20);
+
+                    b.Property<int>("RpmLimit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(5);
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<int>("TpmLimit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(250000);
 
                     b.Property<int>("TotalRequestsUsed")
                         .HasColumnType("integer");
@@ -755,6 +790,10 @@ namespace EatFitAI.API.Migrations
 
                     b.Property<DateTime?>("LastLogDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasPrecision(3)
+                        .HasColumnType("timestamp(3) with time zone");
 
                     b.Property<int>("LongestStreak")
                         .HasColumnType("integer");

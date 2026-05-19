@@ -712,6 +712,19 @@ def internal_runtime_status():
     return jsonify(runtime_status), 200
 
 
+@app.post("/internal/runtime/reload-keys")
+@require_internal_token
+def internal_runtime_reload_keys():
+    try:
+        from shared_gemini_pool import get_shared_pool
+
+        status = get_shared_pool().reload_key_pool()
+        return jsonify({"checkedAt": time.time(), "status": "ok", **status}), 200
+    except Exception as exc:
+        logger.warning("Failed to reload Gemini key pool: %s", exc)
+        return jsonify({"error": "gemini_key_pool_reload_failed", "detail": str(exc)}), 503
+
+
 def _detections_from_yolo_result(result: Any) -> List[Dict[str, Any]]:
     names: Dict[int, str] = result[0].names
     detections: List[Dict[str, Any]] = []

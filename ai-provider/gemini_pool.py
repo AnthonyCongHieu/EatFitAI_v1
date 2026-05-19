@@ -169,6 +169,9 @@ class GeminiPoolEntry:
     provider_expected_reset_at: Optional[datetime] = None
     probe_day_key: Optional[str] = None
     probe_count: int = 0
+    rpm_limit: Optional[int] = None
+    tpm_limit: Optional[int] = None
+    rpd_limit: Optional[int] = None
 
     def is_available(self, now: datetime) -> bool:
         if not self.enabled:
@@ -192,6 +195,7 @@ class GeminiPoolEntry:
                 STATE_TRANSIENT_BACKOFF,
             } or previous_reason in {
                 "rpm_limit_reached",
+                "rpm_limit_guard",
                 "tpm_limit_reached",
                 "gemini_quota_exhausted",
                 "gemini_transient_error",
@@ -214,6 +218,7 @@ class GeminiPoolEntry:
                 self.state_updated_at = now
             elif previous_state == STATE_PROVIDER_RPD_EXHAUSTED or previous_reason in {
                 "rpd_limit_reached",
+                "rpd_limit_guard",
                 STATE_PROVIDER_RPD_EXHAUSTED,
             }:
                 self.state = STATE_PROVIDER_RPD_EXHAUSTED
@@ -378,6 +383,27 @@ class GeminiPoolEntry:
                 rpd_recovery_at=self.provider_expected_reset_at or rpd_recovery_at,
             )
 
+        if rpd_limit > 1 and self.day_request_count >= rpd_limit - 1:
+            self.exhausted_until = rpd_recovery_at
+            self.disabled_reason = "rpd_limit_guard"
+            self.state = STATE_PROVIDER_RPD_EXHAUSTED
+            self.provider_expected_reset_at = rpd_recovery_at
+            self.next_probe_at = rpd_recovery_at
+            self.state_updated_at = now
+            return GeminiAvailability(
+                available=False,
+                reason="rpd_limit_guard",
+                state=STATE_PROVIDER_RPD_EXHAUSTED,
+                quota_source="backend_observed",
+                available_after=rpd_recovery_at,
+                rpm_used=rolling_requests,
+                tpm_used=rolling_tokens,
+                rpd_used=self.day_request_count,
+                rpm_recovery_at=rpm_recovery_at,
+                tpm_recovery_at=tpm_recovery_at,
+                rpd_recovery_at=rpd_recovery_at,
+            )
+
         if rpd_limit > 0 and self.day_request_count >= rpd_limit:
             self.exhausted_until = rpd_recovery_at
             self.disabled_reason = "rpd_limit_reached"
@@ -391,6 +417,27 @@ class GeminiPoolEntry:
                 state=STATE_PROVIDER_RPD_EXHAUSTED,
                 quota_source="backend_observed",
                 available_after=rpd_recovery_at,
+                rpm_used=rolling_requests,
+                tpm_used=rolling_tokens,
+                rpd_used=self.day_request_count,
+                rpm_recovery_at=rpm_recovery_at,
+                tpm_recovery_at=tpm_recovery_at,
+                rpd_recovery_at=rpd_recovery_at,
+            )
+
+        if rpm_limit > 1 and rolling_requests >= rpm_limit - 1:
+            self.cooldown_until = rpm_recovery_at
+            self.disabled_reason = "rpm_limit_guard"
+            self.state = STATE_PROVIDER_RPM_EXHAUSTED
+            self.provider_expected_reset_at = None
+            self.next_probe_at = None
+            self.state_updated_at = now
+            return GeminiAvailability(
+                available=False,
+                reason="rpm_limit_guard",
+                state=STATE_PROVIDER_RPM_EXHAUSTED,
+                quota_source="backend_observed",
+                available_after=rpm_recovery_at,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
                 rpd_used=self.day_request_count,
@@ -551,12 +598,14 @@ class GeminiPoolEntry:
             return STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
         if self.state == STATE_PROVIDER_RPD_EXHAUSTED or self.disabled_reason in {
             "rpd_limit_reached",
+            "rpd_limit_guard",
             STATE_PROVIDER_RPD_EXHAUSTED,
         }:
             if self.exhausted_until or self.provider_expected_reset_at or self.next_probe_at:
                 return STATE_PROVIDER_RPD_EXHAUSTED
         if (self.state == STATE_PROVIDER_RPM_EXHAUSTED or self.disabled_reason in {
             "rpm_limit_reached",
+            "rpm_limit_guard",
             STATE_PROVIDER_RPM_EXHAUSTED,
         }) and self.cooldown_until and now < self.cooldown_until:
             return STATE_PROVIDER_RPM_EXHAUSTED
@@ -645,6 +694,9 @@ class GeminiPoolManager:
         probe_max_per_project_per_day: int = DEFAULT_PROBE_MAX_PER_PROJECT_PER_DAY,
         probe_prompt: str = DEFAULT_PROBE_PROMPT,
         requester: Optional[Callable[..., requests.Response]] = None,
+        key_pool_loader: Optional[Callable[[], List[GeminiPoolEntry]]] = None,
+        key_pool_refresh_seconds: int = 30,
+        key_pool_source: str = "env",
     ) -> None:
         self.default_model = default_model or DEFAULT_MODEL
         self.timeout_seconds = timeout_seconds
@@ -660,6 +712,10 @@ class GeminiPoolManager:
         self.probe_max_per_project_per_day = max(1, probe_max_per_project_per_day)
         self.probe_prompt = probe_prompt or DEFAULT_PROBE_PROMPT
         self._requester = requester or requests.post
+        self._key_pool_loader = key_pool_loader
+        self._key_pool_refresh_seconds = max(1, int(key_pool_refresh_seconds))
+        self._key_pool_last_refresh_at: Optional[datetime] = _utcnow() if key_pool_loader else None
+        self._key_pool_source = key_pool_source
         self._lock = RLock()
         self._duplicates_filtered = 0
         self._last_failover_reason: Optional[str] = None
@@ -669,7 +725,11 @@ class GeminiPoolManager:
         self._load_usage_state_locked()
 
     @classmethod
-    def from_env(cls) -> "GeminiPoolManager":
+    def from_env(
+        cls,
+        *,
+        key_pool_requester: Optional[Callable[..., requests.Response]] = None,
+    ) -> "GeminiPoolManager":
         default_model = os.getenv("GEMINI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
         timeout_seconds = _safe_int(os.getenv("GEMINI_TIMEOUT_SECONDS"), DEFAULT_TIMEOUT_SECONDS)
         short_cooldown_seconds = _safe_int(
@@ -690,15 +750,31 @@ class GeminiPoolManager:
         )
         probe_prompt = os.getenv("GEMINI_PROBE_PROMPT", DEFAULT_PROBE_PROMPT).strip() or DEFAULT_PROBE_PROMPT
 
+        env_entries: List[GeminiPoolEntry] = []
         entries: List[GeminiPoolEntry] = []
-        entries.extend(
+        key_pool_source = "env"
+        backend_pool_loaded = False
+        key_pool_loader = _build_backend_key_pool_loader_from_env(
+            requester=key_pool_requester,
+            default_model=default_model,
+        )
+        if key_pool_loader is not None:
+            try:
+                entries = key_pool_loader()
+                key_pool_source = "backend"
+                backend_pool_loaded = True
+            except Exception as exc:
+                logger.warning("Failed to load Gemini key pool from backend, falling back to env: %s", exc)
+                key_pool_source = "env_fallback"
+
+        env_entries.extend(
             _load_pool_entries_from_json(
                 os.getenv("GEMINI_KEY_POOL_JSON", "").strip(),
                 env_name="GEMINI_KEY_POOL_JSON",
                 default_model=default_model,
             )
         )
-        entries.extend(
+        env_entries.extend(
             _load_pool_entries_from_json(
                 os.getenv("GEMINI_EXTRA_KEY_POOL_JSON", "").strip(),
                 env_name="GEMINI_EXTRA_KEY_POOL_JSON",
@@ -711,7 +787,7 @@ class GeminiPoolManager:
         legacy_project_alias = os.getenv("GEMINI_API_KEY_PROJECT_ALIAS", "").strip() or legacy_project_id
         legacy_key_alias = os.getenv("GEMINI_API_KEY_ALIAS", "").strip() or "legacy-primary"
         if legacy_key:
-            entries.append(
+            env_entries.append(
                 GeminiPoolEntry(
                     project_alias=legacy_project_alias,
                     project_id=legacy_project_id,
@@ -721,6 +797,9 @@ class GeminiPoolManager:
                     enabled=True,
                 )
             )
+
+        if not backend_pool_loaded and not entries:
+            entries = env_entries
 
         manager = cls(
             entries,
@@ -734,6 +813,9 @@ class GeminiPoolManager:
             probe_min_interval_seconds=probe_min_interval_seconds,
             probe_max_per_project_per_day=probe_max_per_project_per_day,
             probe_prompt=probe_prompt,
+            key_pool_loader=key_pool_loader,
+            key_pool_refresh_seconds=_safe_int(os.getenv("GEMINI_KEY_POOL_REFRESH_SECONDS"), 30),
+            key_pool_source=key_pool_source,
         )
         manager._apply_pre_exhausted_projects_from_env()
         status = manager.get_runtime_status()
@@ -774,7 +856,7 @@ class GeminiPoolManager:
             self._refresh_retry_after_locked(now, estimated_tokens=1)
             active = self._get_active_entry_locked(now, estimated_tokens=1)
             usage_entries = [
-                entry.usage_snapshot(now, self.rpm_limit, self.tpm_limit, self.rpd_limit)
+                entry.usage_snapshot(now, *self._limits_for_entry(entry))
                 for entry in self._entries
             ]
             states = [item["state"] for item in usage_entries]
@@ -783,11 +865,13 @@ class GeminiPoolManager:
                 "gemini_configured": bool(self._entries),
                 "gemini_model": active.model if active else self.default_model,
                 "gemini_active_project": active.project_alias if active else None,
+                "activeKey": active.key_alias if active else None,
                 "gemini_pool_size": len(self._entries),
                 "gemini_distinct_project_count": len({entry.project_id for entry in self._entries}),
                 "gemini_duplicates_filtered": self._duplicates_filtered,
                 "gemini_last_failover_reason": self._last_failover_reason,
                 "gemini_retry_after": self._last_retry_after,
+                "gemini_key_pool_source": self._key_pool_source,
                 "gemini_rate_limit_scope": PROJECT_RATE_LIMIT_SCOPE,
                 "gemini_quota_truth_source": "backend_runtime_state_plus_manual_overrides",
                 "gemini_manual_override_project_count": sum(
@@ -816,8 +900,23 @@ class GeminiPoolManager:
                     "rpd": self.rpd_limit,
                 },
                 "gemini_available_project_count": sum(1 for item in usage_entries if item["available"]),
+                "availableKeyCount": sum(1 for item in usage_entries if item["available"]),
+                "exhaustedKeyCount": sum(1 for item in usage_entries if not item["available"]),
+                "keyUsageEntries": usage_entries,
                 "gemini_usage_entries": usage_entries,
             }
+
+    def reload_key_pool(self) -> Dict[str, Any]:
+        with self._lock:
+            if self._key_pool_loader is None:
+                return self.get_runtime_status()
+            entries = self._key_pool_loader()
+            self._replace_entries_locked(entries)
+            self._key_pool_last_refresh_at = _utcnow()
+            self._key_pool_source = "backend"
+            self._refresh_retry_after_locked(self._key_pool_last_refresh_at, estimated_tokens=1)
+            self._save_usage_state_locked()
+            return self.get_runtime_status()
 
     def ensure_service_available(self) -> None:
         status = self.get_runtime_status()
@@ -853,7 +952,10 @@ class GeminiPoolManager:
             now = _utcnow()
             self._refresh_locked(now)
             estimated_tokens = _estimate_total_tokens(prompt, max_output_tokens)
-            if self.tpm_limit > 0 and estimated_tokens > self.tpm_limit:
+            if self._entries and not any(
+                tpm_limit <= 0 or estimated_tokens <= tpm_limit
+                for _, tpm_limit, _ in (self._limits_for_entry(entry) for entry in self._entries)
+            ):
                 raise GeminiPoolError(
                     "gemini_request_invalid",
                     "Estimated request size exceeds configured TPM limit",
@@ -1323,9 +1425,66 @@ class GeminiPoolManager:
         return deduped
 
     def _refresh_locked(self, now: datetime) -> None:
+        self._maybe_refresh_key_pool_locked(now)
         for entry in self._entries:
             entry.clear_expired(now)
             entry.refresh_usage_windows(now)
+
+    def _maybe_refresh_key_pool_locked(self, now: datetime) -> None:
+        if self._key_pool_loader is None:
+            return
+        if self._key_pool_last_refresh_at and (
+            now - self._key_pool_last_refresh_at
+        ).total_seconds() < self._key_pool_refresh_seconds:
+            return
+
+        self._key_pool_last_refresh_at = now
+        try:
+            entries = self._key_pool_loader()
+        except Exception as exc:
+            logger.warning("Failed to refresh Gemini key pool from backend: %s", exc)
+            if self._key_pool_source == "backend":
+                self._key_pool_source = "backend_stale"
+            return
+
+        self._replace_entries_locked(entries)
+        self._key_pool_source = "backend"
+
+    def _replace_entries_locked(self, entries: List[GeminiPoolEntry]) -> None:
+        previous_by_project = {entry.project_id: entry for entry in self._entries}
+        next_entries = self._dedupe_entries(entries)
+        for entry in next_entries:
+            previous = previous_by_project.get(entry.project_id)
+            if previous is None:
+                continue
+            entry.cooldown_until = previous.cooldown_until
+            entry.exhausted_until = previous.exhausted_until
+            entry.disabled_reason = previous.disabled_reason
+            entry.rolling_events = list(previous.rolling_events)
+            entry.day_window_key = previous.day_window_key
+            entry.day_request_count = previous.day_request_count
+            entry.total_request_count = previous.total_request_count
+            entry.total_token_count = previous.total_token_count
+            entry.last_used_at = previous.last_used_at
+            entry.last_recovered_at = previous.last_recovered_at
+            entry.last_recovered_reason = previous.last_recovered_reason
+            entry.state = previous.state
+            entry.state_updated_at = previous.state_updated_at
+            entry.last_provider_status_code = previous.last_provider_status_code
+            entry.last_provider_quota_id = previous.last_provider_quota_id
+            entry.last_provider_quota_metric = previous.last_provider_quota_metric
+            entry.last_probe_at = previous.last_probe_at
+            entry.last_probe_result = previous.last_probe_result
+            entry.next_probe_at = previous.next_probe_at
+            entry.provider_expected_reset_at = previous.provider_expected_reset_at
+            entry.probe_day_key = previous.probe_day_key
+            entry.probe_count = previous.probe_count
+
+        self._entries = next_entries
+        if self._entries and self._active_project_id not in {entry.project_id for entry in self._entries}:
+            self._active_project_id = self._entries[0].project_id
+        elif not self._entries:
+            self._active_project_id = None
 
     def _candidate_entries_locked(self, now: datetime, estimated_tokens: int) -> List[GeminiPoolEntry]:
         entries = self._entries[:]
@@ -1587,11 +1746,12 @@ class GeminiPoolManager:
             self._save_usage_state_locked()
 
     def _entry_within_budget_locked(self, entry: GeminiPoolEntry, now: datetime, estimated_tokens: int) -> bool:
+        rpm_limit, tpm_limit, rpd_limit = self._limits_for_entry(entry)
         availability = entry.evaluate_availability(
             now,
-            rpm_limit=self.rpm_limit,
-            tpm_limit=self.tpm_limit,
-            rpd_limit=self.rpd_limit,
+            rpm_limit=rpm_limit,
+            tpm_limit=tpm_limit,
+            rpd_limit=rpd_limit,
             estimated_tokens=estimated_tokens,
         )
         return availability.available
@@ -1599,16 +1759,24 @@ class GeminiPoolManager:
     def _refresh_retry_after_locked(self, now: datetime, estimated_tokens: int) -> None:
         retry_after_candidates: List[datetime] = []
         for entry in self._entries:
+            rpm_limit, tpm_limit, rpd_limit = self._limits_for_entry(entry)
             availability = entry.evaluate_availability(
                 now,
-                rpm_limit=self.rpm_limit,
-                tpm_limit=self.tpm_limit,
-                rpd_limit=self.rpd_limit,
+                rpm_limit=rpm_limit,
+                tpm_limit=tpm_limit,
+                rpd_limit=rpd_limit,
                 estimated_tokens=estimated_tokens,
             )
             if availability.available_after:
                 retry_after_candidates.append(availability.available_after)
         self._last_retry_after = min(retry_after_candidates).isoformat() if retry_after_candidates else None
+
+    def _limits_for_entry(self, entry: GeminiPoolEntry) -> tuple[int, int, int]:
+        return (
+            int(entry.rpm_limit) if entry.rpm_limit is not None else self.rpm_limit,
+            int(entry.tpm_limit) if entry.tpm_limit is not None else self.tpm_limit,
+            int(entry.rpd_limit) if entry.rpd_limit is not None else self.rpd_limit,
+        )
 
     def _load_usage_state_locked(self) -> None:
         if self.usage_state_store is None:
@@ -1739,6 +1907,69 @@ def _build_usage_state_store_from_env() -> GeminiUsageStateStore:
 
     usage_state_path = os.getenv("GEMINI_USAGE_STATE_PATH", "").strip() or DEFAULT_USAGE_STATE_PATH
     return FileGeminiUsageStateStore(usage_state_path)
+
+
+def _build_backend_key_pool_loader_from_env(
+    *,
+    requester: Optional[Callable[..., requests.Response]],
+    default_model: str,
+) -> Optional[Callable[[], List[GeminiPoolEntry]]]:
+    base_url = os.getenv("GEMINI_KEY_POOL_BACKEND_URL", "").strip().rstrip("/")
+    internal_token = os.getenv("AI_PROVIDER_INTERNAL_TOKEN", "").strip()
+    if not base_url:
+        return None
+
+    request = requester or requests.get
+    timeout_seconds = _safe_int(os.getenv("GEMINI_KEY_POOL_TIMEOUT_SECONDS"), 10)
+
+    def load_key_pool() -> List[GeminiPoolEntry]:
+        response = request(
+            f"{base_url}/internal/gemini/key-pool",
+            headers={"X-Internal-Token": internal_token},
+            timeout=timeout_seconds,
+        )
+        if response.status_code >= 400:
+            raise requests.HTTPError(f"Backend key-pool returned HTTP {response.status_code}")
+
+        payload = response.json()
+        raw_keys = payload.get("keys") if isinstance(payload, dict) else payload
+        if not isinstance(raw_keys, list):
+            raise ValueError("Backend key-pool response must include a keys array")
+
+        entries: List[GeminiPoolEntry] = []
+        for index, item in enumerate(raw_keys):
+            if not isinstance(item, dict):
+                logger.warning("Skipping backend Gemini key-pool entry %s: expected object", index)
+                continue
+
+            api_key = str(item.get("apiKey", "")).strip()
+            raw_key_id = str(item.get("keyId", "")).strip()
+            if not api_key or not raw_key_id:
+                logger.warning("Skipping backend Gemini key-pool entry %s: keyId/apiKey missing", index)
+                continue
+
+            key_name = str(item.get("keyName", "")).strip() or f"gemini-key-{index + 1}"
+            entries.append(
+                GeminiPoolEntry(
+                    project_alias=key_name,
+                    project_id=f"key-{_normalize_key_id(raw_key_id)}",
+                    key_alias=key_name,
+                    api_key=api_key,
+                    model=str(item.get("model", default_model)).strip() or default_model,
+                    enabled=bool(item.get("enabled", True)),
+                    rpm_limit=_safe_int(item.get("rpmLimit"), DEFAULT_RPM_LIMIT),
+                    tpm_limit=_safe_int(item.get("tpmLimit"), DEFAULT_TPM_LIMIT),
+                    rpd_limit=_safe_int(item.get("rpdLimit"), DEFAULT_RPD_LIMIT),
+                )
+            )
+        return entries
+
+    return load_key_pool
+
+
+def _normalize_key_id(raw_key_id: str) -> str:
+    normalized = "".join(ch for ch in str(raw_key_id).strip() if ch.isalnum())
+    return normalized or uuid4().hex
 
 
 def _utcnow() -> datetime:
@@ -2030,6 +2261,15 @@ def _load_pool_entries_from_json(raw_pool: str, *, env_name: str, default_model:
                     api_key=api_key,
                     model=str(item.get("model", default_model)).strip() or default_model,
                     enabled=bool(item.get("enabled", True)),
+                    rpm_limit=_safe_int(item.get("rpmLimit"), DEFAULT_RPM_LIMIT)
+                    if item.get("rpmLimit") is not None
+                    else None,
+                    tpm_limit=_safe_int(item.get("tpmLimit"), DEFAULT_TPM_LIMIT)
+                    if item.get("tpmLimit") is not None
+                    else None,
+                    rpd_limit=_safe_int(item.get("rpdLimit"), DEFAULT_RPD_LIMIT)
+                    if item.get("rpdLimit") is not None
+                    else None,
                 )
             )
     except Exception as exc:

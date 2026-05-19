@@ -14,7 +14,10 @@ public class GeminiKeyDto
     public DateTime CreatedAt { get; set; }
     public string Tier { get; set; } = "Free";
     public string Model { get; set; } = "gemini-2.5-flash";
-    public int DailyQuotaLimit { get; set; } = 1500;
+    public int DailyQuotaLimit { get; set; } = 20;
+    public int RpmLimit { get; set; } = 5;
+    public int TpmLimit { get; set; } = 250000;
+    public int RpdLimit { get; set; } = 20;
     public string? ProjectId { get; set; }
     public string? Notes { get; set; }
     public string? RuntimeProjectId { get; set; }

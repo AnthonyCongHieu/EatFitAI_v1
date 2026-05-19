@@ -908,6 +908,7 @@ builder.Services.AddSingleton<IGeminiRuntimeProjectService, GeminiRuntimeProject
 builder.Services.AddScoped<IAdminQuotaOverviewService, AdminQuotaOverviewService>();
 builder.Services.AddScoped<IAiRuntimeStatusService, AiRuntimeStatusService>();
 builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
+builder.Services.AddScoped<IAiProviderRuntimeReloadNotifier, AiProviderRuntimeReloadNotifier>();
 builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();
 builder.Services.AddHostedService<OpsMetricsFlushService>();
 builder.Services.AddHostedService<PushCampaignBackgroundService>();

@@ -383,6 +383,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.LastLoginAt).HasPrecision(3);
         });
 
         modelBuilder.Entity<UserDish>(entity =>
@@ -618,6 +619,10 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+            entity.Property(e => e.RpmLimit).HasDefaultValue(5);
+            entity.Property(e => e.TpmLimit).HasDefaultValue(250000);
+            entity.Property(e => e.RpdLimit).HasDefaultValue(20);
         });
 
         modelBuilder.Entity<AdminAuditEvent>(entity =>

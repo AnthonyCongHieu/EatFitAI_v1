@@ -8,6 +8,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import requests
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from gemini_pool import (
@@ -265,6 +267,98 @@ class GeminiPoolTests(unittest.TestCase):
         self.assertEqual(status["gemini_distinct_project_count"], 6)
         self.assertEqual(status["gemini_rate_limit_scope"], "project")
 
+    def test_from_env_prefers_backend_key_pool_when_configured(self) -> None:
+        calls = []
+
+        def requester(url, **kwargs):
+            calls.append((url, kwargs))
+            return FakeResponse(
+                200,
+                {
+                    "keys": [
+                        {
+                            "keyId": "11111111-1111-1111-1111-111111111111",
+                            "keyName": "admin-key-1",
+                            "apiKey": "admin-api-key-1",
+                            "model": "gemini-2.5-flash",
+                            "rpmLimit": 7,
+                            "tpmLimit": 1234,
+                            "rpdLimit": 33,
+                            "enabled": True,
+                        }
+                    ]
+                },
+            )
+
+        with patch.dict(
+            os.environ,
+            {
+                "GEMINI_KEY_POOL_BACKEND_URL": "https://backend.test",
+                "AI_PROVIDER_INTERNAL_TOKEN": "internal-token",
+                "GEMINI_KEY_POOL_JSON": (
+                    '[{"projectAlias":"env","projectId":"env-key","keyAlias":"env-slot","apiKey":"env-api-key","model":"gemini-2.5-flash","enabled":true}]'
+                ),
+            },
+            clear=True,
+        ):
+            pool = GeminiPoolManager.from_env(key_pool_requester=requester)
+
+        status = pool.get_runtime_status()
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][0], "https://backend.test/internal/gemini/key-pool")
+        self.assertEqual(calls[0][1]["headers"]["X-Internal-Token"], "internal-token")
+        self.assertEqual(status["gemini_pool_size"], 1)
+        self.assertEqual(status["gemini_active_project"], "admin-key-1")
+        entry = status["gemini_usage_entries"][0]
+        self.assertEqual(entry["projectId"], "key-11111111111111111111111111111111")
+        self.assertEqual(entry["keyAlias"], "admin-key-1")
+        self.assertEqual(entry["rpmRemaining"], 7)
+        self.assertEqual(entry["tpmRemaining"], 1234)
+        self.assertEqual(entry["rpdRemaining"], 33)
+
+    def test_from_env_falls_back_to_env_pool_when_backend_key_pool_fails(self) -> None:
+        def requester(*_args, **_kwargs):
+            raise requests.RequestException("backend unavailable")
+
+        with patch.dict(
+            os.environ,
+            {
+                "GEMINI_KEY_POOL_BACKEND_URL": "https://backend.test",
+                "AI_PROVIDER_INTERNAL_TOKEN": "internal-token",
+                "GEMINI_KEY_POOL_JSON": (
+                    '[{"projectAlias":"env","projectId":"env-key","keyAlias":"env-slot","apiKey":"env-api-key","model":"gemini-2.5-flash","enabled":true}]'
+                ),
+            },
+            clear=True,
+        ):
+            pool = GeminiPoolManager.from_env(key_pool_requester=requester)
+
+        status = pool.get_runtime_status()
+        self.assertEqual(status["gemini_pool_size"], 1)
+        self.assertEqual(status["gemini_active_project"], "env")
+        self.assertEqual(status["gemini_key_pool_source"], "env_fallback")
+
+    def test_from_env_does_not_use_env_fallback_when_backend_pool_is_empty(self) -> None:
+        def requester(*_args, **_kwargs):
+            return FakeResponse(200, {"keys": []})
+
+        with patch.dict(
+            os.environ,
+            {
+                "GEMINI_KEY_POOL_BACKEND_URL": "https://backend.test",
+                "AI_PROVIDER_INTERNAL_TOKEN": "internal-token",
+                "GEMINI_KEY_POOL_JSON": (
+                    '[{"projectAlias":"env","projectId":"env-key","keyAlias":"env-slot","apiKey":"env-api-key","model":"gemini-2.5-flash","enabled":true}]'
+                ),
+            },
+            clear=True,
+        ):
+            pool = GeminiPoolManager.from_env(key_pool_requester=requester)
+
+        status = pool.get_runtime_status()
+        self.assertEqual(status["gemini_pool_size"], 0)
+        self.assertEqual(status["gemini_key_pool_source"], "backend")
+
     def test_from_env_uses_degraded_postgres_store_without_database_url(self) -> None:
         with patch.dict(
             os.environ,
@@ -401,6 +495,24 @@ class GeminiPoolTests(unittest.TestCase):
             primary = pool.get_runtime_status()["gemini_usage_entries"][0]
             self.assertEqual(primary["availabilityReason"], "rpd_limit_reached")
             self.assertIsNotNone(primary["rpdRecoveryAt"])
+
+    def test_rotates_before_using_last_rpd_request(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 12, 0, 0))
+        responses = [ok_response("backup")]
+        primary = GeminiPoolEntry("primary", "key-a", "slot-1", "key-1", DEFAULT_MODEL, rpd_limit=2)
+        backup = GeminiPoolEntry("backup", "key-b", "slot-2", "key-2", DEFAULT_MODEL, rpd_limit=2)
+        primary.day_request_count = 1
+        primary.day_window_key = "2026-04-10"
+        pool = GeminiPoolManager([primary, backup], requester=lambda *args, **kwargs: responses.pop(0))
+
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            self.assertEqual(pool.generate_text("hello"), "backup")
+            status = pool.get_runtime_status()
+
+        self.assertEqual(status["gemini_active_project"], "backup")
+        primary_status = status["gemini_usage_entries"][0]
+        self.assertFalse(primary_status["available"])
+        self.assertEqual(primary_status["availabilityReason"], "rpd_limit_guard")
 
     def test_persists_project_usage_state(self) -> None:
         clock = MutableClock(datetime(2026, 4, 10, 12, 0, 0))

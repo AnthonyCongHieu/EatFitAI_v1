@@ -38,8 +38,17 @@ public class GeminiKey
     [MaxLength(50)]
     public string Model { get; set; } = "gemini-2.5-flash";
 
-    /// <summary>RPD limit theo tier (Free = 1500)</summary>
-    public int DailyQuotaLimit { get; set; } = 1500;
+    /// <summary>RPM limit for runtime key rotation.</summary>
+    public int RpmLimit { get; set; } = 5;
+
+    /// <summary>TPM limit for runtime key rotation.</summary>
+    public int TpmLimit { get; set; } = 250000;
+
+    /// <summary>RPD limit for runtime key rotation.</summary>
+    public int RpdLimit { get; set; } = 20;
+
+    /// <summary>Legacy daily quota field. Keep mapped to RpdLimit for old admin clients.</summary>
+    public int DailyQuotaLimit { get; set; } = 20;
 
     /// <summary>Google Cloud Project ID (optional)</summary>
     [MaxLength(100)]

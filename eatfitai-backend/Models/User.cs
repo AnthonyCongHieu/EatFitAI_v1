@@ -17,6 +17,7 @@ public partial class User
     public string? AvatarUrl { get; set; }
 
     public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
 
     // Email verification - Mã xác minh 6 số
     public bool EmailVerified { get; set; } = false;

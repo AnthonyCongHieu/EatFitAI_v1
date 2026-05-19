@@ -24,19 +24,22 @@ public class AdminAIController : ControllerBase
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
     private readonly IGeminiRuntimeProjectService _runtimeProjectService;
+    private readonly IAiProviderRuntimeReloadNotifier _runtimeReloadNotifier;
 
     public AdminAIController(
         ApplicationDbContext context,
         IEncryptionService encryptionService,
         IAdminRealtimeEventBus eventBus,
         IAdminAuditService auditService,
-        IGeminiRuntimeProjectService runtimeProjectService)
+        IGeminiRuntimeProjectService runtimeProjectService,
+        IAiProviderRuntimeReloadNotifier runtimeReloadNotifier)
     {
         _context = context;
         _encryptionService = encryptionService;
         _eventBus = eventBus;
         _auditService = auditService;
         _runtimeProjectService = runtimeProjectService;
+        _runtimeReloadNotifier = runtimeReloadNotifier;
     }
 
     [HttpGet("keys")]
@@ -86,6 +89,9 @@ public class AdminAIController : ControllerBase
                 Tier = k.Tier,
                 Model = k.Model,
                 DailyQuotaLimit = k.DailyQuotaLimit,
+                RpmLimit = k.RpmLimit,
+                TpmLimit = k.TpmLimit,
+                RpdLimit = k.RpdLimit,
                 ProjectId = k.ProjectId,
                 Notes = k.Notes,
                 RuntimeProjectId = runtimeProjectId,
@@ -118,6 +124,7 @@ public class AdminAIController : ControllerBase
 
         var encryptedKey = _encryptionService.Encrypt(request.ApiKey.Trim());
 
+        var rpdLimit = NormalizeLimit(request.RpdLimit ?? request.DailyQuotaLimit, 20);
         var newKey = new GeminiKey
         {
             Id = Guid.NewGuid(),
@@ -129,13 +136,17 @@ public class AdminAIController : ControllerBase
             CreatedAt = DateTime.UtcNow,
             Tier = request.Tier,
             Model = request.Model,
-            DailyQuotaLimit = request.DailyQuotaLimit,
+            DailyQuotaLimit = rpdLimit,
+            RpmLimit = NormalizeLimit(request.RpmLimit, 5),
+            TpmLimit = NormalizeLimit(request.TpmLimit, 250000),
+            RpdLimit = rpdLimit,
             ProjectId = request.ProjectId,
             Notes = request.Notes
         };
 
         _context.GeminiKeys.Add(newKey);
         await _context.SaveChangesAsync();
+        var runtimeReloaded = await ReloadRuntimeKeysAsync();
         var auditRef = await WriteAuditAsync("create", "gemini-key", newKey.Id.ToString(), "success", $"KeyName={newKey.KeyName}", severity: "high");
         PublishKeyUpdated(newKey.Id, new { newKey.Id, newKey.KeyName, newKey.ProjectId, Mutation = "created" });
 
@@ -143,7 +154,8 @@ public class AdminAIController : ControllerBase
             "Thêm Gemini Key mới thành công.",
             "high",
             auditRef,
-            new { Id = newKey.Id }));
+            new { Id = newKey.Id, RuntimeReloadPending = !runtimeReloaded },
+            runtimeReloadPending: !runtimeReloaded));
     }
 
     // Bulk import nhiều keys cùng lúc
@@ -169,6 +181,7 @@ public class AdminAIController : ControllerBase
                 continue;
             }
 
+            var rpdLimit = NormalizeLimit(keyReq.RpdLimit ?? keyReq.DailyQuotaLimit, 20);
             var newKey = new GeminiKey
             {
                 Id = Guid.NewGuid(),
@@ -180,7 +193,10 @@ public class AdminAIController : ControllerBase
                 CreatedAt = DateTime.UtcNow,
                 Tier = keyReq.Tier,
                 Model = keyReq.Model,
-                DailyQuotaLimit = keyReq.DailyQuotaLimit,
+                DailyQuotaLimit = rpdLimit,
+                RpmLimit = NormalizeLimit(keyReq.RpmLimit, 5),
+                TpmLimit = NormalizeLimit(keyReq.TpmLimit, 250000),
+                RpdLimit = rpdLimit,
                 ProjectId = keyReq.ProjectId,
                 Notes = keyReq.Notes
             };
@@ -190,6 +206,7 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        var runtimeReloaded = await ReloadRuntimeKeysAsync();
         var auditRef = await WriteAuditAsync("bulk-create", "gemini-key", string.Join(",", created), "success", $"Created={created.Count};Errors={errors.Count}", severity: "high");
         foreach (var keyId in created)
         {
@@ -200,7 +217,8 @@ public class AdminAIController : ControllerBase
             $"Đã thêm {created.Count}/{request.Keys.Count} keys.",
             "high",
             auditRef,
-            new { Created = created.Count, Ids = created, Errors = errors }));
+            new { Created = created.Count, Ids = created, Errors = errors, RuntimeReloadPending = !runtimeReloaded },
+            runtimeReloadPending: !runtimeReloaded));
     }
 
     [HttpPut("keys/{id}")]
@@ -219,18 +237,31 @@ public class AdminAIController : ControllerBase
         if (request.IsActive.HasValue) key.IsActive = request.IsActive.Value;
         if (request.Tier != null) key.Tier = request.Tier;
         if (request.Model != null) key.Model = request.Model;
-        if (request.DailyQuotaLimit.HasValue) key.DailyQuotaLimit = request.DailyQuotaLimit.Value;
+        if (request.RpmLimit.HasValue) key.RpmLimit = NormalizeLimit(request.RpmLimit.Value, 5);
+        if (request.TpmLimit.HasValue) key.TpmLimit = NormalizeLimit(request.TpmLimit.Value, 250000);
+        if (request.RpdLimit.HasValue)
+        {
+            key.RpdLimit = NormalizeLimit(request.RpdLimit.Value, 20);
+            key.DailyQuotaLimit = key.RpdLimit;
+        }
+        else if (request.DailyQuotaLimit.HasValue)
+        {
+            key.RpdLimit = NormalizeLimit(request.DailyQuotaLimit.Value, 20);
+            key.DailyQuotaLimit = key.RpdLimit;
+        }
         if (request.ProjectId != null) key.ProjectId = request.ProjectId;
         if (request.Notes != null) key.Notes = request.Notes;
 
         await _context.SaveChangesAsync();
+        var runtimeReloaded = await ReloadRuntimeKeysAsync();
         var auditRef = await WriteAuditAsync("update", "gemini-key", key.Id.ToString(), "success", $"KeyName={key.KeyName};IsActive={key.IsActive}", severity: "high");
         PublishKeyUpdated(key.Id, new { key.Id, key.KeyName, key.ProjectId, Mutation = "updated" });
         return Ok(BuildMutationResponse(
             "Cập nhật Gemini Key thành công.",
             "high",
             auditRef,
-            new { Id = key.Id }));
+            new { Id = key.Id, RuntimeReloadPending = !runtimeReloaded },
+            runtimeReloadPending: !runtimeReloaded));
     }
 
     // Toggle active/inactive nhanh
@@ -248,13 +279,15 @@ public class AdminAIController : ControllerBase
 
         key.IsActive = !key.IsActive;
         await _context.SaveChangesAsync();
+        var runtimeReloaded = await ReloadRuntimeKeysAsync();
         var auditRef = await WriteAuditAsync("toggle", "gemini-key", key.Id.ToString(), "success", $"IsActive={key.IsActive}", severity: "high");
         PublishKeyUpdated(key.Id, new { key.Id, key.IsActive, Mutation = "toggled" });
         return Ok(BuildMutationResponse(
             key.IsActive ? "Đã kích hoạt Key." : "Đã vô hiệu hóa Key.",
             "high",
             auditRef,
-            new { Id = key.Id, IsActive = key.IsActive }));
+            new { Id = key.Id, IsActive = key.IsActive, RuntimeReloadPending = !runtimeReloaded },
+            runtimeReloadPending: !runtimeReloaded));
     }
 
     // Test key connectivity — gửi request nhỏ tới Gemini API — with rich status
@@ -464,6 +497,7 @@ public class AdminAIController : ControllerBase
 
         _context.GeminiKeys.Remove(key);
         await _context.SaveChangesAsync();
+        var runtimeReloaded = await ReloadRuntimeKeysAsync();
         var auditRef = await WriteAuditAsync("delete", "gemini-key", id.ToString(), "success", $"KeyName={key.KeyName}", severity: "critical");
         PublishKeyUpdated(id, new { Id = id, Mutation = "deleted" });
 
@@ -471,7 +505,8 @@ public class AdminAIController : ControllerBase
             "Xóa Gemini Key thành công.",
             "critical",
             auditRef,
-            new { Id = id, Deleted = true }));
+            new { Id = id, Deleted = true, RuntimeReloadPending = !runtimeReloaded },
+            runtimeReloadPending: !runtimeReloaded));
     }
 
     [HttpPost("keys/reset-quota")]
@@ -487,6 +522,7 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        var runtimeReloaded = await ReloadRuntimeKeysAsync();
         var auditRef = await WriteAuditAsync("reset-quota", "gemini-key", "all", "success", $"Count={keys.Count}", severity: "high");
         _eventBus.Publish("admin.resource.updated", "gemini-key", "all", new { Mutation = "quota-reset", Count = keys.Count });
 
@@ -494,12 +530,23 @@ public class AdminAIController : ControllerBase
             $"Đã reset quota trong ngày cho {keys.Count} keys.",
             "high",
             auditRef,
-            new { Count = keys.Count }));
+            new { Count = keys.Count, RuntimeReloadPending = !runtimeReloaded },
+            runtimeReloadPending: !runtimeReloaded));
     }
 
     private void PublishKeyUpdated(Guid keyId, object payload)
     {
         _eventBus.Publish("admin.resource.updated", "gemini-key", keyId.ToString(), payload);
+    }
+
+    private async Task<bool> ReloadRuntimeKeysAsync()
+    {
+        return await _runtimeReloadNotifier.ReloadGeminiKeysAsync(HttpContext.RequestAborted);
+    }
+
+    private static int NormalizeLimit(int value, int fallback)
+    {
+        return value > 0 ? value : fallback;
     }
 
     private async Task<string?> WriteAuditAsync(
@@ -528,8 +575,13 @@ public class AdminAIController : ControllerBase
         string message,
         string severity,
         string? auditRef,
-        object? data = null)
+        object? data = null,
+        bool runtimeReloadPending = false)
     {
+        var warnings = runtimeReloadPending
+            ? new List<string> { "runtime reload pending" }
+            : null;
+
         return ApiResponse<AdminMutationResponseDto>.SuccessResponse(
             new AdminMutationResponseDto
             {
@@ -542,7 +594,8 @@ public class AdminAIController : ControllerBase
             message,
             requestId: HttpContext.TraceIdentifier,
             severity: severity,
-            auditRef: auditRef);
+            auditRef: auditRef,
+            warnings: warnings);
     }
 }
 
