@@ -722,6 +722,7 @@ def _is_reachable_source_url(url: str) -> bool:
             reachable = 200 <= response.status_code < 400
     except requests.RequestException as exc:
         logger.warning("Recipe source validation failed url=%s error=%s", url, exc)
+        reachable = True
 
     _source_validation_cache.set(url, reachable, ttl=3600)
     return reachable

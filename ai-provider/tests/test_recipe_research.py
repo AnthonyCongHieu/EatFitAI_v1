@@ -4,13 +4,19 @@ import sys
 from pathlib import Path
 import unittest
 from unittest.mock import patch
+import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from nutrition_llm import get_cooking_guide
+from nutrition_llm import _is_reachable_source_url
 
 
 class RecipeResearchTests(unittest.TestCase):
+    def test_source_reachability_treats_network_errors_as_inconclusive_for_trusted_urls(self) -> None:
+        with patch("nutrition_llm.requests.head", side_effect=requests.ConnectionError("reset")):
+            self.assertTrue(_is_reachable_source_url("https://example.com/recipe"))
+
     def test_get_cooking_guide_accepts_grounded_result_with_sources(self) -> None:
         with (
             patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),
