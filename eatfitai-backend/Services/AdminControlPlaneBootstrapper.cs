@@ -143,6 +143,20 @@ public sealed class AdminControlPlaneBootstrapper
         CREATE INDEX IF NOT EXISTS "IX_PushCampaignDelivery_TicketId"
         ON "PushCampaignDelivery" ("TicketId");
 
+        ALTER TABLE IF EXISTS "GeminiKeys"
+            ADD COLUMN IF NOT EXISTS "RpmLimit" integer NOT NULL DEFAULT 5,
+            ADD COLUMN IF NOT EXISTS "TpmLimit" integer NOT NULL DEFAULT 250000,
+            ADD COLUMN IF NOT EXISTS "RpdLimit" integer NOT NULL DEFAULT 20;
+
+        UPDATE "GeminiKeys"
+        SET "RpdLimit" = "DailyQuotaLimit"
+        WHERE "DailyQuotaLimit" IS NOT NULL
+          AND "DailyQuotaLimit" > 0
+          AND "RpdLimit" = 20;
+
+        ALTER TABLE IF EXISTS "Users"
+            ADD COLUMN IF NOT EXISTS "LastLoginAt" timestamp(3) with time zone NULL;
+
         INSERT INTO "MobileRuntimeConfig" (
             "Environment",
             "Platform",
