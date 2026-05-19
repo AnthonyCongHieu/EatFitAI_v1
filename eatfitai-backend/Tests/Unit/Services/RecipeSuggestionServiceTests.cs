@@ -1,16 +1,26 @@
 using EatFitAI.API.DbScaffold.Data; // FIX: Đổi sang EatFitAIDbContext
 using EatFitAI.API.DbScaffold.Models; // FIX: Đổi sang scaffolded Models
+using EatFitAI.API.Data;
 using EatFitAI.API.Services;
 using EatFitAI.API.DTOs.AI;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Moq;
+using System.Net;
+using System.Net.Http;
 using Xunit;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -78,6 +88,18 @@ namespace EatFitAI.API.Tests.Unit.Services
                 RecipeId = 1,
                 RecipeName = "Trứng xào cà chua",
                 Description = "Món ăn đơn giản, dễ làm",
+                ImageUrl = "recipe-images/v1/thumb/trung-xao-ca-chua.webp",
+                InstructionsJson = JsonSerializer.Serialize(new List<string>
+                {
+                    "Sơ chế trứng và cà chua",
+                    "Xào cà chua rồi cho trứng vào",
+                    "Nêm vừa ăn và hoàn thiện"
+                }),
+                SourceUrlsJson = JsonSerializer.Serialize(new List<string>
+                {
+                    "https://monngonmoingay.com/cong-thuc/trung-xao-ca-chua"
+                }),
+                EnhancedAt = DateTime.UtcNow,
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -120,6 +142,24 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, suggestion.RequiredIngredients);
             Assert.Empty(suggestion.ExtraIngredients);
             Assert.Contains("tham khảo", suggestion.Disclaimer, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_IngredientListDoesNotCallCookingGuideProvider()
+        {
+            await SeedDatabaseAsync();
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Trứng", "Cà chua" },
+                MaxResults = 5
+            });
+
+            Assert.Single(result);
+            _recipeGuideMock.Verify(
+                service => service.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Fact]
@@ -214,6 +254,58 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task SuggestRecipesAsync_VietnameseChickenSeed_ReturnsProductionReadyChickenRecipe()
+        {
+            await SeedVietnameseChickenRecipeFromCatalogAsync("ga-kho-gung");
+            var service = CreateServiceWithRealRecipeGuide();
+
+            var result = await service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "auto",
+                AvailableIngredients = new List<string> { "Gà" },
+                IngredientHints = new List<RecipeIngredientHintDto>
+                {
+                    new() { Name = "Gà", FoodItemId = null, Confidence = null }
+                },
+                MaxResults = 12
+            });
+
+            var chickenRecipe = Assert.Single(result, item => item.RecipeName == "Gà kho gừng");
+            Assert.NotEqual("fallback", chickenRecipe.GuideStatus, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("Thịt gà", chickenRecipe.MatchedIngredients);
+            Assert.NotNull(chickenRecipe.ImageVariants);
+            Assert.Equal("recipe-images/v1/medium/ga-kho-gung.webp", chickenRecipe.ImageVariants!.MediumUrl);
+            Assert.Contains(chickenRecipe.SourceUrls, IsTrustedHttpsUrl);
+            Assert.NotNull(chickenRecipe.YoutubeVideo);
+            Assert.True(IsDirectYoutubeVideoUrl(chickenRecipe.YoutubeVideo!.Url));
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_SeededRecipeWithoutVerifiedVideo_ReturnsSourceBackedSuggestion()
+        {
+            await SeedVietnameseEggRecipeWithSearchVideoFromCatalogAsync();
+            var service = CreateServiceWithRealRecipeGuide();
+
+            var result = await service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "auto",
+                AvailableIngredients = new List<string> { "Trứng" },
+                IngredientHints = new List<RecipeIngredientHintDto>
+                {
+                    new() { Name = "Trứng", FoodItemId = null, Confidence = null }
+                },
+                MaxResults = 12
+            });
+
+            var eggRecipe = Assert.Single(result, item => item.RecipeName == "Trứng chiên cà chua");
+            Assert.Equal("stale", eggRecipe.GuideStatus);
+            Assert.Contains("Trứng", eggRecipe.MatchedIngredients);
+            Assert.Contains(eggRecipe.SourceUrls, IsTrustedHttpsUrl);
+            Assert.Null(eggRecipe.YoutubeVideo);
+            Assert.NotEmpty(eggRecipe.PrepItems);
+        }
+
+        [Fact]
         public async Task SuggestRecipesAsync_UsesFoodItemIdAndUnsignedAliasForMatching()
         {
             // Arrange
@@ -267,6 +359,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeName = "Trứng hấp nhanh",
                     Description = "Nhanh",
                     CookTimeMinutes = 15,
+                    ImageUrl = "recipe-images/v1/thumb/trung-hap-nhanh.webp",
+                    InstructionsJson = JsonSerializer.Serialize(new List<string> { "Sơ chế", "Hấp nhanh", "Hoàn thiện" }),
+                    SourceUrlsJson = JsonSerializer.Serialize(new List<string> { "https://monngonmoingay.com/cong-thuc/trung-hap-nhanh" }),
+                    EnhancedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -276,6 +372,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeName = "Trứng om chậm",
                     Description = "Chậm",
                     CookTimeMinutes = 45,
+                    ImageUrl = "recipe-images/v1/thumb/trung-om-cham.webp",
+                    InstructionsJson = JsonSerializer.Serialize(new List<string> { "Sơ chế", "Om chậm", "Hoàn thiện" }),
+                    SourceUrlsJson = JsonSerializer.Serialize(new List<string> { "https://monngonmoingay.com/cong-thuc/trung-om-cham" }),
+                    EnhancedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 });
@@ -315,6 +415,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeId = 2,
                     RecipeName = "Trứng cà chua vừa kcal",
                     CookTimeMinutes = 20,
+                    ImageUrl = "recipe-images/v1/thumb/trung-ca-chua-vua-kcal.webp",
+                    InstructionsJson = JsonSerializer.Serialize(new List<string> { "Sơ chế", "Xào vừa chín", "Hoàn thiện" }),
+                    SourceUrlsJson = JsonSerializer.Serialize(new List<string> { "https://monngonmoingay.com/cong-thuc/trung-ca-chua-vua-kcal" }),
+                    EnhancedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -323,6 +427,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeId = 3,
                     RecipeName = "Trứng cà chua nhiều kcal",
                     CookTimeMinutes = 20,
+                    ImageUrl = "recipe-images/v1/thumb/trung-ca-chua-nhieu-kcal.webp",
+                    InstructionsJson = JsonSerializer.Serialize(new List<string> { "Sơ chế", "Xào phần lớn", "Hoàn thiện" }),
+                    SourceUrlsJson = JsonSerializer.Serialize(new List<string> { "https://monngonmoingay.com/cong-thuc/trung-ca-chua-nhieu-kcal" }),
+                    EnhancedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 });
@@ -359,6 +467,10 @@ namespace EatFitAI.API.Tests.Unit.Services
             {
                 RecipeId = 2,
                 RecipeName = "Trứng cà chua đủ nguyên liệu",
+                ImageUrl = "recipe-images/v1/thumb/trung-ca-chua-du-nguyen-lieu.webp",
+                InstructionsJson = JsonSerializer.Serialize(new List<string> { "Sơ chế", "Xào trứng cà chua", "Hoàn thiện" }),
+                SourceUrlsJson = JsonSerializer.Serialize(new List<string> { "https://monngonmoingay.com/cong-thuc/trung-ca-chua-du-nguyen-lieu" }),
+                EnhancedAt = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
@@ -499,19 +611,12 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
-        public async Task SuggestRecipesAsync_HidesRecipesWithoutProductionGuide()
+        public async Task SuggestRecipesAsync_HidesRecipesWithoutSourceBackedStoredGuide()
         {
             await SeedDatabaseAsync();
-            _recipeGuideMock
-                .Setup(s => s.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new RecipeCookingGuideDto
-                {
-                    RecipeId = 1,
-                    Steps = new List<string> { "Sơ chế", "Nấu", "Hoàn thiện" },
-                    GuideStatus = "fallback",
-                    SourceUrls = new List<string>(),
-                    YoutubeVideo = null
-                });
+            var recipe = await _context.Recipes.SingleAsync(item => item.RecipeId == 1);
+            recipe.SourceUrlsJson = "[]";
+            await _context.SaveChangesAsync();
 
             var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
             {
@@ -524,22 +629,12 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
-        public async Task SuggestRecipesAsync_HidesRecipesWhenGuideOnlyHasYoutubeSearchUrl()
+        public async Task SuggestRecipesAsync_StoredGuideWithYoutubeSearchUrlReturnsSuggestionWithoutVideo()
         {
             await SeedDatabaseAsync();
-            _recipeGuideMock
-                .Setup(s => s.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new RecipeCookingGuideDto
-                {
-                    RecipeId = 1,
-                    Steps = new List<string> { "Sơ chế", "Nấu", "Hoàn thiện" },
-                    GuideStatus = "generated",
-                    SourceUrls = new List<string> { "https://monngonmoingay.com/cong-thuc-demo" },
-                    YoutubeVideo = new RecipeYoutubeVideoDto
-                    {
-                        Url = "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+x%C3%A0o+c%C3%A0+chua"
-                    }
-                });
+            var recipe = await _context.Recipes.SingleAsync(item => item.RecipeId == 1);
+            recipe.VideoUrl = "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+x%C3%A0o+c%C3%A0+chua";
+            await _context.SaveChangesAsync();
 
             var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
             {
@@ -548,7 +643,83 @@ namespace EatFitAI.API.Tests.Unit.Services
                 MaxResults = 5
             });
 
-            Assert.Empty(result);
+            var suggestion = Assert.Single(result);
+            Assert.NotEqual("fallback", suggestion.GuideStatus, StringComparer.OrdinalIgnoreCase);
+            Assert.Null(suggestion.YoutubeVideo);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_VietnameseSeededIngredientsReturnOnlyRecipeSuggestions()
+        {
+            var databaseRoot = new InMemoryDatabaseRoot();
+            var databaseName = Guid.NewGuid().ToString();
+            var services = new ServiceCollection();
+            services.AddDbContext<EatFitAIDbContext>(options =>
+                options.UseInMemoryDatabase(databaseName, databaseRoot));
+            services.AddSingleton<IHostEnvironment>(new TestHostEnvironment());
+
+            await using var provider = services.BuildServiceProvider();
+            await DatabaseSeeder.SeedAsync(provider);
+
+            using var scope = provider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            using var cache = new MemoryCache(new MemoryCacheOptions());
+            var service = new RecipeSuggestionService(
+                context,
+                NullLogger<RecipeSuggestionService>.Instance,
+                cache,
+                _userPreferenceMock.Object,
+                _recipeGuideMock.Object);
+
+            var seededFoodNames = await context.FoodItems
+                .Select(food => food.FoodName)
+                .ToListAsync();
+            Assert.Contains("Thịt gà", seededFoodNames);
+            var chickenFood = await context.FoodItems.SingleAsync(food => food.FoodName == "Thịt gà");
+            Assert.True(RecipeIngredientEligibility.IsIngredientFood(chickenFood));
+            Assert.True(await context.Recipes
+                .Include(recipe => recipe.RecipeIngredients)
+                .ThenInclude(ingredient => ingredient.FoodItem)
+                .AnyAsync(recipe => recipe.ImageUrl != null
+                    && recipe.SourceUrlsJson != null
+                    && recipe.InstructionsJson != null
+                    && recipe.RecipeIngredients.Any(ingredient => ingredient.FoodItem!.FoodName == "Thịt gà")));
+
+            var representativeIngredients = new[]
+            {
+                "Gà",
+                "Trứng",
+                "Thịt bò",
+                "Tôm",
+                "Cá",
+                "Rau muống",
+                "Bí đỏ",
+                "Cà chua"
+            };
+
+            foreach (var ingredient in representativeIngredients)
+            {
+                var suggestions = await service.SuggestRecipesAsync(new RecipeSuggestionRequest
+                {
+                    Mode = "ingredient_combo",
+                    AvailableIngredients = new List<string> { ingredient },
+                    MaxResults = 10
+                });
+
+                Assert.True(
+                    suggestions.Count > 0,
+                    $"Expected at least one source-backed recipe suggestion for ingredient '{ingredient}'.");
+                Assert.DoesNotContain(
+                    suggestions,
+                    suggestion => string.Equals(suggestion.RecipeName, ingredient, StringComparison.OrdinalIgnoreCase));
+                Assert.All(suggestions, suggestion =>
+                {
+                    Assert.True(suggestion.MatchedIngredientsCount > 0);
+                    Assert.NotEqual("fallback", suggestion.GuideStatus, StringComparer.OrdinalIgnoreCase);
+                    Assert.NotNull(suggestion.ImageVariants);
+                    Assert.Contains(suggestion.SourceUrls, IsTrustedHttpsUrl);
+                });
+            }
         }
 
         [Fact]
@@ -561,7 +732,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             recipe.CookTimeMinutes = 18;
             recipe.Difficulty = "Dễ";
             recipe.ServingCount = 2;
-            recipe.InstructionsJson = "[\"Chuẩn bị\", \"Xào chín\"]";
+            recipe.InstructionsJson = "[\"Chuẩn bị\", \"Xào chín\", \"Nêm lại\"]";
             await _context.SaveChangesAsync();
 
             // Act
@@ -574,9 +745,255 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(2, result.ServingCount);
             Assert.Equal("recipe-images/v1/thumb/trung-xao-ca-chua.webp", result.ImageUrl);
             Assert.Equal("recipe-images/v1/medium/trung-xao-ca-chua.webp", result.ImageVariants!.MediumUrl);
-            Assert.Equal(new[] { "Chuẩn bị", "Xào chín" }, result.Instructions);
+            Assert.Equal(new[] { "Chuẩn bị", "Xào chín", "Nêm lại" }, result.Instructions);
             Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, result.RequiredIngredients);
+            Assert.Equal("stored", result.GuideStatus);
+            Assert.Contains(result.SourceUrls, IsTrustedHttpsUrl);
             Assert.Contains("không phải khuyến nghị của chuyên gia", result.Disclaimer);
+        }
+
+        private RecipeSuggestionService CreateServiceWithRealRecipeGuide()
+        {
+            var guideService = new RecipeGuideService(
+                _context,
+                new StubHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)),
+                new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["AIProvider:VisionBaseUrl"] = "http://ai-provider.local",
+                        ["RecipeGuides:PersistedTtlHours"] = "168"
+                    })
+                    .Build(),
+                _cache,
+                NullLogger<RecipeGuideService>.Instance);
+
+            return new RecipeSuggestionService(
+                _context,
+                _loggerMock.Object,
+                _cache,
+                _userPreferenceMock.Object,
+                guideService);
+        }
+
+        private async Task SeedVietnameseChickenRecipeFromCatalogAsync(string slug)
+        {
+            var seed = Assert.Single(VietnameseFoodCatalog.LoadRecipeSeeds(), item => item.Slug == slug);
+            var chicken = new FoodItem
+            {
+                FoodName = "Thịt gà",
+                FoodNameUnsigned = "thit ga ga chicken",
+                FoodNameEn = "chicken",
+                CaloriesPer100g = 165,
+                ProteinPer100g = 31,
+                CarbPer100g = 0,
+                FatPer100g = 3.6m,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            var ginger = new FoodItem
+            {
+                FoodName = "Gừng",
+                FoodNameUnsigned = "gung ginger",
+                FoodNameEn = "ginger",
+                CaloriesPer100g = 80,
+                ProteinPer100g = 1.8m,
+                CarbPer100g = 18,
+                FatPer100g = 0.8m,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _context.FoodItems.AddRangeAsync(chicken, ginger);
+
+            var recipe = new Recipe
+            {
+                RecipeName = seed.RecipeName,
+                Description = seed.Description,
+                ImageUrl = seed.ImageKey,
+                CookTimeMinutes = seed.CookTimeMinutes,
+                Difficulty = seed.Difficulty,
+                ServingCount = seed.ServingCount,
+                CredibilityScore = seed.CredibilityScore,
+                InstructionsJson = JsonSerializer.Serialize(seed.Instructions),
+                SourceUrlsJson = JsonSerializer.Serialize(seed.SourceUrls),
+                VideoUrl = seed.VideoUrl,
+                EnhancedAt = DateTime.UtcNow,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _context.Recipes.AddAsync(recipe);
+            await _context.SaveChangesAsync();
+
+            await _context.RecipeIngredients.AddRangeAsync(
+                new RecipeIngredient
+                {
+                    RecipeId = recipe.RecipeId,
+                    FoodItemId = chicken.FoodItemId,
+                    Grams = 150
+                },
+                new RecipeIngredient
+                {
+                    RecipeId = recipe.RecipeId,
+                    FoodItemId = ginger.FoodItemId,
+                    Grams = 12
+                });
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task SeedVietnameseEggRecipeWithSearchVideoFromCatalogAsync()
+        {
+            var seed = Assert.Single(VietnameseFoodCatalog.LoadRecipeSeeds(), item => item.Slug == "trung-chien-ca-chua");
+            var egg = new FoodItem
+            {
+                FoodName = "Trứng",
+                FoodNameUnsigned = "trung egg",
+                FoodNameEn = "egg",
+                CaloriesPer100g = 155,
+                ProteinPer100g = 13,
+                CarbPer100g = 1.1m,
+                FatPer100g = 11,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            var garlic = new FoodItem
+            {
+                FoodName = "Tỏi",
+                FoodNameUnsigned = "toi garlic",
+                FoodNameEn = "garlic",
+                CaloriesPer100g = 149,
+                ProteinPer100g = 6.4m,
+                CarbPer100g = 33,
+                FatPer100g = 0.5m,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            var tomato = new FoodItem
+            {
+                FoodName = "Cà chua",
+                FoodNameUnsigned = "ca chua tomato",
+                FoodNameEn = "tomato",
+                CaloriesPer100g = 18,
+                ProteinPer100g = 0.9m,
+                CarbPer100g = 3.9m,
+                FatPer100g = 0.2m,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _context.FoodItems.AddRangeAsync(egg, garlic, tomato);
+
+            var recipe = new Recipe
+            {
+                RecipeName = seed.RecipeName,
+                Description = seed.Description,
+                ImageUrl = seed.ImageKey,
+                CookTimeMinutes = seed.CookTimeMinutes,
+                Difficulty = seed.Difficulty,
+                ServingCount = seed.ServingCount,
+                CredibilityScore = seed.CredibilityScore,
+                InstructionsJson = JsonSerializer.Serialize(seed.Instructions),
+                SourceUrlsJson = JsonSerializer.Serialize(seed.SourceUrls),
+                VideoUrl = seed.VideoUrl,
+                EnhancedAt = null,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _context.Recipes.AddAsync(recipe);
+            await _context.SaveChangesAsync();
+
+            await _context.RecipeIngredients.AddRangeAsync(
+                new RecipeIngredient
+                {
+                    RecipeId = recipe.RecipeId,
+                    FoodItemId = egg.FoodItemId,
+                    Grams = 100
+                },
+                new RecipeIngredient
+                {
+                    RecipeId = recipe.RecipeId,
+                    FoodItemId = garlic.FoodItemId,
+                    Grams = 8
+                },
+                new RecipeIngredient
+                {
+                    RecipeId = recipe.RecipeId,
+                    FoodItemId = tomato.FoodItemId,
+                    Grams = 100
+                });
+            await _context.SaveChangesAsync();
+        }
+
+        private static bool IsTrustedHttpsUrl(string? url)
+        {
+            return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                && uri.Scheme == Uri.UriSchemeHttps
+                && !string.IsNullOrWhiteSpace(uri.Host);
+        }
+
+        private static bool IsDirectYoutubeVideoUrl(string? url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                || uri.Scheme != Uri.UriSchemeHttps)
+            {
+                return false;
+            }
+
+            var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+                ? uri.Host[4..]
+                : uri.Host;
+            var path = uri.AbsolutePath.Trim('/');
+
+            if (host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase))
+            {
+                return IsPlausibleYoutubeVideoId(path);
+            }
+
+            return (host.Equals("youtube.com", StringComparison.OrdinalIgnoreCase)
+                    || host.Equals("m.youtube.com", StringComparison.OrdinalIgnoreCase))
+                && path.Equals("watch", StringComparison.OrdinalIgnoreCase)
+                && IsPlausibleYoutubeVideoId(GetQueryParameter(uri, "v"));
+        }
+
+        private static string? GetQueryParameter(Uri uri, string name)
+        {
+            var query = uri.Query.TrimStart('?');
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return null;
+            }
+
+            foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = pair.Split('=', 2);
+                var key = Uri.UnescapeDataString(parts[0].Replace("+", " "));
+                if (!key.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                return parts.Length == 2
+                    ? Uri.UnescapeDataString(parts[1].Replace("+", " "))
+                    : string.Empty;
+            }
+
+            return null;
+        }
+
+        private static bool IsPlausibleYoutubeVideoId(string? videoId)
+        {
+            return !string.IsNullOrWhiteSpace(videoId)
+                && videoId.Length >= 3
+                && videoId.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-');
         }
 
         private static RecipeCookingGuideDto BuildProductionGuide(int recipeId) => new()
@@ -597,5 +1014,31 @@ namespace EatFitAI.API.Tests.Unit.Services
             },
             GuideStatus = "stored"
         };
+
+        private sealed class StubHttpClientFactory(Func<HttpRequestMessage, HttpResponseMessage> responder) : IHttpClientFactory
+        {
+            public HttpClient CreateClient(string name)
+            {
+                return new HttpClient(new StubHttpMessageHandler(responder));
+            }
+        }
+
+        private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(responder(request));
+            }
+        }
+
+        private sealed class TestHostEnvironment : IHostEnvironment
+        {
+            public string EnvironmentName { get; set; } = Environments.Production;
+            public string ApplicationName { get; set; } = "EatFitAI.API.Tests";
+            public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
+            public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+        }
     }
 }

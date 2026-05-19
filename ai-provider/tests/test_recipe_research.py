@@ -57,7 +57,7 @@ class RecipeResearchTests(unittest.TestCase):
         self.assertEqual(result["guideStatus"], "fallback")
         self.assertGreaterEqual(len(result["steps"]), 3)
 
-    def test_get_cooking_guide_falls_back_without_live_youtube_video(self) -> None:
+    def test_get_cooking_guide_accepts_source_backed_result_without_live_youtube_video(self) -> None:
         with (
             patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),
             patch("nutrition_llm.ensure_gemini_service_available"),
@@ -74,8 +74,9 @@ class RecipeResearchTests(unittest.TestCase):
         ):
             result = get_cooking_guide("Trứng áp chảo", [{"foodName": "Trứng", "grams": 100}])
 
-        self.assertEqual(result["guideStatus"], "fallback")
+        self.assertEqual(result["guideStatus"], "generated")
         self.assertIsNone(result["youtubeVideo"])
+        self.assertEqual(result["sourceUrls"], ["https://example.com/recipe"])
 
     def test_get_cooking_guide_falls_back_when_source_is_not_reachable(self) -> None:
         with (
@@ -138,6 +139,32 @@ class RecipeResearchTests(unittest.TestCase):
 
         self.assertEqual(result["guideStatus"], "generated")
         self.assertEqual(result["sourceUrls"], ["https://example.com/grounded-recipe"])
+
+    def test_get_cooking_guide_prompt_requires_specific_seasoning_quantities(self) -> None:
+        captured_prompt = ""
+
+        def capture_prompt(prompt, *_args, **_kwargs):
+            nonlocal captured_prompt
+            captured_prompt = prompt
+            return (
+                '{"prepItems":["Cân trứng 100g"],'
+                '"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
+                '"cookingTimeMinutes":12,"difficulty":"Dễ",'
+                '"tips":["Nêm sau"],"sourceUrls":["https://example.com/recipe"]}'
+            )
+
+        with (
+            patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),
+            patch("nutrition_llm.ensure_gemini_service_available"),
+            patch("nutrition_llm.query_gemini", side_effect=capture_prompt),
+            patch("nutrition_llm._is_reachable_source_url", return_value=True),
+            patch("nutrition_llm._find_youtube_video", return_value=None),
+        ):
+            get_cooking_guide("Trứng áp chảo", [{"foodName": "Trứng", "grams": 100}])
+
+        self.assertIn("định lượng gia vị", captured_prompt.lower())
+        self.assertIn("nêm nếm", captured_prompt.lower())
+        self.assertIn("100g", captured_prompt)
 
 
 if __name__ == "__main__":

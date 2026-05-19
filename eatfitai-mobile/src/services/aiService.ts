@@ -141,9 +141,11 @@ export const buildRecipeSuggestionRequest = ({
   ingredients,
   availableFoodItemIds,
   ingredientHints,
+  mode,
   ...rest
 }: BuildRecipeSuggestionRequestInput): BuiltRecipeSuggestionRequest => {
   const availableIngredients = ingredients.map((item) => item.trim()).filter(Boolean);
+  const requestMode = mode ?? (availableIngredients.length > 0 ? 'ingredient_combo' : 'auto');
   const selectedNames = new Set(availableIngredients.map(normalizeRecipeIngredientName));
   const filteredHints = (ingredientHints ?? []).filter((hint) =>
     selectedNames.has(normalizeRecipeIngredientName(hint.name)),
@@ -155,7 +157,7 @@ export const buildRecipeSuggestionRequest = ({
     : uniqueNumbers(availableFoodItemIds ?? []);
 
   return {
-    mode: 'auto',
+    mode: requestMode,
     availableIngredients,
     ...(filteredFoodItemIds.length > 0 ? { availableFoodItemIds: filteredFoodItemIds } : {}),
     ...(filteredHints.length > 0 ? { ingredientHints: filteredHints } : {}),

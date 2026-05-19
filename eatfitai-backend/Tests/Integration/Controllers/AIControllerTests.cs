@@ -196,6 +196,8 @@ public class AIControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var egg = new FoodItem
         {
             FoodName = "Trứng",
+            FoodNameUnsigned = "trung egg",
+            FoodNameEn = "egg",
             CaloriesPer100g = 155,
             ProteinPer100g = 13,
             CarbPer100g = 1.1m,
@@ -208,6 +210,8 @@ public class AIControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var chicken = new FoodItem
         {
             FoodName = "Thịt gà",
+            FoodNameUnsigned = "thit ga ga chicken",
+            FoodNameEn = "chicken",
             CaloriesPer100g = 165,
             ProteinPer100g = 31,
             CarbPer100g = 0,
@@ -221,9 +225,11 @@ public class AIControllerTests : IClassFixture<WebApplicationFactory<Program>>
         {
             RecipeName = "Trứng gà áp chảo",
             Description = "Recipe suggestion smoke fixture",
+            ImageUrl = "recipe-images/v1/thumb/trung-ga-ap-chao.webp",
             InstructionsJson = "[\"Sơ chế trứng và thịt gà\",\"Áp chảo thịt gà đến khi chín\",\"Cho trứng vào hoàn thiện món\"]",
             SourceUrlsJson = "[\"https://monngonmoingay.com/cong-thuc-demo\"]",
             VideoUrl = "https://www.youtube.com/watch?v=abc",
+            EnhancedAt = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             IsDeleted = false

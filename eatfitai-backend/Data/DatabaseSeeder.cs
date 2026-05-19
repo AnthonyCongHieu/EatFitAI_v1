@@ -919,7 +919,13 @@ namespace EatFitAI.API.Data
                 return null;
             }
 
-            return foodItems.FirstOrDefault(food => FoodMatchesRecipeKeys(food, normalizedKeys, exactOnly: true))
+            return foodItems
+                    .Where(RecipeIngredientEligibility.IsIngredientFood)
+                    .FirstOrDefault(food => FoodMatchesRecipeKeys(food, normalizedKeys, exactOnly: true))
+                ?? foodItems.FirstOrDefault(food => FoodMatchesRecipeKeys(food, normalizedKeys, exactOnly: true))
+                ?? foodItems
+                    .Where(RecipeIngredientEligibility.IsIngredientFood)
+                    .FirstOrDefault(food => FoodMatchesRecipeKeys(food, normalizedKeys, exactOnly: false))
                 ?? foodItems.FirstOrDefault(food => FoodMatchesRecipeKeys(food, normalizedKeys, exactOnly: false));
         }
 

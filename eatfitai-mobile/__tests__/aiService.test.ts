@@ -281,7 +281,7 @@ describe('aiService', () => {
     });
 
     expect(request).toEqual({
-      mode: 'auto',
+      mode: 'ingredient_combo',
       availableIngredients: ['Chicken'],
       availableFoodItemIds: [1],
       ingredientHints: [{ name: 'Chicken', foodItemId: 1, confidence: 0.9 }],
@@ -369,9 +369,25 @@ describe('aiService', () => {
     });
 
     expect(request).toEqual({
-      mode: 'auto',
+      mode: 'ingredient_combo',
       availableIngredients: ['Chicken'],
       ingredientHints: [{ name: 'Chicken', foodItemId: null, confidence: null }],
+    });
+  });
+
+  it('buildRecipeSuggestionRequest preserves Vietnamese chicken chip without stale ids', () => {
+    const request = buildRecipeSuggestionRequest({
+      ingredients: ['Gà'],
+      availableFoodItemIds: [123],
+      ingredientHints: [{ name: 'Gà', foodItemId: null, confidence: null }],
+      maxResults: 12,
+    });
+
+    expect(request).toEqual({
+      mode: 'ingredient_combo',
+      availableIngredients: ['Gà'],
+      ingredientHints: [{ name: 'Gà', foodItemId: null, confidence: null }],
+      maxResults: 12,
     });
   });
 

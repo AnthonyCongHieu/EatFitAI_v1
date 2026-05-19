@@ -129,7 +129,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('best');
-  const requestedMode = route.params?.mode ?? 'auto';
+  const requestedMode = route.params?.mode ?? (ingredients.length > 0 ? 'ingredient_combo' : 'auto');
   const isDailyRecommendation = requestedMode === 'daily_recommendation';
   const displayedRecipes = useMemo(() => {
     const sorted = [...recipes];
@@ -188,7 +188,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       });
       const results = await aiService.suggestRecipesEnhanced(buildRecipeSuggestionRequest({
         ingredients: ingredientsToUse,
-        mode: requestedMode,
+        mode: route.params?.mode,
         availableFoodItemIds: route.params?.availableFoodItemIds,
         ingredientHints,
         maxResults: 12,

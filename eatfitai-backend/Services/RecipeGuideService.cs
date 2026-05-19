@@ -205,15 +205,23 @@ public sealed class RecipeGuideService : IRecipeGuideService
 
     private static bool IsUsableGeneratedGuide(RecipeCookingGuideDto? guide)
     {
-        return guide is { Steps.Count: >= 3, SourceUrls.Count: > 0 }
-            && IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
+        return IsSourceBackedGuide(guide);
     }
 
     private static bool IsUsableStoredGuide(RecipeCookingGuideDto guide)
     {
-        return guide.Steps.Count >= 3
-            && guide.SourceUrls.Count > 0
-            && IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
+        return IsSourceBackedGuide(guide);
+    }
+
+    private static bool IsSourceBackedGuide(RecipeCookingGuideDto? guide)
+    {
+        if (guide is not { Steps.Count: >= 3, SourceUrls.Count: > 0 })
+        {
+            return false;
+        }
+
+        return string.IsNullOrWhiteSpace(guide.YoutubeVideo?.Url)
+            || IsDirectYoutubeVideoUrl(guide.YoutubeVideo.Url);
     }
 
     private bool IsFresh(DateTime? enhancedAt)

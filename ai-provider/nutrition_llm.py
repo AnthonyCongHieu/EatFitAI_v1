@@ -766,6 +766,7 @@ YÊU CẦU:
 - Chỉ dùng các nguồn công thức/cooking đáng tin cậy; ưu tiên các domain: {trusted_domains}.
 - Không tự bịa URL. sourceUrls phải là URL https thật từ nguồn đã tham khảo.
 - Không thay đổi định lượng dinh dưỡng; backend đã quyết định macro.
+- Nêu định lượng gia vị và nêm nếm cụ thể theo khẩu phần; ví dụ muối, nước mắm, dầu, tiêu ở mức vừa phải và ghi rõ món nào có thể điều chỉnh theo khẩu vị.
 - Viết tiếng Việt tự nhiên, tránh quảng cáo và tránh lời khuyên y tế.
 - 3-7 bước, mỗi bước đủ rõ để nấu được trên bếp gia đình.
 
@@ -935,21 +936,18 @@ def get_cooking_guide(
             source_urls = grounded_source_urls or _trusted_source_urls(parsed.get("sourceUrls"))
             if len(steps) >= 3 and source_urls:
                 youtube_video = _find_youtube_video(recipe_name)
-                if not youtube_video:
-                    logger.warning("Rejected recipe guide without live YouTube video recipe=%s", recipe_name)
-                else:
-                    return {
-                        "recipeName": recipe_name,
-                        "steps": steps,
-                        "cookingTimeMinutes": _coerce_positive_int(parsed.get("cookingTimeMinutes")) or 25,
-                        "difficulty": str(parsed.get("difficulty") or "Dễ").strip(),
-                        "prepItems": _coerce_string_list(parsed.get("prepItems"), max_items=6),
-                        "tips": _coerce_string_list(parsed.get("tips"), max_items=5),
-                        "sourceUrls": source_urls,
-                        "youtubeVideo": youtube_video,
-                        "guideStatus": "generated",
-                        "source": "gemini_grounded",
-                    }
+                return {
+                    "recipeName": recipe_name,
+                    "steps": steps,
+                    "cookingTimeMinutes": _coerce_positive_int(parsed.get("cookingTimeMinutes")) or 25,
+                    "difficulty": str(parsed.get("difficulty") or "Dễ").strip(),
+                    "prepItems": _coerce_string_list(parsed.get("prepItems"), max_items=6),
+                    "tips": _coerce_string_list(parsed.get("tips"), max_items=5),
+                    "sourceUrls": source_urls,
+                    "youtubeVideo": youtube_video,
+                    "guideStatus": "generated",
+                    "source": "gemini_grounded",
+                }
 
             logger.warning(
                 "Rejected recipe guide without enough steps or trusted sources recipe=%s steps=%s sources=%s",

@@ -53,7 +53,7 @@ public class RecipeGuideServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetCookingGuideAsync_RegeneratesWhenStoredGuideOnlyHasYoutubeSearchUrl()
+    public async Task GetCookingGuideAsync_TreatsStoredGuideWithYoutubeSearchUrlAsSourceBackedWithoutVideo()
     {
         var recipeId = await SeedRecipeAsync();
         var recipe = await _context.Recipes.SingleAsync();
@@ -63,17 +63,33 @@ public class RecipeGuideServiceTests : IDisposable
         recipe.EnhancedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
+        var factory = new StubHttpClientFactory(_ => throw new InvalidOperationException("provider should not be called"));
+        var service = CreateService(factory);
+
+        var result = await service.GetCookingGuideAsync(recipeId);
+
+        Assert.NotNull(result);
+        Assert.Equal("stored", result!.GuideStatus);
+        Assert.Null(result.YoutubeVideo);
+        Assert.Equal("https://example.com/recipe", Assert.Single(result.SourceUrls));
+    }
+
+    [Fact]
+    public async Task GetCookingGuideAsync_AcceptsSourceBackedGeneratedGuideWithoutYoutubeVideo()
+    {
+        var recipeId = await SeedRecipeAsync();
         var factory = new StubHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(
                 """
                 {
-                  "steps": ["Sơ chế lại", "Nấu lại", "Hoàn thiện lại"],
-                  "sourceUrls": ["https://example.com/refreshed-recipe"],
-                  "youtubeVideo": {
-                    "videoId": "abc",
-                    "url": "https://www.youtube.com/watch?v=abc"
-                  },
+                  "prepItems": ["Cân trứng 100g", "Chuẩn bị 2g muối và 1 thìa cà phê dầu"],
+                  "steps": ["Đánh trứng với muối", "Làm nóng chảo và áp chảo trứng", "Nêm lại rồi tắt bếp"],
+                  "cookingTimeMinutes": 12,
+                  "difficulty": "Dễ",
+                  "tips": ["Dùng lửa vừa để trứng không khô"],
+                  "sourceUrls": ["https://example.com/recipe"],
+                  "youtubeVideo": null,
                   "guideStatus": "generated"
                 }
                 """,
@@ -83,10 +99,14 @@ public class RecipeGuideServiceTests : IDisposable
         var service = CreateService(factory);
 
         var result = await service.GetCookingGuideAsync(recipeId);
+        var recipe = await _context.Recipes.SingleAsync();
 
         Assert.NotNull(result);
         Assert.Equal("generated", result!.GuideStatus);
-        Assert.Equal("https://www.youtube.com/watch?v=abc", result.YoutubeVideo!.Url);
+        Assert.Null(result.YoutubeVideo);
+        Assert.Equal(12, result.CookingTimeMinutes);
+        Assert.Null(recipe.VideoUrl);
+        Assert.NotNull(recipe.EnhancedAt);
     }
 
     [Fact]
