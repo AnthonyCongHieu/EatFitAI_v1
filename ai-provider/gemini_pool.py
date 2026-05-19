@@ -1363,7 +1363,7 @@ class GeminiPoolManager:
         quota_kind: Optional[str] = None
         provider_expected_reset_at: Optional[str] = None
 
-        if status_code in (401, 403):
+        if status_code in (401, 403) or _looks_like_gemini_auth_error(message, payload):
             code = "gemini_auth_error"
         elif status_code == 429:
             quota_id, quota_metric, quota_kind = _pick_primary_quota_signal(
@@ -2127,6 +2127,26 @@ def _extract_google_quota_violations(payload: Dict[str, Any]) -> List[Dict[str, 
                 }
             )
     return violations
+
+
+def _looks_like_gemini_auth_error(message: str, payload: Dict[str, Any]) -> bool:
+    error = payload.get("error") if isinstance(payload, dict) else None
+    provider_status = str((error or {}).get("status") or "").strip().upper()
+    normalized = (message or "").strip().lower()
+
+    if provider_status in {"UNAUTHENTICATED", "PERMISSION_DENIED"}:
+        return True
+
+    return any(
+        token in normalized
+        for token in (
+            "api key not valid",
+            "api_key_invalid",
+            "invalid api key",
+            "permission denied",
+            "request had invalid authentication credentials",
+        )
+    )
 
 
 def _classify_quota_kind(

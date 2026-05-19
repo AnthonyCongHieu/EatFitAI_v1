@@ -220,6 +220,57 @@ class GeminiPoolTests(unittest.TestCase):
         self.assertEqual(status["gemini_active_project"], "backup")
         self.assertTrue(pool.has_available_entry())
 
+    def test_fails_over_when_google_reports_invalid_api_key_as_400(self) -> None:
+        responses = [
+            FakeResponse(
+                400,
+                {
+                    "error": {
+                        "code": 400,
+                        "message": "API key not valid. Please pass a valid API key.",
+                        "status": "INVALID_ARGUMENT",
+                    }
+                },
+            ),
+            ok_response("ok from backup"),
+        ]
+
+        pool = GeminiPoolManager(
+            [
+                GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL),
+                GeminiPoolEntry("backup", "project-b", "slot-2", "key-2", DEFAULT_MODEL),
+            ],
+            requester=lambda *args, **kwargs: responses.pop(0),
+        )
+
+        result = pool.generate_text("hello")
+        status = pool.get_runtime_status()
+
+        self.assertEqual(result, "ok from backup")
+        self.assertEqual(status["gemini_active_project"], "backup")
+        self.assertEqual(status["gemini_auth_invalid_project_count"], 1)
+        self.assertIn("gemini_auth_error:primary->backup", status["gemini_last_failover_reason"])
+
+    def test_keeps_non_auth_400_as_request_invalid(self) -> None:
+        pool = GeminiPoolManager(
+            [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+            requester=lambda *args, **kwargs: FakeResponse(
+                400,
+                {
+                    "error": {
+                        "code": 400,
+                        "message": "Request contains an invalid argument.",
+                        "status": "INVALID_ARGUMENT",
+                    }
+                },
+            ),
+        )
+
+        with self.assertRaises(GeminiPoolError) as ctx:
+            pool.generate_text("hello")
+
+        self.assertEqual(ctx.exception.code, "gemini_request_invalid")
+
     def test_stops_when_all_projects_exhausted(self) -> None:
         responses = [
             FakeResponse(429, {"error": {"message": "daily quota exceeded"}}),
