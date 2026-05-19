@@ -54,7 +54,7 @@ export const OptionSelector: React.FC<OptionSelectorProps> = ({
                 backgroundColor: isSelected
                   ? `${optionColor}20`
                   : isDark
-                    ? 'rgba(255,255,255,0.05)'
+                    ? 'rgba(255,255,255,0.08)'
                     : 'rgba(0,0,0,0.03)',
                 borderColor: isSelected ? optionColor : 'transparent',
                 borderWidth: isSelected ? 1.5 : 1,

@@ -1,4 +1,4 @@
-﻿// BasicInfoScreen — "Thông tin cơ bản"
+// BasicInfoScreen — "Thông tin cơ bản"
 // Emerald Nebula 3D: Editable rows for Nickname, Gender, Age, Height
 
 import React, { useState, useCallback } from 'react';
@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../../components/ThemedText';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import { useProfileStore } from '../../../store/useProfileStore';
 import {
   showSuccess,
@@ -25,13 +26,13 @@ import { useEN } from '../../../theme/emeraldNebula';
 
 /* ═══ Emerald Nebula Palette ═══ */
 const P_STATIC = {
-  surface: '#0e1322',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerLow: '#161b2b',
+  surface: '#05070d',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerLow: '#0f1625',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   primary: '#4be277',
-  glassBorder: 'rgba(255,255,255,0.05)',
+  glassBorder: 'rgba(255,255,255,0.08)',
 };
 const P = P_STATIC;
 
@@ -233,11 +234,12 @@ const BasicInfoScreen = (): React.ReactElement => {
   };
 
   return (
-    <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]}>
+    <View style={[S.container, { paddingTop: insets.top }]}>
+      <MeshBackground />
       {/* Header */}
       <View style={S.header}>
         <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color={P.onSurface} />
+          <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </Pressable>
         <ThemedText style={S.headerTitle}>Thông tin cơ bản</ThemedText>
         <View style={S.headerBtn} />
@@ -301,10 +303,13 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 56,
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
-  headerBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, letterSpacing: -0.3 },
+  headerBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, letterSpacing: -0.2 },
   content: { paddingHorizontal: 20, marginTop: 8 },
   card: {
     borderRadius: 16,

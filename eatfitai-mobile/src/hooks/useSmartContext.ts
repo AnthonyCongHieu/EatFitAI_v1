@@ -90,7 +90,7 @@ export const useSmartContext = (summary?: DaySummary | null): SmartContext => {
       fabAction = {
         icon: 'sunny-outline',
         label: 'Thêm bữa sáng',
-        color: '#F59E0B', // Amber
+        color: '#f7c052', // Amber
         hint: 'Thời điểm này bạn thường ăn sáng',
       };
       quickSuggestion = '🌅 Bữa sáng giàu protein giúp bạn tỉnh táo!';

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
@@ -37,9 +37,9 @@ interface VoiceResultCardProps {
 const INTENT_CONFIG: Record<VoiceIntent, { label: string; color: string }> = {
   ADD_FOOD: { label: 'Thêm món ăn', color: '#10B981' },
   LOG_WEIGHT: { label: 'Ghi cân nặng', color: '#22C55E' },
-  ASK_CALORIES: { label: 'Xem calo', color: '#F59E0B' },
+  ASK_CALORIES: { label: 'Xem calo', color: '#f7c052' },
   ASK_NUTRITION: { label: 'Xem dinh dưỡng', color: '#8B5CF6' },
-  UNKNOWN: { label: 'Không hiểu lệnh', color: '#6B7280' },
+  UNKNOWN: { label: 'Không hiểu lệnh', color: '#728099' },
 };
 
 const MEAL_OPTIONS = [
@@ -51,13 +51,13 @@ const MEAL_OPTIONS = [
 
 const P = {
   primary: '#4be277',
-  surface: '#0e1322',
-  surfaceHigh: '#25293a',
+  surface: '#05070d',
+  surfaceHigh: '#252b3f',
   field: 'rgba(7, 11, 20, 0.42)',
   border: 'rgba(75, 226, 119, 0.18)',
   borderMuted: 'rgba(255,255,255,0.08)',
   text: '#dee1f7',
-  muted: '#9ca3af',
+  muted: '#9aa9c1',
   danger: '#fca5a5',
 };
 
@@ -197,7 +197,7 @@ export const VoiceResultCard = ({
       gap: theme.spacing.sm,
       padding: theme.spacing.md,
       borderRadius: theme.radius.md,
-      backgroundColor: 'rgba(255,255,255,0.05)',
+      backgroundColor: 'rgba(255,255,255,0.08)',
       borderWidth: 1,
       borderColor: P.borderMuted,
     },
@@ -229,7 +229,7 @@ export const VoiceResultCard = ({
       borderRadius: 999,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.05)',
+      backgroundColor: 'rgba(255,255,255,0.08)',
       borderWidth: 1,
       borderColor: P.borderMuted,
     },

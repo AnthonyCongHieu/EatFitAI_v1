@@ -1,4 +1,4 @@
-﻿import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -84,8 +85,8 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
 
   const getStrengthColor = () => {
     if (passwordStrength === 0) return C.outlineVariant;
-    if (passwordStrength === 1) return '#EF4444'; // YẾU (Red)
-    if (passwordStrength === 2) return '#F59E0B'; // TRUNG BÌNH (Yellow/Orange)
+    if (passwordStrength === 1) return '#ff8c8c'; // YẾU (Red)
+    if (passwordStrength === 2) return '#f7c052'; // TRUNG BÌNH (Yellow/Orange)
     return '#22C55E'; // MẠNH (Green)
   };
 
@@ -184,8 +185,8 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
 
   /* ─── Colors (Emerald Nebula — synced with LoginScreen) ─── */
   const C = {
-    surface: '#0E1322',
-    surfaceContainerHighest: '#2F3445',
+    surface: '#05070d',
+    surfaceContainerHighest: '#2f364b',
     surfaceContainerLowest: '#090E1C',
     primary: '#4BE277',
     primaryDark: '#22C55E',
@@ -193,7 +194,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
     onSurface: '#DEE1F7',
     onSurfaceVariant: '#BCC8B9',
     outlineVariant: '#3D4A3D',
-    glassBg: 'rgba(37, 41, 58, 0.6)',
+    glassBg: 'rgba(26,31,47,0.78)',
     glassBorder: 'rgba(75, 226, 119, 0.1)',
     inputBg: '#090E1C',
     inputBorder: 'rgba(61, 74, 61, 0.3)',
@@ -201,7 +202,8 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
 
   return (
     <GestureHandlerRootView style={[styles.container, { backgroundColor: C.surface }]}>
-      {/* Background glow blobs */}
+      <MeshBackground />
+      {/* Premium Mesh ambient glow */}
       <View
         style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
       />
@@ -607,7 +609,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                     <LinearGradient
                       colors={[
                         'rgba(255,255,255,0.25)',
-                        'rgba(255,255,255,0.05)',
+                        'rgba(255,255,255,0.08)',
                         'transparent',
                       ]}
                       start={{ x: 0.2, y: 0 }}

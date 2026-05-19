@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SubScreenLayout — Unified layout wrapper for all push-navigated sub-screens.
  *
  * Header pattern matched EXACTLY with ProfileScreen:
@@ -32,6 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../ThemedText';
 import { EN, useEN } from '../../theme/emeraldNebula';
+import MeshBackground from './MeshBackground';
 
 interface SubScreenLayoutProps {
   /** Screen title displayed in the center of the header */
@@ -81,9 +82,9 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
     Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
   );
 
-  /* ─── Header — mirrors ProfileScreen S.header exactly ─── */
+  /* ─── Header — mirrors StatsScreen/MealDiaryScreen ─── */
   const header = (
-    <View style={[styles.headerOuter, { paddingTop, backgroundColor: EN.bg }]}>
+    <View style={[styles.headerOuter, { paddingTop }]}>
       <View style={styles.header}>
         {/* Back button — same 40×40 circle as ProfileScreen S.headerBtn */}
         <Pressable
@@ -150,6 +151,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
   /* ─── Render ─── */
   return (
     <View style={[styles.container, { backgroundColor: EN.bg }]} testID={testID}>
+      <MeshBackground />
       {header}
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
@@ -171,35 +173,36 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: EN.bg, // P.surface (#0e1322)
+    backgroundColor: EN.bg, // P.surface (#05070d)
   },
 
-  /* ── Header (matches ProfileScreen S.header) ── */
+  /* ── Header (matches StatsScreen appBar) ── */
   headerOuter: {
-    // backgroundColor set dynamically via EN.bg
+    // Transparent for MeshBackground
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // ← ProfileScreen pattern
-    paddingHorizontal: 16,           // ← ProfileScreen exact
-    height: 56,                      // ← ProfileScreen exact
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
   },
   headerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    // ProfileScreen has no bg on headerBtn — the back button is just a
-    // transparent circle. We add subtle bg for sub-screens to hint "back".
-    backgroundColor: EN.surfaceHighest + '60', // semi-transparent
   },
   headerTitle: {
-    fontSize: 17,
-    fontFamily: 'BeVietnamPro_600SemiBold',
-    color: EN.primaryContainer, // #22c55e — ProfileScreen exact
-    letterSpacing: -0.3,        // ProfileScreen exact
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: EN.onSurface,
+    letterSpacing: -0.2,
   },
   subtitleText: {
     fontSize: 13,

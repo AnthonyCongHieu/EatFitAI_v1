@@ -1,4 +1,4 @@
-﻿import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   StyleSheet,
@@ -13,6 +13,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import Animated, {
   FadeInDown,
   useSharedValue,
@@ -74,10 +75,10 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
 
   /* ─── Colors (Emerald Nebula palette) ─── */
   const C = {
-    surface: '#0E1322',
+    surface: '#05070d',
     surfaceContainer: '#1A1F2F',
-    surfaceContainerHigh: '#25293A',
-    surfaceContainerHighest: '#2F3445',
+    surfaceContainerHigh: '#252b3f',
+    surfaceContainerHighest: '#2f364b',
     surfaceContainerLowest: '#090E1C',
     primary: '#4BE277',
     primaryDark: '#22C55E',
@@ -85,7 +86,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
     onSurface: '#DEE1F7',
     onSurfaceVariant: '#BCC8B9',
     outlineVariant: '#3D4A3D',
-    glassBg: 'rgba(37, 41, 58, 0.6)',
+    glassBg: 'rgba(26,31,47,0.78)',
     glassBorder: 'rgba(75, 226, 119, 0.1)',
     inputBg: '#090E1C',
     inputBorder: 'rgba(61, 74, 61, 0.3)',
@@ -325,7 +326,8 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
 
   return (
     <GestureHandlerRootView style={[styles.container, { backgroundColor: C.surface }]}>
-      {/* Background glow blobs */}
+      <MeshBackground />
+      {/* Premium Mesh ambient glow */}
       <View
         style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
       />
@@ -488,7 +490,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                     <LinearGradient
                       colors={[
                         'rgba(255,255,255,0.25)',
-                        'rgba(255,255,255,0.05)',
+                        'rgba(255,255,255,0.08)',
                         'transparent',
                       ]}
                       start={{ x: 0.2, y: 0 }}

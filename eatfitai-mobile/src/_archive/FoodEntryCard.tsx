@@ -253,7 +253,7 @@ const getStyles = (theme: any, isDark: boolean) =>
       width: 32,
       height: 32,
       borderRadius: 8,
-      backgroundColor: '#EF4444',
+      backgroundColor: '#ff8c8c',
       alignItems: 'center',
       justifyContent: 'center',
     },

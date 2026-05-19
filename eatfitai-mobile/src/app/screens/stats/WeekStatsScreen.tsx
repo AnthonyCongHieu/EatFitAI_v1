@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   RefreshControl,
   StyleSheet,
@@ -239,7 +239,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 width: 12,
                 height: 12,
                 borderRadius: 3,
-                backgroundColor: isDark ? '#25293A' : '#D0D0D5',
+                backgroundColor: isDark ? '#252b3f' : '#D0D0D5',
               }}
             />
             <ThemedText variant="caption" color="textSecondary">

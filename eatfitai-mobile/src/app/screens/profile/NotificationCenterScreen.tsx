@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import {
   selectUnreadMoChiNotificationCount,
@@ -20,13 +21,13 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const P_STATIC = {
   primary: '#4be277',
-  surface: '#0e1322',
+  surface: '#05070d',
   surfaceContainer: '#1a1f2f',
-  surfaceContainerLow: '#161b2b',
-  surfaceContainerHigh: '#25293a',
+  surfaceContainerLow: '#0f1625',
+  surfaceContainerHigh: '#252b3f',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
-  outline: 'rgba(255,255,255,0.06)',
+  onSurfaceVariant: '#b7c4d9',
+  outline: 'rgba(226,232,240,0.12)',
 };
 const P = P_STATIC;
 
@@ -42,7 +43,7 @@ const getNotificationVisual = (
   }
 
   if (item.category === 'tip') {
-    return { icon: 'sparkles-outline', tone: '#f59e0b' };
+    return { icon: 'sparkles-outline', tone: '#f7c052' };
   }
 
   return { icon: 'restaurant-outline', tone: '#4be277' };
@@ -80,15 +81,17 @@ const NotificationCenterScreen = (): React.ReactElement => {
   };
 
   return (
-    <View style={[S.container, { paddingTop: insets.top, backgroundColor: palette.bg }]}>
+    <View style={[S.container, { paddingTop: insets.top }]}>
+      <MeshBackground />
       <View style={S.header}>
         <Pressable
           style={S.headerButton}
           onPress={() => navigation.goBack()}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Quay lại"
         >
-          <Ionicons name="chevron-back" size={24} color={palette.primary} />
+          <Ionicons name="arrow-back" size={24} color={palette.onSurface} />
         </Pressable>
         <View style={S.headerCopy}>
           <ThemedText style={S.headerTitle}>Thông báo</ThemedText>
@@ -97,6 +100,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
         <Pressable
           style={S.headerButton}
           onPress={() => navigation.navigate('NotificationsSettings')}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Cài đặt thông báo"
         >
@@ -185,23 +189,21 @@ const S = StyleSheet.create({
     backgroundColor: P.surface,
   },
   header: {
-    minHeight: 72,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: P.outline,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
   headerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: P.surfaceContainerLow,
-    borderWidth: 1,
-    borderColor: P.outline,
   },
   headerCopy: {
     flex: 1,

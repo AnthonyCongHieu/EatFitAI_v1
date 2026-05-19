@@ -174,7 +174,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
                         (selectedAvatar || avatarUrl) === avatar.id
                           ? theme.colors.primaryLight
                           : isDark
-                            ? 'rgba(255,255,255,0.05)'
+                            ? 'rgba(255,255,255,0.08)'
                             : 'rgba(0,0,0,0.03)',
                       borderColor:
                         (selectedAvatar || avatarUrl) === avatar.id

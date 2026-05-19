@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
@@ -356,7 +357,7 @@ const ProgressChartSlide = (): React.ReactElement => {
                 <Defs>
                   <SvgLinearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
                     <Stop offset="0" stopColor="#10B981" />
-                    <Stop offset="1" stopColor="#2DD4BF" />
+                    <Stop offset="1" stopColor="#32d7f0" />
                   </SvgLinearGradient>
                   <SvgLinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                     <Stop offset="0" stopColor="#10B981" stopOpacity="0.4" />
@@ -378,7 +379,7 @@ const ProgressChartSlide = (): React.ReactElement => {
                   cx="400"
                   cy="20"
                   r="10"
-                  fill="#2DD4BF"
+                  fill="#32d7f0"
                   opacity={pulseAnimRef}
                 />
                 <Circle cx="400" cy="20" r="4" fill="#FFFFFF" />
@@ -714,7 +715,7 @@ const RoadmapSlide = (): React.ReactElement => {
         <ParallaxLayer depth={0.5}>
           <View style={[s3.glassCard, { opacity: 0.5 }]}>
             <View style={s3.iconBox}>
-              <Ionicons name="trophy" size={18} color="#F59E0B" />
+              <Ionicons name="trophy" size={18} color="#f7c052" />
             </View>
             <ThemedText style={s3.cardTitle} numberOfLines={1}>
               Đạt mục tiêu
@@ -733,7 +734,7 @@ const RoadmapSlide = (): React.ReactElement => {
           },
         ]}
       >
-        <Ionicons name="lock-closed" size={18} color="#94A3B8" />
+        <Ionicons name="lock-closed" size={18} color="#9aa9c1" />
       </View>
 
       {/* NODE 2: Theo dõi bữa ăn (Active) */}
@@ -780,7 +781,7 @@ const RoadmapSlide = (): React.ReactElement => {
         <ParallaxLayer depth={0.6}>
           <View style={[s3.glassCard]}>
             <View style={s3.iconBox}>
-              <Ionicons name="flag" size={18} color="#EF4444" />
+              <Ionicons name="flag" size={18} color="#ff8c8c" />
             </View>
             <ThemedText style={s3.cardTitle} numberOfLines={1}>
               Đặt mục tiêu
@@ -829,7 +830,7 @@ const s3 = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(226,232,240,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -846,7 +847,7 @@ const s3 = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#2F3445',
+    backgroundColor: '#2f364b',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -1053,13 +1054,7 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
 
   return (
     <View style={styles.container} testID={TEST_IDS.auth.introScreen}>
-      <LinearGradient
-        colors={['#080E1A', '#0F1B2E', '#080E1A']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.backgroundFill}
-      />
-      <View style={styles.topGlow} />
+      <MeshBackground />
 
       <View style={styles.shell}>
         <View style={styles.brand}>

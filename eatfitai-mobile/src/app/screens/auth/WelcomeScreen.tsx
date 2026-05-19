@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -48,7 +48,7 @@ const COLORS = {
   emeraldGlow: 'rgba(75, 226, 119, 0.35)',
   emeraldGlowSoft: 'rgba(75, 226, 119, 0.08)',
   glassBg: 'rgba(25, 35, 58, 0.6)',
-  glassBorder: 'rgba(255, 255, 255, 0.06)',
+  glassBorder: 'rgba(226,232,240,0.12)',
   textPrimary: '#DEE1F7',
   textSecondary: 'rgba(148, 163, 184, 0.85)',
   textMuted: 'rgba(100, 116, 139, 0.6)',

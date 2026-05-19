@@ -60,19 +60,19 @@ const getFoodItemKey = (item: { id: string; source?: 'catalog' | 'user' }) =>
 const P_STATIC = {
   primary: '#4be277',
   primaryDark: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainer: '#161b2b',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerHighest: '#2f3445',
+  surface: '#05070d',
+  surfaceContainer: '#0f1625',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   surfaceContainerLowest: '#090e1c',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   onPrimary: '#003915',
   glassBg: 'rgba(47, 52, 69, 0.4)',
   glassHover: 'rgba(47, 52, 69, 0.6)',
-  glassBorder: 'rgba(255, 255, 255, 0.05)',
+  glassBorder: 'rgba(255,255,255,0.08)',
   macroP: '#34d399', // emerald-400
-  macroC: '#fbbf24', // amber-400
+  macroC: '#f7c052', // amber-400
   macroF: '#fb7185', // rose-400
 };
 const P = P_STATIC;
@@ -625,15 +625,14 @@ const FoodSearchScreen = (): React.ReactElement => {
     >
       {/* ═══ Header ═══ */}
       <View style={S.header}>
-        <View style={S.headerLeft}>
-          <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={P.onSurface} />
-          </Pressable>
-          <ThemedText style={S.headerTitle}>{t('food_search.title')}</ThemedText>
-        </View>
+        <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={P.onSurface} />
+        </Pressable>
+        <ThemedText style={S.headerTitle}>{t('food_search.title')}</ThemedText>
         <Pressable
           style={S.iconBtn}
           onPress={() => navigation.navigate('DietaryRestrictions')}
+          hitSlop={12}
         >
           <Ionicons name="options-outline" size={22} color={P.onSurfaceVariant} />
         </Pressable>
@@ -845,12 +844,13 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 60,
-    backgroundColor: P.surfaceContainerLowest + '90',
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontSize: 17, fontFamily: 'BeVietnamPro_600SemiBold', color: P.primaryDark, letterSpacing: -0.3 },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, letterSpacing: -0.2 },
 
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 

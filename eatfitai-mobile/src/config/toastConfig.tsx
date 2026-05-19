@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ToastConfig, BaseToastProps } from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,8 +11,8 @@ const C = {
   primary: '#4be277',
   surfaceHigh: 'rgba(37, 41, 58, 0.95)',
   outline: 'rgba(255,255,255,0.12)',
-  danger: '#ef4444',
-  warning: '#f59e0b',
+  danger: '#ff8c8c',
+  warning: '#f7c052',
   info: '#3b82f6',
 };
 
@@ -48,7 +48,7 @@ const TONE_META: Record<
   },
   achievement: {
     iconName: 'trophy',
-    iconColor: '#fbbf24',
+    iconColor: '#f7c052',
     poseKey: 'celebrate',
   },
 };

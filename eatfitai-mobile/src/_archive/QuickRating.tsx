@@ -37,7 +37,7 @@ export const QuickRating: React.FC<QuickRatingProps> = ({
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
       borderRadius: theme.radius.md,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
       borderWidth: 1.5,
       borderColor: 'transparent',
       alignItems: 'center',

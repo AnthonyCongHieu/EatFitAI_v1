@@ -184,98 +184,97 @@ export type AppTheme = {
 export const lightTheme: AppTheme = {
   mode: 'light',
   colors: {
-    // Premium light gradient - Emerald Cloud theme
-    background: '#F8FBF7',
-    backgroundGradient: ['#F8FBF7', '#EEF8F0', '#E6F5E9'] as const,
-    screenGradient: ['#EAF8EE', '#D8F2DE', '#C8EAD1'] as const,
+    // Soft Pastel #2 — Warm cream base, organic mint accents
+    background: '#fdfbf7',
+    backgroundGradient: ['#fdfbf7', '#f9f6f0', '#f4f1ea'] as const,
+    screenGradient: ['#fdfbf7', '#f7f3ec', '#f4f1ea'] as const,
     card: '#FFFFFF',
-    text: '#0F172A',
-    textSecondary: '#64748B',
-    border: 'rgba(34, 197, 94, 0.14)',
-    // Primary - Emerald (matching Dark mode)
-    primary: '#16A34A',
-    primaryLight: '#DCFCE7',
-    primaryDark: '#15803D',
-    // Secondary - Teal accent
-    secondary: '#0F766E',
-    secondaryLight: '#CCFBF1',
+    text: '#2c3e38',
+    textSecondary: '#5a7a6e',
+    border: '#e8e4db',
+    // Primary - Mint Green
+    primary: '#43b581',
+    primaryLight: '#d4f0e3',
+    primaryDark: '#2e9666',
+    // Secondary - Deep Mint
+    secondary: '#2e9666',
+    secondaryLight: '#e0f5ec',
     // Muted
-    muted: '#94A3B8',
-    // Semantic colors
-    danger: '#EF4444',
-    success: '#22C55E',
-    warning: '#F59E0B',
-    info: '#0F766E',
+    muted: '#8ca39a',
+    // Semantic colors (softened for pastel context)
+    danger: '#e67373',
+    success: '#43b581',
+    warning: '#e6a23c',
+    info: '#2e9666',
     // Overlay colors for modals/sheets
     overlay: {
-      light: 'rgba(15, 23, 42, 0.4)',
-      medium: 'rgba(15, 23, 42, 0.5)',
-      heavy: 'rgba(15, 23, 42, 0.6)',
+      light: 'rgba(44, 62, 56, 0.35)',
+      medium: 'rgba(44, 62, 56, 0.45)',
+      heavy: 'rgba(44, 62, 56, 0.55)',
     },
-    // Glassmorphism colors (light mode with emerald tint)
+    // Glassmorphism colors (warm cream + mint tint)
     glass: {
-      background: 'rgba(255, 255, 255, 0.88)',
-      border: 'rgba(34, 197, 94, 0.1)',
-      backgroundAlt: 'rgba(240, 253, 244, 0.85)',
-      borderAlt: 'rgba(34, 197, 94, 0.08)',
+      background: 'rgba(255, 255, 255, 0.92)',
+      border: 'rgba(67, 181, 129, 0.10)',
+      backgroundAlt: 'rgba(253, 251, 247, 0.90)',
+      borderAlt: 'rgba(67, 181, 129, 0.08)',
     },
-    // Chart colors (emerald theme)
+    // Chart colors (mint theme)
     chart: {
-      bar: '#16A34A',
-      barSecondary: '#0F766E',
-      barRemaining: 'rgba(187, 247, 208, 0.6)',
-      line: '#16A34A',
+      bar: '#43b581',
+      barSecondary: '#2e9666',
+      barRemaining: 'rgba(244, 241, 234, 0.6)',
+      line: '#43b581',
     },
-    // Gamification/Streak colors
+    // Gamification/Streak colors (warm amber on cream)
     streak: {
-      active: '#F59E0B',
-      background: '#FEF3C7',
-      border: '#F59E0B',
+      active: '#e6a23c',
+      background: '#fef3cd',
+      border: '#e6a23c',
     },
   },
   mealGradients: {
-    breakfast: ['#FED7AA', '#FECACA'] as const, // Warm peach-pink
-    lunch: ['#BBF7D0', '#99F6E4'] as const,
-    dinner: ['#D9F99D', '#BBF7D0'] as const,
-    snack: ['#BBF7D0', '#A7F3D0'] as const, // Light green
+    breakfast: ['#fde8d4', '#fdd8c8'] as const,  // Warm peach
+    lunch: ['#d4f0e3', '#c8ecd8'] as const,      // Mint green
+    dinner: ['#e0f5ec', '#d4f0e3'] as const,     // Lighter mint
+    snack: ['#f0ebe2', '#e8e4db'] as const,      // Warm beige
   },
   gradients: {
-    primary: ['#22C55E', '#16A34A'],
-    secondary: ['#14B8A6', '#0F766E'],
-    accent: ['#4BE277', '#14B8A6'],
-    danger: ['#EF4444', '#DC2626'],
-    success: ['#22C55E', '#16A34A'],
+    primary: ['#43b581', '#2e9666'],
+    secondary: ['#2e9666', '#1f7a50'],
+    accent: ['#43b581', '#2e9666'],
+    danger: ['#e67373', '#d45b5b'],
+    success: ['#43b581', '#2e9666'],
   },
   statsCards: {
     calories: {
-      gradient: ['#DCFCE7', '#BBF7D0'] as const,
-      textColor: '#15803D',
-      // Solid colors để fix 2 màu trên Android
-      borderColor: '#86EFAC',
+      gradient: ['#d4f0e3', '#c2ebd6'] as const,  // Pastel mint
+      textColor: '#2e9666',
+      borderColor: '#a8dfc2',
     },
     average: {
-      gradient: ['#CCFBF1', '#99F6E4'] as const,
-      textColor: '#0F766E',
-      borderColor: '#5EEAD4',
+      gradient: ['#e0f5ec', '#d4f0e3'] as const,  // Lighter mint
+      textColor: '#2e9666',
+      borderColor: '#b8e6d1',
     },
     daysLogged: {
-      gradient: ['#DCFCE7', '#BBF7D0'] as const, // Green
-      textColor: '#15803D',
-      borderColor: '#86EFAC',
+      gradient: ['#d4f0e3', '#c8ecd8'] as const,  // Green pastel
+      textColor: '#2e9666',
+      borderColor: '#a8dfc2',
     },
     target: {
-      gradient: ['#FEF3C7', '#FDE68A'] as const, // Amber
-      textColor: '#B45309',
-      borderColor: '#FCD34D',
+      gradient: ['#fef3cd', '#fde8a8'] as const,  // Warm amber pastel
+      textColor: '#b8860b',
+      borderColor: '#f5d680',
     },
   },
   achievementGradients: {
-    first_log: ['#FCA5A5', '#FECACA'] as const, // Light red
-    streak_3: ['#6EE7B7', '#A7F3D0'] as const, // Light green
-    streak_7: ['#86EFAC', '#BBF7D0'] as const,
-    log_100_meals: ['#A7F3D0', '#CCFBF1'] as const,
-    default: ['#86EFAC', '#99F6E4'] as const,
-    header: ['#22C55E', '#0F766E'] as const,
+    first_log: ['#fdd8c8', '#fde8d4'] as const,   // Peach pastel
+    streak_3: ['#c8ecd8', '#d4f0e3'] as const,    // Mint pastel
+    streak_7: ['#a8dfc2', '#c8ecd8'] as const,    // Deeper mint
+    log_100_meals: ['#d4f0e3', '#e0f5ec'] as const,
+    default: ['#c8ecd8', '#d4f0e3'] as const,
+    header: ['#43b581', '#2e9666'] as const,
   },
   statusBarStyle: 'dark',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
@@ -363,24 +362,24 @@ export const lightTheme: AppTheme = {
   },
   shadows: {
     sm: {
-      shadowColor: '#000',
+      shadowColor: '#43b581',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.06,
-      shadowRadius: 2,
+      shadowRadius: 3,
       elevation: 1,
     },
     md: {
-      shadowColor: '#000',
+      shadowColor: '#43b581',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.08,
-      shadowRadius: 8,
+      shadowRadius: 10,
       elevation: 3,
     },
     lg: {
-      shadowColor: '#000',
+      shadowColor: '#43b581',
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.08,
-      shadowRadius: 16,
+      shadowRadius: 20,
       elevation: 5,
     },
   },
@@ -399,99 +398,97 @@ export const lightTheme: AppTheme = {
 export const darkTheme: AppTheme = {
   mode: 'dark',
   colors: {
-    // Premium dark gradient - Aurora / Deep Ocean theme
-    background: '#0E1322',
-    backgroundGradient: ['#0E1322', '#161B2B', '#1A1F2F'] as const,
-    screenGradient: ['#0E1322', '#161B2B', '#25293A'] as const,
-    card: 'rgba(26, 31, 47, 0.95)',
+    // Premium Mesh Wallet — Ultra-deep navy, mesh ambient glows
+    background: '#05070d',
+    backgroundGradient: ['#05070d', '#0d1427', '#070b16'] as const,
+    screenGradient: ['#05070d', '#0a1020', '#0d1427'] as const,
+    card: 'rgba(26, 31, 47, 0.84)',
 
-    text: '#F5F7FA', // White text
-
-    textSecondary: '#9CA3AF', // Muted gray
-    border: 'rgba(75, 226, 119, 0.15)',
-    // Primary - Bright Emerald
-    primary: '#4BE277',
-    primaryLight: 'rgba(75, 226, 119, 0.25)',
-    primaryDark: '#22C55E',
-    // Secondary - Teal accent
-    secondary: '#2DD4BF',
-    secondaryLight: 'rgba(45, 212, 191, 0.2)',
-    muted: '#6B7280',
+    text: '#dee1f7', // Soft lavender-white
+    textSecondary: '#9aa9c1', // Cool muted blue-gray
+    border: 'rgba(226, 232, 240, 0.12)',
+    // Primary - Bright Emerald (mesh accent)
+    primary: '#4be277',
+    primaryLight: 'rgba(75, 226, 119, 0.20)',
+    primaryDark: '#22c55e',
+    // Secondary - Cyan (mesh spectrum)
+    secondary: '#32d7f0',
+    secondaryLight: 'rgba(50, 215, 240, 0.18)',
+    muted: '#728099',
     // Semantic colors
-    danger: '#EF4444',
-    success: '#22C55E',
-    warning: '#F59E0B',
-    info: '#2DD4BF',
-    // Overlay colors for modals/sheets (darker navy)
+    danger: '#ff8c8c',
+    success: '#4be277',
+    warning: '#f7c052',
+    info: '#32d7f0',
+    // Overlay colors for modals/sheets
     overlay: {
-      light: 'rgba(10, 14, 26, 0.5)',
-      medium: 'rgba(10, 14, 26, 0.7)',
-      heavy: 'rgba(10, 14, 26, 0.85)',
+      light: 'rgba(5, 7, 13, 0.50)',
+      medium: 'rgba(5, 7, 13, 0.70)',
+      heavy: 'rgba(5, 7, 13, 0.85)',
     },
-    // Glassmorphism colors - Solid colors để tránh lỗi 2 màu trên Android
+    // Glassmorphism — mesh glass surfaces
     glass: {
-      background: '#1A1F2F', // Solid navy thay vì rgba
-      border: '#3D4A3D', // Solid border
-      backgroundAlt: '#25293A', // Solid alt background
-      borderAlt: '#4B5F4A', // Solid alt border
+      background: '#1a1f2f',             // Solid navy fallback (Android safe)
+      border: 'rgba(226, 232, 240, 0.10)', // Subtle warm-white edge
+      backgroundAlt: '#252b3f',          // Elevated glass
+      borderAlt: 'rgba(226, 232, 240, 0.16)', // Stronger edge
     },
-    // Chart colors (emerald theme)
+    // Chart colors (mesh palette)
     chart: {
-      bar: '#4BE277', // Primary emerald
-      barSecondary: '#2DD4BF', // Teal
-      barRemaining: '#111827', // Solid dark navy
-      line: '#4BE277',
+      bar: '#4be277',           // Primary green
+      barSecondary: '#32d7f0',  // Cyan accent
+      barRemaining: '#0f1625',  // Deep navy
+      line: '#4be277',
     },
     // Gamification/Streak colors
     streak: {
-      active: '#FF9500',
-      background: '#2A2A1A', // Solid warm dark thay vì rgba
-      border: '#FF9500',
+      active: '#f7c052',
+      background: '#2a2418',    // Warm dark (solid)
+      border: '#f7c052',
     },
   },
   mealGradients: {
-    breakfast: ['#FF9A9E', '#FECFEF'] as const, // Warm pink
-    lunch: ['#4BE277', '#2DD4BF'] as const, // Emerald to teal
-    dinner: ['#1A1F2F', '#22C55E'] as const, // Deep surface to emerald
-    snack: ['#2DD4BF', '#99F6E4'] as const, // Teal gradient
+    breakfast: ['#FF9A9E', '#FECFEF'] as const,   // Warm pink
+    lunch: ['#4be277', '#32d7f0'] as const,        // Green → Cyan mesh
+    dinner: ['#0f1625', '#4be277'] as const,       // Deep navy → Green
+    snack: ['#32d7f0', '#9d7cff'] as const,        // Cyan → Violet mesh
   },
   gradients: {
-    primary: ['#4BE277', '#22C55E'], // Emerald gradient
-    secondary: ['#2DD4BF', '#0F766E'], // Teal gradient
-    accent: ['#1A1F2F', '#4BE277'], // Deep surface to bright emerald
-    danger: ['#EF4444', '#F87171'], // Red gradient
-    success: ['#22C55E', '#4ADE80'], // Green success
+    primary: ['#4be277', '#22c55e'],               // Emerald gradient
+    secondary: ['#32d7f0', '#0891b2'],             // Cyan gradient
+    accent: ['#0a1020', '#4be277'],                // Deep mesh → Green
+    danger: ['#ff8c8c', '#ff6b6b'],                // Warm red
+    success: ['#22c55e', '#4be277'],               // Green success
   },
   statsCards: {
     calories: {
-      gradient: ['#1A1F2F', '#3D4A3D'] as const, // Deep emerald surface
-      textColor: '#2DD4BF',
-      // Solid colors để fix 2 màu trên Android
-      borderColor: '#4B5F4A',
+      gradient: ['#0f1625', '#1a2940'] as const,   // Deep navy mesh
+      textColor: '#32d7f0',
+      borderColor: 'rgba(50, 215, 240, 0.20)',
     },
     average: {
-      gradient: ['#143824', '#1F5132'] as const, // Deep emerald
-      textColor: '#99F6E4',
-      borderColor: '#2F6F45',
+      gradient: ['#0d2818', '#163d28'] as const,   // Deep emerald
+      textColor: '#4be277',
+      borderColor: 'rgba(75, 226, 119, 0.20)',
     },
     daysLogged: {
-      gradient: ['#22543d', '#276749'] as const, // Green
-      textColor: '#68d391',
-      borderColor: '#3A7A5A',
+      gradient: ['#141030', '#1e1845'] as const,   // Deep violet
+      textColor: '#9d7cff',
+      borderColor: 'rgba(157, 124, 255, 0.20)',
     },
     target: {
-      gradient: ['#744210', '#975a16'] as const, // Orange
-      textColor: '#f6ad55',
-      borderColor: '#B07A30',
+      gradient: ['#2a2010', '#3d3018'] as const,   // Warm amber dark
+      textColor: '#f7c052',
+      borderColor: 'rgba(247, 192, 82, 0.20)',
     },
   },
   achievementGradients: {
-    first_log: ['#FF6B6B', '#FF8E53'] as const, // Red-orange
-    streak_3: ['#4ECDC4', '#44A08D'] as const, // Teal
-    streak_7: ['#4BE277', '#2DD4BF'] as const, // Emerald to teal
-    log_100_meals: ['#1A1F2F', '#4BE277'] as const, // Deep surface to emerald
-    default: ['#4BE277', '#2DD4BF'] as const, // Emerald gradient
-    header: ['#0E1322', '#1A1F2F'] as const, // Dark navy header
+    first_log: ['#ff8c8c', '#ff6b6b'] as const,   // Warm red
+    streak_3: ['#32d7f0', '#0891b2'] as const,     // Cyan mesh
+    streak_7: ['#4be277', '#32d7f0'] as const,     // Green → Cyan
+    log_100_meals: ['#9d7cff', '#4be277'] as const, // Violet → Green
+    default: ['#4be277', '#32d7f0'] as const,      // Green → Cyan
+    header: ['#05070d', '#0d1427'] as const,       // Deep navy mesh
   },
   statusBarStyle: 'light',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
@@ -580,24 +577,24 @@ export const darkTheme: AppTheme = {
   shadows: {
     sm: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06,
-      shadowRadius: 2,
-      elevation: 1,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.18,
+      shadowRadius: 4,
+      elevation: 2,
     },
     md: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.07,
-      shadowRadius: 8,
-      elevation: 3,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.22,
+      shadowRadius: 12,
+      elevation: 4,
     },
     lg: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.08,
-      shadowRadius: 16,
-      elevation: 5,
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.30,
+      shadowRadius: 24,
+      elevation: 8,
     },
   },
   animation: {

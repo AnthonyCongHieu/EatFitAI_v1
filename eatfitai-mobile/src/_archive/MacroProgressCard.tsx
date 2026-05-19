@@ -51,7 +51,7 @@ export const MacroProgressCard: React.FC<MacroProgressCardProps> = ({
       icon: '🟡',
       current: fat,
       target: targetFat,
-      color: '#F59E0B', // amber/orange
+      color: '#f7c052', // amber/orange
       bgColor: isDark ? '#2A2818' : '#FEF3C7',
     },
   ];

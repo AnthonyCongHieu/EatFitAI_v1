@@ -63,10 +63,11 @@ export const Screen = ({
   const paddingBottom = useSafeArea ? Math.max(insets.bottom, 16) : 0;
   const paddingHorizontal = horizontalPadding ? theme.spacing.lg : 0;
 
-  // Container style chung
+  // Container style chung — transparent khi không dùng gradient
+  // để MeshBackground ở parent có thể hiện xuyên qua
   const containerStyle: ViewStyle = {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: useGradient ? theme.colors.background : 'transparent',
   };
 
   // Content style với padding và bo góc

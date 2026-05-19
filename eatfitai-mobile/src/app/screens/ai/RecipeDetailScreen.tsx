@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
@@ -49,17 +49,17 @@ type AiCookingInstructions = {
 const P = {
   primary: '#4be277',
   primaryContainer: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainerLow: '#161b2b',
+  surface: '#05070d',
+  surfaceContainerLow: '#0f1625',
   surfaceContainerHigh: 'rgba(37, 41, 58, 0.7)',
   surfaceContainerLowest: '#090e1c',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   onPrimary: '#003915',
   glassBorder: 'rgba(255,255,255,0.08)',
   glassHeader: 'rgba(22, 27, 43, 0.6)',
-  danger: '#ffb4ab',
-  macroC: '#fbbf24',
+  danger: '#ff8c8c',
+  macroC: '#f7c052',
   macroP: '#34d399',
   macroF: '#f87171',
 };
@@ -475,7 +475,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
                 style={({ pressed }) => [S.videoBox, { opacity: pressed ? 0.8 : 1 }]}
               >
                 <View style={S.videoIconBg}>
-                  <Ionicons name="play" size={24} color="#ef4444" />
+                  <Ionicons name="play" size={24} color="#ff8c8c" />
                 </View>
                 <View style={S.videoTextWrap}>
                   <ThemedText style={S.videoTitle} numberOfLines={1}>

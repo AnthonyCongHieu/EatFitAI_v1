@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -94,15 +94,15 @@ const { width: SW } = Dimensions.get('window');
 const P = {
   primary: '#4be277',
   primaryDim: '#3DB860',
-  surface: '#0e1322',
+  surface: '#05070d',
   surfaceContainer: '#1a1f2f',
-  surfaceContainerLow: '#161b2b',
-  surfaceContainerHigh: '#25293a',
+  surfaceContainerLow: '#0f1625',
+  surfaceContainerHigh: '#252b3f',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   outlineVariant: '#3d4a3d',
   glass: 'rgba(22, 27, 43, 0.6)',
-  glassBorder: 'rgba(255,255,255,0.06)',
+  glassBorder: 'rgba(226,232,240,0.12)',
   glow: 'rgba(75, 226, 119, 0.15)',
 };
 
@@ -1116,8 +1116,8 @@ const AIScanScreen: React.FC = () => {
                             S.macroBarFill,
                             {
                               width: `${Math.min(100, (computedFat / 40) * 100)}%`,
-                              backgroundColor: '#fbbf24',
-                              shadowColor: '#fbbf24',
+                              backgroundColor: '#f7c052',
+                              shadowColor: '#f7c052',
                             },
                           ]}
                         />
@@ -1753,7 +1753,7 @@ const S = StyleSheet.create({
     shadowRadius: 36,
     elevation: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: 'rgba(226,232,240,0.12)',
   },
   drawer: {
     backgroundColor: 'rgba(22, 27, 43, 0.92)',
@@ -1768,7 +1768,7 @@ const S = StyleSheet.create({
     shadowRadius: 40,
     elevation: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   drawerHandle: {
     width: 48,
@@ -1860,7 +1860,7 @@ const S = StyleSheet.create({
     borderRadius: 16,
     padding: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
     marginLeft: 12,
   },
   qtyBtnMinus: {
@@ -1919,7 +1919,7 @@ const S = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: P.surfaceContainerLow,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(226,232,240,0.12)',
     padding: 12,
     marginBottom: 16,
     gap: 8,
@@ -2249,7 +2249,7 @@ const S = StyleSheet.create({
     borderRadius: 28,
     padding: 28,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(226,232,240,0.12)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.5,

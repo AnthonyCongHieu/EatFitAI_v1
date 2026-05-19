@@ -29,6 +29,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Swipeable from '../../../components/Swipeable';
@@ -55,28 +56,28 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
    Emerald Nebula Palette (synced with HomeScreen)
    ═══════════════════════════════════════════════ */
 const C_STATIC = {
-  bg: '#0a0e1a',
-  surfaceLow: '#111827',
+  bg: '#05070d',
+  surfaceLow: '#0f1625',
   surface: '#1a1f2f',
-  surfaceHigh: '#1e2435',
-  surfaceHighest: '#2a2f40',
+  surfaceHigh: '#252b3f',
+  surfaceHighest: '#2f364b',
   primary: '#4be277',
   primaryContainer: '#22c55e',
   onPrimary: '#003915',
   onSurface: '#dee1f7',
-  textMuted: '#94a3b8',
-  outline: 'rgba(255,255,255,0.06)',
+  textMuted: '#9aa9c1',
+  outline: 'rgba(226,232,240,0.12)',
   outlineVariant: 'rgba(61,74,61,0.35)',
-  danger: '#ff6b6b',
-  cyan: '#06b6d4',
-  amber: '#f59e0b',
+  danger: '#ff8c8c',
+  cyan: '#32d7f0',
+  amber: '#f7c052',
   indigo: '#818cf8',
   rose: '#fb7185',
 };
 
 /* ─── Meal icons & colors ─── */
 const MEAL_ICONS: Record<MealTypeId, { icon: string; color: string }> = {
-  1: { icon: 'sunny-outline', color: '#fbbf24' },      // Breakfast - amber
+  1: { icon: 'sunny-outline', color: '#f7c052' },      // Breakfast - amber
   2: { icon: 'sunny', color: '#34d399' },               // Lunch - emerald
   3: { icon: 'moon-outline', color: C_STATIC.indigo },          // Dinner - indigo
   4: { icon: 'cafe-outline', color: C_STATIC.rose },            // Snack - rose
@@ -352,22 +353,12 @@ const MealDiaryScreen = (): React.ReactElement => {
       collapsable={false}
     >
       <StatusBar barStyle={(EN.bg as string) === '#F8FBF7' ? 'dark-content' : 'light-content'} backgroundColor="transparent" translucent />
-      <LinearGradient
-        colors={[C.surfaceLow, C.bg, C.bg]}
-        locations={[0, 0.25, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      <MeshBackground />
 
       {/* ══════════ HEADER ══════════ */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => navigation.navigate('HomeTab')}
-            style={styles.headerBtn}
-            hitSlop={12}
-          >
-            <Ionicons name="arrow-back" size={22} color={C.textMuted} />
-          </Pressable>
+          <View style={styles.headerBtn} />
           <ThemedText style={[styles.headerTitle, { color: C.onSurface }]}>Nhật ký ăn uống</ThemedText>
           <Pressable
             onPress={() => setShowDatePicker(true)}
@@ -512,9 +503,9 @@ const MealDiaryScreen = (): React.ReactElement => {
                       <View style={styles.mealHeaderActions}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                            <View style={{ flexDirection: 'row', gap: 6 }}>
-                             <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="flash" size={12} color="#ef4444" /> {Math.round(group.totalProtein || 0)}g</ThemedText>
+                             <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="flash" size={12} color="#ff8c8c" /> {Math.round(group.totalProtein || 0)}g</ThemedText>
                              <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="leaf" size={12} color="#3b82f6" /> {Math.round(group.totalCarbs || 0)}g</ThemedText>
-                             <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="water" size={12} color="#fbbf24" /> {Math.round(group.totalFat || 0)}g</ThemedText>
+                             <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="water" size={12} color="#f7c052" /> {Math.round(group.totalFat || 0)}g</ThemedText>
                            </View>
                            <ThemedText style={[styles.mealCalories, { color: C.primary }]}>
                              {Math.round(group.totalCalories)} kcal
@@ -533,7 +524,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                               {
                                 key: 'delete',
                                 label: 'Xóa',
-                                color: '#ef4444',
+                                color: '#ff8c8c',
                                 icon: <Ionicons name="trash-outline" size={20} color="#fff" />,
                                 onPress: () => handleDeleteEntry(entry),
                               },
@@ -567,7 +558,7 @@ const MealDiaryScreen = (): React.ReactElement => {
 
                                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 6, alignItems: 'center' }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                    <Ionicons name="flash" size={14} color="#ef4444" />
+                                    <Ionicons name="flash" size={14} color="#ff8c8c" />
                                     <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.protein || 0)}g</ThemedText>
                                   </View>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -575,7 +566,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                                     <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.carbs || 0)}g</ThemedText>
                                   </View>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                    <Ionicons name="water" size={14} color="#fbbf24" />
+                                    <Ionicons name="water" size={14} color="#f7c052" />
                                     <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.fat || 0)}g</ThemedText>
                                   </View>
                                 </View>
@@ -688,31 +679,33 @@ const styles = StyleSheet.create({
     backgroundColor: C_STATIC.bg,
   },
 
-  /* ─── Header ─── */
+  /* ─── Header (matches StatsScreen appBar) ─── */
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: C_STATIC.surfaceLow,
-    borderBottomWidth: 1,
-    borderBottomColor: C_STATIC.outline,
+    paddingVertical: 4,
   },
   headerRow: {
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   headerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 17,
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C_STATIC.primary,
-    letterSpacing: -0.3,
+    color: C_STATIC.onSurface,
+    letterSpacing: -0.2,
   },
 
   /* ─── Week strip ─── */
@@ -1054,7 +1047,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#E2E8F0',
     borderBottomWidth: 2,
-    borderBottomColor: '#94A3B8',
+    borderBottomColor: '#9aa9c1',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

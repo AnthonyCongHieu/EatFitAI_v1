@@ -33,16 +33,16 @@ type SortMode = 'best' | 'fast' | 'protein' | 'missing';
 const P_STATIC = {
   primary: '#4be277',
   primaryContainer: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainerLow: '#161b2b',
+  surface: '#05070d',
+  surfaceContainerLow: '#0f1625',
   surfaceContainerHigh: 'rgba(37, 41, 58, 0.7)',
   surfaceContainerLowest: '#090e1c',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   onPrimary: '#003915',
   glassBorder: 'rgba(255,255,255,0.08)',
   glassHeader: 'rgba(22, 27, 43, 0.6)',
-  danger: '#ffb4ab',
+  danger: '#ff8c8c',
 };
 
 const SORT_OPTIONS: { key: SortMode; label: string }[] = [
@@ -309,15 +309,14 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   return (
     <View style={[S.container, { backgroundColor: P.surface }]}>
       {/* ═══ Header ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 10, backgroundColor: P.glassHeader }]}>
-        <View style={S.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn}>
-            <Ionicons name="arrow-back" size={24} color={P.primary} />
-          </TouchableOpacity>
-          <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>
-            {isDailyRecommendation ? 'Hôm nay nên ăn gì' : 'Gợi ý công thức'}
-          </ThemedText>
-        </View>
+      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={P.onSurface} />
+        </TouchableOpacity>
+        <ThemedText style={S.headerTitle}>
+          {isDailyRecommendation ? 'Hôm nay nên ăn gì' : 'Gợi ý công thức'}
+        </ThemedText>
+        <View style={S.iconBtn} />
       </View>
 
       <ScrollView
@@ -458,16 +457,17 @@ const S = StyleSheet.create({
     position: 'absolute',
     top: 0, left: 0, right: 0,
     zIndex: 50,
-    backgroundColor: P_STATIC.glassHeader,
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 15,
+    paddingHorizontal: 16,
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 17, color: P_STATIC.onSurface, letterSpacing: -0.3 },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontFamily: 'BeVietnamPro_700Bold', fontSize: 18, color: P_STATIC.onSurface, letterSpacing: -0.2 },
   scrollContent: { paddingHorizontal: 20 },
 
   searchSection: { marginBottom: 16 },

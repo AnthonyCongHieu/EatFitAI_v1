@@ -64,10 +64,10 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
 
   const getProgressColors = (): [string, string] => {
     if (isOverTarget) {
-      return [theme.colors.danger, '#FF6B6B'];
+      return [theme.colors.danger, '#ff8c8c'];
     }
     if (isCloseToTarget) {
-      return [theme.colors.warning, '#FBBF24'];
+      return [theme.colors.warning, '#f7c052'];
     }
     return [theme.colors.primary, theme.colors.primaryDark];
   };
@@ -233,7 +233,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
             <View
               style={[
                 styles.macroSegment,
-                { width: `${carbsPct}%`, backgroundColor: '#FBBF24' },
+                { width: `${carbsPct}%`, backgroundColor: '#f7c052' },
               ]}
             />
             <View
@@ -256,7 +256,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
               </ThemedText>
             </View>
             <View style={styles.macroLabel}>
-              <View style={[styles.macroDot, { backgroundColor: '#FBBF24' }]} />
+              <View style={[styles.macroDot, { backgroundColor: '#f7c052' }]} />
               <ThemedText variant="caption" color="textSecondary">
                 C {Math.round(carbs)}g
               </ThemedText>
@@ -318,7 +318,7 @@ const getStyles = (theme: any, size: number, isDark: boolean) =>
       borderRadius: 4,
       flexDirection: 'row',
       overflow: 'hidden',
-      backgroundColor: isDark ? '#25293A' : '#F0F0F0',
+      backgroundColor: isDark ? '#252b3f' : '#F0F0F0',
     },
     macroSegment: {
       height: '100%',

@@ -131,7 +131,7 @@ const CommonMealsScreen = (): React.ReactElement => {
                     <ThemedText variant="bodySmall" color="textSecondary">P: {Math.round(template.protein ?? 0)}g</ThemedText>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fbbf24' }} />
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#f7c052' }} />
                     <ThemedText variant="bodySmall" color="textSecondary">C: {Math.round(template.carbs ?? 0)}g</ThemedText>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
