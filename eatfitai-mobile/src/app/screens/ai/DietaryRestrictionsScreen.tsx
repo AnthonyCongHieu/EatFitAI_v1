@@ -119,12 +119,11 @@ export const DietaryRestrictionsScreen = () => {
     <View style={[S.container, { paddingTop: insets.top }]}>
       {/* ═══ Header ═══ */}
       <View style={S.header}>
-        <View style={S.headerLeft}>
-          <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={P.onSurface} />
-          </Pressable>
-          <ThemedText style={S.headerTitle}>Chế độ ăn & Dị ứng</ThemedText>
-        </View>
+        <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={P.onSurface} />
+        </Pressable>
+        <ThemedText style={S.headerTitle}>Chế độ ăn & Dị ứng</ThemedText>
+        <View style={S.iconBtn} />
       </View>
 
       <ScrollView contentContainerStyle={S.content} showsVerticalScrollIndicator={false}>
@@ -208,12 +207,13 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 60,
-    backgroundColor: P.surfaceContainerLowest + '90',
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontSize: 17, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurface, letterSpacing: -0.3 },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, letterSpacing: -0.2 },
 
   content: { padding: 20, gap: 20, paddingBottom: 120, paddingTop: 16 },
 

@@ -358,13 +358,7 @@ const MealDiaryScreen = (): React.ReactElement => {
       {/* ══════════ HEADER ══════════ */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => navigation.navigate('HomeTab')}
-            style={styles.headerBtn}
-            hitSlop={12}
-          >
-            <Ionicons name="arrow-back" size={22} color={C.textMuted} />
-          </Pressable>
+          <View style={styles.headerBtn} />
           <ThemedText style={[styles.headerTitle, { color: C.onSurface }]}>Nhật ký ăn uống</ThemedText>
           <Pressable
             onPress={() => setShowDatePicker(true)}

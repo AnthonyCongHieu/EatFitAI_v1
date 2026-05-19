@@ -558,20 +558,22 @@ const VoiceScreen = (): React.ReactElement => {
       <MeshBackground />
       <Animated.View
         entering={FadeInDown.delay(50).duration(400)}
-        style={[S.header, { backgroundColor: P.surfaceContainer, borderBottomColor: P.glassBorder }]}
+        style={S.header}
       >
         <View style={S.headerInner}>
           <Pressable
-            style={[S.headerBtn, { backgroundColor: P.surfaceContainerHighest }]}
+            style={S.headerBtn}
             onPress={() => navigation.goBack()}
             hitSlop={12}
           >
-            <Ionicons name="chevron-back" size={22} color={P.primary} />
+            <Ionicons name="arrow-back" size={24} color={P.onSurface} />
           </Pressable>
           <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Trợ lý AI</ThemedText>
-          <View style={[S.headerState, { backgroundColor: P.primary + '18', borderColor: P.primary + '35' }]}>
-            <View style={S.headerStateDot} />
-            <ThemedText style={S.headerStateText}>AI</ThemedText>
+          <View style={S.rightPlaceholder}>
+            <View style={[S.headerState, { backgroundColor: P.primary + '18', borderColor: P.primary + '35' }]}>
+              <View style={S.headerStateDot} />
+              <ThemedText style={S.headerStateText}>AI</ThemedText>
+            </View>
           </View>
         </View>
       </Animated.View>
@@ -845,36 +847,40 @@ const S = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#05070d', // Solid — tránh lỗi 2 màu trên Android
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(75, 226, 119, 0.08)',
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
   headerInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
   },
   headerBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   headerTitle: {
     flex: 1,
     fontSize: 18,
     fontFamily: 'BeVietnamPro_700Bold',
     color: '#ffffff',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     textAlign: 'center',
   },
+  rightPlaceholder: {
+    width: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   headerState: {
-    minWidth: 42,
-    height: 30,
-    borderRadius: 15,
+    paddingHorizontal: 8,
+    height: 28,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

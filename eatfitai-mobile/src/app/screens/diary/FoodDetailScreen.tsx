@@ -287,15 +287,22 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       accessibilityLabel={TEST_IDS.foodDetail.screen}
       collapsable={false}
     >
+      {/* ═══ Top Gradient Overlay for Header Contrast ═══ */}
+      <LinearGradient
+        colors={['rgba(5, 7, 13, 0.7)', 'transparent']}
+        style={[StyleSheet.absoluteFill, { height: insets.top + 80, zIndex: 40 }]}
+        pointerEvents="none"
+      />
+
       {/* ═══ Top App Bar ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={P.primary} />
+      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+        <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </Pressable>
         <ThemedText style={S.headerTitle}>Chi tiết món ăn</ThemedText>
         {!isUserFood ? (
-          <Pressable style={S.iconBtn} onPress={toggleFavorite}>
-            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={P.primary} />
+          <Pressable style={S.iconBtn} onPress={toggleFavorite} hitSlop={12}>
+            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={P.onSurface} />
           </Pressable>
         ) : (
           <View style={S.iconBtn} />
@@ -489,22 +496,26 @@ const S = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 15,
+    paddingHorizontal: 16,
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
     backgroundColor: 'transparent',
   },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(22, 27, 43, 0.6)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
+    flex: 1,
+    textAlign: 'center',
     fontFamily: 'BeVietnamPro_700Bold',
     fontSize: 18,
-    color: P.primary,
+    color: P.onSurface,
+    letterSpacing: -0.2,
   },
 
   scrollContent: { paddingBottom: 100 },
