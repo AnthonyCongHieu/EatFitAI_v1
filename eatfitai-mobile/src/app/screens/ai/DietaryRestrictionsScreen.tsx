@@ -39,13 +39,13 @@ const ALLERGY_OPTIONS = [
 /* ═══ Palette ═══ */
 const P = {
   primary: '#4be277',
-  surface: '#0e1322',
-  surfaceContainerHigh: '#25293a',
+  surface: '#05070d',
+  surfaceContainerHigh: '#252b3f',
   surfaceContainerLowest: '#090e1c',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   onPrimary: '#003915',
-  glassBorder: 'rgba(255,255,255,0.05)',
+  glassBorder: 'rgba(255,255,255,0.08)',
   chipBg: 'rgba(255,255,255,0.08)',
 };
 

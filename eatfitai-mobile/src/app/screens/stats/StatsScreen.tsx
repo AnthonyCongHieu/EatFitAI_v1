@@ -31,6 +31,7 @@ import Svg, {
 } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import * as Haptics from 'expo-haptics';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -75,13 +76,13 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
    ═══════════════════════════════════════════════ */
 const P_STATIC = {
   // Surfaces (from template tailwind config)
-  bg: '#0a0e1a',
-  surface: '#0a0e1a',
+  bg: '#05070d',
+  surface: '#05070d',
   surfaceContainerLowest: '#090e1c',
-  surfaceContainerLow: '#161b2b',
+  surfaceContainerLow: '#0f1625',
   surfaceContainer: '#1a1f2f',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerHighest: '#2f3445',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   surfaceBright: '#343949',
   // Primary
   primary: '#4be277',
@@ -97,14 +98,14 @@ const P_STATIC = {
   tertiaryFixed: '#ffdad5',
   // Text
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
-  textSlate400: '#94a3b8',
+  onSurfaceVariant: '#b7c4d9',
+  textSlate400: '#9aa9c1',
   textSlate500: '#64748b',
   // Outline
   outline: '#869585',
   outlineVariant: '#3d4a3d',
   // Misc
-  error: '#ffb4ab',
+  error: '#ff8c8c',
   glassCard: 'rgba(47, 52, 69, 0.4)',
   glassBorder: 'rgba(255, 255, 255, 0.12)',
 };
@@ -112,7 +113,7 @@ const P = P_STATIC;
 
 /* ─── Meal type meta ─── */
 const MEAL_META: Record<number, { color: string; label: string }> = {
-  1: { color: '#fbbf24', label: 'BỮA SÁNG' },   // Amber
+  1: { color: '#f7c052', label: 'BỮA SÁNG' },   // Amber
   2: { color: '#34d399', label: 'BỮA TRƯA' },   // Emerald
   3: { color: '#22d3ee', label: 'BỮA TỐI' },    // Cyan
   4: { color: '#c084fc', label: 'BỮA PHỤ' },    // Purple
@@ -524,6 +525,7 @@ const StatsScreen = (): React.ReactElement => {
       style={[S.root, { paddingTop: insets.top, backgroundColor: P.bg }]}
       testID={TEST_IDS.stats.screen}
     >
+      <MeshBackground />
       <StatusBar barStyle={mode === 'light' ? 'dark-content' : 'light-content'} backgroundColor={P.bg} />
 
       {/* ══════ APP BAR ══════ */}
@@ -757,7 +759,7 @@ const StatsScreen = (): React.ReactElement => {
               >
                   <View style={[S.waterCard, { backgroundColor: P.glassCard, borderColor: P.glassBorder }]}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(226,232,240,0.12)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
@@ -963,7 +965,7 @@ const StatsScreen = (): React.ReactElement => {
               >
                 <View style={S.wkGlassChart}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(226,232,240,0.12)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[StyleSheet.absoluteFill, S.weekCardGradient]}
@@ -1052,14 +1054,14 @@ const StatsScreen = (): React.ReactElement => {
               >
                 <View style={S.wkProteinCard}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(226,232,240,0.12)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
                     <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-                      <Ionicons name="flash" size={16} color="#ef4444" />
+                      <Ionicons name="flash" size={16} color="#ff8c8c" />
                     </View>
                     <ThemedText style={S.wkProteinTitle}>Đạm</ThemedText>
                   </View>
@@ -1079,10 +1081,10 @@ const StatsScreen = (): React.ReactElement => {
                     </View>
                     <View style={S.wkProteinBarTrack}>
                       <LinearGradient
-                        colors={['#ef4444', '#fca5a5']}
+                        colors={['#ff8c8c', '#fca5a5']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={[S.wkProteinBarFill, { width: `${Math.round(wkProteinPct * 100)}%` as any, shadowColor: '#ef4444' }]}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkProteinPct * 100)}%` as any, shadowColor: '#ff8c8c' }]}
                       />
                     </View>
                   </View>
@@ -1102,7 +1104,7 @@ const StatsScreen = (): React.ReactElement => {
               >
                 <View style={S.wkProteinCard}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(226,232,240,0.12)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
@@ -1152,14 +1154,14 @@ const StatsScreen = (): React.ReactElement => {
               >
                 <View style={S.wkProteinCard}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(226,232,240,0.12)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
                     <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
-                      <Ionicons name="water" size={16} color="#fbbf24" />
+                      <Ionicons name="water" size={16} color="#f7c052" />
                     </View>
                     <ThemedText style={S.wkProteinTitle}>Chất béo</ThemedText>
                   </View>
@@ -1179,10 +1181,10 @@ const StatsScreen = (): React.ReactElement => {
                     </View>
                     <View style={S.wkProteinBarTrack}>
                       <LinearGradient
-                        colors={['#fbbf24', '#fde047']}
+                        colors={['#f7c052', '#fde047']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={[S.wkProteinBarFill, { width: `${Math.round(wkFatPct * 100)}%` as any, shadowColor: '#fbbf24' }]}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkFatPct * 100)}%` as any, shadowColor: '#f7c052' }]}
                       />
                     </View>
                   </View>
@@ -1202,7 +1204,7 @@ const StatsScreen = (): React.ReactElement => {
               >
                 <View style={S.wkProteinCard}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(226,232,240,0.12)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
@@ -1449,7 +1451,7 @@ const StatsScreen = (): React.ReactElement => {
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.05)' }}/>
+                            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)' }}/>
                             <ThemedText style={{ fontSize: 10, color: P.textSlate400, fontWeight: '700' }}>Chưa có</ThemedText>
                           </View>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -1713,7 +1715,7 @@ const S = StyleSheet.create({
     padding: 6,
     gap: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 12 },
   tabBtnOn: {
@@ -1751,7 +1753,7 @@ const S = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 320,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
 
   heroRingWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
@@ -1807,7 +1809,7 @@ const S = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 130,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   distHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   distTitle: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
@@ -1842,7 +1844,7 @@ const S = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 120,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   waterHead: {
     flexDirection: 'row',
@@ -1883,7 +1885,7 @@ const S = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   wkBtn: { padding: 8, borderRadius: 12 },
   wkTitle: { fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
@@ -2049,7 +2051,7 @@ const S = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
     gap: 4,
   },
   sumVal: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
@@ -2088,7 +2090,7 @@ const S = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 240,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   mthGoalLine: {
     flexDirection: 'row',
@@ -2132,7 +2134,7 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   mthFloatLabel: {
     fontSize: 10,
@@ -2185,7 +2187,7 @@ const S = StyleSheet.create({
     padding: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
 
   /* Energy insight */
@@ -2197,7 +2199,7 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   mthEnergyLabel: {
     fontSize: 10,
@@ -2241,7 +2243,7 @@ const S = StyleSheet.create({
     padding: 16,
     justifyContent: 'flex-start',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   mthUniformLabel: {
     fontSize: 10,
@@ -2281,7 +2283,7 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   weekCardGradient: {
     borderRadius: 24,
@@ -2315,7 +2317,7 @@ const S = StyleSheet.create({
     paddingVertical: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   wkChartHeader: {
     flexDirection: 'row',
@@ -2413,7 +2415,7 @@ const S = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   wkProteinHead: {
     flexDirection: 'row',
@@ -2476,7 +2478,7 @@ const S = StyleSheet.create({
     padding: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'space-between',
     height: 130,
   },

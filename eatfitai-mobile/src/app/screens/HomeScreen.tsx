@@ -25,6 +25,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import MeshBackground from '../../components/ui/MeshBackground';
 
 import { ThemedText } from '../../components/ThemedText';
 import Screen from '../../components/Screen';
@@ -60,19 +61,19 @@ const WATER_TARGET_VISIBLE_BOTTOM_CLEARANCE = 260;
 
 /* ─── Emerald Nebula palette (static fallback for WeekDayStrip/weekStyles) ─── */
 const C_STATIC = {
-  bg: '#0a0e1a',
-  surfaceLow: '#111827',
+  bg: '#05070d',
+  surfaceLow: '#0f1625',
   surface: '#1a1f2f',
-  surfaceHigh: '#1e2435',
-  surfaceHighest: '#2a2f40',
+  surfaceHigh: '#252b3f',
+  surfaceHighest: '#2f364b',
   primary: '#4be277',
   primaryDark: '#22c55e',
-  cyan: '#06b6d4',
-  amber: '#f59e0b',
+  cyan: '#32d7f0',
+  amber: '#f7c052',
   onSurface: '#dee1f7',
-  textMuted: '#94a3b8',
-  outline: 'rgba(255,255,255,0.06)',
-  danger: '#ff6b6b',
+  textMuted: '#9aa9c1',
+  outline: 'rgba(226,232,240,0.12)',
+  danger: '#ff8c8c',
 };
 
 type NavigationProp = CompositeNavigationProp<
@@ -546,12 +547,8 @@ const HomeScreen = (): React.ReactElement => {
 
   return (
     <View style={[styles.screenBg, { backgroundColor: C.bg }]}>
-      {/* Background gradient */}
-      <LinearGradient
-        colors={[C.surfaceLow, C.bg, C.bg] as readonly [string, string, string]}
-        locations={[0, 0.3, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Premium Mesh ambient glow background */}
+      <MeshBackground />
 
       <Screen
         testID={TEST_IDS.home.screen}
@@ -833,7 +830,7 @@ const HomeScreen = (): React.ReactElement => {
                           </ThemedText>
                           <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, alignItems: 'center' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                              <Ionicons name="flash" size={14} color="#ef4444" />
+                              <Ionicons name="flash" size={14} color="#ff8c8c" />
                               <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.protein || 0)}g</ThemedText>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -841,7 +838,7 @@ const HomeScreen = (): React.ReactElement => {
                               <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.carbs || 0)}g</ThemedText>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                              <Ionicons name="water" size={14} color="#fbbf24" />
+                              <Ionicons name="water" size={14} color="#f7c052" />
                               <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.fat || 0)}g</ThemedText>
                             </View>
                           </View>
@@ -1235,7 +1232,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#E2E8F0',
     borderBottomWidth: 2,
-    borderBottomColor: '#94A3B8',
+    borderBottomColor: '#9aa9c1',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

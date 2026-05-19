@@ -61,7 +61,7 @@ export const AppImage = ({
   const styles = StyleSheet.create({
     container: {
       overflow: 'hidden',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
     },
     placeholder: {
       ...StyleSheet.absoluteFillObject,

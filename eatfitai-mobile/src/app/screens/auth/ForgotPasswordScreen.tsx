@@ -1,4 +1,4 @@
-﻿import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -47,10 +48,10 @@ const CODE_LENGTH = 6;
 
 /* ─── Emerald Nebula palette (synced with Login / Register) ─── */
 const C = {
-  surface: '#0E1322',
+  surface: '#05070d',
   surfaceContainer: '#1A1F2F',
-  surfaceContainerHigh: '#25293A',
-  surfaceContainerHighest: '#2F3445',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   surfaceContainerLowest: '#090E1C',
   primary: '#4BE277',
   primaryDark: '#22C55E',
@@ -59,7 +60,7 @@ const C = {
   onSurface: '#DEE1F7',
   onSurfaceVariant: '#BCC8B9',
   outlineVariant: '#3D4A3D',
-  glassBg: 'rgba(37, 41, 58, 0.6)',
+  glassBg: 'rgba(26,31,47,0.78)',
   glassBorder: 'rgba(75, 226, 119, 0.1)',
   inputBg: '#090E1C',
   inputBorder: 'rgba(61, 74, 61, 0.3)',
@@ -296,7 +297,8 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
       testID={TEST_IDS.auth.forgotPasswordScreen}
       style={[styles.container, { backgroundColor: C.surface }]}
     >
-      {/* Background glow blobs */}
+      <MeshBackground />
+      {/* Premium Mesh ambient glow */}
       <View
         style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
       />
@@ -367,7 +369,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                     <ThemedText
                       variant="body"
                       style={{
-                        color: '#94A3B8',
+                        color: '#9aa9c1',
                         textAlign: 'center',
                         marginTop: 12,
                         lineHeight: 24,
@@ -383,7 +385,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                     <ThemedText
                       variant="body"
                       style={{
-                        color: '#94A3B8',
+                        color: '#9aa9c1',
                         textAlign: 'center',
                         marginTop: 12,
                         lineHeight: 24,
@@ -398,7 +400,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                     <ThemedText
                       variant="body"
                       style={{
-                        color: '#94A3B8',
+                        color: '#9aa9c1',
                         textAlign: 'center',
                         marginTop: 12,
                         lineHeight: 24,
@@ -413,7 +415,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                     <ThemedText
                       variant="body"
                       style={{
-                        color: '#94A3B8',
+                        color: '#9aa9c1',
                         textAlign: 'center',
                         marginTop: 12,
                         lineHeight: 24,
@@ -558,7 +560,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                       <LinearGradient
                         colors={[
                           'rgba(255,255,255,0.25)',
-                          'rgba(255,255,255,0.05)',
+                          'rgba(255,255,255,0.08)',
                           'transparent',
                         ]}
                         start={{ x: 0.2, y: 0 }}
@@ -682,7 +684,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                       <LinearGradient
                         colors={[
                           'rgba(255,255,255,0.25)',
-                          'rgba(255,255,255,0.05)',
+                          'rgba(255,255,255,0.08)',
                           'transparent',
                         ]}
                         start={{ x: 0.2, y: 0 }}
@@ -909,7 +911,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                       <LinearGradient
                         colors={[
                           'rgba(255,255,255,0.25)',
-                          'rgba(255,255,255,0.05)',
+                          'rgba(255,255,255,0.08)',
                           'transparent',
                         ]}
                         start={{ x: 0.2, y: 0 }}
@@ -959,7 +961,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                       <LinearGradient
                         colors={[
                           'rgba(255,255,255,0.25)',
-                          'rgba(255,255,255,0.05)',
+                          'rgba(255,255,255,0.08)',
                           'transparent',
                         ]}
                         start={{ x: 0.2, y: 0 }}

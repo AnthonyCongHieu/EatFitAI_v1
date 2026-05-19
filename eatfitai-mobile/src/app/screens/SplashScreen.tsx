@@ -1,6 +1,7 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../components/ui/MeshBackground';
 
 import Animated, {
   useSharedValue,
@@ -22,9 +23,9 @@ const { width, height } = Dimensions.get('window');
 /* ─── Emerald Nebula palette ─── */
 const C = {
   surfaceLowest: '#090E1C',
-  surface: '#0E1322',
+  surface: '#05070d',
   surfaceContainer: '#1A1F2F',
-  surfaceContainerHigh: '#25293A',
+  surfaceContainerHigh: '#252b3f',
   primary: '#4BE277',
   primaryContainer: '#22C55E',
   primaryFixed: '#6BFF8F',
@@ -109,12 +110,8 @@ const SplashScreen = (): React.ReactElement => {
 
   return (
     <View style={styles.container}>
-      {/* ─── Deep Background ─── */}
-      <LinearGradient
-        colors={[C.surfaceLowest, C.surface, C.surfaceLowest]}
-        locations={[0, 0.5, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Premium Mesh ambient glow background */}
+      <MeshBackground />
 
       {/* ─── Ambient Bioluminescent Glow ─── */}
       <View style={styles.ambientGlow} pointerEvents="none" />

@@ -44,8 +44,8 @@ const C = {
   emerald:       '#22c55e',
   emeraldBright: '#4be277',
   emeraldDim:    '#16a34a',
-  amber:         '#f59e0b',
-  surface:       '#0a0e1a',
+  amber:         '#f7c052',
+  surface:       '#05070d',
 };
 
 // ─── Component ───────────────────────────────────────────────

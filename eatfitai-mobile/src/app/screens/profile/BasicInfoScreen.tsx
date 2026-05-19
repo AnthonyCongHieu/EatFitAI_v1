@@ -1,4 +1,4 @@
-﻿// BasicInfoScreen — "Thông tin cơ bản"
+// BasicInfoScreen — "Thông tin cơ bản"
 // Emerald Nebula 3D: Editable rows for Nickname, Gender, Age, Height
 
 import React, { useState, useCallback } from 'react';
@@ -25,13 +25,13 @@ import { useEN } from '../../../theme/emeraldNebula';
 
 /* ═══ Emerald Nebula Palette ═══ */
 const P_STATIC = {
-  surface: '#0e1322',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerLow: '#161b2b',
+  surface: '#05070d',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerLow: '#0f1625',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   primary: '#4be277',
-  glassBorder: 'rgba(255,255,255,0.05)',
+  glassBorder: 'rgba(255,255,255,0.08)',
 };
 const P = P_STATIC;
 

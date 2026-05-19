@@ -25,7 +25,7 @@ export const SelectionChip: React.FC<SelectionChipProps> = ({
           backgroundColor: selected
             ? theme.colors.primary
             : isDark
-              ? 'rgba(255,255,255,0.05)'
+              ? 'rgba(255,255,255,0.08)'
               : 'rgba(0,0,0,0.03)',
           borderColor: selected ? theme.colors.primary : theme.colors.border,
         },

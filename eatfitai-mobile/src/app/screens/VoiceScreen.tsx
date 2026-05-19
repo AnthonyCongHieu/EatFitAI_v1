@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import {
@@ -10,6 +10,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../components/ui/MeshBackground';
 
 import Animated, {
   FadeIn,
@@ -49,16 +50,16 @@ const P_STATIC = {
   primary: '#4be277',
   primaryDim: '#3DB860',
   primaryContainer: '#22c55e',
-  surface: '#0e1322',
+  surface: '#05070d',
   surfaceContainer: '#1a1f2f',
-  surfaceContainerLow: '#161b2b',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerHighest: '#2f3445',
+  surfaceContainerLow: '#0f1625',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   outlineVariant: '#3d4a3d',
   glass: 'rgba(22, 27, 43, 0.6)',
-  glassBorder: 'rgba(255,255,255,0.06)',
+  glassBorder: 'rgba(226,232,240,0.12)',
   glow: 'rgba(75, 226, 119, 0.15)',
 };
 const P = P_STATIC;
@@ -554,6 +555,7 @@ const VoiceScreen = (): React.ReactElement => {
       style={[S.container, { paddingTop: insets.top, backgroundColor: P.surface }]}
       testID={TEST_IDS.voice.screen}
     >
+      <MeshBackground />
       <Animated.View
         entering={FadeInDown.delay(50).duration(400)}
         style={[S.header, { backgroundColor: P.surfaceContainer, borderBottomColor: P.glassBorder }]}
@@ -648,7 +650,7 @@ const VoiceScreen = (): React.ReactElement => {
                   <LinearGradient
                     colors={
                       isRecording
-                        ? ['#ef4444', '#dc2626']
+                        ? ['#ff8c8c', '#dc2626']
                         : [P.primary, P.primaryContainer]
                     }
                     start={{ x: 0, y: 0 }}
@@ -844,7 +846,7 @@ const S = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#0E1322', // Solid — tránh lỗi 2 màu trên Android
+    backgroundColor: '#05070d', // Solid — tránh lỗi 2 màu trên Android
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(75, 226, 119, 0.08)',
   },
@@ -941,7 +943,7 @@ const S = StyleSheet.create({
     borderBottomLeftRadius: 4,
     borderLeftWidth: 3,
     borderLeftColor: P.primary + '80',
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(226,232,240,0.12)',
   },
   bubbleText: {
     fontSize: 14,
@@ -1049,7 +1051,7 @@ const S = StyleSheet.create({
     gap: 6,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(226,232,240,0.12)',
   },
   quickCommandText: {
     fontSize: 12,
@@ -1118,7 +1120,7 @@ const S = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
   },
@@ -1133,7 +1135,7 @@ const S = StyleSheet.create({
     backgroundColor: P.primary,
   },
   voiceStateDotActive: {
-    backgroundColor: '#ef4444',
+    backgroundColor: '#ff8c8c',
   },
   voiceStateText: {
     fontSize: 11,
@@ -1245,7 +1247,7 @@ const S = StyleSheet.create({
     gap: 6,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(226,232,240,0.12)',
   },
   cancelBtnText: {
     fontSize: 12,
@@ -1265,7 +1267,7 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(226,232,240,0.12)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },

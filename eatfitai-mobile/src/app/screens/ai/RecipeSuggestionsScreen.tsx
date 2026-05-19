@@ -33,16 +33,16 @@ type SortMode = 'best' | 'fast' | 'protein' | 'missing';
 const P_STATIC = {
   primary: '#4be277',
   primaryContainer: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainerLow: '#161b2b',
+  surface: '#05070d',
+  surfaceContainerLow: '#0f1625',
   surfaceContainerHigh: 'rgba(37, 41, 58, 0.7)',
   surfaceContainerLowest: '#090e1c',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   onPrimary: '#003915',
   glassBorder: 'rgba(255,255,255,0.08)',
   glassHeader: 'rgba(22, 27, 43, 0.6)',
-  danger: '#ffb4ab',
+  danger: '#ff8c8c',
 };
 
 const SORT_OPTIONS: { key: SortMode; label: string }[] = [

@@ -11,12 +11,12 @@ import { EN } from '../../../theme/emeraldNebula';
 const BADGE_CONFIG: Record<string, { icon: string; color: string; bgColor: string }> = {
   first_log: { icon: 'sparkles', color: '#4be277', bgColor: 'rgba(75,226,119,0.15)' },
   streak_3: { icon: 'flame', color: '#f97316', bgColor: 'rgba(249,115,22,0.15)' },
-  streak_7: { icon: 'calendar', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)' },
+  streak_7: { icon: 'calendar', color: '#f7c052', bgColor: 'rgba(245,158,11,0.15)' },
   streak_14: { icon: 'star', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.15)' },
-  log_30_meals: { icon: 'pizza', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)' },
+  log_30_meals: { icon: 'pizza', color: '#f7c052', bgColor: 'rgba(245,158,11,0.15)' },
   log_50_meals: { icon: 'fast-food', color: '#14b8a6', bgColor: 'rgba(20,184,166,0.15)' },
-  log_100_meals: { icon: 'restaurant', color: '#06b6d4', bgColor: 'rgba(6,182,212,0.15)' },
-  log_200_meals: { icon: 'restaurant-outline', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)' },
+  log_100_meals: { icon: 'restaurant', color: '#32d7f0', bgColor: 'rgba(6,182,212,0.15)' },
+  log_200_meals: { icon: 'restaurant-outline', color: '#ff8c8c', bgColor: 'rgba(239,68,68,0.15)' },
   log_500_meals: { icon: 'medal', color: '#ec4899', bgColor: 'rgba(236,72,153,0.15)' },
   streak_30: { icon: 'shield-checkmark', color: '#ec4899', bgColor: 'rgba(236,72,153,0.15)' },
   streak_50: { icon: 'flame', color: '#f43f5e', bgColor: 'rgba(244,63,94,0.15)' },
@@ -24,9 +24,9 @@ const BADGE_CONFIG: Record<string, { icon: string; color: string; bgColor: strin
   streak_200: { icon: 'ribbon', color: '#6366f1', bgColor: 'rgba(99,102,241,0.15)' },
   water_master: { icon: 'water', color: '#3b82f6', bgColor: 'rgba(59,130,246,0.15)' },
   water_30: { icon: 'water-outline', color: '#0ea5e9', bgColor: 'rgba(14,165,233,0.15)' },
-  water_100: { icon: 'boat', color: '#2dd4bf', bgColor: 'rgba(45,212,191,0.15)' },
+  water_100: { icon: 'boat', color: '#32d7f0', bgColor: 'rgba(45,212,191,0.15)' },
   early_bird: { icon: 'sunny', color: '#eab308', bgColor: 'rgba(234,179,8,0.15)' },
-  early_bird_7: { icon: 'partly-sunny', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)' },
+  early_bird_7: { icon: 'partly-sunny', color: '#f7c052', bgColor: 'rgba(245,158,11,0.15)' },
   log_1000_meals: { icon: 'star-half', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.15)' },
 };
 

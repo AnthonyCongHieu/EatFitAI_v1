@@ -1,4 +1,4 @@
-﻿/**
+/**
  * WelcomeHeader – Compact Emerald Nebula header bar
  */
 import React from 'react';
@@ -9,12 +9,12 @@ import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
 
 const C_STATIC = {
-  bg: '#0a0e1a',
-  surfaceHigh: '#1e2435',
+  bg: '#05070d',
+  surfaceHigh: '#252b3f',
   primary: '#4be277',
   onSurface: '#dee1f7',
-  textMuted: '#94a3b8',
-  danger: '#ff6b6b',
+  textMuted: '#9aa9c1',
+  danger: '#ff8c8c',
 };
 const C = C_STATIC;
 
@@ -30,8 +30,8 @@ interface WelcomeHeaderProps {
 /** Return a time-of-day icon using Ionicons */
 const getTimeIcon = (): { name: keyof typeof Ionicons.glyphMap; color: string } => {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return { name: 'partly-sunny', color: '#fbbf24' };   // Sáng – mặt trời nửa mây
-  if (h >= 12 && h < 15) return { name: 'sunny', color: '#f59e0b' };          // Trưa – full mặt trời
+  if (h >= 5 && h < 12) return { name: 'partly-sunny', color: '#f7c052' };   // Sáng – mặt trời nửa mây
+  if (h >= 12 && h < 15) return { name: 'sunny', color: '#f7c052' };          // Trưa – full mặt trời
   if (h >= 15 && h < 18) return { name: 'sunny-outline', color: '#fb923c' };  // Chiều – mặt trời hạ
   if (h >= 18 && h < 22) return { name: 'moon', color: '#a78bfa' };           // Tối – mặt trăng
   return { name: 'moon-outline', color: '#818cf8' };                           // Khuya
@@ -89,7 +89,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
       <View style={styles.right}>
         {streakCount > 0 && (
           <Pressable style={[styles.streak, { backgroundColor: C.surfaceHigh }]} onPress={onStreakPress} hitSlop={8}>
-            <Ionicons name="flame" size={16} color="#ef4444" />
+            <Ionicons name="flame" size={16} color="#ff8c8c" />
             <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
           </Pressable>
         )}
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   streakText: {
     fontSize: 13,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: C.surfaceHigh,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
 
   bell: {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     backgroundColor: C.surfaceHigh,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   bellDot: {
     position: 'absolute',

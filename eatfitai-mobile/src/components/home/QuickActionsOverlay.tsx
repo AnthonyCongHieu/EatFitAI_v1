@@ -1,4 +1,4 @@
-﻿/**
+/**
  * QuickActionsOverlay – Full-screen blur overlay with 2×2 bento grid
  * Triggered by the floating AI robot FAB on the HomeScreen.
  *
@@ -30,18 +30,18 @@ const { width } = Dimensions.get('window');
 
 /* ─── Emerald Nebula palette ─── */
 const C = {
-  bg: '#0a0e1a',
-  surfaceLow: '#111827',
+  bg: '#05070d',
+  surfaceLow: '#0f1625',
   surface: '#1a1f2f',
-  surfaceHigh: '#1e2435',
-  surfaceHighest: '#2a2f40',
+  surfaceHigh: '#252b3f',
+  surfaceHighest: '#2f364b',
   primary: '#4be277',
   primaryContainer: '#22c55e',
   onPrimary: '#003915',
   onSurface: '#dee1f7',
-  textMuted: '#94a3b8',
+  textMuted: '#9aa9c1',
   outlineVariant: 'rgba(75,226,119,0.08)',
-  amber: '#f59e0b',
+  amber: '#f7c052',
   amberBg: 'rgba(245, 158, 11, 0.08)',
   amberBorder: 'rgba(245, 158, 11, 0.2)',
 };
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(226,232,240,0.12)',
   },
 
   /* Header */

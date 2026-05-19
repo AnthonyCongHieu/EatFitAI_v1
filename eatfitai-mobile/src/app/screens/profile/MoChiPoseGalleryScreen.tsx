@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,9 +18,9 @@ import {
 
 const P = {
   primary: '#4be277',
-  surface: '#0e1322',
-  surfaceLow: '#161b2b',
-  surfaceHigh: '#25293a',
+  surface: '#05070d',
+  surfaceLow: '#0f1625',
+  surfaceHigh: '#252b3f',
   card: '#1a1f2f',
   text: '#dee1f7',
   muted: '#9aa7bd',
@@ -296,7 +296,7 @@ const S = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 7,
     paddingVertical: 3,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(226,232,240,0.12)',
     color: P.muted,
     fontSize: 10,
     fontFamily: 'BeVietnamPro_700Bold',

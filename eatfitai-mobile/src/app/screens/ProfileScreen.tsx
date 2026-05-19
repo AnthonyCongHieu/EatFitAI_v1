@@ -22,6 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import Animated, { FadeIn, FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../components/ui/MeshBackground';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
@@ -47,20 +48,20 @@ import {
 } from './profile/profileCompletion';
 
 const P_STATIC = {
-  bg: '#0e1322',
-  surface: '#0e1322',
-  surfaceLow: '#161b2b',
-  surfaceContainerLow: '#161b2b',
+  bg: '#05070d',
+  surface: '#05070d',
+  surfaceLow: '#0f1625',
+  surfaceContainerLow: '#0f1625',
   surfaceContainer: '#1a1f2f',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerHighest: '#2f3445',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   primary: '#4be277',
   primaryContainer: '#22c55e',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
-  glassBg: 'rgba(37, 41, 58, 0.6)',
-  glassBorder: 'rgba(255,255,255,0.05)',
-  error: '#ffb4ab',
+  onSurfaceVariant: '#b7c4d9',
+  glassBg: 'rgba(26,31,47,0.78)',
+  glassBorder: 'rgba(255,255,255,0.08)',
+  error: '#ff8c8c',
   errorContainer: 'rgba(147, 0, 10, 0.3)',
 };
 
@@ -80,10 +81,10 @@ const calcBMI = (kg?: number, cm?: number): number | null => {
 };
 
 const bmiColor = (bmi: number): string => {
-  if (bmi < 18.5) return '#2dd4bf';   // Teal - underweight
+  if (bmi < 18.5) return '#32d7f0';   // Teal - underweight
   if (bmi < 25) return '#4be277';     // Emerald - normal
-  if (bmi < 30) return '#fbbf24';     // Amber - overweight
-  return '#ef4444';                   // Red - obese
+  if (bmi < 30) return '#f7c052';     // Amber - overweight
+  return '#ff8c8c';                   // Red - obese
 };
 
 /* ═══ Reusable menu row ═══ */
@@ -317,10 +318,11 @@ const ProfileScreen = (): React.ReactElement => {
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
+      <MeshBackground />
       {/* ═══ HEADER ═══ */}
-      <View style={[S.header, { backgroundColor: P.bg }]}>
+      <View style={S.header}>
         <View style={S.headerBtn} />
-        <ThemedText style={S.headerTitle}>Hồ sơ</ThemedText>
+        <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Hồ sơ</ThemedText>
         <View style={S.headerBtn} />
       </View>
 
@@ -473,23 +475,7 @@ const ProfileScreen = (): React.ReactElement => {
 
         {/* ═══ MENU GROUP 2 — About + PRO + Theme ═══ */}
         <Animated.View entering={FadeInUp.delay(400).duration(400)} style={[S.menuGroup, { backgroundColor: P.surfaceLow }]}>
-          <MenuRow
-            icon={mode === 'dark' ? 'moon-outline' : 'sunny-outline'}
-            label={mode === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'}
-            onPress={() => handleToggleTheme(!isDarkLocal)}
-            iconBg={P.surfaceHighest}
-            iconColor={mode === 'dark' ? '#fbbf24' : '#f59e0b'}
-            labelColor={P.onSurface}
-            showChevron={false}
-            rightElement={
-              <Switch
-                value={isDarkLocal}
-                onValueChange={handleToggleTheme}
-                trackColor={{ false: P.surfaceHighest, true: P.primary }}
-                thumbColor={'#fff'}
-              />
-            }
-          />
+
           <MenuRow
             icon="images-outline"
             label="Phòng MoChi"
@@ -666,31 +652,30 @@ const S = StyleSheet.create({
     flex: 1,
   },
 
-  /* ═══ HEADER ═══ */
+  /* ═══ HEADER (matches StatsScreen appBar) ═══ */
   header: {
+    minHeight: 52,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    height: 56,
   },
   headerBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerActionBtn: {
-    backgroundColor: P_STATIC.surfaceContainerLow,
-    borderWidth: 1,
-    borderColor: P_STATIC.glassBorder,
-  },
   headerTitle: {
-    fontSize: 17,
-    fontFamily: 'BeVietnamPro_600SemiBold',
-    color: P_STATIC.primaryContainer,
-    letterSpacing: -0.3,
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.onSurface,
+    letterSpacing: -0.2,
   },
 
   /* ═══ SCROLL ═══ */
@@ -889,7 +874,7 @@ const S = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(226,232,240,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },

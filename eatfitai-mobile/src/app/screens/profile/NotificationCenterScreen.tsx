@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,13 +20,13 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const P_STATIC = {
   primary: '#4be277',
-  surface: '#0e1322',
+  surface: '#05070d',
   surfaceContainer: '#1a1f2f',
-  surfaceContainerLow: '#161b2b',
-  surfaceContainerHigh: '#25293a',
+  surfaceContainerLow: '#0f1625',
+  surfaceContainerHigh: '#252b3f',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
-  outline: 'rgba(255,255,255,0.06)',
+  onSurfaceVariant: '#b7c4d9',
+  outline: 'rgba(226,232,240,0.12)',
 };
 const P = P_STATIC;
 
@@ -42,7 +42,7 @@ const getNotificationVisual = (
   }
 
   if (item.category === 'tip') {
-    return { icon: 'sparkles-outline', tone: '#f59e0b' };
+    return { icon: 'sparkles-outline', tone: '#f7c052' };
   }
 
   return { icon: 'restaurant-outline', tone: '#4be277' };

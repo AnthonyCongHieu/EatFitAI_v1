@@ -179,7 +179,7 @@ export const AddRecipeToDiarySheet = ({
 
             {/* Protein */}
             <View style={{ alignItems: 'center' }}>
-              <ThemedText variant="h4" weight="700" style={{ color: '#EF4444' }}>
+              <ThemedText variant="h4" weight="700" style={{ color: '#ff8c8c' }}>
                 {calculatedNutrition.protein}g
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
@@ -199,7 +199,7 @@ export const AddRecipeToDiarySheet = ({
 
             {/* Fat */}
             <View style={{ alignItems: 'center' }}>
-              <ThemedText variant="h4" weight="700" style={{ color: '#F59E0B' }}>
+              <ThemedText variant="h4" weight="700" style={{ color: '#f7c052' }}>
                 {calculatedNutrition.fat}g
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">

@@ -1,4 +1,4 @@
-﻿// WeightHistoryScreen: Lịch sử cân đo với biểu đồ
+// WeightHistoryScreen: Lịch sử cân đo với biểu đồ
 // Hiển thị chart tiến trình cân nặng theo thời gian
 
 import React, { useMemo } from 'react';
@@ -183,7 +183,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
       alignItems: 'center',
       paddingVertical: 12,
       borderBottomWidth: 1,
-      borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
     },
     recordDate: {
       flex: 1,

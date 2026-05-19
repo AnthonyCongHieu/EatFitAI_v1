@@ -38,7 +38,7 @@ const getMeta = (status?: AiHealthStatus | null) => {
         caption:
           status.message ||
           'Các thao tác AI sẽ tạm khóa; bạn vẫn có thể nhập thủ công.',
-        dotColor: '#EF4444',
+        dotColor: '#ff8c8c',
         bgColor: 'rgba(239, 68, 68, 0.14)',
         borderColor: 'rgba(239, 68, 68, 0.28)',
       };
@@ -47,7 +47,7 @@ const getMeta = (status?: AiHealthStatus | null) => {
       return {
         label: 'AI suy giảm',
         caption: status?.message || 'AI đang hoạt động nhưng chưa ổn định hoàn toàn.',
-        dotColor: '#F59E0B',
+        dotColor: '#f7c052',
         bgColor: 'rgba(245, 158, 11, 0.14)',
         borderColor: 'rgba(245, 158, 11, 0.28)',
       };

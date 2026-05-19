@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
  *
@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import Animated, {
   FadeInRight,
   FadeOutLeft,
@@ -83,11 +84,11 @@ interface NutritionCalculationResult {
 
 /* ─── Emerald Nebula palette ─── */
 const C = {
-  surface: '#0E1322',
+  surface: '#05070d',
   surfaceContainer: '#1A1F2F',
-  surfaceContainerLow: '#161B2B',
-  surfaceContainerHigh: '#25293A',
-  surfaceContainerHighest: '#2F3445',
+  surfaceContainerLow: '#0f1625',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   surfaceContainerLowest: '#090E1C',
   primary: '#4BE277',
   primaryDark: '#22C55E',
@@ -95,7 +96,7 @@ const C = {
   onSurface: '#DEE1F7',
   onSurfaceVariant: '#BCC8B9',
   outlineVariant: '#3D4A3D',
-  glassBg: 'rgba(37, 41, 58, 0.6)',
+  glassBg: 'rgba(26,31,47,0.78)',
   glassBorder: 'rgba(75, 226, 119, 0.1)',
   inputBg: '#090E1C',
   inputBorder: 'rgba(61, 74, 61, 0.3)',
@@ -1754,7 +1755,7 @@ const OnboardingScreen = (): React.ReactElement => {
                         <MaterialCommunityIcons
                           name="scale-balance"
                           size={28}
-                          color="#2DD4BF"
+                          color="#32d7f0"
                         />
                       </View>
                       <View style={{ flex: 1 }}>
@@ -2808,11 +2809,11 @@ const OnboardingScreen = (): React.ReactElement => {
                     },
                   ]}
                 >
-                  <Ionicons name="alert-circle" size={20} color="#FFB4AB" />
+                  <Ionicons name="alert-circle" size={20} color="#ff8c8c" />
                   <View style={{ flex: 1 }}>
                     <ThemedText
                       style={{
-                        color: '#FFB4AB',
+                        color: '#ff8c8c',
                         fontSize: 13,
                         fontFamily: 'BeVietnamPro_500Medium',
                       }}
@@ -3140,7 +3141,7 @@ const OnboardingScreen = (): React.ReactElement => {
               style={StyleSheet.absoluteFill}
             />
             <LinearGradient
-              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
+              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.08)', 'transparent']}
               start={{ x: 0.2, y: 0 }}
               end={{ x: 0.8, y: 1 }}
               style={StyleSheet.absoluteFill}
@@ -3183,7 +3184,7 @@ const OnboardingScreen = (): React.ReactElement => {
               <LinearGradient
                 colors={[
                   'rgba(255,255,255,0.25)',
-                  'rgba(255,255,255,0.05)',
+                  'rgba(255,255,255,0.08)',
                   'transparent',
                 ]}
                 start={{ x: 0.2, y: 0 }}
@@ -3225,7 +3226,7 @@ const OnboardingScreen = (): React.ReactElement => {
               style={StyleSheet.absoluteFill}
             />
             <LinearGradient
-              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
+              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.08)', 'transparent']}
               start={{ x: 0.2, y: 0 }}
               end={{ x: 0.8, y: 1 }}
               style={StyleSheet.absoluteFill}
@@ -3298,23 +3299,7 @@ const OnboardingScreen = (): React.ReactElement => {
             { backgroundColor: currentStep <= 5 ? C.surface : undefined },
           ]}
         >
-          {currentStep <= 5 ? (
-            <>
-              {/* Background glow blobs */}
-              <View
-                style={[
-                  s.blob,
-                  { top: -80, right: -100, backgroundColor: C.primary + '0D' },
-                ]}
-              />
-              <View
-                style={[
-                  s.blob,
-                  { bottom: -60, left: -100, backgroundColor: C.primary + '0D' },
-                ]}
-              />
-            </>
-          ) : null}
+          {currentStep <= 5 ? <MeshBackground /> : null}
         </View>
 
         <LinearGradient

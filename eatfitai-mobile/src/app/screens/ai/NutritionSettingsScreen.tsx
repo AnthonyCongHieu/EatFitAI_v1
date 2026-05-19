@@ -240,7 +240,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     macroCard: {
       alignItems: 'center',
       padding: theme.spacing.md,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
       borderRadius: theme.borderRadius.card,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -628,7 +628,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                 backgroundColor: isAiStatusLoading
                   ? '#9AA4B2'
                   : isAiDown
-                    ? '#EF4444'
+                    ? '#ff8c8c'
                     : '#22C55E',
               }}
             />

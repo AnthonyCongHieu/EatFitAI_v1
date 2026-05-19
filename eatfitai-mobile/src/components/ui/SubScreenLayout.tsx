@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SubScreenLayout — Unified layout wrapper for all push-navigated sub-screens.
  *
  * Header pattern matched EXACTLY with ProfileScreen:
@@ -32,6 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../ThemedText';
 import { EN, useEN } from '../../theme/emeraldNebula';
+import MeshBackground from './MeshBackground';
 
 interface SubScreenLayoutProps {
   /** Screen title displayed in the center of the header */
@@ -150,6 +151,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
   /* ─── Render ─── */
   return (
     <View style={[styles.container, { backgroundColor: EN.bg }]} testID={testID}>
+      <MeshBackground />
       {header}
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
@@ -171,7 +173,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: EN.bg, // P.surface (#0e1322)
+    backgroundColor: EN.bg, // P.surface (#05070d)
   },
 
   /* ── Header (matches ProfileScreen S.header) ── */

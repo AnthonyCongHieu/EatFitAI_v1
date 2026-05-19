@@ -1,4 +1,4 @@
-﻿// Component hiển thị BMI với visual gauge
+// Component hiển thị BMI với visual gauge
 // BMI = Weight (kg) / Height (m)^2
 // Phân loại: <18.5 Gầy | 18.5-24.9 Bình thường | 25-29.9 Thừa cân | >=30 Béo phì
 
@@ -35,8 +35,8 @@ const getBMICategory = (
 } => {
   if (bmi < 18.5) return { label: 'Underweight', color: '#22C55E', labelVi: 'Thiếu cân' };
   if (bmi < 25) return { label: 'Normal', color: '#22C55E', labelVi: 'Bình thường' };
-  if (bmi < 30) return { label: 'Overweight', color: '#F59E0B', labelVi: 'Thừa cân' };
-  return { label: 'Obese', color: '#EF4444', labelVi: 'Béo phì' };
+  if (bmi < 30) return { label: 'Overweight', color: '#f7c052', labelVi: 'Thừa cân' };
+  return { label: 'Obese', color: '#ff8c8c', labelVi: 'Béo phì' };
 };
 
 // Tính vị trí trên gauge (0-100%)
@@ -211,8 +211,8 @@ export const BMIIndicator: React.FC<BMIIndicatorProps> = ({
         <View style={styles.gaugeTrack}>
           <View style={[styles.gaugeSegment, { backgroundColor: '#22C55E' }]} />
           <View style={[styles.gaugeSegment, { backgroundColor: '#22C55E' }]} />
-          <View style={[styles.gaugeSegment, { backgroundColor: '#F59E0B' }]} />
-          <View style={[styles.gaugeSegment, { backgroundColor: '#EF4444' }]} />
+          <View style={[styles.gaugeSegment, { backgroundColor: '#f7c052' }]} />
+          <View style={[styles.gaugeSegment, { backgroundColor: '#ff8c8c' }]} />
         </View>
         <Animated.View style={[styles.indicator, indicatorStyle]} />
       </View>

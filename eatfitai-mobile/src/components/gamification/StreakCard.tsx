@@ -1,4 +1,4 @@
-﻿/**
+/**
  * StreakCard - Enhanced với animated fire và weekly calendar
  * Features:
  * - Animated fire icon khi streak active (pulse + scale)
@@ -149,7 +149,7 @@ export const StreakCard: React.FC<StreakCardProps> = ({
               <AnimatedIonicons
                 name="flame"
                 size={36}
-                color={isActive ? '#FF9500' : theme.colors.textSecondary}
+                color={isActive ? '#f7c052' : theme.colors.textSecondary}
               />
             </Animated.View>
           </View>
@@ -192,7 +192,7 @@ export const StreakCard: React.FC<StreakCardProps> = ({
                     styles.dot,
                     isLogged && styles.dotActive,
                     isToday && styles.dotToday,
-                    { borderColor: isToday ? '#FF9500' : 'transparent' },
+                    { borderColor: isToday ? '#f7c052' : 'transparent' },
                   ]}
                 >
                   {isLogged && <Ionicons name="checkmark" size={12} color="#FFF" />}
@@ -249,7 +249,7 @@ const getStyles = (theme: any, isDark: boolean, isActive: boolean) =>
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: '#FF9500',
+      backgroundColor: '#f7c052',
     },
     iconContainer: {
       width: 48,
@@ -264,7 +264,7 @@ const getStyles = (theme: any, isDark: boolean, isActive: boolean) =>
       gap: 2,
     },
     badge: {
-      backgroundColor: '#FF9500',
+      backgroundColor: '#f7c052',
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: 4,
       borderRadius: theme.radius.md,
@@ -301,7 +301,7 @@ const getStyles = (theme: any, isDark: boolean, isActive: boolean) =>
       backgroundColor: '#22C55E',
     },
     dotToday: {
-      borderColor: '#FF9500',
+      borderColor: '#f7c052',
     },
     encouragement: {
       alignItems: 'center',

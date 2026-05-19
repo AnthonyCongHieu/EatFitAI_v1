@@ -60,19 +60,19 @@ const getFoodItemKey = (item: { id: string; source?: 'catalog' | 'user' }) =>
 const P_STATIC = {
   primary: '#4be277',
   primaryDark: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainer: '#161b2b',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerHighest: '#2f3445',
+  surface: '#05070d',
+  surfaceContainer: '#0f1625',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   surfaceContainerLowest: '#090e1c',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   onPrimary: '#003915',
   glassBg: 'rgba(47, 52, 69, 0.4)',
   glassHover: 'rgba(47, 52, 69, 0.6)',
-  glassBorder: 'rgba(255, 255, 255, 0.05)',
+  glassBorder: 'rgba(255,255,255,0.08)',
   macroP: '#34d399', // emerald-400
-  macroC: '#fbbf24', // amber-400
+  macroC: '#f7c052', // amber-400
   macroF: '#fb7185', // rose-400
 };
 const P = P_STATIC;

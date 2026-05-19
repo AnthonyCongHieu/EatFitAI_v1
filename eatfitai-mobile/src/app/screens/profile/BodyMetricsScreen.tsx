@@ -1,4 +1,4 @@
-﻿// BodyMetricsScreen — "Hồ sơ thể chất"
+// BodyMetricsScreen — "Hồ sơ thể chất"
 // Emerald Nebula 3D: Basic info card + Weight goals section
 
 import React, { useEffect, useMemo } from 'react';
@@ -29,12 +29,12 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const P_STATIC = {
   primary: '#4be277',
   primaryContainer: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainerHigh: '#25293a',
-  surfaceContainerHighest: '#2f3445',
+  surface: '#05070d',
+  surfaceContainerHigh: '#252b3f',
+  surfaceContainerHighest: '#2f364b',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
-  glassBorder: 'rgba(255,255,255,0.05)',
+  onSurfaceVariant: '#b7c4d9',
+  glassBorder: 'rgba(255,255,255,0.08)',
 };
 const P = P_STATIC;
 

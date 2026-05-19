@@ -66,16 +66,16 @@ const defaultSettings: NotificationSettings = {
 const P_STATIC = {
   primary: '#22c55e',
   onPrimary: '#003915',
-  surface: '#0e1322',
+  surface: '#05070d',
   surfaceContainerLowest: '#090e1c',
-  surfaceContainerLow: '#161b2b',
-  surfaceContainerHighest: '#2f3445',
+  surfaceContainerLow: '#0f1625',
+  surfaceContainerHighest: '#2f364b',
   surfaceGlass: '#1a1e2e',  // Solid color — rgba causes 2-tone bug on Android
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   glassBorder: 'rgba(61, 74, 61, 0.2)',
   slate500: '#64748b',
-  slate400: '#94a3b8',
+  slate400: '#9aa9c1',
 };
 const P = P_STATIC;
 

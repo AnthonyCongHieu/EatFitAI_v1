@@ -1,4 +1,4 @@
-﻿// Food Detail Screen - Emerald Nebula 3D UI
+// Food Detail Screen - Emerald Nebula 3D UI
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -70,19 +70,19 @@ type FormValues = z.infer<typeof FormSchema>;
 const P = {
   primary: '#4be277',
   primaryContainer: '#22c55e',
-  surface: '#0e1322',
-  surfaceContainer: '#161b2b',
+  surface: '#05070d',
+  surfaceContainer: '#0f1625',
   surfaceContainerHigh: 'rgba(37, 41, 58, 0.7)', // glass effect
   surfaceContainerLowest: '#090e1c',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
+  onSurfaceVariant: '#b7c4d9',
   onPrimary: '#003915',
   glassBorder: 'rgba(255,255,255,0.1)',
   glassHeader: 'rgba(14, 19, 34, 0.4)',
 
   macroP: '#34d399', // emerald
   macroC: '#38bdf8', // sky
-  macroF: '#fbbf24', // amber
+  macroF: '#f7c052', // amber
 };
 
 const FoodDetailScreen = (): React.ReactElement | null => {
@@ -368,7 +368,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
             {/* Error Message if Grams invalid */}
             {errors.grams && (
-              <ThemedText style={{ color: '#ffb4ab', fontSize: 13, marginTop: -15, marginBottom: 15 }}>
+              <ThemedText style={{ color: '#ff8c8c', fontSize: 13, marginTop: -15, marginBottom: 15 }}>
                 {errors.grams.message}
               </ThemedText>
             )}
@@ -439,7 +439,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               })}
             </ScrollView>
             {errors.mealType && (
-              <ThemedText style={{ color: '#ffb4ab', fontSize: 13, marginTop: 12, marginLeft: 20 }}>
+              <ThemedText style={{ color: '#ff8c8c', fontSize: 13, marginTop: 12, marginLeft: 20 }}>
                 {errors.mealType.message}
               </ThemedText>
             )}

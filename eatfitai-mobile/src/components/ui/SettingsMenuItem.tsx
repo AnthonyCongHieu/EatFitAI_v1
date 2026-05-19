@@ -1,4 +1,4 @@
-﻿// Component hiển thị một menu item trong settings
+// Component hiển thị một menu item trong settings
 // Thiết kế theo xu hướng 2026: glassmorphism, micro-interactions
 
 import React from 'react';
@@ -83,7 +83,7 @@ export const SettingsMenuItem: React.FC<SettingsMenuItemProps> = ({
       marginBottom: 8,
       // Subtle border
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+      borderColor: isDark ? 'rgba(226,232,240,0.12)' : 'rgba(0, 0, 0, 0.04)',
     },
     iconContainer: {
       width: 40,

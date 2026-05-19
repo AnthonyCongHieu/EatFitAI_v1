@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -145,14 +145,14 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
             style={[
               styles.nutritionCard,
               {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
                 borderColor: theme.colors.border,
               },
             ]}
           >
             {/* Calories */}
             <View style={styles.nutritionItem}>
-              <ThemedText variant="h3" weight="700" style={{ color: '#EF4444' }}>
+              <ThemedText variant="h3" weight="700" style={{ color: '#ff8c8c' }}>
                 {calculatedNutrition.calories}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
@@ -176,7 +176,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
 
             {/* Carbs */}
             <View style={styles.nutritionItem}>
-              <ThemedText variant="body" weight="700" style={{ color: '#F59E0B' }}>
+              <ThemedText variant="body" weight="700" style={{ color: '#f7c052' }}>
                 {calculatedNutrition.carbs}g
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">

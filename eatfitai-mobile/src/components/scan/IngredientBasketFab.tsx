@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     backgroundColor: '#4be277',
     borderWidth: 2,
-    borderColor: '#0e1322',
+    borderColor: '#05070d',
   },
 });
 

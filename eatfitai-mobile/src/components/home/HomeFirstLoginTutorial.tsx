@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 18,
     borderRadius: 28,
-    backgroundColor: '#111827',
+    backgroundColor: '#0f1625',
     borderWidth: 1,
     borderColor: 'rgba(75, 226, 119, 0.24)',
     padding: 18,

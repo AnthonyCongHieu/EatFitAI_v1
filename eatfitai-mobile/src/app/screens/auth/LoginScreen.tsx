@@ -1,4 +1,4 @@
-﻿import { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
@@ -196,10 +197,10 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
 
   /* ─── Colors (Emerald Nebula palette from the reference) ─── */
   const C = {
-    surface: '#0E1322',
+    surface: '#05070d',
     surfaceContainer: '#1A1F2F',
-    surfaceContainerHigh: '#25293A',
-    surfaceContainerHighest: '#2F3445',
+    surfaceContainerHigh: '#252b3f',
+    surfaceContainerHighest: '#2f364b',
     surfaceContainerLowest: '#090E1C',
     primary: '#4BE277',
     primaryDark: '#22C55E',
@@ -207,7 +208,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
     onSurface: '#DEE1F7',
     onSurfaceVariant: '#BCC8B9',
     outlineVariant: '#3D4A3D',
-    glassBg: 'rgba(37, 41, 58, 0.6)',
+    glassBg: 'rgba(26,31,47,0.78)',
     glassBorder: 'rgba(75, 226, 119, 0.1)',
     inputBg: '#090E1C',
     inputBorder: 'rgba(61, 74, 61, 0.3)',
@@ -215,17 +216,8 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
 
   return (
     <GestureHandlerRootView style={[styles.container, { backgroundColor: C.surface }]}>
-      {/* Background glow blobs */}
-      <View
-        style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
-      />
-      <View
-        style={[
-          styles.blob,
-          styles.blobBottomLeft,
-          { backgroundColor: C.primary + '0D' },
-        ]}
-      />
+      {/* Premium Mesh ambient glow background */}
+      <MeshBackground />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -445,7 +437,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
                     <LinearGradient
                       colors={[
                         'rgba(255,255,255,0.25)',
-                        'rgba(255,255,255,0.05)',
+                        'rgba(255,255,255,0.08)',
                         'transparent',
                       ]}
                       start={{ x: 0.2, y: 0 }}

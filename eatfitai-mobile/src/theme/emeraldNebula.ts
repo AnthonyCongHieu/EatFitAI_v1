@@ -1,12 +1,10 @@
 /**
- * Emerald Nebula Design System — Single Source of Truth
+ * Premium Mesh Wallet Design System — Single Source of Truth
  *
  * Palette & style primitives shared across ALL screens.
- * Based on the "Emerald Nebula 3D" design established on
- * HomeScreen and ProfileScreen.
- *
- * Colors aligned EXACTLY with ProfileScreen's `P` palette
- * to avoid visual mismatch between main and sub-screens.
+ * Based on the "Premium Mesh Wallet" design direction:
+ * deep navy base, mesh ambient glows (green/cyan/violet),
+ * glass surfaces with subtle borders.
  *
  * Usage:
  *   import { useEN } from '../../theme/emeraldNebula';
@@ -18,87 +16,87 @@ import { StyleSheet, ViewStyle } from 'react-native';
 import { useAppTheme } from './ThemeProvider';
 
 /* ─────────────────────────────────────────────────────
-   Color Palette — DARK mode
-   Synced with ProfileScreen `P` constants
+   Color Palette — DARK mode  (Premium Mesh Wallet)
+   Deep navy base · Mesh ambient glows · Glass surfaces
    ───────────────────────────────────────────────────── */
 export const EN = {
-  // Backgrounds — darkest to brightest
-  // Aligned with ProfileScreen P.surface → P.surfaceContainerHighest
-  bg: '#0e1322',                     // P.surface (screen bg)
-  surfaceLow: '#161b2b',             // P.surfaceContainerLow (menu group bg)
-  surface: '#1a1f2f',                // P.surfaceContainer (general surfaces)
-  surfaceHigh: '#25293a',            // P.surfaceContainerHigh
-  surfaceHighest: '#2f3445',         // P.surfaceContainerHighest (icon wraps, inputs)
+  // Backgrounds — deep navy progression (never pure black)
+  bg: '#05070d',                         // Ultra-deep navy base
+  surfaceLow: '#0f1625',                 // Menu group / section bg
+  surface: '#1a1f2f',                    // General card surfaces
+  surfaceHigh: '#252b3f',                // Elevated cards
+  surfaceHighest: '#2f364b',             // Icon wraps, inputs, nested content
 
-  // Primary — Emerald Green
-  primary: '#4be277',                // P.primary
-  primaryContainer: '#22c55e',       // P.primaryContainer
-  primaryGlow: 'rgba(75, 226, 119, 0.35)',
+  // Primary — Bright Emerald (mesh accent)
+  primary: '#4be277',                    // Bright green primary
+  primaryContainer: '#22c55e',           // Darker green for gradients
+  primaryGlow: 'rgba(75, 226, 119, 0.28)',
 
-  // Accent (from HomeScreen C palette)
-  cyan: '#06b6d4',
-  amber: '#f59e0b',
+  // Accent — Mesh spectrum
+  cyan: '#32d7f0',                       // Cyan mesh glow
+  amber: '#f7c052',                      // Warm amber
 
-  // Text
-  onSurface: '#dee1f7',              // P.onSurface
-  onSurfaceVariant: '#bccbb9',       // P.onSurfaceVariant
-  textMuted: '#94a3b8',              // Shared
+  // Text — cool blue-tinted hierarchy
+  onSurface: '#dee1f7',                  // Primary text (soft lavender-white)
+  onSurfaceVariant: '#b7c4d9',           // Secondary labels
+  textMuted: '#9aa9c1',                  // Muted / timestamps
 
-  // Borders & Glass
-  outline: 'rgba(255,255,255,0.06)',
-  outlineVariant: '#3d4a3d',         // P.outlineVariant
-  glassBg: 'rgba(37, 41, 58, 0.6)', // P.glassBg
-  glassBorder: 'rgba(255,255,255,0.05)', // P.glassBorder
+  // Borders & Glass — mesh-aware thin lines
+  outline: 'rgba(226, 232, 240, 0.12)',  // Subtle warm-white line
+  outlineVariant: 'rgba(226, 232, 240, 0.08)', // Even subtler
+  glassBg: 'rgba(26, 31, 47, 0.78)',     // Glass card fill
+  glassBorder: 'rgba(255, 255, 255, 0.08)', // Glass edge highlight
 
   // Semantic
-  danger: '#ff6b6b',
-  dangerContainer: 'rgba(147, 0, 10, 0.3)',
-  error: '#ffb4ab',                  // P.error (for destructive labels)
-  errorContainer: 'rgba(147, 0, 10, 0.3)', // P.errorContainer
-  success: '#4be277',
-  warning: '#fbbf24',
-  info: '#2dd4bf',
+  danger: '#ff8c8c',                     // Softer warm red
+  dangerContainer: 'rgba(255, 140, 140, 0.12)',
+  error: '#ff8c8c',                      // Matches danger for consistency
+  errorContainer: 'rgba(255, 140, 140, 0.12)',
+  success: '#4be277',                    // Matches primary
+  warning: '#f7c052',                    // Warm amber
+  info: '#32d7f0',                       // Cyan accent
 } as const;
 
 /* ─────────────────────────────────────────────────────
-   Color Palette — LIGHT mode
+   Color Palette — LIGHT mode  (Soft Pastel #2)
+   Warm cream backgrounds · Mint-green primary · Organic feel
    ───────────────────────────────────────────────────── */
 export const EN_LIGHT = {
-  // Backgrounds — brightest to slightly tinted
-  bg: '#F8FBF7',
-  surfaceLow: '#F0F5EE',
-  surface: '#FFFFFF',
-  surfaceHigh: '#EEF8F0',
-  surfaceHighest: '#E6F0E8',
+  // Backgrounds — warm cream progression
+  bg: '#fdfbf7',                         // Warm cream base
+  surfaceLow: '#f4f1ea',                 // Warm beige sections
+  surface: '#ffffff',                    // Pure-white cards
+  surfaceHigh: '#ffffff',                // Card surfaces
+  surfaceHighest: '#f9f8f4',             // Nested/input fields
 
-  // Primary — Emerald Green (darker for light bg contrast)
-  primary: '#16A34A',
-  primaryContainer: '#22c55e',
-  primaryGlow: 'rgba(22, 163, 74, 0.15)',
+  // Primary — Mint Green (softer, organic feel)
+  primary: '#43b581',                    // Mint-green primary
+  primaryContainer: '#2e9666',           // Darker mint for gradients
+  primaryGlow: 'rgba(67, 181, 129, 0.15)',
 
-  // Accent
+  // Accent (darkened slightly for cream-background contrast)
   cyan: '#0891B2',
   amber: '#D97706',
 
-  // Text
-  onSurface: '#0F172A',
-  onSurfaceVariant: '#475569',
-  textMuted: '#94A3B8',
+  // Text — earthy green-tinted hierarchy
+  onSurface: '#2c3e38',                 // Dark earthy green-black
+  onSurfaceVariant: '#5a7a6e',           // Muted green-gray
+  textMuted: '#8ca39a',                  // Sage green-gray
 
-  // Borders & Glass
-  outline: 'rgba(0,0,0,0.06)',
-  outlineVariant: 'rgba(34, 197, 94, 0.14)',
-  glassBg: 'rgba(255, 255, 255, 0.88)',
-  glassBorder: 'rgba(34, 197, 94, 0.10)',
+  // Borders & Glass — warm sand/mint tints
+  outline: '#e8e4db',                    // Warm sand border
+  outlineVariant: 'rgba(67, 181, 129, 0.14)', // Soft mint tint
+  glassBg: 'rgba(255, 255, 255, 0.92)', // Warm glass
+  glassBorder: 'rgba(67, 181, 129, 0.10)', // Pastel mint edge
 
   // Semantic
-  danger: '#EF4444',
-  dangerContainer: 'rgba(239, 68, 68, 0.1)',
-  error: '#DC2626',
-  errorContainer: 'rgba(239, 68, 68, 0.1)',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  info: '#0F766E',
+  danger: '#e67373',                     // Softer red (pastel)
+  dangerContainer: 'rgba(230, 115, 115, 0.10)',
+  error: '#d45b5b',                      // Softer error
+  errorContainer: 'rgba(230, 115, 115, 0.10)',
+  success: '#43b581',                    // Matches primary
+  warning: '#e6a23c',                    // Warmer amber
+  info: '#2e9666',                       // Deep mint
 } as const;
 
 /* ─────────────────────────────────────────────────────

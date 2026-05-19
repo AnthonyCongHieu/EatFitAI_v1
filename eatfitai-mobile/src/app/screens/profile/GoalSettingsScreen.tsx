@@ -1,4 +1,4 @@
-﻿// GoalSettingsScreen: Cài đặt mức độ vận động
+// GoalSettingsScreen: Cài đặt mức độ vận động
 // Emerald Nebula 3D — only Activity Level selection
 
 import React, { useEffect, useState } from 'react';
@@ -19,11 +19,11 @@ import { useEN } from '../../../theme/emeraldNebula';
 /* ═══ Emerald Nebula Palette ═══ */
 const P_STATIC = {
   primary: '#4be277',
-  surface: '#0e1322',
-  surfaceContainerHigh: '#25293a',
+  surface: '#05070d',
+  surfaceContainerHigh: '#252b3f',
   onSurface: '#dee1f7',
-  onSurfaceVariant: '#bccbb9',
-  glassBorder: 'rgba(255,255,255,0.05)',
+  onSurfaceVariant: '#b7c4d9',
+  glassBorder: 'rgba(255,255,255,0.08)',
 };
 const P = P_STATIC;
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * IngredientBasketSheet - Bottom Sheet hiển thị danh sách nguyên liệu
  * Cho phép xóa nguyên liệu và gợi ý công thức
  */
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
   ingredientCardWrap: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    backgroundColor: '#161b2b',
+    borderColor: 'rgba(226,232,240,0.12)',
+    backgroundColor: '#0f1625',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   emptyState: {
     flex: 1,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   emptyDesc: {
     fontSize: 13,
     fontFamily: 'BeVietnamPro_500Medium',
-    color: '#bccbb9',
+    color: '#b7c4d9',
     textAlign: 'center',
   },
   actions: {

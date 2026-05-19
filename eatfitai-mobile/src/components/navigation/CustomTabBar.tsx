@@ -270,12 +270,12 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
   const isDark = theme.mode === 'dark';
 
   const colors = {
-    bg: isDark ? '#0a0e1a' : '#FFFFFF',
+    bg: isDark ? '#05070d' : '#FFFFFF',
     primary: theme.colors.primary,
     onPrimary: isDark ? '#dbeafe' : '#0f172a',
     textMuted: theme.colors.textSecondary,
     onSurface: theme.colors.text,
-    surfaceHigh: isDark ? '#1e2435' : '#F0F5EE',
+    surfaceHigh: isDark ? '#252b3f' : '#F0F5EE',
     borderTop: isDark ? 'rgba(226,232,240,0.08)' : 'rgba(0,0,0,0.06)',
   };
 
