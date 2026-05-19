@@ -9,6 +9,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 
 import { ThemedText } from '../../../components/ThemedText';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import {
   scheduleNotifications,
   requestNotificationPermissions,
@@ -214,16 +215,15 @@ const NotificationsScreen = (): React.ReactElement => {
   const disabledInner = !settings.enabled;
 
   return (
-    <View style={[S.container, { backgroundColor: P.bg }]}>
+    <View style={[S.container, { backgroundColor: P.surface }]}>
+      <MeshBackground />
       {/* ═══ Header ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, width: 40 }}>
-          <Ionicons name="arrow-back" size={24} color={P.primary} />
+      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+        <Pressable onPress={() => navigation.goBack()} style={S.iconBtn} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </Pressable>
-        <View style={S.headerCenter}>
-          <ThemedText style={S.headerTitle}>Cài đặt thông báo</ThemedText>
-        </View>
-        <View style={{ width: 40 }} />
+        <ThemedText style={S.headerTitle}>Cài đặt thông báo</ThemedText>
+        <View style={S.iconBtn} />
       </View>
 
       <ScrollView contentContainerStyle={[S.scrollContent, { paddingTop: 20 }]} showsVerticalScrollIndicator={false}>
@@ -421,11 +421,17 @@ export default NotificationsScreen;
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.surface },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingBottom: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 17, color: P.primary, letterSpacing: -0.3 },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontFamily: 'BeVietnamPro_700Bold', fontSize: 18, color: P.onSurface, letterSpacing: -0.2 },
 
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
 
@@ -440,7 +446,7 @@ const S = StyleSheet.create({
   iconBoxPrimary: { width: 48, height: 48, borderRadius: 16, backgroundColor: P.primary + '33', alignItems: 'center', justifyContent: 'center' },
   iconBoxDark: { width: 40, height: 40, borderRadius: 12, backgroundColor: P.surfaceContainerHighest, alignItems: 'center', justifyContent: 'center' },
 
-  titleWhite: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: '#fff' },
+  titleWhite: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: '#fff' },
   subText: { fontSize: 13, fontFamily: 'BeVietnamPro_400Regular', color: P.slate400, marginTop: 4 },
   sectionLabel: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.slate500, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 20 },
 

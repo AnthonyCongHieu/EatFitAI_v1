@@ -17,7 +17,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import Button from '../../../components/Button';
@@ -32,6 +32,7 @@ import {
 } from '../../../utils/errorHandler';
 import type { RootStackParamList } from '../../types';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import { t } from '../../../i18n/vi';
 import { AIExplanationCard } from '../../../components/ai/AIExplanationCard';
 import { useAiStatus } from '../../../hooks/useAiStatus';
@@ -70,6 +71,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const [isEditing, setIsEditing] = useState(false);
   const [suggestedTarget, setSuggestedTarget] = useState<NutritionTarget | null>(null);
@@ -311,48 +313,22 @@ const NutritionSettingsScreen = (): React.ReactElement => {
   );
 
   const renderScreen = (content: React.ReactNode) => (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-      testID={TEST_IDS.nutritionSettings.screen}
-    >
+    <View style={styles.container} testID={TEST_IDS.nutritionSettings.screen}>
+      <MeshBackground />
       {content}
-    </LinearGradient>
+    </View>
   );
 
   if (isLoading) {
     return renderScreen(
       <>
-        {/* Custom Header */}
-        <View
-          style={{
-            paddingTop: 60,
-            paddingBottom: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.lg,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
-            </Pressable>
-            <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-              <ThemedText variant="h3" weight="700">
-                {t('nutrition_settings.title')}
-              </ThemedText>
-            </View>
-          </View>
+        {/* ═══ Header ═══ */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, minHeight: 52, paddingTop: insets.top + 4, paddingBottom: 10 }}>
+          <Pressable onPress={() => navigation.goBack()} style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }} hitSlop={12}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </Pressable>
+          <ThemedText style={{ flex: 1, textAlign: 'center', fontFamily: 'BeVietnamPro_700Bold', fontSize: 18, color: theme.colors.text, letterSpacing: -0.2 }}>{t('nutrition_settings.title')}</ThemedText>
+          <View style={{ width: 44, height: 44 }} />
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -363,34 +339,13 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
   return renderScreen(
     <>
-      {/* Custom Header - centered like EditProfileScreen */}
-      <View
-        style={{
-          paddingTop: 60,
-          paddingBottom: theme.spacing.sm,
-          paddingHorizontal: theme.spacing.lg,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
-          </Pressable>
-          <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-            <ThemedText variant="h3" weight="700">
-              {t('nutrition_settings.title')}
-            </ThemedText>
-          </View>
-        </View>
+      {/* ═══ Header ═══ */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, minHeight: 52, paddingTop: insets.top + 4, paddingBottom: 10 }}>
+        <Pressable onPress={() => navigation.goBack()} style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </Pressable>
+        <ThemedText style={{ flex: 1, textAlign: 'center', fontFamily: 'BeVietnamPro_700Bold', fontSize: 18, color: theme.colors.text, letterSpacing: -0.2 }}>{t('nutrition_settings.title')}</ThemedText>
+        <View style={{ width: 44, height: 44 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>

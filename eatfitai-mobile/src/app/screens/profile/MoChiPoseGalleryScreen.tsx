@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import {
   MOCHI_SPRITE_CATALOG,
   MOCHI_SPRITE_ORDER,
@@ -139,14 +140,16 @@ const MoChiPoseGalleryScreen = (): React.ReactElement => {
 
   return (
     <View style={[S.container, { paddingTop: insets.top }]}>
+      <MeshBackground />
       <View style={S.header}>
         <Pressable
           style={({ pressed }) => [S.headerButton, pressed && S.pressed]}
           onPress={() => navigation.goBack()}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Quay lại"
         >
-          <Ionicons name="chevron-back" size={24} color={P.text} />
+          <Ionicons name="arrow-back" size={24} color={P.text} />
         </Pressable>
         <View style={S.headerTitleWrap}>
           <ThemedText style={S.headerTitle}>Phòng MoChi</ThemedText>
@@ -186,13 +189,12 @@ const S = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: P.border,
+    backgroundColor: 'transparent',
   },
   headerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },

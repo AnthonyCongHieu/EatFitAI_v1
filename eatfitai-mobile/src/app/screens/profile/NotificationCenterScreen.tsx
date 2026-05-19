@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import {
   selectUnreadMoChiNotificationCount,
@@ -80,15 +81,17 @@ const NotificationCenterScreen = (): React.ReactElement => {
   };
 
   return (
-    <View style={[S.container, { paddingTop: insets.top, backgroundColor: palette.bg }]}>
+    <View style={[S.container, { paddingTop: insets.top }]}>
+      <MeshBackground />
       <View style={S.header}>
         <Pressable
           style={S.headerButton}
           onPress={() => navigation.goBack()}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Quay lại"
         >
-          <Ionicons name="chevron-back" size={24} color={palette.primary} />
+          <Ionicons name="arrow-back" size={24} color={palette.onSurface} />
         </Pressable>
         <View style={S.headerCopy}>
           <ThemedText style={S.headerTitle}>Thông báo</ThemedText>
@@ -97,6 +100,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
         <Pressable
           style={S.headerButton}
           onPress={() => navigation.navigate('NotificationsSettings')}
+          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Cài đặt thông báo"
         >
@@ -185,23 +189,21 @@ const S = StyleSheet.create({
     backgroundColor: P.surface,
   },
   header: {
-    minHeight: 72,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: P.outline,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
   headerButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: P.surfaceContainerLow,
-    borderWidth: 1,
-    borderColor: P.outline,
   },
   headerCopy: {
     flex: 1,
