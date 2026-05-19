@@ -13,13 +13,14 @@ import {
   type MoChiTutorialStep,
   type MoChiTutorialTargetId,
 } from './mochiTutorialCatalog';
+import { navigateRoot } from '../../../app/navigation/navigationRef';
 import {
   markMoChiTutorialCompleted,
   markMoChiTutorialSkipped,
   shouldAutoStartMoChiTutorial,
 } from './mochiTutorialStorage';
 
-export type MoChiTutorialPhase = 'idle' | 'overview' | 'spotlight';
+export type MoChiTutorialPhase = 'idle' | 'overview' | 'spotlight' | 'transition';
 
 export type MoChiTutorialFrame = {
   x: number;
@@ -30,6 +31,7 @@ export type MoChiTutorialFrame = {
 
 export type MoChiTutorialTargetHandle = {
   measure: () => Promise<MoChiTutorialFrame | null>;
+  activateTarget?: () => void;
 };
 
 export type MoChiTutorialStartOptions = {
@@ -41,12 +43,17 @@ type MoChiTutorialContextValue = {
   source: 'auto' | 'manual' | null;
   currentStepIndex: number;
   currentStep: MoChiTutorialStep | null;
+  currentFlowId: MoChiTutorialStep['flowId'] | null;
   isTutorialVisible: boolean;
   activeSheetTarget: MoChiTutorialTargetId | null;
   startTutorial: (options?: MoChiTutorialStartOptions) => void;
   skipTutorial: () => void;
   completeTutorial: () => void;
   nextStep: () => void;
+  activateCurrentTarget: () => void;
+  notifyTargetActivated: (targetId: MoChiTutorialTargetId) => void;
+  advanceInformationalStep: () => void;
+  continueFromTransition: () => void;
   registerTarget: (
     targetId: MoChiTutorialTargetId,
     handle: MoChiTutorialTargetHandle,
@@ -59,12 +66,17 @@ const defaultContextValue: MoChiTutorialContextValue = {
   source: null,
   currentStepIndex: 0,
   currentStep: null,
+  currentFlowId: null,
   isTutorialVisible: false,
   activeSheetTarget: null,
   startTutorial: () => undefined,
   skipTutorial: () => undefined,
   completeTutorial: () => undefined,
   nextStep: () => undefined,
+  activateCurrentTarget: () => undefined,
+  notifyTargetActivated: () => undefined,
+  advanceInformationalStep: () => undefined,
+  continueFromTransition: () => undefined,
   registerTarget: () => () => undefined,
   measureTarget: async () => null,
 };
@@ -94,6 +106,7 @@ export const MoChiTutorialProvider = ({
     phase === 'spotlight' && currentStep?.requiresQuickAddSheet
       ? currentStep.targetId
       : null;
+  const currentFlowId = currentStep?.flowId ?? null;
 
   const startTutorial = useCallback((options?: MoChiTutorialStartOptions) => {
     if (!enabled) {
@@ -123,6 +136,7 @@ export const MoChiTutorialProvider = ({
 
   const nextStep = useCallback(() => {
     if (phase === 'overview') {
+      navigateRoot('AppTabs', { screen: 'HomeTab' } as never);
       setCurrentStepIndex(0);
       setPhase('spotlight');
       return;
@@ -140,6 +154,161 @@ export const MoChiTutorialProvider = ({
 
     setCurrentStepIndex(nextIndex);
   }, [completeTutorial, currentStepIndex, phase]);
+
+  const activateTarget = useCallback((targetId: MoChiTutorialTargetId): boolean => {
+    const handler = targetsRef.current.get(targetId)?.activateTarget;
+    if (!handler) {
+      return false;
+    }
+
+    handler();
+    return true;
+  }, []);
+
+  const getNextFlowStepIndex = useCallback(() => {
+    if (!currentStep) {
+      return -1;
+    }
+
+    const nextFlowStepIndex = MOCHI_TUTORIAL_STEPS.findIndex(
+      (step, index) => index > currentStepIndex && step.flowId !== currentStep.flowId,
+    );
+
+    return nextFlowStepIndex;
+  }, [currentStep, currentStepIndex]);
+
+  const navigateHomeForNextStep = useCallback((nextStepIndex: number) => {
+    const nextFlowStep = MOCHI_TUTORIAL_STEPS[nextStepIndex];
+    const params = nextFlowStep?.targetId === 'home_water'
+      ? { screen: 'HomeTab', params: { focusWaterRequestId: Date.now() } }
+      : { screen: 'HomeTab' };
+
+    navigateRoot('AppTabs', params as never);
+  }, []);
+
+  const continueFromTransition = useCallback(() => {
+    if (phase !== 'transition') {
+      return;
+    }
+
+    if (!currentStep) {
+      resetState();
+      return;
+    }
+
+    if (currentStep.completionBehavior === 'complete') {
+      completeTutorial();
+      return;
+    }
+
+    const nextFlowStepIndex = getNextFlowStepIndex();
+
+    if (nextFlowStepIndex < 0) {
+      completeTutorial();
+      return;
+    }
+
+    if (currentStep.completionBehavior === 'navigate_then_wait') {
+      navigateHomeForNextStep(nextFlowStepIndex);
+    }
+
+    setCurrentStepIndex(nextFlowStepIndex);
+    setPhase('spotlight');
+  }, [
+    completeTutorial,
+    currentStep,
+    getNextFlowStepIndex,
+    navigateHomeForNextStep,
+    phase,
+    resetState,
+  ]);
+
+  const notifyTargetActivated = useCallback((targetId: MoChiTutorialTargetId) => {
+    if (phase !== 'spotlight' || !currentStep || currentStep.targetId !== targetId) {
+      return;
+    }
+
+    if (currentStep.activationMode === 'target_press_advance') {
+      setCurrentStepIndex((index) => Math.min(index + 1, MOCHI_TUTORIAL_STEPS.length - 1));
+      return;
+    }
+
+    if (
+      currentStep.activationMode === 'target_press_destination'
+      || currentStep.activationMode === 'target_press_complete'
+    ) {
+      setPhase('transition');
+    }
+  }, [currentStep, phase]);
+
+  const advanceInformationalStep = useCallback(() => {
+    if (phase !== 'spotlight' || !currentStep || currentStep.activationMode !== 'info_continue') {
+      return;
+    }
+
+    const nextFlowStepIndex = getNextFlowStepIndex();
+    if (nextFlowStepIndex < 0) {
+      completeTutorial();
+      return;
+    }
+
+    setCurrentStepIndex(nextFlowStepIndex);
+    setPhase('spotlight');
+  }, [completeTutorial, currentStep, getNextFlowStepIndex, phase]);
+
+  const activateCurrentTarget = useCallback(() => {
+    if (phase !== 'spotlight' || !currentStep) {
+      return;
+    }
+
+    if (currentStep.targetId === 'mochi_hub') {
+      activateTarget(currentStep.targetId);
+      notifyTargetActivated(currentStep.targetId);
+      return;
+    }
+
+    if (currentStep.id === 'scan_choose_action') {
+      if (!activateTarget(currentStep.targetId)) {
+        navigateRoot('AiCamera');
+      }
+      notifyTargetActivated(currentStep.targetId);
+      return;
+    }
+
+    if (currentStep.id === 'add_meal_choose_action') {
+      if (!activateTarget(currentStep.targetId)) {
+        navigateRoot('FoodSearch', {
+          autoFocus: true,
+          showQuickSuggestions: true,
+          returnToDiaryOnSave: true,
+        });
+      }
+      notifyTargetActivated(currentStep.targetId);
+      return;
+    }
+
+    if (currentStep.id === 'stats_open_tab') {
+      if (!activateTarget(currentStep.targetId)) {
+        navigateRoot('AppTabs', { screen: 'StatsTab' } as never);
+      }
+      notifyTargetActivated(currentStep.targetId);
+      return;
+    }
+
+    activateTarget(currentStep.targetId);
+    if (currentStep.activationMode === 'info_continue') {
+      advanceInformationalStep();
+      return;
+    }
+
+    notifyTargetActivated(currentStep.targetId);
+  }, [
+    activateTarget,
+    advanceInformationalStep,
+    currentStep,
+    notifyTargetActivated,
+    phase,
+  ]);
 
   const registerTarget = useCallback((
     targetId: MoChiTutorialTargetId,
@@ -194,21 +363,31 @@ export const MoChiTutorialProvider = ({
     source,
     currentStepIndex,
     currentStep,
+    currentFlowId,
     isTutorialVisible: phase !== 'idle',
     activeSheetTarget,
     startTutorial,
     skipTutorial,
     completeTutorial,
     nextStep,
+    activateCurrentTarget,
+    notifyTargetActivated,
+    advanceInformationalStep,
+    continueFromTransition,
     registerTarget,
     measureTarget,
   }), [
     activeSheetTarget,
     completeTutorial,
     currentStep,
+    currentFlowId,
     currentStepIndex,
+    activateCurrentTarget,
+    advanceInformationalStep,
+    continueFromTransition,
     measureTarget,
     nextStep,
+    notifyTargetActivated,
     phase,
     registerTarget,
     skipTutorial,

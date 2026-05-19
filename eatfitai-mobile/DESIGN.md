@@ -67,13 +67,15 @@ MoChi has four approved surfaces:
 Contextual inline notices are expected across suitable surfaces, not only Diary: Home empty diary, Search empty/error states, Recipes, Stats low-data moments, Profile gaps, scan review states, and Notification Center empty guidance.
 
 ## First-Run Tutorial
-The app-wide tutorial uses the approved A + C + D composition: a short step overview first, then a real target spotlight with a mini progress path. The tutorial is implemented by `MoChiTutorialProvider`, `MoChiTutorialHost`, and registered `MoChiTutorialTarget` anchors; individual screens must not create their own first-login tutorial overlays.
+The app-wide tutorial uses a short overview first, then real target spotlights with a mini progress path. The tutorial is implemented by `MoChiTutorialProvider`, `MoChiTutorialHost`, and registered `MoChiTutorialTarget` anchors; individual screens must not create their own first-login tutorial overlays.
 
-Scope v1 has exactly five steps: MoChi dock, Thêm bữa, Quét thức ăn, Uống nước, and Thống kê. Each step must point at an actual UI target, use one short warm sentence, and keep a visible `Bỏ qua` action in the top-right corner. The tutorial may open the quick-add sheet to reveal Thêm bữa and Quét thức ăn, but it must not submit food, water, or diary data on behalf of the user.
+Scope v1 has exactly four guided feature flows: Quét ảnh, Thêm bữa, Nước, and Thống kê. Each step must point at an actual UI target, use one short warm sentence, and keep a visible `Bỏ qua` action in the top-right corner. The tutorial may open the quick-add sheet to reveal Thêm bữa and Quét thức ăn, but it must not submit food, water, or diary data on behalf of the user.
+
+Spotlights teach by asking the user to tap the real highlighted target. Coach cards must not contain a competing navigation CTA and must not cover the highlighted target. Highlights are target-owned whenever possible, with the dim layer cut around the target; use a one-shot focus animation only, and looping green pulses are not allowed.
 
 Auto-start is only for newly onboarded users through the versioned pending key. Existing users access replay from Profile via `Xem hướng dẫn MoChi`. Completion and skip are persisted with a tutorial version so a future tutorial can be introduced without nagging users on every app launch.
 
-The mockup reference lives at `docs/mockups/mochi-tutorial-options.html`; production behavior follows option C overview plus option A spotlight plus option D mini path.
+The mockup reference lives at `docs/mockups/mochi-tutorial-options.html`; production behavior follows a compact overview, target spotlight, and mini path without blocking the feature after arrival.
 
 ## Interruption Rules
 Every MoChi moment must pass through `mochiNudgePolicy.ts` before choosing a surface.

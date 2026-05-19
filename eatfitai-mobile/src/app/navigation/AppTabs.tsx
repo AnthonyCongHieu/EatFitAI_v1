@@ -1,12 +1,10 @@
-// Bottom Tabs after authentication
-// 5 tabs: Home, AI Scan, Voice, Stats, Profile
-// Uses CustomTabBar for Emerald Nebula design
+// Bottom tabs after authentication.
+// CustomTabBar stays mounted while users switch between primary surfaces.
 
-import type { ComponentType } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { ComponentType, ReactElement } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import CustomTabBar from '../../components/navigation/CustomTabBar';
-import BottomCommandOverlay from '../../components/navigation/BottomCommandOverlay';
 
 export type AppTabsParamList = {
   HomeTab:
@@ -15,6 +13,7 @@ export type AppTabsParamList = {
         source?: 'water-quick-action';
       }
     | undefined;
+  MealDiary: { selectedDate?: string } | undefined;
   VoiceTab:
     | {
         autoStart?: boolean;
@@ -30,7 +29,7 @@ export type AppTabsParamList = {
   ProfileTab: undefined;
 };
 
-const Stack = createNativeStackNavigator<AppTabsParamList>();
+const Tab = createBottomTabNavigator<AppTabsParamList>();
 
 const lazyScreen = (
   loader: () => { default: ComponentType<any> },
@@ -40,29 +39,28 @@ const lazyScreen = (
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const getHomeScreen = lazyScreen(() => require('../screens/HomeScreen'));
+const getMealDiaryScreen = lazyScreen(() => require('../screens/diary/MealDiaryScreen'));
 const getVoiceScreen = lazyScreen(() => require('../screens/VoiceScreen'));
 const getStatsNavigator = lazyScreen(() => require('./StatsNavigator'));
 const getProfileScreen = lazyScreen(() => require('../screens/ProfileScreen'));
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-const HomeWithBar = (props: any) => { const S = getHomeScreen(); return <BottomCommandOverlay activeRouteName="HomeTab"><S {...props} /></BottomCommandOverlay>; };
-const VoiceWithBar = (props: any) => { const S = getVoiceScreen(); return <BottomCommandOverlay activeRouteName="VoiceTab"><S {...props} /></BottomCommandOverlay>; };
-const StatsWithBar = (props: any) => { const S = getStatsNavigator(); return <BottomCommandOverlay activeRouteName="StatsTab"><S {...props} /></BottomCommandOverlay>; };
-const ProfileWithBar = (props: any) => { const S = getProfileScreen(); return <BottomCommandOverlay activeRouteName="ProfileTab"><S {...props} /></BottomCommandOverlay>; };
-
-const AppTabs = (): React.ReactElement => {
+const AppTabs = (): ReactElement => {
   return (
-    <Stack.Navigator
+    <Tab.Navigator
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
-        animation: 'slide_from_right'
+        lazy: true,
       }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
-      <Stack.Screen name="HomeTab" component={HomeWithBar} />
-      <Stack.Screen name="VoiceTab" component={VoiceWithBar} />
-      <Stack.Screen name="StatsTab" component={StatsWithBar} />
-      <Stack.Screen name="ProfileTab" component={ProfileWithBar} />
-    </Stack.Navigator>
+      <Tab.Screen name="HomeTab" getComponent={getHomeScreen} />
+      <Tab.Screen name="MealDiary" getComponent={getMealDiaryScreen} />
+      <Tab.Screen name="VoiceTab" getComponent={getVoiceScreen} />
+      <Tab.Screen name="StatsTab" getComponent={getStatsNavigator} />
+      <Tab.Screen name="ProfileTab" getComponent={getProfileScreen} />
+    </Tab.Navigator>
   );
 };
 

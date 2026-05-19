@@ -69,7 +69,6 @@ const getCommonMealsScreen = lazyScreen(() =>
 const getCommonMealTemplateScreen = lazyScreen(() =>
   require('../screens/diary/CommonMealTemplateScreen'),
 );
-const getMealDiaryScreen = lazyScreen(() => require('../screens/diary/MealDiaryScreen'));
 const getAIScanScreen = lazyScreen(() => require('../screens/ai/AIScanScreen'));
 const getAddMealFromVisionScreen = lazyScreen(() =>
   require('../screens/meals/AddMealFromVisionScreen'),
@@ -130,16 +129,6 @@ const getMoChiPoseGalleryScreen = lazyScreen(() =>
   require('../screens/profile/MoChiPoseGalleryScreen'),
 );
 /* eslint-enable @typescript-eslint/no-require-imports */
-
-const MealDiaryWithBottomBar = (props: any): React.ReactElement => {
-  const Screen = getMealDiaryScreen();
-
-  return (
-    <BottomCommandOverlay activeRouteName="MealDiary">
-      <Screen {...props} />
-    </BottomCommandOverlay>
-  );
-};
 
 const AiCameraWithBottomBar = (props: any): React.ReactElement => {
   const Screen = getAIScanScreen();
@@ -294,14 +283,6 @@ const AppNavigator = (): React.ReactElement => {
                 name="CommonMealTemplate"
                 getComponent={getCommonMealTemplateScreen}
                 options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="MealDiary"
-                component={MealDiaryWithBottomBar}
-                options={{
-                  headerShown: false,
-                  title: 'Nhật ký bữa ăn',
-                }}
               />
               <Stack.Screen
                 name="AiCamera"

@@ -26,10 +26,12 @@ from urllib.parse import quote
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_FOLDER_ID = "1wyHHBkhVlztP-OzzEzqtR5RfOPB8lsA7"
+DEFAULT_AI_VISION_FOLDER_ID = "1wyHHBkhVlztP-OzzEzqtR5RfOPB8lsA7"
+DEFAULT_RECIPE_FOLDER_ID = "1Q3BnnpdtBt4yhSSNBolS8cbj1rtp0t1p"
 DEFAULT_DOWNLOAD_DIR = REPO_ROOT / "_tmp" / "drive_food_new_raw"
 DEFAULT_REPORT = REPO_ROOT / "_tmp" / "food_catalog_image_sync_report.json"
 SEED_JSON_PATH = REPO_ROOT / "eatfitai-backend" / "Data" / "SeedData" / "ai_vision_food_catalog.v1.json"
+VIETNAMESE_FOOD_CATALOG_PATH = REPO_ROOT / "eatfitai-backend" / "Data" / "SeedData" / "vietnamese_food_catalog.v1.json"
 CATALOG_CS_PATH = REPO_ROOT / "eatfitai-backend" / "Data" / "AiVisionLabelCatalog.cs"
 FOOD_BUCKET = "food-images"
 R2_BUCKET_DEFAULT = "eatfitai-media"
@@ -56,6 +58,20 @@ MANUAL_FILENAME_LABELS = {
     "thit hap khoai mon": "steamed_pork_belly_taro",
     "thit heo ba chi nuong": "grilled_pork_belly",
     "xoi man": "xoi",
+}
+
+RECIPE_FILENAME_ALIASES = {
+    # Variants and typos observed in the generated recipe-image Drive folder.
+    # Keep this list conservative: only add aliases that still describe the same dish.
+    "hu-tieu-xao": ["Hủ tíu xào"],
+    "hu-tieu-nam-vang": ["Hủ tíu Nam Vang"],
+    "thit-kho-tau": ["Thịt kho tày"],
+    "thit-kho-sa-ot": ["Thịt heo kho sả ớt"],
+    "dau-que-xao-thit-bo": ["Đậu que xào bò"],
+    "cuon-banh-trang-thit-heo": ["Bánh tráng cuốn thịt heo"],
+    "suon-nuong": ["Sườn heo nướng"],
+    "tempeh-xao-sa-ot": ["Tempeh xào xả ớt"],
+    "donut-me-rong-ruot": ["Bánh donut mè"],
 }
 
 
@@ -88,6 +104,7 @@ class VariantKeys:
 @dataclass(frozen=True)
 class SyncItem:
     label: str
+    display_name_vi: str
     source_name: str
     source_file_id: str
     source_path: str
@@ -153,17 +170,20 @@ def normalize_key(value: str | None) -> str:
     return unicodedata.normalize("NFC", "".join(result).strip())
 
 
-def build_variant_keys(label: str) -> VariantKeys:
+def build_variant_keys(label: str, object_prefix: str = f"{FOOD_BUCKET}/v2") -> VariantKeys:
     safe_label = normalize_label(label)
+    safe_prefix = object_prefix.strip().strip("/")
+    if not safe_prefix:
+        raise ValueError("object_prefix is required")
     return VariantKeys(
-        thumb_key=f"{FOOD_BUCKET}/v2/thumb/{safe_label}.webp",
-        medium_key=f"{FOOD_BUCKET}/v2/medium/{safe_label}.webp",
+        thumb_key=f"{safe_prefix}/thumb/{safe_label}.webp",
+        medium_key=f"{safe_prefix}/medium/{safe_label}.webp",
     )
 
 
 def normalize_label(label: str) -> str:
     value = label.strip().lower()
-    if not re.fullmatch(r"[a-z0-9_]+", value):
+    if not re.fullmatch(r"[a-z0-9_-]+", value):
         raise ValueError(f"Unsafe label for object key: {label}")
     return value
 
@@ -189,6 +209,33 @@ def load_catalog_entries(seed_json_path: Path = SEED_JSON_PATH, catalog_cs_path:
             display_name,
             str(seed.get("foodNameEn") or ""),
             *aliases_by_label.get(label, []),
+        ]
+        entries.append(
+            CatalogEntry(
+                label=label,
+                display_name_vi=display_name,
+                aliases=[alias for alias in aliases if alias and alias.strip()],
+            )
+        )
+    return entries
+
+
+def load_recipe_catalog_entries(seed_json_path: Path = VIETNAMESE_FOOD_CATALOG_PATH) -> list[CatalogEntry]:
+    seeds = json.loads(seed_json_path.read_text(encoding="utf-8"))
+    entries: list[CatalogEntry] = []
+    for seed in seeds:
+        image_key = str(seed.get("imageKey") or "").strip()
+        if not image_key:
+            continue
+
+        label = str(seed["slug"])
+        display_name = str(seed.get("foodName") or "")
+        aliases = [
+            label.replace("-", " "),
+            display_name,
+            str(seed.get("foodNameEn") or ""),
+            *[str(alias) for alias in seed.get("aliases") or []],
+            *RECIPE_FILENAME_ALIASES.get(label, []),
         ]
         entries.append(
             CatalogEntry(
@@ -258,6 +305,7 @@ def build_sync_plan(
     catalog_entries: list[CatalogEntry],
     drive_images: list[DriveImage],
     public_base_url: str,
+    object_prefix: str = f"{FOOD_BUCKET}/v2",
 ) -> SyncPlan:
     aliases_by_label = {
         entry.label: {normalize_key(alias) for alias in entry.aliases if normalize_key(alias)}
@@ -275,9 +323,11 @@ def build_sync_plan(
             unmatched_files.append(image.name)
             continue
 
-        keys = build_variant_keys(label)
+        entry = next(catalog_entry for catalog_entry in catalog_entries if catalog_entry.label == label)
+        keys = build_variant_keys(label, object_prefix=object_prefix)
         item = SyncItem(
             label=label,
+            display_name_vi=entry.display_name_vi,
             source_name=image.name,
             source_file_id=image.file_id,
             source_path=str(image.name),
@@ -314,7 +364,7 @@ def build_sync_plan(
 
 
 def match_label(file_key: str, aliases_by_label: dict[str, set[str]]) -> tuple[str | None, str]:
-    if file_key in MANUAL_FILENAME_LABELS:
+    if file_key in MANUAL_FILENAME_LABELS and MANUAL_FILENAME_LABELS[file_key] in aliases_by_label:
         return MANUAL_FILENAME_LABELS[file_key], f"manual:{file_key}"
 
     best_label: str | None = None
@@ -487,7 +537,7 @@ def build_r2_put_request(settings: R2Settings, key: str, payload: bytes) -> tupl
     )
 
 
-def update_database(db_settings: DbSettings, items: list[SyncItem]) -> int:
+def update_database(db_settings: DbSettings, items: list[SyncItem], catalog: str) -> int:
     try:
         import psycopg
     except ImportError as exc:
@@ -505,17 +555,33 @@ def update_database(db_settings: DbSettings, items: list[SyncItem]) -> int:
         with conn.cursor() as cursor:
             updated = 0
             for item in items:
-                cursor.execute(
-                    """
-                    update public."FoodItem" food
-                    set "ThumbNail" = %(thumb_url)s,
-                        "UpdatedAt" = now()
-                    from public."AiLabelMap" map
-                    where map."Label" = %(label)s
-                      and map."FoodItemId" = food."FoodItemId"
-                    """,
-                    {"label": item.label, "thumb_url": item.thumb_url},
-                )
+                if catalog == "recipe":
+                    cursor.execute(
+                        """
+                        update public."FoodItem"
+                        set "ThumbNail" = %(thumb_url)s,
+                            "UpdatedAt" = now()
+                        where "FoodName" = %(display_name)s
+                           or "FoodNameUnsigned" ilike %(slug_pattern)s
+                        """,
+                        {
+                            "display_name": item.display_name_vi,
+                            "slug_pattern": f"%{normalize_key(item.label)}%",
+                            "thumb_url": item.thumb_url,
+                        },
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        update public."FoodItem" food
+                        set "ThumbNail" = %(thumb_url)s,
+                            "UpdatedAt" = now()
+                        from public."AiLabelMap" map
+                        where map."Label" = %(label)s
+                          and map."FoodItemId" = food."FoodItemId"
+                        """,
+                        {"label": item.label, "thumb_url": item.thumb_url},
+                    )
                 updated += cursor.rowcount
         conn.commit()
     return updated
@@ -529,10 +595,17 @@ def write_report(path: Path, report: dict[str, Any]) -> None:
 def run(args: argparse.Namespace) -> int:
     download_dir = Path(args.download_dir)
     report_path = Path(args.output)
-    catalog = load_catalog_entries()
-    drive_images = list_drive_images(args.folder_id, download_dir)
+    catalog = load_recipe_catalog_entries() if args.catalog == "recipe" else load_catalog_entries()
+    object_prefix = "recipe-images/v1" if args.catalog == "recipe" else f"{FOOD_BUCKET}/v2"
+    folder_id = args.folder_id or (DEFAULT_RECIPE_FOLDER_ID if args.catalog == "recipe" else DEFAULT_AI_VISION_FOLDER_ID)
+    drive_images = list_drive_images(folder_id, download_dir)
     public_base_url = args.r2_public_base_url or os.environ.get("R2_PUBLIC_BASE_URL") or os.environ.get("MEDIA_PUBLIC_BASE_URL") or "https://<R2_PUBLIC_BASE_URL>"
-    plan = build_sync_plan(catalog, drive_images, public_base_url=public_base_url)
+    plan = build_sync_plan(
+        catalog,
+        drive_images,
+        public_base_url=public_base_url,
+        object_prefix=object_prefix,
+    )
 
     if args.require_complete and (plan.missing_labels or plan.unmatched_files or plan.duplicate_labels):
         report = build_report(args, plan, [], "blocked_incomplete_mapping")
@@ -568,7 +641,7 @@ def run(args: argparse.Namespace) -> int:
                     "mediumBytes": len(medium_bytes),
                 }
             )
-        db_updated = update_database(db_settings, plan.items)
+        db_updated = update_database(db_settings, plan.items, args.catalog)
         status = "database_only" if args.db_only else "applied"
     else:
         results = [{**asdict(item), "status": "planned"} for item in plan.items]
@@ -589,7 +662,8 @@ def build_report(args: argparse.Namespace, plan: SyncPlan, results: list[dict[st
         "status": status,
         "apply": bool(args.apply),
         "dbOnly": bool(args.db_only),
-        "folderId": args.folder_id,
+        "catalog": args.catalog,
+        "folderId": args.folder_id or (DEFAULT_RECIPE_FOLDER_ID if args.catalog == "recipe" else DEFAULT_AI_VISION_FOLDER_ID),
         "downloadDir": str(Path(args.download_dir).resolve()),
         "summary": plan.summary,
         "matchCounts": dict(sorted(match_counts.items())),
@@ -617,7 +691,13 @@ def print_summary(report_path: Path, report: dict[str, Any]) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Sync Drive food catalog images to Cloudflare R2")
-    parser.add_argument("--folder-id", default=DEFAULT_FOLDER_ID, help="Google Drive folder id")
+    parser.add_argument(
+        "--catalog",
+        choices=["ai-vision", "recipe"],
+        default="ai-vision",
+        help="Catalog image set to sync",
+    )
+    parser.add_argument("--folder-id", default="", help="Google Drive folder id")
     parser.add_argument("--download-dir", default=str(DEFAULT_DOWNLOAD_DIR), help="Local image cache directory")
     parser.add_argument("--output", default=str(DEFAULT_REPORT), help="JSON report path")
     parser.add_argument("--apply", action="store_true", help="Upload R2 objects and update FoodItem.ThumbNail")

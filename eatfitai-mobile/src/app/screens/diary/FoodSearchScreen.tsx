@@ -187,6 +187,13 @@ const FoodSearchScreen = (): React.ReactElement => {
     fetchPreferences().catch(() => undefined);
   }, [fetchPreferences]);
 
+  const navigateToDiaryTab = useCallback(() => {
+    navigation.navigate('AppTabs', {
+      screen: 'MealDiary',
+      params: selectedDate ? { selectedDate } : undefined,
+    });
+  }, [navigation, selectedDate]);
+
   const loadFavorites = async (setAsList = false) => {
     if (setAsList) setIsLoading(true);
     try {
@@ -257,7 +264,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         await loadRecentFoods();
       }
       if (returnToDiaryOnSave) {
-        navigation.replace('MealDiary', selectedDate ? { selectedDate } : undefined);
+        navigateToDiaryTab();
       }
     } catch (error) {
       trackEvent('diary_add_quick_failure', {
@@ -302,7 +309,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       });
       await invalidateDiaryQueries(queryClient);
       if (returnToDiaryOnSave) {
-        navigation.replace('MealDiary', selectedDate ? { selectedDate } : undefined);
+        navigateToDiaryTab();
       }
     } catch (error) {
       trackEvent('common_meal_apply_failure', {

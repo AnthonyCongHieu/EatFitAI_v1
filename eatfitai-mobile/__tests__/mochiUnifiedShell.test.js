@@ -5,12 +5,14 @@ const readSource = (relativePath) =>
   fs.readFileSync(path.join(__dirname, '..', relativePath), 'utf8');
 
 describe('Unified MoChi shell and loading states', () => {
-  it('keeps stack command screens inside the bottom command shell', () => {
+  it('keeps tab commands in the persistent bottom-tab shell and overlays only stack commands', () => {
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
+    const tabsSource = readSource('src/app/navigation/AppTabs.tsx');
 
     expect(navigatorSource).toContain('BottomCommandOverlay');
-    expect(navigatorSource).toContain('activeRouteName="MealDiary"');
     expect(navigatorSource).toContain('activeRouteName="AiCamera"');
+    expect(navigatorSource).not.toContain('activeRouteName="MealDiary"');
+    expect(tabsSource).toContain('<Tab.Screen name="MealDiary"');
   });
 
   it('uses a MoChi dock for the center command instead of the old green block', () => {
@@ -40,7 +42,7 @@ describe('Unified MoChi shell and loading states', () => {
     expect(sheetSource).toContain('Quét thức ăn');
     expect(sheetSource).toContain('Thêm bữa');
     expect(sheetSource).toContain('Công thức');
-    expect(sheetSource).toContain('Lượng nước');
+    expect(sheetSource).toContain('Giọng nói');
     expect(sheetSource).not.toContain('quickGrid');
     expect(sheetSource).not.toContain('QuickAddHub');
     expect(sheetSource).not.toContain('Lối vào khác');

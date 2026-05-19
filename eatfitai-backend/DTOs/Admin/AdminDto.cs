@@ -95,6 +95,20 @@ public class UpdateAdminUserProfileRequest
     public string? DisplayName { get; set; }
 }
 
+/// <summary>
+/// Request body cho endpoint hard-delete user.
+/// Bắt buộc xác nhận cụm DELETE:{EMAIL} và lý do nghiệp vụ.
+/// </summary>
+public class DeleteUserRequest
+{
+    [Required]
+    public string ConfirmText { get; set; } = string.Empty;
+
+    [Required]
+    [MinLength(5)]
+    public string Justification { get; set; } = string.Empty;
+}
+
 public class AdminMutationResponseDto
 {
     public string Status { get; set; } = "success";

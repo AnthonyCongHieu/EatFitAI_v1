@@ -15,6 +15,8 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import Animated, { FadeIn, FadeInUp, ZoomIn } from 'react-native-reanimated';
@@ -34,6 +36,7 @@ import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
 import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
 import type { RootStackParamList } from '../types';
+import type { AppTabsParamList } from '../navigation/AppTabs';
 import { t } from '../../i18n/vi';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
@@ -61,7 +64,10 @@ const P_STATIC = {
   errorContainer: 'rgba(147, 0, 10, 0.3)',
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabsParamList, 'ProfileTab'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette — resolved dynamically via useEN()
@@ -145,7 +151,6 @@ const MenuRow = ({
 const ProfileScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
-  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = useEN();
   const { mode, toggleTheme } = useAppTheme();
   const { startTutorial } = useMoChiTutorial();
@@ -198,7 +203,7 @@ const ProfileScreen = (): React.ReactElement => {
   }, [logout]);
 
   const handleMoChiTutorialPress = useCallback(() => {
-    navigation.navigate('AppTabs', { screen: 'HomeTab' });
+    navigation.navigate('HomeTab');
     setTimeout(() => startTutorial({ source: 'manual' }), 220);
   }, [navigation, startTutorial]);
 

@@ -17,6 +17,7 @@ describe('Mascot water quick action navigation', () => {
     const tabsSource = readSource('src/app/navigation/AppTabs.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
 
+    expect(tabsSource).toContain('createBottomTabNavigator');
     expect(tabsSource).toContain('focusWaterRequestId?: number');
     expect(homeSource).toContain('route.params?.focusWaterRequestId');
     expect(homeSource).toContain('scrollViewRef={screenScrollRef}');

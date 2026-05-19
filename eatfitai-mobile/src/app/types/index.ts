@@ -35,7 +35,6 @@ export type RootStackParamList = {
   CommonMealTemplate: { templateId?: string } | undefined;
   AiCamera: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
-  MealDiary: { selectedDate?: string } | undefined;
   RecipeSuggestions: {
     ingredients?: string[];
     availableFoodItemIds?: number[];
@@ -51,7 +50,10 @@ export type RootStackParamList = {
     currentGrams?: number;
     availableIngredients?: string[];
     missingIngredients?: string[];
+    extraIngredients?: string[];
+    requiredIngredients?: string[];
     prepItems?: string[];
+    disclaimer?: string;
   };
   NutritionInsights: undefined;
   VisionHistory: undefined;

@@ -67,11 +67,14 @@ namespace EatFitAI.API.DTOs.AI
         public List<string> SourceUrls { get; set; } = new();
         public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }
         public List<string> PrepItems { get; set; } = new();
+        public string Disclaimer { get; set; } = string.Empty;
         
         // Lists for user reference
         public List<string> AvailableIngredients { get; set; } = new();
         public List<string> MatchedIngredients { get; set; } = new();
         public List<string> MissingIngredients { get; set; } = new();
+        public List<string> ExtraIngredients { get; set; } = new();
+        public List<string> RequiredIngredients { get; set; } = new();
         public List<string> AllIngredients { get; set; } = new();
     }
 
@@ -106,6 +109,8 @@ namespace EatFitAI.API.DTOs.AI
         public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }
         public string? GuideStatus { get; set; }
         public List<string> SourceUrls { get; set; } = new();
+        public string Disclaimer { get; set; } = string.Empty;
+        public List<string> RequiredIngredients { get; set; } = new();
         
         // Detailed ingredients
         public List<RecipeIngredientDetailDto> Ingredients { get; set; } = new();

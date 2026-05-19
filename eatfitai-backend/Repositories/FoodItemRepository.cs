@@ -32,6 +32,7 @@ namespace EatFitAI.API.Repositories
                 return items
                     .Where(fi => fi.FoodName.Contains(rawSearch, StringComparison.OrdinalIgnoreCase) ||
                                  (fi.FoodNameEn != null && fi.FoodNameEn.Contains(rawSearch, StringComparison.OrdinalIgnoreCase)) ||
+                                 (fi.FoodNameUnsigned != null && fi.FoodNameUnsigned.Contains(unsignedSearch, StringComparison.OrdinalIgnoreCase)) ||
                                  NormalizeForSearch(fi.FoodName).Contains(unsignedSearch, StringComparison.OrdinalIgnoreCase))
                     .OrderBy(fi => fi.FoodName)
                     .Skip(skip)

@@ -174,7 +174,6 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
 
   async function searchRecipes(overrideIngredients?: string[]) {
     const ingredientsToUse = overrideIngredients ?? ingredients;
-    if (ingredientsToUse.length === 0 && !isDailyRecommendation) return;
 
     setLoading(true);
     setError(null);
@@ -246,7 +245,10 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       recipeName: recipe.recipeName,
       availableIngredients: recipe.availableIngredients,
       missingIngredients: recipe.missingIngredients,
+      extraIngredients: recipe.extraIngredients,
+      requiredIngredients: recipe.requiredIngredients,
       prepItems: recipe.prepItems,
+      disclaimer: recipe.disclaimer,
     });
   };
 
@@ -367,18 +369,15 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           </ScrollView>
         )}
 
-        {/* Action Button If Ingredients Exist */}
-        {(ingredients.length > 0 || isDailyRecommendation) && (
-          <TouchableOpacity
-            style={S.mainActionBtn}
-            onPress={() => searchRecipes()}
-            disabled={loading}
-          >
-            <ThemedText style={S.mainActionBtnText}>
-              {loading ? 'Đang tìm...' : isDailyRecommendation ? 'Gợi ý món hôm nay' : 'Khám phá công thức'}
-            </ThemedText>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={S.mainActionBtn}
+          onPress={() => searchRecipes()}
+          disabled={loading}
+        >
+          <ThemedText style={S.mainActionBtnText}>
+            {loading ? 'Đang tìm...' : isDailyRecommendation ? 'Gợi ý món hôm nay' : 'Khám phá công thức'}
+          </ThemedText>
+        </TouchableOpacity>
 
         {/* ═══ Results Section ═══ */}
         <View style={S.resultsWrap}>
@@ -397,12 +396,19 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
               <ThemedText style={S.emptyText}>
                 {isDailyRecommendation
                   ? 'Chạm vào nút phía trên để xem món phù hợp cho hôm nay.'
-                  : <>Hãy nhập nguyên liệu phía trên để{'\n'}chúng tôi lên thực đơn cho bạn!</>}
+                  : <>Nhập nguyên liệu nếu có, hoặc chạm nút phía trên để{'\n'}khám phá công thức phù hợp.</>}
               </ThemedText>
             </View>
           ) : (
             <>
               <MoChiInlineNotice mochiEvent="recipe_success" compact />
+              <View style={S.disclaimerCard}>
+                <Ionicons name="information-circle-outline" size={18} color={P.onSurfaceVariant} />
+                <ThemedText style={S.disclaimerText}>
+                  {recipes[0]?.disclaimer
+                    ?? 'Gợi ý chỉ mang tính tham khảo; không phải khuyến nghị của chuyên gia dinh dưỡng, bác sĩ hoặc đầu bếp chuyên nghiệp.'}
+                </ThemedText>
+              </View>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -523,6 +529,24 @@ const S = StyleSheet.create({
   },
   sortChipText: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onSurfaceVariant },
   sortChipTextActive: { color: P_STATIC.onPrimary },
+  disclaimerCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: P_STATIC.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: P_STATIC.glassBorder,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 16,
+  },
+  disclaimerText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_500Medium',
+    color: P_STATIC.onSurfaceVariant,
+    lineHeight: 18,
+  },
   imageFallback: {
     alignItems: 'center',
     justifyContent: 'center',

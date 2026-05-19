@@ -35,7 +35,7 @@ public class RecipeGuideServiceTests : IDisposable
     {
         var recipeId = await SeedRecipeAsync();
         var recipe = await _context.Recipes.SingleAsync();
-        recipe.InstructionsJson = "[\"Sơ chế\", \"Áp chảo\"]";
+        recipe.InstructionsJson = "[\"Sơ chế\", \"Áp chảo\", \"Hoàn thiện\"]";
         recipe.SourceUrlsJson = "[\"https://example.com/recipe\"]";
         recipe.VideoUrl = "https://www.youtube.com/watch?v=abc";
         recipe.EnhancedAt = DateTime.UtcNow;
@@ -48,8 +48,45 @@ public class RecipeGuideServiceTests : IDisposable
 
         Assert.NotNull(result);
         Assert.Equal("stored", result!.GuideStatus);
-        Assert.Equal(new[] { "Sơ chế", "Áp chảo" }, result.Steps);
+        Assert.Equal(new[] { "Sơ chế", "Áp chảo", "Hoàn thiện" }, result.Steps);
         Assert.Equal("https://example.com/recipe", Assert.Single(result.SourceUrls));
+    }
+
+    [Fact]
+    public async Task GetCookingGuideAsync_RegeneratesWhenStoredGuideOnlyHasYoutubeSearchUrl()
+    {
+        var recipeId = await SeedRecipeAsync();
+        var recipe = await _context.Recipes.SingleAsync();
+        recipe.InstructionsJson = "[\"Sơ chế\", \"Nấu\", \"Hoàn thiện\"]";
+        recipe.SourceUrlsJson = "[\"https://example.com/recipe\"]";
+        recipe.VideoUrl = "https://www.youtube.com/results?search_query=cach+nau+trung";
+        recipe.EnhancedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var factory = new StubHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """
+                {
+                  "steps": ["Sơ chế lại", "Nấu lại", "Hoàn thiện lại"],
+                  "sourceUrls": ["https://example.com/refreshed-recipe"],
+                  "youtubeVideo": {
+                    "videoId": "abc",
+                    "url": "https://www.youtube.com/watch?v=abc"
+                  },
+                  "guideStatus": "generated"
+                }
+                """,
+                Encoding.UTF8,
+                "application/json")
+        });
+        var service = CreateService(factory);
+
+        var result = await service.GetCookingGuideAsync(recipeId);
+
+        Assert.NotNull(result);
+        Assert.Equal("generated", result!.GuideStatus);
+        Assert.Equal("https://www.youtube.com/watch?v=abc", result.YoutubeVideo!.Url);
     }
 
     [Fact]

@@ -6,6 +6,8 @@ using Microsoft.Extensions.Hosting;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace EatFitAI.API.Data
 {
@@ -25,7 +27,10 @@ namespace EatFitAI.API.Data
             await SeedAiLabelMapsAsync(context);
             await SeedFoodServingsAsync(context);
             await SeedAiVisionCatalogServingsAsync(context, env.ContentRootPath);
+            await SeedVietnameseFoodCatalogAsync(context, env.ContentRootPath);
+            await SeedVietnameseFoodServingsAsync(context, env.ContentRootPath);
             await SeedRecipesAsync(context);  // Thêm seed recipes
+            await SeedVietnameseRecipesAsync(context, env.ContentRootPath);
             await SeedDefaultUserPasswordsAsync(context, env);
         }
 
@@ -552,6 +557,139 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
+        private static async Task SeedVietnameseFoodCatalogAsync(EatFitAIDbContext context, string contentRootPath)
+        {
+            var seeds = VietnameseFoodCatalog.LoadFoodSeeds(contentRootPath);
+            if (seeds.Count == 0)
+            {
+                return;
+            }
+
+            var foodItems = await context.FoodItems.ToListAsync();
+            foreach (var seed in seeds)
+            {
+                var food = FindVietnameseCatalogFood(seed, foodItems);
+                var isNew = food == null;
+
+                if (food == null)
+                {
+                    food = new FoodItem
+                    {
+                        CreatedAt = DateTime.UtcNow,
+                    };
+                    foodItems.Add(food);
+                    await context.FoodItems.AddAsync(food);
+                }
+
+                food.FoodName = seed.FoodName.Trim();
+                food.FoodNameEn = string.IsNullOrWhiteSpace(seed.FoodNameEn) ? food.FoodNameEn : seed.FoodNameEn.Trim();
+                food.FoodNameUnsigned = VietnameseFoodCatalog.BuildSearchText(seed);
+                if (!string.IsNullOrWhiteSpace(seed.ImageKey))
+                {
+                    food.ThumbNail = seed.ImageKey.Trim();
+                }
+                else if (string.IsNullOrWhiteSpace(food.ThumbNail))
+                {
+                    food.ThumbNail = null;
+                }
+
+                if (isNew || food.CredibilityScore <= 50)
+                {
+                    food.CaloriesPer100g = seed.CaloriesPer100g;
+                    food.ProteinPer100g = seed.ProteinPer100g;
+                    food.CarbPer100g = seed.CarbPer100g;
+                    food.FatPer100g = seed.FatPer100g;
+                    food.IsVerified = seed.IsVerified;
+                    food.VerifiedBy = seed.VerifiedBy;
+                    food.VerificationStatus = seed.VerificationStatus;
+                    food.CredibilityScore = seed.CredibilityScore;
+                    food.NutrientCompletenessScore = seed.NutrientCompletenessScore;
+                    food.MissingNutrients = FoodTrustBuilder.SerializeMissingNutrients(seed.MissingNutrients);
+                }
+
+                food.IsActive = true;
+                food.IsDeleted = false;
+                food.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private static FoodItem? FindVietnameseCatalogFood(
+            VietnameseFoodCatalog.FoodSeed seed,
+            IReadOnlyCollection<FoodItem> foodItems)
+        {
+            var seedKeys = new[]
+            {
+                seed.FoodName,
+                seed.FoodNameEn,
+                seed.Slug.Replace('-', ' ')
+            }
+                .Concat(seed.Aliases)
+                .Select(NormalizeCatalogKey)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.Ordinal)
+                .ToHashSet(StringComparer.Ordinal);
+
+            if (seedKeys.Count == 0)
+            {
+                return null;
+            }
+
+            return foodItems.FirstOrDefault(item =>
+                seedKeys.Contains(NormalizeCatalogKey(item.FoodName)) ||
+                seedKeys.Contains(NormalizeCatalogKey(item.FoodNameUnsigned)) ||
+                seedKeys.Contains(NormalizeCatalogKey(item.FoodNameEn)));
+        }
+
+        private static async Task SeedVietnameseFoodServingsAsync(EatFitAIDbContext context, string contentRootPath)
+        {
+            var seeds = VietnameseFoodCatalog.LoadFoodSeeds(contentRootPath);
+            if (seeds.Count == 0)
+            {
+                return;
+            }
+
+            var servingUnits = await context.ServingUnits.ToListAsync();
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
+
+            foreach (var seed in seeds)
+            {
+                var food = FindVietnameseCatalogFood(seed, foodItems);
+                var servingUnit = servingUnits.FirstOrDefault(unit =>
+                    string.Equals(unit.Name, seed.DefaultServingUnitName, StringComparison.OrdinalIgnoreCase));
+
+                if (food == null || servingUnit == null || seed.DefaultGrams <= 0)
+                {
+                    continue;
+                }
+
+                var existing = await context.FoodServings.FirstOrDefaultAsync(serving =>
+                    serving.FoodItemId == food.FoodItemId &&
+                    serving.ServingUnitId == servingUnit.ServingUnitId);
+
+                if (existing == null)
+                {
+                    await context.FoodServings.AddAsync(new FoodServing
+                    {
+                        FoodItemId = food.FoodItemId,
+                        ServingUnitId = servingUnit.ServingUnitId,
+                        GramsPerUnit = seed.DefaultGrams,
+                        Description = $"Mặc định catalog món Việt: {food.FoodName}"
+                    });
+                }
+                else
+                {
+                    existing.GramsPerUnit = seed.DefaultGrams;
+                    existing.Description ??= $"Mặc định catalog món Việt: {food.FoodName}";
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+
         private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)
         {
             if (await context.FoodServings.AnyAsync()) return;
@@ -755,7 +893,7 @@ namespace EatFitAI.API.Data
 
                 if (recipe.RecipeId != 0)
                 {
-                    context.RecipeIngredients.RemoveRange(recipe.RecipeIngredients);
+                    context.RecipeIngredients.RemoveRange(recipe.RecipeIngredients.ToList());
                 }
 
                 foreach (var ingredient in resolvedIngredients)
@@ -848,7 +986,196 @@ namespace EatFitAI.API.Data
                 : primaryIngredientImageUrl;
         }
 
+        private static async Task SeedVietnameseRecipesAsync(EatFitAIDbContext context, string contentRootPath)
+        {
+            var seeds = VietnameseFoodCatalog.LoadRecipeSeeds(contentRootPath);
+            if (seeds.Count == 0)
+            {
+                return;
+            }
+
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
+            var recipes = await context.Recipes
+                .Include(recipe => recipe.RecipeIngredients)
+                .ToListAsync();
+            var recipesByName = recipes
+                .GroupBy(recipe => NormalizeCatalogKey(recipe.RecipeName), StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+            var now = DateTime.UtcNow;
+
+            foreach (var seed in seeds)
+            {
+                var resolvedIngredients = seed.Ingredients
+                    .Select(ingredient => new
+                    {
+                        Food = FindSeedFood(foodItems, ingredient.Keys),
+                        ingredient.Grams
+                    })
+                    .Where(item => item.Food != null)
+                    .Select(item => new RecipeIngredient
+                    {
+                        FoodItemId = item.Food!.FoodItemId,
+                        Grams = item.Grams
+                    })
+                    .GroupBy(item => item.FoodItemId)
+                    .Select(group => new RecipeIngredient
+                    {
+                        FoodItemId = group.Key,
+                        Grams = group.Sum(item => item.Grams)
+                    })
+                    .ToList();
+
+                if (resolvedIngredients.Count < 2)
+                {
+                    continue;
+                }
+
+                var recipeKey = NormalizeCatalogKey(seed.RecipeName);
+                if (!recipesByName.TryGetValue(recipeKey, out var recipe))
+                {
+                    recipe = new Recipe
+                    {
+                        RecipeName = seed.RecipeName,
+                        CreatedAt = now
+                    };
+                    recipesByName[recipeKey] = recipe;
+                    await context.Recipes.AddAsync(recipe);
+                }
+
+                recipe.RecipeName = seed.RecipeName;
+                recipe.Description = seed.Description;
+                recipe.ImageUrl = string.IsNullOrWhiteSpace(seed.ImageKey)
+                    ? recipe.ImageUrl
+                    : seed.ImageKey.Trim();
+                recipe.CookTimeMinutes = seed.CookTimeMinutes;
+                recipe.Difficulty = seed.Difficulty;
+                recipe.ServingCount = seed.ServingCount;
+                recipe.CredibilityScore = seed.CredibilityScore;
+                recipe.InstructionsJson = SerializeSeedStringList(seed.Instructions);
+                recipe.SourceUrlsJson = SerializeSeedStringList(seed.SourceUrls);
+                var directYoutubeVideoUrl = IsYoutubeUrl(seed.VideoUrl)
+                    ? seed.VideoUrl!.Trim()
+                    : null;
+                recipe.VideoUrl = directYoutubeVideoUrl;
+                recipe.EnhancedAt = seed.Instructions.Count >= 3
+                    && seed.SourceUrls.Any(IsHttpsUrl)
+                    && directYoutubeVideoUrl != null
+                        ? now
+                        : null;
+                recipe.UpdatedAt = now;
+                recipe.IsDeleted = false;
+
+                if (recipe.RecipeId != 0)
+                {
+                    context.RecipeIngredients.RemoveRange(recipe.RecipeIngredients.ToList());
+                }
+
+                foreach (var ingredient in resolvedIngredients)
+                {
+                    ingredient.Recipe = recipe;
+                    await context.RecipeIngredients.AddAsync(ingredient);
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private static string SerializeSeedStringList(IReadOnlyCollection<string> values)
+        {
+            var cleaned = values
+                .Select(value => value?.Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!)
+                .ToList();
+            return JsonSerializer.Serialize(cleaned, SeedJsonOptions);
+        }
+
+        private static bool IsHttpsUrl(string? value)
+        {
+            return Uri.TryCreate(value, UriKind.Absolute, out var uri)
+                && uri.Scheme == Uri.UriSchemeHttps
+                && !string.IsNullOrWhiteSpace(uri.Host);
+        }
+
+        private static bool IsYoutubeUrl(string? value)
+        {
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri)
+                || uri.Scheme != Uri.UriSchemeHttps)
+            {
+                return false;
+            }
+
+            var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+                ? uri.Host[4..]
+                : uri.Host;
+            var path = uri.AbsolutePath.Trim('/');
+
+            if (host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase))
+            {
+                return IsPlausibleYoutubeVideoId(path);
+            }
+
+            if (!host.Equals("youtube.com", StringComparison.OrdinalIgnoreCase)
+                && !host.Equals("m.youtube.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (path.Equals("watch", StringComparison.OrdinalIgnoreCase))
+            {
+                return IsPlausibleYoutubeVideoId(GetQueryParameter(uri, "v"));
+            }
+
+            if (path.StartsWith("embed/", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("shorts/", StringComparison.OrdinalIgnoreCase))
+            {
+                var videoId = path.Split('/', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault();
+                return IsPlausibleYoutubeVideoId(videoId);
+            }
+
+            return false;
+        }
+
+        private static string? GetQueryParameter(Uri uri, string name)
+        {
+            var query = uri.Query.TrimStart('?');
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return null;
+            }
+
+            foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = pair.Split('=', 2);
+                var key = Uri.UnescapeDataString(parts[0].Replace("+", " "));
+                if (!key.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                return parts.Length == 2
+                    ? Uri.UnescapeDataString(parts[1].Replace("+", " "))
+                    : string.Empty;
+            }
+
+            return null;
+        }
+
+        private static bool IsPlausibleYoutubeVideoId(string? videoId)
+        {
+            return !string.IsNullOrWhiteSpace(videoId)
+                && videoId.Length >= 3
+                && videoId.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-');
+        }
+
         private static RecipeIngredientSeed I(decimal grams, params string[] keys) => new(keys, grams);
+
+        private static readonly JsonSerializerOptions SeedJsonOptions = new()
+        {
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
 
         private sealed record RecipeSeed(
             string Name,

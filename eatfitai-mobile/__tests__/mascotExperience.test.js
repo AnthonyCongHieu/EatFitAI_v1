@@ -88,6 +88,8 @@ describe('MoChi virtual pet experience', () => {
       'src/features/mochi/tutorial/mochiTutorialCatalog.ts',
     );
     const tutorialHostSource = readSource('src/features/mochi/tutorial/MoChiTutorialHost.tsx');
+    const tutorialTargetSource = readSource('src/features/mochi/tutorial/MoChiTutorialTarget.tsx');
+    const tutorialContextSource = readSource('src/features/mochi/tutorial/MoChiTutorialContext.tsx');
     const homeSource = readSource('src/app/screens/HomeScreen.tsx');
     const scanSource = readSource('src/app/screens/ai/AIScanScreen.tsx');
     const visionReviewSource = readSource(
@@ -102,12 +104,31 @@ describe('MoChi virtual pet experience', () => {
     expect(tutorialCatalogSource).toContain("targetId: 'stats_tab'");
     expect(tutorialHostSource).toContain('MoChiSprite');
     expect(tutorialHostSource).toContain('Bỏ qua');
-    expect(tutorialHostSource).toContain('SHEET_MODAL_SETTLE_MS');
-    expect(tutorialHostSource).toContain('MeasuringTargetCard');
-    expect(tutorialHostSource).toContain('styles.spotlightRing');
+    expect(tutorialHostSource).toContain('SpotlightMask');
+    expect(tutorialHostSource).not.toContain('SHEET_MODAL_SETTLE_MS');
+    expect(tutorialHostSource).not.toContain('MeasuringTargetCard');
+    expect(tutorialHostSource).not.toContain('styles.spotlightRing');
+    expect(tutorialHostSource).not.toContain('targetHitArea');
+    expect(tutorialHostSource).not.toContain('TapTargetHint');
+    expect(tutorialHostSource).not.toContain('Animated.loop');
+    expect(tutorialHostSource).not.toContain('Chạm vùng sáng');
+    expect(tutorialHostSource).not.toContain('Lối {');
+    expect(tutorialTargetSource).toContain('onTutorialActivate');
+    expect(tutorialTargetSource).toContain('highlightProfile');
+    expect(tutorialContextSource).toContain('activateTarget');
+    expect(tutorialContextSource).toContain('notifyTargetActivated');
+    const spotlightCardSource = tutorialHostSource.slice(
+      tutorialHostSource.indexOf('const SpotlightCard'),
+      tutorialHostSource.indexOf('const TransitionNote'),
+    );
+    expect(spotlightCardSource).toContain('onContinue');
+    expect(spotlightCardSource).not.toContain('targetHitArea');
     expect(tutorialHostSource).toContain('styles.progressRail');
     expect(homeSource).not.toContain('HomeFirstLoginTutorial');
     expect(homeSource).toContain('mochiEvent="water_reminder"');
+    expect(homeSource).toContain('<MoChiTutorialTarget targetId="home_water" highlightProfile="homeWater">');
+    expect(homeSource).toContain('Ghi nước');
+    expect(homeSource).toContain('handleAddWater({ showConfirmationToast: true })');
     expect(homeSource).toContain("text1: 'Đã ghi nước'");
     expect(scanSource).toContain('ScanProgressCard');
     expect(scanSource).toContain('mochiEvent="scan_empty"');
@@ -193,7 +214,8 @@ describe('MoChi virtual pet experience', () => {
     expect(mochiDesignSource).toContain('MealDiary missing-meal nudges are inline by default');
     expect(mochiDesignSource).toContain('overlay is forbidden over meal cards and bottom navigation');
     expect(mochiDesignSource).toContain('## First-Run Tutorial');
-    expect(mochiDesignSource).toContain('A + C + D composition');
+    expect(mochiDesignSource).toContain('four guided feature flows');
+    expect(mochiDesignSource).toContain('looping green pulses are not allowed');
     expect(navigatorSource).not.toContain('MoChiIslandHost');
   });
 

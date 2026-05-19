@@ -31,6 +31,8 @@ namespace EatFitAI.API.Services
         // Cache configuration
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
         private const string AllRecipesCacheKey = "AllRecipesWithIngredients";
+        private const string RecipeDisclaimer =
+            "Gợi ý do EatFitAI và AI hỗ trợ tổng hợp, chỉ mang tính tham khảo; không phải khuyến nghị của chuyên gia dinh dưỡng, bác sĩ hoặc đầu bếp chuyên nghiệp.";
 
         public RecipeSuggestionService(
             EatFitAIDbContext db, // FIX: Đổi sang EatFitAIDbContext
@@ -85,6 +87,8 @@ namespace EatFitAI.API.Services
             var forbiddenKeywords = GetForbiddenIngredientKeys(userPrefs);
             var minMatchedIngredients = Math.Max(1, request.MinMatchedIngredients ?? 1);
             var maxResults = Math.Clamp(request.MaxResults, 1, 20);
+            var inputFoodItemNames = await LoadInputFoodItemNamesAsync(query.FoodItemIds, cancellationToken);
+            var inputIngredientNames = BuildInputIngredientDisplayNames(request, inputFoodItemNames);
             if (useDailyRecommendation && request.UserId.HasValue)
             {
                 await PopulateRemainingNutritionAsync(request, request.UserId.Value, cancellationToken);
@@ -159,6 +163,18 @@ namespace EatFitAI.API.Services
                     .Where(ingredient => !matchedIngredientIds.Contains(ingredient.FoodItemId))
                     .Select(ingredient => ingredient.FoodItem.FoodName)
                     .ToList();
+                var matchedIngredientKeys = matchedIngredients
+                    .SelectMany(item => GetIngredientKeys(item.Ingredient.FoodItem))
+                    .ToHashSet(StringComparer.Ordinal);
+                var extraIngredients = useDailyRecommendation
+                    ? new List<string>()
+                    : inputIngredientNames
+                        .Where(inputName => !InputNameMatchesIngredientKeys(inputName, matchedIngredientKeys))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                var requiredIngredients = recipeIngredients
+                    .Select(ingredient => ingredient.FoodItem.FoodName)
+                    .ToList();
                 var matchPercentage = !useDailyRecommendation && recipeIngredients.Count > 0
                     ? ((decimal)matchCount / recipeIngredients.Count) * 100m
                     : 0m;
@@ -207,9 +223,10 @@ namespace EatFitAI.API.Services
                         .Select(item => item.Ingredient.FoodItem.FoodName)
                         .ToList(),
                     MissingIngredients = missingIngredients,
-                    AllIngredients = recipeIngredients
-                        .Select(ri => ri.FoodItem.FoodName)
-                        .ToList()
+                    ExtraIngredients = extraIngredients,
+                    RequiredIngredients = requiredIngredients,
+                    AllIngredients = requiredIngredients,
+                    Disclaimer = RecipeDisclaimer
                 });
             }
 
@@ -322,12 +339,7 @@ namespace EatFitAI.API.Services
             }
 
             var hasSource = guide.SourceUrls.Any(IsTrustedHttpsUrl);
-            var hasVideo = !string.IsNullOrWhiteSpace(guide.YoutubeVideo?.Url)
-                && Uri.TryCreate(guide.YoutubeVideo.Url, UriKind.Absolute, out var uri)
-                && uri.Scheme == Uri.UriSchemeHttps
-                && (uri.Host.Equals("youtube.com", StringComparison.OrdinalIgnoreCase)
-                    || uri.Host.Equals("www.youtube.com", StringComparison.OrdinalIgnoreCase)
-                    || uri.Host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase));
+            var hasVideo = IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
 
             return hasSource && hasVideo;
         }
@@ -337,6 +349,77 @@ namespace EatFitAI.API.Services
             return Uri.TryCreate(url, UriKind.Absolute, out var uri)
                 && uri.Scheme == Uri.UriSchemeHttps
                 && !string.IsNullOrWhiteSpace(uri.Host);
+        }
+
+        private static bool IsDirectYoutubeVideoUrl(string? url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                || uri.Scheme != Uri.UriSchemeHttps)
+            {
+                return false;
+            }
+
+            var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+                ? uri.Host[4..]
+                : uri.Host;
+            var path = uri.AbsolutePath.Trim('/');
+
+            if (host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase))
+            {
+                return IsPlausibleYoutubeVideoId(path);
+            }
+
+            if (!host.Equals("youtube.com", StringComparison.OrdinalIgnoreCase)
+                && !host.Equals("m.youtube.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (path.Equals("watch", StringComparison.OrdinalIgnoreCase))
+            {
+                return IsPlausibleYoutubeVideoId(GetQueryParameter(uri, "v"));
+            }
+
+            if (path.StartsWith("embed/", StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("shorts/", StringComparison.OrdinalIgnoreCase))
+            {
+                var videoId = path.Split('/', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault();
+                return IsPlausibleYoutubeVideoId(videoId);
+            }
+
+            return false;
+        }
+
+        private static string? GetQueryParameter(Uri uri, string name)
+        {
+            var query = uri.Query.TrimStart('?');
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return null;
+            }
+
+            foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = pair.Split('=', 2);
+                var key = Uri.UnescapeDataString(parts[0].Replace("+", " "));
+                if (!key.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                return parts.Length == 2
+                    ? Uri.UnescapeDataString(parts[1].Replace("+", " "))
+                    : string.Empty;
+            }
+
+            return null;
+        }
+
+        private static bool IsPlausibleYoutubeVideoId(string? videoId)
+        {
+            return !string.IsNullOrWhiteSpace(videoId)
+                && videoId.Length >= 3
+                && videoId.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-');
         }
 
         public async Task<RecipeDetailDto?> GetRecipeDetailAsync(
@@ -374,7 +457,11 @@ namespace EatFitAI.API.Services
                 .ToList();
 
             var instructions = ParseInstructions(recipe.InstructionsJson) ?? TryGetRecipeInstructions(recipe);
-            var videoUrl = recipe.VideoUrl ?? TryGetRecipeVideoUrl(recipe);
+            var rawVideoUrl = recipe.VideoUrl ?? TryGetRecipeVideoUrl(recipe);
+            var videoUrl = IsDirectYoutubeVideoUrl(rawVideoUrl) ? rawVideoUrl : null;
+            var requiredIngredients = ingredientDetails
+                .Select(ingredient => ingredient.FoodName)
+                .ToList();
 
             return new RecipeDetailDto
             {
@@ -394,7 +481,9 @@ namespace EatFitAI.API.Services
                 CredibilityScore = recipe.CredibilityScore,
                 Instructions = instructions,
                 VideoUrl = videoUrl,
-                Ingredients = ingredientDetails
+                Ingredients = ingredientDetails,
+                RequiredIngredients = requiredIngredients,
+                Disclaimer = RecipeDisclaimer
             };
         }
 
@@ -515,6 +604,90 @@ namespace EatFitAI.API.Services
                 .ToListAsync(cancellationToken);
 
             return foodItems.Any(RecipeIngredientEligibility.IsFinishedDishFood);
+        }
+
+        private async Task<Dictionary<int, string>> LoadInputFoodItemNamesAsync(
+            IReadOnlyCollection<int> foodItemIds,
+            CancellationToken cancellationToken)
+        {
+            if (foodItemIds.Count == 0)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            var foodItems = await _db.FoodItems
+                .AsNoTracking()
+                .Where(item => foodItemIds.Contains(item.FoodItemId)
+                    && !item.IsDeleted
+                    && item.IsActive)
+                .ToListAsync(cancellationToken);
+
+            return foodItems
+                .Where(RecipeIngredientEligibility.IsIngredientFood)
+                .ToDictionary(item => item.FoodItemId, item => item.FoodName);
+        }
+
+        private static List<string> BuildInputIngredientDisplayNames(
+            RecipeSuggestionRequest request,
+            IReadOnlyDictionary<int, string> foodItemNames)
+        {
+            var displayNames = new List<string>();
+            var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+
+            void AddDisplayName(string? value)
+            {
+                var trimmed = value?.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed))
+                {
+                    return;
+                }
+
+                var key = AiVisionLabelCatalog.NormalizeKey(trimmed);
+                if (string.IsNullOrWhiteSpace(key)
+                    || RecipeIngredientEligibility.IsFinishedDishKey(key)
+                    || !seenKeys.Add(key))
+                {
+                    return;
+                }
+
+                displayNames.Add(trimmed);
+            }
+
+            foreach (var ingredient in request.AvailableIngredients ?? new List<string>())
+            {
+                AddDisplayName(ingredient);
+            }
+
+            foreach (var hint in request.IngredientHints ?? new List<RecipeIngredientHintDto>())
+            {
+                AddDisplayName(hint.Name);
+                if (hint.FoodItemId.HasValue
+                    && foodItemNames.TryGetValue(hint.FoodItemId.Value, out var foodName))
+                {
+                    AddDisplayName(foodName);
+                }
+            }
+
+            foreach (var foodItemId in request.AvailableFoodItemIds ?? new List<int>())
+            {
+                if (foodItemNames.TryGetValue(foodItemId, out var foodName))
+                {
+                    AddDisplayName(foodName);
+                }
+            }
+
+            return displayNames;
+        }
+
+        private static bool InputNameMatchesIngredientKeys(
+            string inputName,
+            IReadOnlySet<string> ingredientKeys)
+        {
+            var inputKeys = new HashSet<string>(StringComparer.Ordinal);
+            AddNameKey(inputKeys, inputName);
+            ExpandAliasKeys(inputKeys);
+
+            return inputKeys.Any(ingredientKeys.Contains);
         }
 
         private static void AddNameKey(HashSet<string> keys, string? value)

@@ -189,7 +189,7 @@ public class AdminUsersControllerTests : IClassFixture<WebApplicationFactory<Pro
     }
 
     [Fact]
-    public async Task DeleteUser_LegacyEndpointRemainsGone()
+    public async Task DeleteUser_LegacyEndpoint_Returns405()
     {
         var client = await CreateAdminClientAsync(PlatformRoles.SuperAdmin);
         var userId = Guid.NewGuid();
@@ -200,9 +200,28 @@ public class AdminUsersControllerTests : IClassFixture<WebApplicationFactory<Pro
             "Delete Guard",
             PlatformRoles.User);
 
+        // DELETE cũ trả 405 — hướng dẫn dùng POST /hard-delete
         var response = await client.DeleteAsync($"/api/admin/users/{userId}");
 
-        Assert.Equal(HttpStatusCode.Gone, response.StatusCode);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task HardDeleteUser_WithoutBody_ReturnsBadRequest()
+    {
+        var client = await CreateAdminClientAsync(PlatformRoles.SuperAdmin);
+        var userId = Guid.NewGuid();
+        await IntegrationTestHost.EnsureAdminUserAsync(
+            _factory.Services,
+            userId,
+            $"delete_{userId:N}@example.com",
+            "Delete Guard",
+            PlatformRoles.User);
+
+        // POST /hard-delete không body → BadRequest
+        var response = await client.PostAsync($"/api/admin/users/{userId}/hard-delete", null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     private async Task<HttpClient> CreateAdminClientAsync(string role)

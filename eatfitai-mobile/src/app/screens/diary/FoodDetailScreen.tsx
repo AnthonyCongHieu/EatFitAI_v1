@@ -243,7 +243,10 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         promptIfFirstLog();
       }
       if (returnToDiaryOnSave && selectedDate) {
-        navigation.navigate('MealDiary', { selectedDate });
+        navigation.navigate('AppTabs', {
+          screen: 'MealDiary',
+          params: { selectedDate },
+        });
         return;
       }
       navigation.goBack();

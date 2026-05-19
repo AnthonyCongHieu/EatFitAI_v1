@@ -6,6 +6,7 @@ import { TEST_IDS } from '../src/testing/testIds';
 
 const mockNavigateRoot = jest.fn();
 const mockNavigate = jest.fn();
+const mockEmit = jest.fn();
 
 jest.mock('../src/app/navigation/navigationRef', () => ({
   navigateRoot: (...args: unknown[]) => mockNavigateRoot(...args),
@@ -39,9 +40,14 @@ jest.mock('react-native-reanimated', () => {
     default: {
       View: AnimatedView,
     },
+    Easing: {
+      cubic: jest.fn(),
+      out: jest.fn((value) => value),
+    },
     useAnimatedStyle: (factory: () => Record<string, unknown>) => factory(),
     useSharedValue: (value: unknown) => ({ value }),
     withSpring: (value: unknown) => value,
+    withTiming: (value: unknown) => value,
   };
 });
 
@@ -97,16 +103,17 @@ const renderTabBar = () =>
         key: 'tab-state',
         index: 0,
         history: [{ type: 'route', key: 'HomeTab-key' }],
-        routeNames: ['HomeTab', 'VoiceTab', 'StatsTab', 'ProfileTab'],
+        routeNames: ['HomeTab', 'MealDiary', 'VoiceTab', 'StatsTab', 'ProfileTab'],
         routes: [
           { key: 'HomeTab-key', name: 'HomeTab' },
+          { key: 'MealDiary-key', name: 'MealDiary' },
           { key: 'VoiceTab-key', name: 'VoiceTab' },
           { key: 'StatsTab-key', name: 'StatsTab' },
           { key: 'ProfileTab-key', name: 'ProfileTab' },
         ],
       }}
       descriptors={{} as any}
-      navigation={{ navigate: mockNavigate } as any}
+      navigation={{ emit: mockEmit, navigate: mockNavigate } as any}
       insets={{ top: 0, right: 0, bottom: 0, left: 0 }}
     />,
   );
@@ -146,13 +153,19 @@ describe('CustomTabBar MoChi hub layout', () => {
     expect(mockNavigateRoot).not.toHaveBeenCalledWith('AiCamera');
   });
 
-  it('navigates diary and profile from their dedicated bottom slots', () => {
+  it('emits tabPress and switches diary/profile as real tabs', () => {
     const screen = renderTabBar();
 
     fireEvent.press(screen.getByTestId(TEST_IDS.navigation.diaryTabButton));
     fireEvent.press(screen.getByTestId(TEST_IDS.navigation.profileTabButton));
 
-    expect(mockNavigateRoot).toHaveBeenCalledWith('MealDiary');
-    expect(mockNavigate).toHaveBeenCalledWith('ProfileTab');
+    expect(mockEmit).toHaveBeenCalledWith({
+      type: 'tabPress',
+      target: 'MealDiary-key',
+      canPreventDefault: true,
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('MealDiary', undefined);
+    expect(mockNavigate).toHaveBeenCalledWith('ProfileTab', undefined);
+    expect(mockNavigateRoot).not.toHaveBeenCalledWith('MealDiary');
   });
 });

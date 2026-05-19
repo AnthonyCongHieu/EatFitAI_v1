@@ -60,7 +60,7 @@ public sealed class RecipeGuideService : IRecipeGuideService
         }
 
         var stored = BuildStoredGuide(recipe);
-        if (stored != null && IsFresh(recipe.EnhancedAt))
+        if (stored != null && IsFresh(recipe.EnhancedAt) && IsUsableStoredGuide(stored))
         {
             stored.GuideStatus = "stored";
             _cache.Set(cacheKey, stored, TimeSpan.FromHours(6));
@@ -165,7 +165,7 @@ public sealed class RecipeGuideService : IRecipeGuideService
             CookingTimeMinutes = recipe.CookTimeMinutes,
             Difficulty = recipe.Difficulty,
             SourceUrls = ParseStringList(recipe.SourceUrlsJson),
-            YoutubeVideo = string.IsNullOrWhiteSpace(recipe.VideoUrl)
+            YoutubeVideo = !IsDirectYoutubeVideoUrl(recipe.VideoUrl)
                 ? null
                 : new RecipeYoutubeVideoDto { Url = recipe.VideoUrl },
             PrepItems = steps.Take(2).ToList()
@@ -205,7 +205,15 @@ public sealed class RecipeGuideService : IRecipeGuideService
 
     private static bool IsUsableGeneratedGuide(RecipeCookingGuideDto? guide)
     {
-        return guide is { Steps.Count: >= 3, SourceUrls.Count: > 0, YoutubeVideo.Url.Length: > 0 };
+        return guide is { Steps.Count: >= 3, SourceUrls.Count: > 0 }
+            && IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
+    }
+
+    private static bool IsUsableStoredGuide(RecipeCookingGuideDto guide)
+    {
+        return guide.Steps.Count >= 3
+            && guide.SourceUrls.Count > 0
+            && IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
     }
 
     private bool IsFresh(DateTime? enhancedAt)
@@ -225,9 +233,82 @@ public sealed class RecipeGuideService : IRecipeGuideService
         recipe.CookTimeMinutes = guide.CookingTimeMinutes ?? recipe.CookTimeMinutes;
         recipe.Difficulty = guide.Difficulty ?? recipe.Difficulty;
         recipe.SourceUrlsJson = JsonSerializer.Serialize(guide.SourceUrls, JsonOptions);
-        recipe.VideoUrl = guide.YoutubeVideo?.Url ?? recipe.VideoUrl;
+        recipe.VideoUrl = IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url)
+            ? guide.YoutubeVideo!.Url
+            : null;
         recipe.EnhancedAt = DateTime.UtcNow;
         recipe.UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static bool IsDirectYoutubeVideoUrl(string? url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            return false;
+        }
+
+        var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
+            ? uri.Host[4..]
+            : uri.Host;
+        var path = uri.AbsolutePath.Trim('/');
+
+        if (host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsPlausibleYoutubeVideoId(path);
+        }
+
+        if (!host.Equals("youtube.com", StringComparison.OrdinalIgnoreCase)
+            && !host.Equals("m.youtube.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (path.Equals("watch", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsPlausibleYoutubeVideoId(GetQueryParameter(uri, "v"));
+        }
+
+        if (path.StartsWith("embed/", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("shorts/", StringComparison.OrdinalIgnoreCase))
+        {
+            var videoId = path.Split('/', StringSplitOptions.RemoveEmptyEntries).Skip(1).FirstOrDefault();
+            return IsPlausibleYoutubeVideoId(videoId);
+        }
+
+        return false;
+    }
+
+    private static string? GetQueryParameter(Uri uri, string name)
+    {
+        var query = uri.Query.TrimStart('?');
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return null;
+        }
+
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = pair.Split('=', 2);
+            var key = Uri.UnescapeDataString(parts[0].Replace("+", " "));
+            if (!key.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            return parts.Length == 2
+                ? Uri.UnescapeDataString(parts[1].Replace("+", " "))
+                : string.Empty;
+        }
+
+        return null;
+    }
+
+    private static bool IsPlausibleYoutubeVideoId(string? videoId)
+    {
+        return !string.IsNullOrWhiteSpace(videoId)
+            && videoId.Length >= 3
+            && videoId.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-');
     }
 
     private static List<string> ParseStringList(string? rawValue)

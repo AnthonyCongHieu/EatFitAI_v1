@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CustomTabBar - Emerald Nebula task-first bottom command bar.
  *
  * Navigation destinations stay in tabs, while high-frequency logging actions
@@ -9,10 +9,15 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { TEST_IDS } from '../../testing/testIds';
-import { navigateRoot } from '../../app/navigation/navigationRef';
 import { resolveBottomTabSafePadding } from './tabBarSafeArea';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import MoChiSprite from '../../features/mochi/MoChiSprite';
@@ -30,7 +35,7 @@ type CommandItem = {
   icon: keyof typeof Ionicons.glyphMap;
   iconFocused: keyof typeof Ionicons.glyphMap;
   testID: string;
-  kind: 'tab' | 'stack' | 'hub';
+  kind: 'tab' | 'hub';
   isPrimary?: boolean;
 };
 
@@ -49,7 +54,7 @@ const COMMAND_ITEMS: CommandItem[] = [
     icon: 'book-outline',
     iconFocused: 'book',
     testID: TEST_IDS.navigation.diaryTabButton,
-    kind: 'stack',
+    kind: 'tab',
   },
   {
     target: 'MoChiHub',
@@ -106,31 +111,126 @@ const CommandButton = ({
   onPress,
   dockPose,
   colors,
+  isHubOpen,
 }: {
   command: CommandItem;
   isFocused: boolean;
   onPress: () => void;
   dockPose: MoChiPoseKey;
+  isHubOpen: boolean;
   colors: { primary: string; onPrimary: string; textMuted: string; bg: string };
 }) => {
   const scale = useSharedValue(1);
-  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const activeProgress = useSharedValue(isFocused ? 1 : 0);
+  const hubProgress = useSharedValue(isHubOpen ? 1 : 0);
+  const { notifyTargetActivated } = useMoChiTutorial();
+  const anim = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: command.isPrimary
+          ? -4 * hubProgress.value
+          : -2 * activeProgress.value,
+      },
+      {
+        scale:
+          scale.value *
+          (command.isPrimary
+            ? 1 + hubProgress.value * 0.05
+            : 1 + activeProgress.value * 0.04),
+      },
+    ],
+  }));
+  const activeIndicatorAnim = useAnimatedStyle(() => ({
+    opacity: activeProgress.value,
+    transform: [{ scaleX: 0.72 + activeProgress.value * 0.28 }],
+  }));
   const iconColor = command.isPrimary
     ? colors.onPrimary
     : isFocused
       ? colors.primary
       : colors.textMuted;
 
+  React.useEffect(() => {
+    activeProgress.value = withTiming(isFocused ? 1 : 0, {
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [activeProgress, isFocused]);
+
+  React.useEffect(() => {
+    hubProgress.value = withTiming(isHubOpen ? 1 : 0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [hubProgress, isHubOpen]);
+
   const tutorialTargetId: MoChiTutorialTargetId | null = command.target === 'MoChiHub'
     ? 'mochi_hub'
     : command.target === 'StatsTab'
       ? 'stats_tab'
       : null;
+  const handlePress = () => {
+    if (tutorialTargetId) {
+      notifyTargetActivated(tutorialTargetId);
+    }
+
+    onPress();
+  };
+  const inner = (
+    <Animated.View
+      style={[
+        styles.commandInner,
+        command.isPrimary && styles.primaryDock,
+        anim,
+      ]}
+    >
+      {command.isPrimary ? (
+        <View style={styles.primaryDockHalo}>
+          <View style={styles.primaryDockCore}>
+            <View style={styles.primaryDockMascotPlate}>
+              <MoChiSprite poseKey={dockPose} size={54} animated={false} />
+            </View>
+          </View>
+        </View>
+      ) : (
+        <Ionicons
+          name={isFocused ? command.iconFocused : command.icon}
+          size={22}
+          color={iconColor}
+        />
+      )}
+      {!command.isPrimary && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.activeIndicator,
+            { backgroundColor: colors.primary },
+            activeIndicatorAnim,
+          ]}
+        />
+      )}
+      <Text
+        style={[
+          styles.commandLabel,
+          {
+            color: command.isPrimary
+              ? colors.onPrimary
+              : isFocused
+                ? colors.primary
+                : colors.textMuted,
+          },
+        ]}
+        numberOfLines={1}
+      >
+        {command.label}
+      </Text>
+    </Animated.View>
+  );
 
   const button = (
     <Pressable
       style={styles.commandButton}
-      onPress={onPress}
+      onPress={handlePress}
       onPressIn={() => {
         scale.value = withSpring(0.9, { damping: 15, stiffness: 400 });
       }}
@@ -139,62 +239,29 @@ const CommandButton = ({
       }}
       accessibilityRole={command.kind === 'tab' ? 'tab' : 'button'}
       accessibilityLabel={command.label}
+      accessibilityState={{ selected: isFocused }}
       testID={command.testID}
       nativeID={command.testID}
     >
-      <Animated.View
-        style={[
-          styles.commandInner,
-          command.isPrimary && styles.primaryDock,
-          anim,
-        ]}
-      >
-        {command.isPrimary ? (
-          <View style={styles.primaryDockHalo}>
-            <View style={styles.primaryDockCore}>
-              <View style={styles.primaryDockMascotPlate}>
-                <MoChiSprite poseKey={dockPose} size={54} animated={false} />
-              </View>
-            </View>
-          </View>
-        ) : (
-          <Ionicons
-            name={isFocused ? command.iconFocused : command.icon}
-            size={22}
-            color={iconColor}
-          />
-        )}
-        <Text
-          style={[
-            styles.commandLabel,
-            {
-              color: command.isPrimary
-                ? colors.onPrimary
-                : isFocused
-                  ? colors.primary
-                  : colors.textMuted,
-            },
-          ]}
-          numberOfLines={1}
+      {tutorialTargetId ? (
+        <MoChiTutorialTarget
+          targetId={tutorialTargetId}
+          highlightProfile={command.isPrimary ? 'dock' : 'tab'}
         >
-          {command.label}
-        </Text>
-      </Animated.View>
+          {inner}
+        </MoChiTutorialTarget>
+      ) : inner}
     </Pressable>
   );
 
-  if (!tutorialTargetId) {
-    return button;
-  }
-
-  return (
-    <MoChiTutorialTarget targetId={tutorialTargetId} style={styles.tutorialTarget}>
-      {button}
-    </MoChiTutorialTarget>
-  );
+  return button;
 };
 
-const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
+type CustomTabBarProps = BottomTabBarProps & {
+  isOverlay?: boolean;
+};
+
+const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverlay = false }) => {
   const insets = useSafeAreaInsets();
   const { theme } = useAppTheme();
   const [isHubVisible, setIsHubVisible] = React.useState(false);
@@ -223,14 +290,28 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
       return;
     }
 
-    if (command.kind === 'tab') {
-      navigateTab(command.target);
+    const route = state.routes.find((item) => item.name === command.target);
+    if (!route) {
+      console.warn(`[navigation] Tab route is not available for ${command.target} command.`);
       return;
     }
 
-    const didNavigate = navigateRoot('MealDiary');
-    if (!didNavigate) {
-      console.warn(`[navigation] Root navigator is not ready for ${command.target} command.`);
+    if (isOverlay) {
+      (navigation.navigate as (...args: unknown[]) => void)('AppTabs', {
+        screen: command.target,
+        params: route.params,
+      });
+      return;
+    }
+
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+
+    if (current !== command.target && !event?.defaultPrevented) {
+      navigateTab(command.target, route.params);
     }
   };
 
@@ -260,6 +341,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
               command={command}
               colors={colors}
               dockPose={isHubVisible ? 'nutritionCoachNotice' : mochiDockPose}
+              isHubOpen={isHubVisible}
               isFocused={current === command.target}
               onPress={() => runCommand(command)}
             />
@@ -301,11 +383,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: TAB_BAR_HEIGHT,
   },
-  tutorialTarget: {
-    flex: 1,
-    height: TAB_BAR_HEIGHT,
-  },
   commandInner: {
+    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
@@ -361,6 +440,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     textAlign: 'center',
     textTransform: 'uppercase',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: -1,
+    width: 34,
+    height: 3,
+    borderRadius: 2,
   },
 });
 

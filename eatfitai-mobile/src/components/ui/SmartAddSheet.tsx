@@ -20,7 +20,13 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../app/types';
 import { TEST_IDS } from '../../testing/testIds';
 import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
-import type { MoChiTutorialTargetId } from '../../features/mochi/tutorial/mochiTutorialCatalog';
+import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
+import {
+  MOCHI_TUTORIAL_FLOWS,
+  type MoChiTutorialStep,
+  type MoChiTutorialTargetId,
+  getMoChiTutorialFlowIndex,
+} from '../../features/mochi/tutorial/mochiTutorialCatalog';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type QuickAction = {
@@ -66,12 +72,57 @@ const getTutorialTargetId = (testID?: string): MoChiTutorialTargetId | null => {
   return null;
 };
 
+const SheetTutorialCoach = ({
+  step,
+  onSkip,
+}: {
+  step: MoChiTutorialStep;
+  onSkip: () => void;
+}): React.ReactElement => {
+  const currentFlowIndex = Math.max(0, getMoChiTutorialFlowIndex(step.flowId));
+
+  return (
+    <View style={styles.sheetTutorialCoach}>
+      <View style={styles.sheetTutorialCopy}>
+        <ThemedText style={styles.sheetTutorialStep}>
+          {currentFlowIndex + 1}/{MOCHI_TUTORIAL_FLOWS.length}
+        </ThemedText>
+        <ThemedText style={styles.sheetTutorialTitle}>{step.title}</ThemedText>
+        <ThemedText style={styles.sheetTutorialBody}>{step.body}</ThemedText>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Bỏ qua hướng dẫn MoChi"
+        onPress={onSkip}
+        hitSlop={8}
+        style={({ pressed }) => [
+          styles.sheetTutorialSkip,
+          pressed && styles.actionPressed,
+        ]}
+      >
+        <Ionicons name="close" size={15} color={DESIGN_TOKENS.label} />
+        <ThemedText style={styles.sheetTutorialSkipText}>Bỏ qua</ThemedText>
+      </Pressable>
+    </View>
+  );
+};
+
 export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, testID }) => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
+  const {
+    currentStep,
+    notifyTargetActivated,
+    phase,
+    skipTutorial,
+  } = useMoChiTutorial();
   const [isMounted, setIsMounted] = useState(visible);
   const progress = useSharedValue(visible ? 1 : 0);
+  const activeTutorialSheetTarget =
+    phase === 'spotlight' && currentStep?.surface === 'smart_add_sheet'
+      ? currentStep.targetId
+      : null;
 
   useEffect(() => {
     if (visible) {
@@ -225,18 +276,31 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                 <Ionicons name="close" size={18} color={DESIGN_TOKENS.label} />
               </Pressable>
             </View>
+            {activeTutorialSheetTarget && currentStep && (
+              <SheetTutorialCoach step={currentStep} onSkip={skipTutorial} />
+            )}
 
             <View style={styles.actionGrid}>
               {actions.map((action) => {
                 const tutorialTargetId = getTutorialTargetId(action.testID);
+                const isDimmedByTutorial =
+                  !!activeTutorialSheetTarget && tutorialTargetId !== activeTutorialSheetTarget;
+                const handleActionPress = () => {
+                  if (tutorialTargetId) {
+                    notifyTargetActivated(tutorialTargetId);
+                  }
+
+                  action.onPress();
+                };
                 const actionCard = (
                   <Pressable
                     testID={action.testID}
                     accessibilityRole="button"
                     accessibilityLabel={action.title}
-                    onPress={action.onPress}
+                    onPress={handleActionPress}
                     style={({ pressed }) => [
                       styles.actionCard,
+                      isDimmedByTutorial && styles.actionCardDimmed,
                       pressed && styles.actionPressed,
                     ]}
                   >
@@ -258,6 +322,8 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                       key={action.title}
                       targetId={tutorialTargetId}
                       style={styles.actionTarget}
+                      highlightProfile="sheetAction"
+                      onTutorialActivate={action.onPress}
                     >
                       {actionCard}
                     </MoChiTutorialTarget>
@@ -276,7 +342,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
               testID={TEST_IDS.home.quickAccessDiaryButton}
               accessibilityRole="button"
               accessibilityLabel="Mở nhật ký hôm nay"
-              onPress={() => navigateAfterClose('MealDiary')}
+              onPress={() => navigateAfterClose('AppTabs', { screen: 'MealDiary' })}
               style={({ pressed }) => [
                 styles.diaryShortcut,
                 pressed && styles.actionPressed,
@@ -365,6 +431,57 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
+  sheetTutorialCoach: {
+    minHeight: 78,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.26)',
+  },
+  sheetTutorialCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  sheetTutorialStep: {
+    color: '#8FE7AE',
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+  sheetTutorialTitle: {
+    color: DESIGN_TOKENS.label,
+    fontSize: 17,
+    lineHeight: 22,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+  sheetTutorialBody: {
+    color: DESIGN_TOKENS.meta,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    marginTop: 2,
+  },
+  sheetTutorialSkip: {
+    minHeight: 34,
+    paddingHorizontal: 10,
+    borderRadius: DESIGN_TOKENS.radiusFull,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(226, 232, 240, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.12)',
+  },
+  sheetTutorialSkipText: {
+    color: DESIGN_TOKENS.label,
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
   actionTarget: {
     width: '48.4%',
   },
@@ -380,6 +497,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(17, 24, 39, 0.58)',
     borderWidth: 1,
     borderColor: DESIGN_TOKENS.actionBorder,
+  },
+  actionCardDimmed: {
+    opacity: 0.32,
   },
   actionPressed: {
     opacity: 0.82,

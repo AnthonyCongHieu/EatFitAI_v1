@@ -236,7 +236,10 @@ const MonthStatsScreen = (): React.ReactElement => {
       if (isCurrentMonthDay && calories > 0) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         // Navigate to MealDiary for the selected date
-        navigation.navigate('MealDiary', { selectedDate: dateStr });
+        navigation.navigate('AppTabs', {
+          screen: 'MealDiary',
+          params: { selectedDate: dateStr },
+        });
       }
     };
 

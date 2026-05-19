@@ -360,7 +360,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       await invalidateDiaryQueries(queryClient);
       // A1.3: Notification prompt after first diary log
       promptIfFirstLog();
-      navigation.navigate('MealDiary');
+      navigation.navigate('AppTabs', { screen: 'MealDiary' });
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
         server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },

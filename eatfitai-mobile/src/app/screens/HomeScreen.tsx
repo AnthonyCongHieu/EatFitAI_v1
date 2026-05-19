@@ -19,7 +19,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
-import type { RouteProp } from '@react-navigation/native';
+import type { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -74,7 +75,10 @@ const C_STATIC = {
   danger: '#ff6b6b',
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabsParamList, 'HomeTab'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 /* ═══════════════════════════════════════════════
    Helper: get meal label from entry time or index
@@ -575,7 +579,7 @@ const HomeScreen = (): React.ReactElement => {
         <WelcomeHeader
           streakCount={currentStreak}
           unreadNotificationCount={unreadNotificationCount}
-          onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}
+          onSettingsPress={() => navigation.navigate('ProfileTab')}
           onNotificationPress={() => navigation.navigate('NotificationCenter')}
           onStreakPress={() => navigation.navigate('Achievements')}
         />
@@ -869,26 +873,45 @@ const HomeScreen = (): React.ReactElement => {
           entering={FadeInUp.delay(400).springify()}
           onLayout={(e) => setWaterCardY(e.nativeEvent.layout.y)}
         >
-          <MoChiTutorialTarget targetId="home_water">
-            <Pressable
-              onPress={() => navigation.navigate('AppTabs' as any, { screen: 'VoiceTab', params: { source: 'home-hub' } } as any)}
-              style={({ pressed }) => [
-                styles.waterCard, styles.glassWaterCard,
+          <MoChiTutorialTarget targetId="home_water" highlightProfile="homeWater">
+            <View
+              style={[
+                styles.waterCard,
+                styles.glassWaterCard,
                 { backgroundColor: C.surfaceHigh, borderColor: C.outline },
-                pressed && { opacity: 0.8 }
               ]}
             >
               <View style={styles.waterLeft}>
-                <Ionicons name="mic" size={28} color={C.primary} />
+                <Ionicons name="water" size={28} color={C.primary} />
                 <View style={styles.waterLabelWrap}>
-                  <ThemedText style={[styles.waterTitle, { color: C.onSurface }]}>Trợ lý MoChi</ThemedText>
-                  <ThemedText style={{ color: C.textMuted, fontSize: 13 }}>
-                    Chạm để trò chuyện giọng nói
+                  <ThemedText style={[styles.waterTitle, { color: C.onSurface }]}>Ghi nước</ThemedText>
+                  <ThemedText style={[styles.waterValue, { color: C.onSurface }]}>
+                    {waterAmount} ml hôm nay
                   </ThemedText>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={C.textMuted} />
-            </Pressable>
+              <View style={styles.waterPill}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Trừ một ly nước"
+                  onPress={handleSubtractWater}
+                  hitSlop={8}
+                  style={styles.waterPillBtn}
+                >
+                  <Ionicons name="remove" size={18} color={C.textMuted} />
+                </Pressable>
+                <View style={styles.waterPillDivider} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Ghi thêm một ly nước"
+                  onPress={() => handleAddWater({ showConfirmationToast: true })}
+                  hitSlop={8}
+                  style={styles.waterPillBtn}
+                >
+                  <Ionicons name="add" size={18} color={C.primary} />
+                </Pressable>
+              </View>
+            </View>
           </MoChiTutorialTarget>
           {homeWaterReminder && waterTargetInlineReady && (
             <Pressable

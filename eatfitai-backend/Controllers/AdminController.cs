@@ -12,6 +12,7 @@ using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Controllers;
@@ -157,6 +158,7 @@ public class AdminController : ControllerBase
     private readonly IAdminAuditService _auditService;
     private readonly IMediaUrlResolver _mediaUrlResolver;
     private readonly IBusinessDateService _businessDateService;
+    private readonly IUserService _userService;
 
     public AdminController(
         ApplicationDbContext context,
@@ -165,7 +167,8 @@ public class AdminController : ControllerBase
         IAdminRealtimeEventBus eventBus,
         IAdminAuditService auditService,
         IMediaUrlResolver mediaUrlResolver,
-        IBusinessDateService businessDateService)
+        IBusinessDateService businessDateService,
+        IUserService userService)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
@@ -174,6 +177,7 @@ public class AdminController : ControllerBase
         _auditService = auditService;
         _mediaUrlResolver = mediaUrlResolver;
         _businessDateService = businessDateService;
+        _userService = userService;
     }
 
     [HttpGet("session")]
@@ -369,7 +373,12 @@ public class AdminController : ControllerBase
     [HttpGet("users")]
     [Authorize(Policy = AdminPolicies.UsersRead)]
     [ProducesResponseType(typeof(ApiResponse<List<AdminUserDto>>), 200)]
-    public async Task<IActionResult> GetUsers([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDir = null)
     {
         var query = _context.Users.AsQueryable();
 
@@ -384,9 +393,19 @@ public class AdminController : ControllerBase
             .AsNoTracking()
             .ToDictionaryAsync(item => item.UserId, item => item);
 
+        // Sắp xếp theo cột — nếu không chỉ định thì mặc định theo ngày tạo mới nhất
+        var isAsc = string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
+        query = (sortBy?.ToLower()) switch
+        {
+            "name" => isAsc ? query.OrderBy(u => u.DisplayName ?? u.Email) : query.OrderByDescending(u => u.DisplayName ?? u.Email),
+            "email" => isAsc ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
+            "role" => isAsc ? query.OrderBy(u => u.Role) : query.OrderByDescending(u => u.Role),
+            "lastactive" => isAsc ? query.OrderBy(u => u.LastLoginAt) : query.OrderByDescending(u => u.LastLoginAt),
+            _ => isAsc ? query.OrderBy(u => u.CreatedAt) : query.OrderByDescending(u => u.CreatedAt),
+        };
+
         var total = await query.CountAsync();
         var users = await query
-            .OrderByDescending(u => u.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -665,12 +684,90 @@ public class AdminController : ControllerBase
             warning: "Hãy dùng /users/{id}/access-state cho các mutation có kiểm soát."));
     }
 
+    /// <summary>
+    /// Hard-delete user — POST vì nhiều CDN/proxy strip body khỏi DELETE requests.
+    /// Endpoint cũ DELETE /users/{id} giữ lại redirect để tương thích.
+    /// </summary>
+    [HttpPost("users/{id}/hard-delete")]
+    [Authorize(Policy = AdminPolicies.UsersDeactivate)]
+    public async Task<IActionResult> HardDeleteUser(
+        Guid id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] DeleteUserRequest? request)
+    {
+        if (request == null)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Cần nhập xác nhận và lý do xóa người dùng."));
+        }
+
+        // Tìm user cần xóa
+        var user = await _context.Users.FirstOrDefaultAsync(item => item.UserId == id);
+        if (user == null)
+        {
+            await WriteAuditAsync("delete-user", "user", id.ToString(), "failed", "Không tìm thấy người dùng.", severity: "warning", justification: request.Justification);
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
+        }
+
+        // Chặn admin tự xóa chính mình
+        if (IsCurrentAdminUser(user.UserId))
+        {
+            await WriteAuditAsync("delete-user", "user", user.UserId.ToString(), "failed", "Admin không thể tự xóa tài khoản của mình.", severity: "critical", justification: request.Justification);
+            return BadRequest(ApiResponse<object>.ErrorResponse("Không thể tự xóa tài khoản đang đăng nhập."));
+        }
+
+        // Kiểm tra justification bắt buộc
+        if (string.IsNullOrWhiteSpace(request.Justification))
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Cần nhập lý do xóa người dùng."));
+        }
+
+        // Kiểm tra confirm phrase: DELETE:{EMAIL}
+        var expectedConfirm = $"DELETE:{user.Email}".ToUpperInvariant();
+        if (!string.Equals(request.ConfirmText?.Trim(), expectedConfirm, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse($"Cụm xác nhận không khớp. Cần nhập đúng cụm xác nhận."));
+        }
+
+        // Ghi audit TRƯỚC khi xóa — đảm bảo luôn có evidence ngay cả khi xóa thất bại
+        var auditRef = await WriteAuditAsync("delete-user", "user", user.UserId.ToString(), "initiated",
+            $"Email={user.Email};Role={user.Role};HardDelete=pending",
+            severity: "critical", justification: request.Justification);
+
+        try
+        {
+            // Cascade delete tất cả dữ liệu liên quan qua UserService
+            await _userService.DeleteUserAsync(id);
+
+            // Cập nhật audit trail khi xóa thành công
+            await WriteAuditAsync("delete-user", "user", user.UserId.ToString(), "success",
+                $"Email={user.Email};Role={user.Role};HardDeleted=true;AuditRef={auditRef}",
+                severity: "critical", justification: request.Justification);
+            PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, user.Email, Deleted = true });
+
+            return Ok(BuildMutationResponse(
+                "Đã xóa vĩnh viễn người dùng và toàn bộ dữ liệu liên quan.",
+                "critical",
+                auditRef,
+                new { Id = user.UserId, Email = user.Email, Deleted = true }));
+        }
+        catch (Exception ex)
+        {
+            // Ghi audit failure — không leak message gốc ra client
+            await WriteAuditAsync("delete-user", "user", user.UserId.ToString(), "failed",
+                $"Lỗi khi xóa: {ex.Message}", severity: "critical", justification: request.Justification);
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                ApiResponse<object>.ErrorResponse("Xóa user thất bại. Vui lòng kiểm tra logs hệ thống."));
+        }
+    }
+
+    /// <summary>
+    /// Endpoint DELETE cũ — redirect về POST hard-delete để tương thích ngược.
+    /// </summary>
     [HttpDelete("users/{id}")]
     [Authorize(Policy = AdminPolicies.UsersDeactivate)]
-    public async Task<IActionResult> DeleteUser(Guid id)
+    public IActionResult DeleteUserLegacyRedirect(Guid id)
     {
-        await WriteAuditAsync("delete-legacy-blocked", "user", id.ToString(), "failed", "Endpoint hard-delete cũ đã bị chặn. Hãy dùng luồng vô hiệu hóa thay thế.", severity: "critical");
-        return StatusCode(StatusCodes.Status410Gone, ApiResponse<object>.ErrorResponse("Xóa cứng đã bị chặn. Hãy dùng luồng vô hiệu hóa có kiểm soát thay thế."));
+        return StatusCode(StatusCodes.Status405MethodNotAllowed,
+            ApiResponse<object>.ErrorResponse("Sử dụng POST /api/admin/users/{id}/hard-delete thay cho DELETE. Body trên DELETE bị nhiều proxy strip."));
     }
 
     [HttpPut("users/{id}/access-state")]

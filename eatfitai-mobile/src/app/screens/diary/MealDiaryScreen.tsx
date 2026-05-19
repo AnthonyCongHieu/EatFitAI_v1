@@ -4,7 +4,7 @@
  * floating add button, pull-to-refresh.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -23,8 +23,10 @@ import Animated, {
   FadeInDown,
   FadeInUp,
 } from 'react-native-reanimated';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import type { NavigationProp } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +40,7 @@ import { diaryService, type DiaryEntry, type DaySummary, type DiaryMealGroup } f
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
+import type { AppTabsParamList } from '../../navigation/AppTabs';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
 import { useSmartReminders } from '../../../hooks/useSmartReminders';
@@ -138,12 +141,17 @@ const getFoodEmoji = (foodName: string): string => {
    COMPONENT
    ═══════════════════════════════════════════════ */
 const MealDiaryScreen = (): React.ReactElement => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const route = useRoute<RouteProp<RootStackParamList, 'MealDiary'>>();
+  type MealDiaryNavigationProp = CompositeNavigationProp<
+    BottomTabNavigationProp<AppTabsParamList, 'MealDiary'>,
+    NativeStackNavigationProp<RootStackParamList>
+  >;
+  type MealDiaryRouteProp = RouteProp<AppTabsParamList, 'MealDiary'>;
+
+  const navigation = useNavigation<MealDiaryNavigationProp>();
+  const route = useRoute<MealDiaryRouteProp>();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const EN = useEN();
-  // eslint-disable-next-line @typescript-eslint/no-shadow
   const C = {
     ...C_STATIC,
     bg: EN.bg,
@@ -169,6 +177,10 @@ const MealDiaryScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    setSelectedDate(initialDate);
+  }, [initialDate]);
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [selectedDate]);
   const isSelectedDateToday = useMemo(() => isToday(selectedDate), [selectedDate]);
@@ -350,7 +362,7 @@ const MealDiaryScreen = (): React.ReactElement => {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Pressable
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.navigate('HomeTab')}
             style={styles.headerBtn}
             hitSlop={12}
           >

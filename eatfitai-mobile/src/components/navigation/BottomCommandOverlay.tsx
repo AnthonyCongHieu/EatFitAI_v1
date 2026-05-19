@@ -10,7 +10,7 @@ type BottomCommandOverlayProps = {
   children: React.ReactNode;
 };
 
-const TAB_ROUTE_NAMES = ['HomeTab', 'VoiceTab', 'StatsTab', 'ProfileTab'];
+const TAB_ROUTE_NAMES = ['HomeTab', 'MealDiary', 'VoiceTab', 'StatsTab', 'ProfileTab'];
 
 const buildOverlayState = (activeRouteName: string): BottomTabBarProps['state'] => {
   const routeNames = TAB_ROUTE_NAMES.includes(activeRouteName)
@@ -43,6 +43,7 @@ const BottomCommandOverlay = ({
         navigation={navigation as unknown as BottomTabBarProps['navigation']}
         descriptors={{} as BottomTabBarProps['descriptors']}
         insets={{ top: 0, right: 0, bottom: 0, left: 0 }}
+        isOverlay
       />
     </View>
   );

@@ -117,6 +117,80 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(2, suggestion.MatchedIngredientsCount); // Trứng, Cà chua
             Assert.Equal(3, suggestion.TotalIngredientsCount); // Trứng, Cà chua, Hành tây
             Assert.Contains("Hành tây", suggestion.MissingIngredients);
+            Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, suggestion.RequiredIngredients);
+            Assert.Empty(suggestion.ExtraIngredients);
+            Assert.Contains("tham khảo", suggestion.Disclaimer, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_AutoWithoutIngredientsReturnsDailySuggestionsWithSafetyMetadata()
+        {
+            await SeedDatabaseAsync();
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "auto",
+                MaxResults = 5
+            });
+
+            var suggestion = Assert.Single(result);
+            Assert.Equal("dailyRecommendation", suggestion.SuggestionGroup);
+            Assert.False(suggestion.CanCookNow);
+            Assert.Equal(0, suggestion.MatchedIngredientsCount);
+            Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, suggestion.RequiredIngredients);
+            Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, suggestion.MissingIngredients);
+            Assert.Empty(suggestion.ExtraIngredients);
+            Assert.Contains("không phải khuyến nghị của chuyên gia", suggestion.Disclaimer);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_ManualAndScanInputsReportTheSameRequiredMissingAndExtraIngredients()
+        {
+            await SeedDatabaseAsync();
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 4,
+                FoodName = "Tỏi",
+                FoodNameUnsigned = "toi",
+                FoodNameEn = "garlic",
+                CaloriesPer100g = 149,
+                ProteinPer100g = 6.4m,
+                CarbPer100g = 33,
+                FatPer100g = 0.5m,
+                IsActive = true,
+                IsDeleted = false
+            });
+            await _context.SaveChangesAsync();
+
+            var manualResult = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Trứng", "Tỏi" },
+                MinMatchedIngredients = 1,
+                MaxResults = 5
+            });
+
+            var scanResult = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableFoodItemIds = new List<int> { 1, 4 },
+                IngredientHints = new List<RecipeIngredientHintDto>
+                {
+                    new() { FoodItemId = 1, Name = "Trứng", Confidence = 0.95m },
+                    new() { FoodItemId = 4, Name = "Tỏi", Confidence = 0.92m }
+                },
+                MinMatchedIngredients = 1,
+                MaxResults = 5
+            });
+
+            var manual = Assert.Single(manualResult);
+            var scan = Assert.Single(scanResult);
+            Assert.Equal(manual.RecipeId, scan.RecipeId);
+            Assert.Equal(manual.RequiredIngredients, scan.RequiredIngredients);
+            Assert.Equal(new[] { "Cà chua", "Hành tây" }, manual.MissingIngredients);
+            Assert.Equal(manual.MissingIngredients, scan.MissingIngredients);
+            Assert.Equal(new[] { "Tỏi" }, manual.ExtraIngredients);
+            Assert.Equal(manual.ExtraIngredients, scan.ExtraIngredients);
         }
 
         [Fact]
@@ -450,6 +524,34 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task SuggestRecipesAsync_HidesRecipesWhenGuideOnlyHasYoutubeSearchUrl()
+        {
+            await SeedDatabaseAsync();
+            _recipeGuideMock
+                .Setup(s => s.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new RecipeCookingGuideDto
+                {
+                    RecipeId = 1,
+                    Steps = new List<string> { "Sơ chế", "Nấu", "Hoàn thiện" },
+                    GuideStatus = "generated",
+                    SourceUrls = new List<string> { "https://monngonmoingay.com/cong-thuc-demo" },
+                    YoutubeVideo = new RecipeYoutubeVideoDto
+                    {
+                        Url = "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+x%C3%A0o+c%C3%A0+chua"
+                    }
+                });
+
+            var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Trứng", "Cà chua" },
+                MaxResults = 5
+            });
+
+            Assert.Empty(result);
+        }
+
+        [Fact]
         public async Task GetRecipeDetailAsync_ReturnsRecipeMetadataAndImageVariants()
         {
             // Arrange
@@ -473,6 +575,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal("recipe-images/v1/thumb/trung-xao-ca-chua.webp", result.ImageUrl);
             Assert.Equal("recipe-images/v1/medium/trung-xao-ca-chua.webp", result.ImageVariants!.MediumUrl);
             Assert.Equal(new[] { "Chuẩn bị", "Xào chín" }, result.Instructions);
+            Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, result.RequiredIngredients);
+            Assert.Contains("không phải khuyến nghị của chuyên gia", result.Disclaimer);
         }
 
         private static RecipeCookingGuideDto BuildProductionGuide(int recipeId) => new()

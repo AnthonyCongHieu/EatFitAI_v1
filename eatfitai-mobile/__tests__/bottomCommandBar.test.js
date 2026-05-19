@@ -21,9 +21,22 @@ describe('Task-first bottom command bar', () => {
   it('uses the root navigation helper for stack commands to avoid parent navigator crashes', () => {
     const source = readSource('src/components/navigation/CustomTabBar.tsx');
 
-    expect(source).toContain('navigateRoot');
-    expect(source).toMatch(/navigateRoot\(\s*'MealDiary'/);
+    expect(source).toContain('navigation.emit');
+    expect(source).toContain("type: 'tabPress'");
+    expect(source).toContain('target: route.key');
+    expect(source).not.toMatch(/navigateRoot\(\s*'MealDiary'/);
     expect(source).not.toContain('navigation.getParent()');
+  });
+
+  it('keeps the command bar mounted by using real bottom tabs with diary as a tab', () => {
+    const tabsSource = readSource('src/app/navigation/AppTabs.tsx');
+
+    expect(tabsSource).toContain('createBottomTabNavigator');
+    expect(tabsSource).not.toContain('createNativeStackNavigator');
+    expect(tabsSource).toContain('MealDiary: { selectedDate?: string } | undefined');
+    expect(tabsSource).toContain('<Tab.Screen name="MealDiary"');
+    expect(tabsSource).toContain('tabBar={(props) => <CustomTabBar {...props} />}');
+    expect(tabsSource).toContain('backBehavior="history"');
   });
 
   it('does not mount the old floating mascot overlay in the app navigator', () => {

@@ -468,11 +468,21 @@ const normalizeRecipeSuggestionItem = (item: RecipeSuggestionApiItem | any): Rec
   sourceUrls: normalizeStringArray(item?.sourceUrls ?? item?.SourceUrls) ?? [],
   youtubeVideo: item?.youtubeVideo ?? item?.YoutubeVideo ?? null,
   prepItems: normalizeStringArray(item?.prepItems ?? item?.PrepItems) ?? [],
+  disclaimer: (() => {
+    const rawDisclaimer = item?.disclaimer ?? item?.Disclaimer;
+    return typeof rawDisclaimer === 'string' && rawDisclaimer.trim().length > 0
+      ? rawDisclaimer.trim()
+      : undefined;
+  })(),
   availableIngredients: normalizeStringArray(
     item?.availableIngredients ?? item?.AvailableIngredients,
   ) ?? [],
   matchedIngredients: normalizeStringArray(item?.matchedIngredients ?? item?.MatchedIngredients) ?? [],
   missingIngredients: normalizeStringArray(item?.missingIngredients ?? item?.MissingIngredients) ?? [],
+  extraIngredients: normalizeStringArray(item?.extraIngredients ?? item?.ExtraIngredients) ?? [],
+  requiredIngredients: normalizeStringArray(
+    item?.requiredIngredients ?? item?.RequiredIngredients,
+  ) ?? [],
   allIngredients: normalizeStringArray(item?.allIngredients ?? item?.AllIngredients) ?? [],
 });
 

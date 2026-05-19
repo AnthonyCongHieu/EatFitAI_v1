@@ -1,0 +1,1350 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EatFitAI Premium Mesh Wallet Screens</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page-bg: #05070d;
+      --ink: #f6f9ff;
+      --text: #dee1f7;
+      --muted: #9aa9c1;
+      --muted-2: #728099;
+      --line: rgba(226, 232, 240, 0.12);
+      --line-strong: rgba(226, 232, 240, 0.2);
+      --surface-low: rgba(15, 22, 37, 0.86);
+      --surface: rgba(26, 31, 47, 0.84);
+      --surface-high: rgba(37, 43, 63, 0.86);
+      --surface-highest: rgba(47, 54, 75, 0.92);
+      --green: #4be277;
+      --green-2: #22c55e;
+      --cyan: #32d7f0;
+      --blue: #78b8ff;
+      --amber: #f7c052;
+      --rose: #ff8c8c;
+      --violet: #9d7cff;
+      --shadow: 0 34px 92px rgba(0, 0, 0, 0.45);
+      font-family: Inter, "Be Vietnam Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 8% 6%, rgba(75, 226, 119, 0.14), transparent 28%),
+        radial-gradient(circle at 86% 0%, rgba(50, 215, 240, 0.12), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(157, 124, 255, 0.08), transparent 34%),
+        linear-gradient(180deg, #08111b 0%, var(--page-bg) 44%, #04060b 100%);
+      color: var(--ink);
+    }
+
+    .page {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 28px 24px 52px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .hero-panel,
+    .research-panel,
+    .screen-card {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+        rgba(11, 16, 28, 0.78);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-panel {
+      min-height: 330px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 30px;
+      border-radius: 32px;
+    }
+
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 68% 30%, rgba(50, 215, 240, 0.18), transparent 22%),
+        radial-gradient(circle at 22% 8%, rgba(75, 226, 119, 0.18), transparent 25%),
+        radial-gradient(circle at 76% 82%, rgba(157, 124, 255, 0.12), transparent 27%),
+        linear-gradient(134deg, transparent 0 28%, rgba(255, 255, 255, 0.055) 28.2% 41%, transparent 41.2%),
+        linear-gradient(82deg, transparent 0 62%, rgba(75, 226, 119, 0.07) 62.2% 63%, transparent 63.2%);
+      pointer-events: none;
+    }
+
+    .hero-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .kicker,
+    .screen-index {
+      margin: 0 0 12px;
+      color: var(--green);
+      font-size: 12px;
+      line-height: 1.2;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      font-weight: 950;
+    }
+
+    h1 {
+      max-width: 860px;
+      margin: 0;
+      color: #f8fbff;
+      font-size: clamp(34px, 5vw, 72px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 860px;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .research-panel {
+      border-radius: 28px;
+      padding: 20px;
+    }
+
+    .research-panel h2 {
+      margin: 0 0 12px;
+      color: var(--green);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .research-panel ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.62;
+    }
+
+    .tokens {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .token {
+      min-height: 54px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(17, 24, 39, 0.62);
+      padding: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .token i {
+      display: block;
+      height: 16px;
+      margin-bottom: 7px;
+      border-radius: 999px;
+      background: var(--swatch);
+    }
+
+    .screen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(410px, 1fr));
+      gap: 24px;
+      align-items: start;
+    }
+
+    .screen-card {
+      overflow: hidden;
+      border-radius: 30px;
+    }
+
+    .screen-head {
+      min-height: 148px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .screen-title {
+      margin: 0 0 8px;
+      color: #f7fbff;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .screen-note {
+      max-width: 520px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 0 12px;
+      border: 1px solid rgba(75, 226, 119, 0.28);
+      border-radius: 999px;
+      background: rgba(75, 226, 119, 0.08);
+      color: #baffcf;
+      font-size: 11px;
+      line-height: 1.1;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .preview-wrap {
+      min-height: 780px;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 50% 4%, rgba(75, 226, 119, 0.09), transparent 34%),
+        rgba(0, 0, 0, 0.18);
+    }
+
+    .phone {
+      width: 342px;
+      height: 730px;
+      padding: 9px;
+      border-radius: 40px;
+      background:
+        linear-gradient(155deg, rgba(255, 255, 255, 0.22), transparent 26%),
+        linear-gradient(180deg, #2a3449, #05070d 72%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+        0 28px 72px rgba(0, 0, 0, 0.5);
+    }
+
+    .screen {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 32px;
+      background: #0a0f1f;
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+    }
+
+    .screen::before,
+    .screen::after,
+    .ambient {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .screen::before {
+      z-index: 0;
+      background:
+        radial-gradient(circle at 18% 4%, rgba(75, 226, 119, 0.24), transparent 30%),
+        radial-gradient(circle at 92% 18%, rgba(50, 215, 240, 0.2), transparent 29%),
+        radial-gradient(circle at 72% 66%, rgba(157, 124, 255, 0.16), transparent 30%),
+        radial-gradient(circle at 20% 86%, rgba(247, 192, 82, 0.08), transparent 27%),
+        linear-gradient(180deg, #0d1427, #070b16);
+    }
+
+    .ambient {
+      z-index: 1;
+      background:
+        linear-gradient(135deg, transparent 0 23%, rgba(255, 255, 255, 0.055) 23.2% 36%, transparent 36.2%),
+        radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05) 0 1px, transparent 1.4px),
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: auto, 28px 28px, 56px 56px, 56px 56px;
+      opacity: 0.58;
+    }
+
+    .status,
+    .content,
+    .bottom-nav {
+      position: relative;
+      z-index: 3;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px 2px;
+      color: #f5f8ff;
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #c5d1e7;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .bars {
+      display: inline-grid;
+      grid-template-columns: repeat(4, 3px);
+      gap: 2px;
+      align-items: end;
+      height: 11px;
+    }
+
+    .bars i {
+      display: block;
+      width: 3px;
+      border-radius: 2px;
+      background: #c5d1e7;
+    }
+
+    .bars i:nth-child(1) { height: 4px; }
+    .bars i:nth-child(2) { height: 6px; }
+    .bars i:nth-child(3) { height: 8px; }
+    .bars i:nth-child(4) { height: 10px; }
+
+    .battery {
+      width: 24px;
+      height: 11px;
+      border: 1px solid rgba(222, 225, 247, 0.74);
+      border-radius: 4px;
+      padding: 1px;
+    }
+
+    .battery span {
+      display: block;
+      width: 78%;
+      height: 100%;
+      border-radius: 2px;
+      background: var(--green);
+    }
+
+    .content {
+      height: calc(100% - 90px);
+      padding: 10px 18px 0;
+      overflow: hidden;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      color: var(--green);
+      font-size: 13px;
+      line-height: 1.05;
+      font-weight: 950;
+    }
+
+    .title {
+      margin: 4px 0 0;
+      color: #f3f6ff;
+      font-size: 18px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      font-weight: 950;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 999px;
+      background: rgba(35, 43, 63, 0.86);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.1;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon-button svg {
+      color: #b7c4d9;
+    }
+
+    .glass-card,
+    .metric-card,
+    .row-card,
+    .notice,
+    .week,
+    .tab-chip {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(26, 31, 47, 0.78);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 20px 42px rgba(0, 0, 0, 0.22);
+      backdrop-filter: blur(18px);
+    }
+
+    .dashboard {
+      position: relative;
+      min-height: 202px;
+      display: grid;
+      grid-template-columns: 124px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 17px;
+      overflow: hidden;
+      border-radius: 28px;
+    }
+
+    .dashboard::before {
+      content: "";
+      position: absolute;
+      width: 126px;
+      height: 126px;
+      top: -45px;
+      right: 0;
+      border-radius: 50%;
+      background: rgba(75, 226, 119, 0.055);
+    }
+
+    .ring {
+      position: relative;
+      width: 116px;
+      height: 116px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(20, 25, 40, 0.9) 49%, transparent 50%),
+        conic-gradient(var(--green) 0deg 0deg, rgba(255, 255, 255, 0.09) 0deg 360deg);
+      box-shadow:
+        inset 0 0 0 9px rgba(255, 255, 255, 0.045),
+        0 14px 34px rgba(0, 0, 0, 0.22);
+    }
+
+    .ring.progress {
+      background:
+        radial-gradient(circle, rgba(20, 25, 40, 0.94) 49%, transparent 50%),
+        conic-gradient(var(--green) 0deg 238deg, rgba(255, 255, 255, 0.09) 238deg 360deg);
+    }
+
+    .ring strong {
+      display: block;
+      color: #f3f6ff;
+      text-align: center;
+      font-size: 27px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .ring small {
+      display: block;
+      margin-top: 7px;
+      color: #a3aec4;
+      text-align: center;
+      font-size: 9px;
+      line-height: 1.05;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 950;
+    }
+
+    .goal {
+      margin: 0 0 17px;
+      color: var(--green);
+      font-size: 12px;
+      line-height: 1.25;
+      font-weight: 950;
+    }
+
+    .macro {
+      margin-top: 13px;
+    }
+
+    .macro-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 7px;
+      margin-bottom: 7px;
+      color: #e6ebfb;
+      font-size: 12px;
+      line-height: 1.1;
+      font-weight: 950;
+    }
+
+    .macro-top span:last-child,
+    .muted {
+      color: #a1acc2;
+    }
+
+    .track {
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .track i {
+      display: block;
+      width: var(--w, 1%);
+      height: 100%;
+      border-radius: inherit;
+      background: var(--c, var(--green));
+    }
+
+    .week {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      margin: 15px 0 17px;
+      padding: 8px 6px;
+      border-radius: 20px;
+    }
+
+    .day {
+      color: #9aa7bd;
+      text-align: center;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .date {
+      width: 33px;
+      height: 33px;
+      display: grid;
+      place-items: center;
+      margin: 7px auto 0;
+      color: #dee1f7;
+      border-radius: 999px;
+      font-size: 16px;
+    }
+
+    .day.active .date {
+      background: var(--green);
+      color: #003915;
+    }
+
+    .section-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 0 14px;
+    }
+
+    .section-row h3 {
+      margin: 0;
+      color: #f0f4ff;
+      font-size: 17px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      font-weight: 950;
+    }
+
+    .section-row span {
+      color: var(--green);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      font-weight: 950;
+    }
+
+    .notice {
+      position: relative;
+      display: grid;
+      grid-template-columns: 78px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      min-height: 102px;
+      margin: 58px 17px 8px;
+      padding: 12px 14px;
+      overflow: hidden;
+      border-color: rgba(137, 166, 122, 0.35);
+      border-radius: 20px;
+    }
+
+    .notice::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent, rgba(75, 226, 119, 0.055), transparent);
+    }
+
+    .mochi {
+      position: relative;
+      z-index: 1;
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      align-self: end;
+      filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.28));
+    }
+
+    .notice-copy {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+    }
+
+    .notice-copy b {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--green);
+      font-size: 11px;
+      line-height: 1.1;
+      letter-spacing: 0.045em;
+      font-weight: 950;
+    }
+
+    .notice-copy p {
+      margin: 0;
+      color: #d9def0;
+      font-size: 12px;
+      line-height: 1.34;
+      font-weight: 800;
+    }
+
+    .notice-copy span {
+      display: block;
+      margin-top: 7px;
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .empty-title {
+      margin: 0;
+      color: #edf1ff;
+      text-align: center;
+      font-size: 17px;
+      line-height: 1.22;
+      font-weight: 950;
+    }
+
+    .empty-sub {
+      width: 252px;
+      margin: 9px auto 0;
+      color: #9ca8bd;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.38;
+    }
+
+    .row-card {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 78px;
+      margin-bottom: 12px;
+      padding: 11px;
+      border-radius: 20px;
+    }
+
+    .thumb {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.1)),
+        var(--food-url) center / cover;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .row-title {
+      margin: 0 0 4px;
+      color: #f4f7ff;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 950;
+    }
+
+    .row-meta {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    .kcal {
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0 14px;
+    }
+
+    .tab-chip {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      min-height: 34px;
+      border-radius: 999px;
+      color: #aebbd2;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .tab-chip.active {
+      color: #062612;
+      background: var(--green);
+      border-color: rgba(75, 226, 119, 0.5);
+    }
+
+    .scan-frame {
+      height: 256px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(6, 10, 18, 0.05), rgba(6, 10, 18, 0.72)),
+        var(--food-url) center / cover;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.25);
+    }
+
+    .scan-frame::before {
+      content: "";
+      position: absolute;
+      inset: 20px;
+      border-radius: 24px;
+      border: 2px solid rgba(75, 226, 119, 0.72);
+      box-shadow: 0 0 32px rgba(75, 226, 119, 0.28);
+    }
+
+    .scan-label {
+      position: absolute;
+      left: 24px;
+      bottom: 20px;
+      right: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(10, 15, 26, 0.75);
+      backdrop-filter: blur(18px);
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .scan-label span {
+      color: var(--green);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .metric-card {
+      min-height: 76px;
+      padding: 12px;
+      border-radius: 18px;
+    }
+
+    .metric-card b {
+      display: block;
+      color: #f2f6ff;
+      font-size: 17px;
+      line-height: 1.1;
+    }
+
+    .metric-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .primary-button {
+      height: 44px;
+      display: grid;
+      place-items: center;
+      margin-top: 13px;
+      border-radius: 999px;
+      background: var(--green);
+      color: #03200d;
+      font-size: 13px;
+      font-weight: 950;
+      box-shadow: 0 16px 34px rgba(75, 226, 119, 0.2);
+    }
+
+    .chart-card {
+      padding: 16px;
+      border-radius: 26px;
+    }
+
+    .bars-chart {
+      height: 150px;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      align-items: end;
+      margin-top: 14px;
+    }
+
+    .bar {
+      min-height: 30px;
+      border-radius: 999px 999px 8px 8px;
+      background:
+        linear-gradient(180deg, rgba(75, 226, 119, 0.95), rgba(34, 197, 94, 0.35)),
+        rgba(255, 255, 255, 0.06);
+      height: var(--h);
+    }
+
+    .profile-card {
+      display: grid;
+      grid-template-columns: 70px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 15px;
+      border-radius: 26px;
+    }
+
+    .avatar {
+      width: 70px;
+      height: 70px;
+      display: grid;
+      place-items: center;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle, rgba(75, 226, 119, 0.2), transparent 68%),
+        rgba(37, 43, 63, 0.9);
+      border: 1px solid rgba(75, 226, 119, 0.24);
+      color: var(--green);
+      font-size: 26px;
+      font-weight: 950;
+    }
+
+    .menu-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .menu-row {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 58px;
+      padding: 10px;
+      border-radius: 18px;
+    }
+
+    .mini-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(75, 226, 119, 0.1);
+      color: var(--green);
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 13px;
+      right: 13px;
+      bottom: 8px;
+      height: 63px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: end;
+      padding: 0 8px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.075);
+      border-radius: 20px 20px 26px 26px;
+      background: rgba(15, 21, 35, 0.91);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.045),
+        0 -16px 42px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-item {
+      color: #a3aec4;
+      text-align: center;
+      font-size: 7px;
+      line-height: 1.15;
+      font-weight: 950;
+      letter-spacing: 0.03em;
+    }
+
+    .nav-icon {
+      width: 21px;
+      height: 21px;
+      margin: 0 auto 5px;
+      color: currentColor;
+    }
+
+    .nav-item.active {
+      color: var(--green);
+    }
+
+    .nav-item.active::after {
+      content: "";
+      display: block;
+      width: 24px;
+      height: 3px;
+      margin: 6px auto 0;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .dock {
+      position: relative;
+      top: -26px;
+      align-self: start;
+      color: #e4ebfa;
+    }
+
+    .dock-ring {
+      width: 61px;
+      height: 61px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 4px;
+      border-radius: 999px;
+      border: 2px solid rgba(75, 226, 119, 0.78);
+      background:
+        radial-gradient(circle, rgba(75, 226, 119, 0.2), transparent 64%),
+        #24304a;
+      box-shadow: 0 0 0 6px rgba(75, 226, 119, 0.13);
+    }
+
+    .dock-ring img {
+      width: 46px;
+      height: 46px;
+      object-fit: contain;
+    }
+
+    .dock span {
+      font-size: 7px;
+      font-weight: 950;
+      letter-spacing: 0.07em;
+    }
+
+    @media (max-width: 940px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 470px) {
+      .page {
+        padding: 16px 10px 36px;
+      }
+
+      .hero-panel {
+        min-height: 280px;
+        padding: 20px;
+      }
+
+      .screen-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-wrap {
+        min-height: 650px;
+        padding: 14px;
+      }
+
+      .phone {
+        width: 300px;
+        height: 642px;
+        border-radius: 34px;
+      }
+
+      .screen {
+        border-radius: 28px;
+      }
+
+      .content {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .dashboard {
+        grid-template-columns: 96px minmax(0, 1fr);
+        min-height: 166px;
+        gap: 9px;
+        padding: 12px;
+      }
+
+      .ring {
+        width: 92px;
+        height: 92px;
+      }
+
+      .ring strong {
+        font-size: 22px;
+      }
+
+      .ring small,
+      .goal,
+      .macro-top {
+        font-size: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-panel">
+        <p class="kicker">Selected direction</p>
+        <h1>Premium Mesh Wallet cho các màn chính</h1>
+        <p class="subtitle">
+          Chỉ giữ một art direction: nền mesh xanh ngọc/cyan/violet có chiều sâu, surface glass nổi,
+          border mềm, typography đậm. Các màn dưới đây dùng cùng ngôn ngữ để xem style có chạy được
+          xuyên suốt app hay không.
+        </p>
+      </div>
+      <aside class="research-panel">
+        <h2>Design Tokens</h2>
+        <ul>
+          <li>Nền tối xanh than, không dùng đen tuyệt đối.</li>
+          <li>Mesh chỉ là lớp ambient, không che text và không cạnh tranh với card.</li>
+          <li>Surface cao hơn nền bằng màu sáng hơn, border và shadow mềm.</li>
+          <li>Accent xanh lá chỉ dùng cho trạng thái active, CTA và số liệu chính.</li>
+        </ul>
+        <div class="tokens">
+          <div class="token"><i style="--swatch:#0a0f1f"></i>Base</div>
+          <div class="token"><i style="--swatch:#252b3f"></i>Surface</div>
+          <div class="token"><i style="--swatch:#4be277"></i>Primary</div>
+          <div class="token"><i style="--swatch:linear-gradient(90deg,#4be277,#32d7f0,#9d7cff)"></i>Mesh</div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="screens" class="screen-grid" aria-label="Premium Mesh representative screens"></section>
+  </main>
+
+  <script>
+    const rootPrefix = window.location.protocol === "file:" ? "../../" : "/";
+    const mascot = `${rootPrefix}eatfitai-mobile/src/assets/mascot/mochi/sprites/01_idle.png`;
+    const food = `${rootPrefix}eatfitai-mobile/src/assets/pho-bowl.jpg`;
+
+    const icons = {
+      home: '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V21h14V10.5"/><path d="M9 21v-6h6v6"/></svg>',
+      book: '<svg viewBox="0 0 24 24"><path d="M5 4h9a4 4 0 0 1 4 4v12H9a4 4 0 0 0-4-4Z"/><path d="M5 4v12"/><path d="M18 8h1a2 2 0 0 1 2 2v10h-3"/></svg>',
+      scan: '<svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M16 4h3a1 1 0 0 1 1 1v3"/><path d="M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="12" r="3"/></svg>',
+      chart: '<svg viewBox="0 0 24 24"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/></svg>',
+      user: '<svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>',
+      bell: '<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>',
+      gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.65V21a2 2 0 1 1-4 0v-.06A1.8 1.8 0 0 0 8.75 19.3a1.8 1.8 0 0 0-1.98.36l-.04.04A2 2 0 1 1 3.9 16.87l.04-.04A1.8 1.8 0 0 0 4.3 14.85 1.8 1.8 0 0 0 2.65 13.75H2.6a2 2 0 1 1 0-4h.06A1.8 1.8 0 0 0 4.3 8.65a1.8 1.8 0 0 0-.36-1.98L3.9 6.63A2 2 0 0 1 6.73 3.8l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 9.85 2.55V2.5a2 2 0 1 1 4 0v.06a1.8 1.8 0 0 0 1.1 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.1h.06a2 2 0 1 1 0 4h-.06A1.8 1.8 0 0 0 19.4 15Z"/></svg>',
+      chevron: '<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>',
+    };
+
+    function statusBar() {
+      return `
+        <div class="status">
+          <span>1:40</span>
+          <div class="status-right">
+            <span>0,79 KB/s</span>
+            <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <div class="battery"><span></span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function topRow(title, brand = "MoChi") {
+      return `
+        <header class="top-row">
+          <div>
+            <div class="brand">${brand}</div>
+            <h3 class="title">${title}</h3>
+          </div>
+          <div class="actions">
+            <div class="icon-button">${icons.gear}</div>
+            <div class="icon-button">${icons.bell}</div>
+          </div>
+        </header>
+      `;
+    }
+
+    function bottomNav(active) {
+      const items = [
+        ["home", "TRANG CHỦ", "home"],
+        ["book", "NHẬT KÝ", "diary"],
+        ["scan", "MOCHI", "scan"],
+        ["chart", "THỐNG KÊ", "stats"],
+        ["user", "CÁ NHÂN", "profile"],
+      ];
+      return `
+        <nav class="bottom-nav" aria-label="Bottom navigation">
+          ${items.map(([icon, label, key]) => key === "scan" ? `
+            <div class="nav-item dock ${active === key ? "active" : ""}">
+              <div class="dock-ring"><img src="${mascot}" alt="" /></div>
+              <span>${label}</span>
+            </div>
+          ` : `
+            <div class="nav-item ${active === key ? "active" : ""}">
+              <div class="nav-icon">${icons[icon]}</div>${label}
+            </div>
+          `).join("")}
+        </nav>
+      `;
+    }
+
+    function phone(inner, active = "home") {
+      return `
+        <div class="phone">
+          <div class="screen" style="--food-url:url('${food}')">
+            <div class="ambient"></div>
+            ${statusBar()}
+            <div class="content">${inner}</div>
+            ${bottomNav(active)}
+          </div>
+        </div>
+      `;
+    }
+
+    function week() {
+      return `
+        <section class="week">
+          ${[
+            ["T2", "18", ""], ["T3", "19", "active"], ["T4", "20", ""],
+            ["T5", "21", ""], ["T6", "22", ""], ["T7", "23", ""], ["CN", "24", ""],
+          ].map(([label, date, active]) => `
+            <div class="day ${active}">
+              <div>${label}</div>
+              <div class="date">${date}</div>
+            </div>
+          `).join("")}
+        </section>
+      `;
+    }
+
+    function dashboard() {
+      return `
+        <section class="dashboard glass-card">
+          <div class="ring">
+            <div><strong>1.777</strong><small>calo còn lại</small></div>
+          </div>
+          <div>
+            <p class="goal">Mục tiêu: 1.777 kcal</p>
+            <div class="macro"><div class="macro-top"><span>ĐẠM</span><span>0g / 93g</span></div><div class="track"><i></i></div></div>
+            <div class="macro"><div class="macro-top"><span>TINH BỘT</span><span>0g / 240g</span></div><div class="track"><i style="--c:var(--cyan)"></i></div></div>
+            <div class="macro"><div class="macro-top"><span>CHẤT BÉO</span><span>0g / 49g</span></div><div class="track"><i style="--c:var(--amber)"></i></div></div>
+          </div>
+        </section>
+      `;
+    }
+
+    const screens = [
+      {
+        title: "Home",
+        tag: "Dashboard",
+        note: "Màn chính giữ nguyên calorie card, nhưng nền mesh làm header và khoảng trống dưới nhật ký có chiều sâu hơn.",
+        active: "home",
+        body: `
+          ${topRow("Sẵn sàng hỗ trợ")}
+          ${dashboard()}
+          ${week()}
+          <div class="section-row"><h3>Nhật ký hôm nay</h3><span>XEM TẤT CẢ</span></div>
+          <section class="notice">
+            <img class="mochi" src="${mascot}" alt="" />
+            <div class="notice-copy">
+              <b>NHẬT KÝ CÒN TRỐNG</b>
+              <p>Bắt đầu bằng món gần nhất. Bạn có thể quét ảnh hoặc tìm món thủ công.</p>
+              <span>Ghi món đầu tiên</span>
+            </div>
+          </section>
+          <p class="empty-title">Chưa có món nào hôm nay</p>
+          <p class="empty-sub">Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!</p>
+        `,
+      },
+      {
+        title: "Nhật Ký",
+        tag: "Meal timeline",
+        note: "Meal cards dùng glass surface nhất quán, ảnh món ăn nổi trên mesh thay vì nền đen trống.",
+        active: "diary",
+        body: `
+          ${topRow("Nhật ký bữa ăn", "MoChi")}
+          ${week()}
+          <div class="tab-row"><div class="tab-chip active">Tất cả</div><div class="tab-chip">Sáng</div><div class="tab-chip">Trưa</div><div class="tab-chip">Tối</div></div>
+          ${["Phở bò tái", "Cơm gà xé", "Sữa chua trái cây", "Salad cá hồi"].map((name, i) => `
+            <section class="row-card">
+              <div class="thumb"></div>
+              <div>
+                <p class="row-title">${name}</p>
+                <div class="row-meta">${["07:42", "12:18", "15:05", "19:10"][i]} · Đạm ${[28, 32, 9, 26][i]}g · Tinh bột ${[54, 68, 22, 18][i]}g</div>
+              </div>
+              <div class="kcal">${[420, 612, 180, 360][i]} kcal</div>
+            </section>
+          `).join("")}
+        `,
+      },
+      {
+        title: "Quét Món",
+        tag: "AI scan",
+        note: "Màn camera có cùng mesh và glass controls, nhưng dùng ảnh món ăn làm focal point chính.",
+        active: "scan",
+        body: `
+          ${topRow("Quét món ăn", "MoChi")}
+          <section class="scan-frame">
+            <div class="scan-label">
+              <strong>Đang nhận diện món</strong>
+              <span>92%</span>
+            </div>
+          </section>
+          <div class="metric-grid">
+            <div class="metric-card"><b>420</b><span>kcal dự đoán</span></div>
+            <div class="metric-card"><b>28g</b><span>đạm</span></div>
+            <div class="metric-card"><b>54g</b><span>tinh bột</span></div>
+          </div>
+          <section class="row-card" style="margin-top:13px">
+            <div class="thumb"></div>
+            <div>
+              <p class="row-title">Phở bò tái</p>
+              <div class="row-meta">MoChi gợi ý khẩu phần 1 tô vừa</div>
+            </div>
+            <div class="kcal">Sửa</div>
+          </section>
+          <div class="primary-button">Lưu vào nhật ký</div>
+        `,
+      },
+      {
+        title: "Thống Kê",
+        tag: "Progress",
+        note: "Stats dùng cùng background signature nhưng giảm texture để biểu đồ và số liệu dễ đọc.",
+        active: "stats",
+        body: `
+          ${topRow("Thống kê tuần", "MoChi")}
+          <section class="dashboard glass-card" style="grid-template-columns:118px 1fr">
+            <div class="ring progress"><div><strong>68%</strong><small>đạt mục tiêu</small></div></div>
+            <div>
+              <p class="goal">Tuần này tốt hơn 12%</p>
+              <div class="macro"><div class="macro-top"><span>Calories</span><span>8.420 / 12.390</span></div><div class="track"><i style="--w:68%"></i></div></div>
+              <div class="macro"><div class="macro-top"><span>Đạm</span><span>392g / 651g</span></div><div class="track"><i style="--w:60%;--c:var(--cyan)"></i></div></div>
+            </div>
+          </section>
+          <section class="chart-card glass-card" style="margin-top:14px">
+            <div class="section-row"><h3>Calories</h3><span>7 NGÀY</span></div>
+            <div class="bars-chart">
+              ${[58, 72, 44, 88, 64, 78, 52].map((h) => `<div class="bar" style="--h:${h}%"></div>`).join("")}
+            </div>
+          </section>
+          <div class="metric-grid">
+            <div class="metric-card"><b>4</b><span>ngày ghi món</span></div>
+            <div class="metric-card"><b>2.1L</b><span>nước TB</span></div>
+            <div class="metric-card"><b>+3</b><span>streak</span></div>
+          </div>
+        `,
+      },
+      {
+        title: "Cá Nhân",
+        tag: "Profile",
+        note: "Profile giữ cảm giác premium bằng card lớn, menu row glass và icon container xanh rất tiết chế.",
+        active: "profile",
+        body: `
+          ${topRow("Cá nhân", "MoChi")}
+          <section class="profile-card glass-card">
+            <div class="avatar">H</div>
+            <div>
+              <p class="row-title" style="font-size:18px">Hiếu</p>
+              <div class="row-meta">Mục tiêu: giảm mỡ nhẹ · 1.777 kcal/ngày</div>
+              <div class="track" style="margin-top:12px"><i style="--w:72%"></i></div>
+            </div>
+          </section>
+          <div class="metric-grid">
+            <div class="metric-card"><b>19</b><span>ngày dùng app</span></div>
+            <div class="metric-card"><b>36</b><span>món đã lưu</span></div>
+            <div class="metric-card"><b>8</b><span>huy hiệu</span></div>
+          </div>
+          <div class="menu-list">
+            ${[
+              ["Mục tiêu dinh dưỡng", "Cập nhật kcal và macro"],
+              ["Hồ sơ sức khỏe", "Cân nặng, chiều cao, hoạt động"],
+              ["Hướng dẫn MoChi", "Xem lại các bước chính"],
+              ["Cài đặt giao diện", "Dark mode, thông báo"],
+            ].map(([title, meta]) => `
+              <section class="menu-row glass-card">
+                <div class="mini-icon">${icons.user}</div>
+                <div>
+                  <p class="row-title">${title}</p>
+                  <div class="row-meta">${meta}</div>
+                </div>
+                <div style="color:#95a4bb">${icons.chevron}</div>
+              </section>
+            `).join("")}
+          </div>
+        `,
+      },
+    ];
+
+    function screenCard(screen, index) {
+      return `
+        <article class="screen-card">
+          <header class="screen-head">
+            <div>
+              <p class="screen-index">${String(index + 1).padStart(2, "0")} / Premium Mesh</p>
+              <h2 class="screen-title">${screen.title}</h2>
+              <p class="screen-note">${screen.note}</p>
+            </div>
+            <span class="pill">${screen.tag}</span>
+          </header>
+          <div class="preview-wrap">
+            ${phone(screen.body, screen.active)}
+          </div>
+        </article>
+      `;
+    }
+
+    document.getElementById("screens").innerHTML = screens.map(screenCard).join("");
+  </script>
+</body>
+</html>

@@ -25,7 +25,7 @@ export const performMoChiNotificationAction = (
       });
       return;
     case 'viewDiary':
-      navigateRoot('MealDiary');
+      navigateRoot('AppTabs', { screen: 'MealDiary' });
       return;
     case 'openNotifications':
       navigateRoot('NotificationCenter');
