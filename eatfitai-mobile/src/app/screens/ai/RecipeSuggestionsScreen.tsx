@@ -391,12 +391,6 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           ) : recipes.length === 0 ? (
             <View style={S.centerEmpty}>
               <MoChiInlineNotice mochiEvent="recipe_empty" compact />
-              <Ionicons name="restaurant-outline" size={64} color={P.onSurfaceVariant} />
-              <ThemedText style={S.emptyText}>
-                {isDailyRecommendation
-                  ? 'Chạm vào nút phía trên để xem món phù hợp cho hôm nay.'
-                  : <>Nhập nguyên liệu nếu có, hoặc chạm nút phía trên để{'\n'}khám phá công thức phù hợp.</>}
-              </ThemedText>
             </View>
           ) : (
             <>

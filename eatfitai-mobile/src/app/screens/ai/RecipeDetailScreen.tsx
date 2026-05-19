@@ -207,14 +207,25 @@ const RecipeDetailScreen = (): React.ReactElement => {
   };
 
   const TopHeader = () => (
-    <View style={[S.header, { paddingTop: insets.top + 10 }]}>
-      <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color={P.onSurface} />
-      </Pressable>
-      <Pressable style={S.iconBtn}>
-        <Ionicons name="heart-outline" size={24} color={P.onSurface} />
-      </Pressable>
-    </View>
+    <>
+      {/* ═══ Top Gradient Overlay for Header Contrast ═══ */}
+      <LinearGradient
+        colors={['rgba(5, 7, 13, 0.7)', 'transparent']}
+        style={[StyleSheet.absoluteFill, { height: insets.top + 80, zIndex: 40 }]}
+        pointerEvents="none"
+      />
+
+      {/* ═══ Top App Bar ═══ */}
+      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+        <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={P.onSurface} />
+        </Pressable>
+        <ThemedText style={S.headerTitle}>Chi tiết công thức</ThemedText>
+        <Pressable style={S.iconBtn} hitSlop={12}>
+          <Ionicons name="heart-outline" size={22} color={P.onSurface} />
+        </Pressable>
+      </View>
+    </>
   );
 
   if (loading) {
@@ -545,15 +556,34 @@ const S = StyleSheet.create({
   center: { flex: 1, backgroundColor: P.surface, alignItems: 'center', justifyContent: 'center' },
 
   header: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-    flexDirection: 'row', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 15,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    minHeight: 52,
+    paddingTop: 4,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
   },
   iconBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: P.glassHeader,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: P.glassBorder,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: 'BeVietnamPro_700Bold',
+    fontSize: 18,
+    color: P.onSurface,
+    letterSpacing: -0.2,
   },
 
   scrollContent: { paddingBottom: 60 },
