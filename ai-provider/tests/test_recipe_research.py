@@ -78,6 +78,27 @@ class RecipeResearchTests(unittest.TestCase):
         self.assertIsNone(result["youtubeVideo"])
         self.assertEqual(result["sourceUrls"], ["https://example.com/recipe"])
 
+    def test_get_cooking_guide_accepts_google_grounding_redirect_sources(self) -> None:
+        grounding_url = "https://vertexaisearch.cloud.google.com/grounding-api-redirect/demo"
+        with (
+            patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),
+            patch("nutrition_llm.ensure_gemini_service_available"),
+            patch(
+                "nutrition_llm.query_gemini",
+                return_value=(
+                    '{"steps":["Sơ chế","Nấu chín","Hoàn thiện"],'
+                    '"cookingTimeMinutes":25,"difficulty":"Dễ",'
+                    f'"tips":["Nêm sau"],"sourceUrls":["{grounding_url}"]}}'
+                ),
+            ),
+            patch("nutrition_llm._is_reachable_source_url", return_value=True),
+            patch("nutrition_llm._find_youtube_video", return_value=None),
+        ):
+            result = get_cooking_guide("Gà kho gừng", [{"foodName": "Thịt gà", "grams": 250}])
+
+        self.assertEqual(result["guideStatus"], "generated")
+        self.assertEqual(result["sourceUrls"], [grounding_url])
+
     def test_get_cooking_guide_falls_back_when_source_is_not_reachable(self) -> None:
         with (
             patch.dict("os.environ", {"TRUSTED_RECIPE_DOMAINS": "example.com"}),

@@ -701,6 +701,9 @@ def _is_trusted_source_url(url: str) -> bool:
         return False
 
     host = parsed.netloc.lower().split("@")[-1].split(":")[0]
+    if host == "vertexaisearch.cloud.google.com" and parsed.path.startswith("/grounding-api-redirect/"):
+        return True
+
     trusted_domains = _csv_env_set("TRUSTED_RECIPE_DOMAINS", DEFAULT_TRUSTED_RECIPE_DOMAINS)
     return any(host == domain or host.endswith(f".{domain}") for domain in trusted_domains)
 
