@@ -922,9 +922,10 @@ def get_cooking_guide(
         fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
         return fallback
 
+    prompt = _build_recipe_guide_prompt(recipe_name, ingredients, description)
     response_metadata: Dict[str, Any] = {}
     response = query_gemini(
-        _build_recipe_guide_prompt(recipe_name, ingredients, description),
+        prompt,
         cache_ttl=_recipe_cache_ttl_seconds(),
         response_schema=RECIPE_GUIDE_SCHEMA,
         thinking_budget=0,
@@ -933,6 +934,39 @@ def get_cooking_guide(
         max_output_tokens=1400,
     )
 
+    generated = _build_generated_recipe_guide(recipe_name, response, response_metadata)
+    if generated is not None:
+        return generated
+
+    if _recipe_tools():
+        response_metadata = {}
+        response = query_gemini(
+            prompt,
+            cache_ttl=_recipe_cache_ttl_seconds(),
+            response_schema=RECIPE_GUIDE_SCHEMA,
+            thinking_budget=0,
+            tools=[],
+            metadata_sink=response_metadata,
+            max_output_tokens=1400,
+        )
+        generated = _build_generated_recipe_guide(recipe_name, response, response_metadata)
+        if generated is not None:
+            return generated
+
+
+    fallback = _generate_fallback_instructions(recipe_name, ingredients)
+    fallback["guideStatus"] = "fallback"
+    fallback["sourceUrls"] = []
+    fallback["youtubeVideo"] = None
+    fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
+    return fallback
+
+
+def _build_generated_recipe_guide(
+    recipe_name: str,
+    response: Optional[str],
+    response_metadata: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
     if response:
         parsed = _extract_json_object(response)
         if parsed:
@@ -960,13 +994,7 @@ def get_cooking_guide(
                 len(steps),
                 len(source_urls),
             )
-
-    fallback = _generate_fallback_instructions(recipe_name, ingredients)
-    fallback["guideStatus"] = "fallback"
-    fallback["sourceUrls"] = []
-    fallback["youtubeVideo"] = None
-    fallback["cookingTimeMinutes"] = _coerce_positive_int(fallback.get("cookingTime")) or 25
-    return fallback
+    return None
 
 
 def get_cooking_instructions(
