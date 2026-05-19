@@ -10,6 +10,7 @@ public class OpsMetricsBufferTests
     [InlineData("/api/ai/recipes/suggest", "ai", "/api/ai/recipes/suggest")]
     [InlineData("/api/voice/parse", "ai", "/api/voice/parse")]
     [InlineData("/api/AIReview/weekly", "ai", "/api/AIReview/weekly")]
+    [InlineData("/api/ai/nutrition/current", "ai", "/api/ai/nutrition/current")]
     [InlineData("/api/ai/recipes/42/cooking-guide", "ai", "/api/ai/recipes/:id/cooking-guide")]
     [InlineData("/api/ai/vision/suggest-mapping/pho%20ga", "ai", "/api/ai/vision/suggest-mapping/:label")]
     public void Record_ClassifiesAiFeatureRoutes(string path, string expectedSource, string expectedRouteGroup)
