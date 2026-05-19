@@ -78,6 +78,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 RecipeId = 1,
                 RecipeName = "Trứng xào cà chua",
                 Description = "Món ăn đơn giản, dễ làm",
+                ImageUrl = "recipe-images/v1/thumb/trung-xao-ca-chua.webp",
                 InstructionsJson = "[\"Sơ chế\", \"Xào trứng\", \"Hoàn thiện\"]",
                 SourceUrlsJson = "[\"https://monngonmoingay.com/cong-thuc-demo\"]",
                 VideoUrl = "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+x%C3%A0o+c%C3%A0+chua",
@@ -269,6 +270,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeId = 2,
                     RecipeName = "Trứng hấp nhanh",
                     Description = "Nhanh",
+                    ImageUrl = "recipe-images/v1/thumb/trung-hap-nhanh.webp",
                     CookTimeMinutes = 15,
                     InstructionsJson = "[\"Sơ chế\", \"Hấp chín\", \"Hoàn thiện\"]",
                     SourceUrlsJson = "[\"https://monngonmoingay.com/trung-hap-nhanh\"]",
@@ -280,6 +282,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeId = 3,
                     RecipeName = "Trứng om chậm",
                     Description = "Chậm",
+                    ImageUrl = "recipe-images/v1/thumb/trung-om-cham.webp",
                     CookTimeMinutes = 45,
                     InstructionsJson = "[\"Sơ chế\", \"Om chậm\", \"Hoàn thiện\"]",
                     SourceUrlsJson = "[\"https://monngonmoingay.com/trung-om-cham\"]",
@@ -321,6 +324,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 {
                     RecipeId = 2,
                     RecipeName = "Trứng cà chua vừa kcal",
+                    ImageUrl = "recipe-images/v1/thumb/trung-ca-chua-vua-kcal.webp",
                     CookTimeMinutes = 20,
                     InstructionsJson = "[\"Sơ chế\", \"Xào chín\", \"Hoàn thiện\"]",
                     SourceUrlsJson = "[\"https://monngonmoingay.com/trung-ca-chua-vua\"]",
@@ -331,6 +335,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 {
                     RecipeId = 3,
                     RecipeName = "Trứng cà chua nhiều kcal",
+                    ImageUrl = "recipe-images/v1/thumb/trung-ca-chua-nhieu-kcal.webp",
                     CookTimeMinutes = 20,
                     InstructionsJson = "[\"Sơ chế\", \"Xào nhiều\", \"Hoàn thiện\"]",
                     SourceUrlsJson = "[\"https://monngonmoingay.com/trung-ca-chua-nhieu\"]",
@@ -370,6 +375,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             {
                 RecipeId = 2,
                 RecipeName = "Trứng cà chua đủ nguyên liệu",
+                ImageUrl = "recipe-images/v1/thumb/trung-ca-chua-du-nguyen-lieu.webp",
                 InstructionsJson = "[\"Sơ chế\", \"Xào chín\", \"Hoàn thiện\"]",
                 SourceUrlsJson = "[\"https://monngonmoingay.com/trung-ca-chua-du\"]",
                 CreatedAt = DateTime.UtcNow,

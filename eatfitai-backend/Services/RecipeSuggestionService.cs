@@ -313,6 +313,11 @@ namespace EatFitAI.API.Services
             var result = new List<RecipeSuggestionDto>();
             foreach (var suggestion in suggestions)
             {
+                if (!HasRecipeSafeVisual(suggestion.ImageUrl))
+                {
+                    continue;
+                }
+
                 if (!guideRows.TryGetValue(suggestion.RecipeId, out var guideRow))
                 {
                     continue;
@@ -340,6 +345,31 @@ namespace EatFitAI.API.Services
             }
 
             return result;
+        }
+
+        private static bool HasRecipeSafeVisual(string? imageUrl)
+        {
+            var key = imageUrl?.Trim();
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+            if (key.StartsWith("recipe-images/v1/thumb/", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            const string foodThumbPrefix = "food-images/v2/thumb/";
+            if (!key.StartsWith(foodThumbPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var fileName = key[foodThumbPrefix.Length..];
+            var dot = fileName.LastIndexOf('.');
+            var label = dot > 0 ? fileName[..dot] : fileName;
+            return RecipeIngredientEligibility.IsFinishedDishKey(label);
         }
 
         private static bool IsProductionGuide(IReadOnlyCollection<string> steps, IReadOnlyCollection<string> sourceUrls)
