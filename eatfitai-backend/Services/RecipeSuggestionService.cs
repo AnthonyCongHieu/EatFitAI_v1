@@ -313,7 +313,9 @@ namespace EatFitAI.API.Services
 
                 suggestion.GuideStatus = guide!.GuideStatus;
                 suggestion.SourceUrls = guide.SourceUrls;
-                suggestion.YoutubeVideo = guide.YoutubeVideo;
+                suggestion.YoutubeVideo = IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url)
+                    ? guide.YoutubeVideo
+                    : null;
                 suggestion.PrepItems = guide.PrepItems.Count > 0 ? guide.PrepItems : guide.Tips;
                 result.Add(suggestion);
 
@@ -338,10 +340,7 @@ namespace EatFitAI.API.Services
                 return false;
             }
 
-            var hasSource = guide.SourceUrls.Any(IsTrustedHttpsUrl);
-            var hasVideo = IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
-
-            return hasSource && hasVideo;
+            return guide.SourceUrls.Any(IsTrustedHttpsUrl);
         }
 
         private static bool IsTrustedHttpsUrl(string? url)

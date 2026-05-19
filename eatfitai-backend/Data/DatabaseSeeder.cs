@@ -1066,7 +1066,6 @@ namespace EatFitAI.API.Data
                 recipe.VideoUrl = directYoutubeVideoUrl;
                 recipe.EnhancedAt = seed.Instructions.Count >= 3
                     && seed.SourceUrls.Any(IsHttpsUrl)
-                    && directYoutubeVideoUrl != null
                         ? now
                         : null;
                 recipe.UpdatedAt = now;

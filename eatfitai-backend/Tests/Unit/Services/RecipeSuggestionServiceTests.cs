@@ -524,7 +524,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
-        public async Task SuggestRecipesAsync_HidesRecipesWhenGuideOnlyHasYoutubeSearchUrl()
+        public async Task SuggestRecipesAsync_AllowsSourceBackedGuideWhenVideoIsUnavailable()
         {
             await SeedDatabaseAsync();
             _recipeGuideMock
@@ -548,7 +548,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                 MaxResults = 5
             });
 
-            Assert.Empty(result);
+            var suggestion = Assert.Single(result);
+            Assert.Equal("Trứng xào cà chua", suggestion.RecipeName);
+            Assert.Null(suggestion.YoutubeVideo);
+            Assert.Equal(new[] { "https://monngonmoingay.com/cong-thuc-demo" }, suggestion.SourceUrls);
         }
 
         [Fact]

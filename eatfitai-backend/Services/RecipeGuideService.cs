@@ -60,7 +60,7 @@ public sealed class RecipeGuideService : IRecipeGuideService
         }
 
         var stored = BuildStoredGuide(recipe);
-        if (stored != null && IsFresh(recipe.EnhancedAt) && IsUsableStoredGuide(stored))
+        if (stored != null && IsUsableStoredGuide(stored))
         {
             stored.GuideStatus = "stored";
             _cache.Set(cacheKey, stored, TimeSpan.FromHours(6));
@@ -205,15 +205,13 @@ public sealed class RecipeGuideService : IRecipeGuideService
 
     private static bool IsUsableGeneratedGuide(RecipeCookingGuideDto? guide)
     {
-        return guide is { Steps.Count: >= 3, SourceUrls.Count: > 0 }
-            && IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
+        return guide is { Steps.Count: >= 3, SourceUrls.Count: > 0 };
     }
 
     private static bool IsUsableStoredGuide(RecipeCookingGuideDto guide)
     {
         return guide.Steps.Count >= 3
-            && guide.SourceUrls.Count > 0
-            && IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url);
+            && guide.SourceUrls.Count > 0;
     }
 
     private bool IsFresh(DateTime? enhancedAt)

@@ -53,7 +53,7 @@ public class RecipeGuideServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetCookingGuideAsync_RegeneratesWhenStoredGuideOnlyHasYoutubeSearchUrl()
+    public async Task GetCookingGuideAsync_ReturnsStoredGuideWhenVideoIsOnlySearchUrl()
     {
         var recipeId = await SeedRecipeAsync();
         var recipe = await _context.Recipes.SingleAsync();
@@ -63,30 +63,15 @@ public class RecipeGuideServiceTests : IDisposable
         recipe.EnhancedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        var factory = new StubHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(
-                """
-                {
-                  "steps": ["Sơ chế lại", "Nấu lại", "Hoàn thiện lại"],
-                  "sourceUrls": ["https://example.com/refreshed-recipe"],
-                  "youtubeVideo": {
-                    "videoId": "abc",
-                    "url": "https://www.youtube.com/watch?v=abc"
-                  },
-                  "guideStatus": "generated"
-                }
-                """,
-                Encoding.UTF8,
-                "application/json")
-        });
+        var factory = new StubHttpClientFactory(_ => throw new InvalidOperationException("provider should not be called"));
         var service = CreateService(factory);
 
         var result = await service.GetCookingGuideAsync(recipeId);
 
         Assert.NotNull(result);
-        Assert.Equal("generated", result!.GuideStatus);
-        Assert.Equal("https://www.youtube.com/watch?v=abc", result.YoutubeVideo!.Url);
+        Assert.Equal("stored", result!.GuideStatus);
+        Assert.Equal(new[] { "Sơ chế", "Nấu", "Hoàn thiện" }, result.Steps);
+        Assert.Null(result.YoutubeVideo);
     }
 
     [Fact]

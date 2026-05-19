@@ -446,7 +446,7 @@ public class DatabaseSeederTests
             .SingleAsync(item => item.RecipeName == "Cơm tấm sườn");
 
         Assert.Equal("recipe-images/v1/thumb/com-tam-suon.webp", recipe.ImageUrl);
-        Assert.Null(recipe.EnhancedAt);
+        Assert.NotNull(recipe.EnhancedAt);
         Assert.Contains("monngonmoingay.com", recipe.SourceUrlsJson);
         Assert.Null(recipe.VideoUrl);
         Assert.True(recipe.RecipeIngredients.Count >= 2);
