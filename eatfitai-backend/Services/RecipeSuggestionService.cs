@@ -297,26 +297,40 @@ namespace EatFitAI.API.Services
             int maxResults,
             CancellationToken cancellationToken)
         {
-            if (_recipeGuideService == null)
-            {
-                return suggestions.Take(maxResults).ToList();
-            }
+            var recipeIds = suggestions.Select(item => item.RecipeId).Distinct().ToList();
+            var guideRows = await _db.Recipes
+                .AsNoTracking()
+                .Where(recipe => recipeIds.Contains(recipe.RecipeId))
+                .Select(recipe => new
+                {
+                    recipe.RecipeId,
+                    recipe.InstructionsJson,
+                    recipe.SourceUrlsJson,
+                    recipe.VideoUrl
+                })
+                .ToDictionaryAsync(recipe => recipe.RecipeId, cancellationToken);
 
             var result = new List<RecipeSuggestionDto>();
             foreach (var suggestion in suggestions)
             {
-                var guide = await _recipeGuideService.GetCookingGuideAsync(suggestion.RecipeId, cancellationToken);
-                if (!IsProductionGuide(guide))
+                if (!guideRows.TryGetValue(suggestion.RecipeId, out var guideRow))
                 {
                     continue;
                 }
 
-                suggestion.GuideStatus = guide!.GuideStatus;
-                suggestion.SourceUrls = guide.SourceUrls;
-                suggestion.YoutubeVideo = IsDirectYoutubeVideoUrl(guide.YoutubeVideo?.Url)
-                    ? guide.YoutubeVideo
+                var steps = ParseInstructions(guideRow.InstructionsJson) ?? new List<string>();
+                var sourceUrls = ParseInstructions(guideRow.SourceUrlsJson) ?? new List<string>();
+                if (!IsProductionGuide(steps, sourceUrls))
+                {
+                    continue;
+                }
+
+                suggestion.GuideStatus = "stored";
+                suggestion.SourceUrls = sourceUrls;
+                suggestion.YoutubeVideo = IsDirectYoutubeVideoUrl(guideRow.VideoUrl)
+                    ? new RecipeYoutubeVideoDto { Url = guideRow.VideoUrl }
                     : null;
-                suggestion.PrepItems = guide.PrepItems.Count > 0 ? guide.PrepItems : guide.Tips;
+                suggestion.PrepItems = steps.Take(2).ToList();
                 result.Add(suggestion);
 
                 if (result.Count >= maxResults)
@@ -328,19 +342,14 @@ namespace EatFitAI.API.Services
             return result;
         }
 
-        private static bool IsProductionGuide(RecipeCookingGuideDto? guide)
+        private static bool IsProductionGuide(IReadOnlyCollection<string> steps, IReadOnlyCollection<string> sourceUrls)
         {
-            if (guide == null || guide.Steps.Count < 3)
+            if (steps.Count < 3)
             {
                 return false;
             }
 
-            if (string.Equals(guide.GuideStatus, "fallback", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            return guide.SourceUrls.Any(IsTrustedHttpsUrl);
+            return sourceUrls.Any(IsTrustedHttpsUrl);
         }
 
         private static bool IsTrustedHttpsUrl(string? url)

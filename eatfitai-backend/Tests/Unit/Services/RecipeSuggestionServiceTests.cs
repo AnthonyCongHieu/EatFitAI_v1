@@ -78,6 +78,9 @@ namespace EatFitAI.API.Tests.Unit.Services
                 RecipeId = 1,
                 RecipeName = "Trứng xào cà chua",
                 Description = "Món ăn đơn giản, dễ làm",
+                InstructionsJson = "[\"Sơ chế\", \"Xào trứng\", \"Hoàn thiện\"]",
+                SourceUrlsJson = "[\"https://monngonmoingay.com/cong-thuc-demo\"]",
+                VideoUrl = "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+x%C3%A0o+c%C3%A0+chua",
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -267,6 +270,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeName = "Trứng hấp nhanh",
                     Description = "Nhanh",
                     CookTimeMinutes = 15,
+                    InstructionsJson = "[\"Sơ chế\", \"Hấp chín\", \"Hoàn thiện\"]",
+                    SourceUrlsJson = "[\"https://monngonmoingay.com/trung-hap-nhanh\"]",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -276,6 +281,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeName = "Trứng om chậm",
                     Description = "Chậm",
                     CookTimeMinutes = 45,
+                    InstructionsJson = "[\"Sơ chế\", \"Om chậm\", \"Hoàn thiện\"]",
+                    SourceUrlsJson = "[\"https://monngonmoingay.com/trung-om-cham\"]",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 });
@@ -315,6 +322,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeId = 2,
                     RecipeName = "Trứng cà chua vừa kcal",
                     CookTimeMinutes = 20,
+                    InstructionsJson = "[\"Sơ chế\", \"Xào chín\", \"Hoàn thiện\"]",
+                    SourceUrlsJson = "[\"https://monngonmoingay.com/trung-ca-chua-vua\"]",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 },
@@ -323,6 +332,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                     RecipeId = 3,
                     RecipeName = "Trứng cà chua nhiều kcal",
                     CookTimeMinutes = 20,
+                    InstructionsJson = "[\"Sơ chế\", \"Xào nhiều\", \"Hoàn thiện\"]",
+                    SourceUrlsJson = "[\"https://monngonmoingay.com/trung-ca-chua-nhieu\"]",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 });
@@ -359,6 +370,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             {
                 RecipeId = 2,
                 RecipeName = "Trứng cà chua đủ nguyên liệu",
+                InstructionsJson = "[\"Sơ chế\", \"Xào chín\", \"Hoàn thiện\"]",
+                SourceUrlsJson = "[\"https://monngonmoingay.com/trung-ca-chua-du\"]",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
@@ -502,16 +515,9 @@ namespace EatFitAI.API.Tests.Unit.Services
         public async Task SuggestRecipesAsync_HidesRecipesWithoutProductionGuide()
         {
             await SeedDatabaseAsync();
-            _recipeGuideMock
-                .Setup(s => s.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new RecipeCookingGuideDto
-                {
-                    RecipeId = 1,
-                    Steps = new List<string> { "Sơ chế", "Nấu", "Hoàn thiện" },
-                    GuideStatus = "fallback",
-                    SourceUrls = new List<string>(),
-                    YoutubeVideo = null
-                });
+            var recipe = await _context.Recipes.SingleAsync(item => item.RecipeId == 1);
+            recipe.SourceUrlsJson = "[]";
+            await _context.SaveChangesAsync();
 
             var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
             {
@@ -527,19 +533,6 @@ namespace EatFitAI.API.Tests.Unit.Services
         public async Task SuggestRecipesAsync_AllowsSourceBackedGuideWhenVideoIsUnavailable()
         {
             await SeedDatabaseAsync();
-            _recipeGuideMock
-                .Setup(s => s.GetCookingGuideAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new RecipeCookingGuideDto
-                {
-                    RecipeId = 1,
-                    Steps = new List<string> { "Sơ chế", "Nấu", "Hoàn thiện" },
-                    GuideStatus = "generated",
-                    SourceUrls = new List<string> { "https://monngonmoingay.com/cong-thuc-demo" },
-                    YoutubeVideo = new RecipeYoutubeVideoDto
-                    {
-                        Url = "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+x%C3%A0o+c%C3%A0+chua"
-                    }
-                });
 
             var result = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
             {
