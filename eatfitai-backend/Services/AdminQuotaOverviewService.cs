@@ -387,17 +387,17 @@ public class AdminQuotaOverviewService : IAdminQuotaOverviewService
         IReadOnlyCollection<AdminRuntimeTelemetryDto> telemetry,
         string window)
     {
-        var cutoff = DateTime.UtcNow.AddDays(-ResolveWindowDays(window));
+        var cutoff = ResolveWindowCutoff(window);
         return telemetry
             .Select(row => new { Row = row, Usage = ParseUsageMetadata(row.UsageMetadataJson) })
-            .Where(item => item.Usage != null && item.Row.CompletedAt >= cutoff)
-            .GroupBy(item => item.Row.CompletedAt.Date)
+            .Where(item => item.Row.CompletedAt >= cutoff)
+            .GroupBy(item => ResolveTimelineBucket(item.Row.CompletedAt, window))
             .Select(group => new AdminQuotaTimelinePointDto
             {
-                Date = group.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                InputTokens = group.Sum(item => item.Usage!.InputTokens),
-                OutputTokens = group.Sum(item => item.Usage!.OutputTokens),
-                TotalTokens = group.Sum(item => item.Usage!.TotalTokens),
+                Date = FormatTimelineBucket(group.Key, window),
+                InputTokens = group.Sum(item => item.Usage?.InputTokens ?? 0),
+                OutputTokens = group.Sum(item => item.Usage?.OutputTokens ?? 0),
+                TotalTokens = group.Sum(item => item.Usage?.TotalTokens ?? 0),
                 RequestCount = group.Count(),
             })
             .OrderBy(point => point.Date, StringComparer.Ordinal)
@@ -408,19 +408,19 @@ public class AdminQuotaOverviewService : IAdminQuotaOverviewService
         IReadOnlyCollection<AdminRuntimeTelemetryDto> telemetry,
         string window)
     {
-        var cutoff = DateTime.UtcNow.AddDays(-ResolveWindowDays(window));
+        var cutoff = ResolveWindowCutoff(window);
         return telemetry
             .Select(row => new { Row = row, Usage = ParseUsageMetadata(row.UsageMetadataJson) })
-            .Where(item => item.Usage != null && item.Row.CompletedAt >= cutoff)
+            .Where(item => item.Row.CompletedAt >= cutoff)
             .GroupBy(item => string.IsNullOrWhiteSpace(item.Row.Model) ? "unknown" : item.Row.Model)
             .Select(group => new AdminQuotaModelMixDto
             {
                 Provider = GeminiProvider,
                 Model = group.Key,
                 RequestCount = group.Count(),
-                InputTokens = group.Sum(item => item.Usage!.InputTokens),
-                OutputTokens = group.Sum(item => item.Usage!.OutputTokens),
-                TotalTokens = group.Sum(item => item.Usage!.TotalTokens),
+                InputTokens = group.Sum(item => item.Usage?.InputTokens ?? 0),
+                OutputTokens = group.Sum(item => item.Usage?.OutputTokens ?? 0),
+                TotalTokens = group.Sum(item => item.Usage?.TotalTokens ?? 0),
             })
             .OrderByDescending(model => model.TotalTokens)
             .ToList();
@@ -621,6 +621,7 @@ public class AdminQuotaOverviewService : IAdminQuotaOverviewService
     {
         return window?.Trim().ToLowerInvariant() switch
         {
+            "1h" => "1h",
             "1d" => "1d",
             "24h" => "1d",
             "30d" => "30d",
@@ -628,13 +629,42 @@ public class AdminQuotaOverviewService : IAdminQuotaOverviewService
         };
     }
 
-    private static int ResolveWindowDays(string window)
+    private static DateTime ResolveWindowCutoff(string window)
     {
         return window switch
         {
-            "1d" => 1,
-            "30d" => 30,
-            _ => 7,
+            "1h" => DateTime.UtcNow.AddHours(-1),
+            "1d" => DateTime.UtcNow.AddDays(-1),
+            "30d" => DateTime.UtcNow.AddDays(-30),
+            _ => DateTime.UtcNow.AddDays(-7),
+        };
+    }
+
+    private static DateTime ResolveTimelineBucket(DateTime completedAt, string window)
+    {
+        var utc = completedAt.Kind == DateTimeKind.Utc ? completedAt : completedAt.ToUniversalTime();
+
+        return window switch
+        {
+            "1h" => new DateTime(
+                utc.Year,
+                utc.Month,
+                utc.Day,
+                utc.Hour,
+                utc.Minute - (utc.Minute % 5),
+                0,
+                DateTimeKind.Utc),
+            "1d" => new DateTime(utc.Year, utc.Month, utc.Day, utc.Hour, 0, 0, DateTimeKind.Utc),
+            _ => utc.Date,
+        };
+    }
+
+    private static string FormatTimelineBucket(DateTime bucket, string window)
+    {
+        return window switch
+        {
+            "1h" or "1d" => bucket.ToString("O", CultureInfo.InvariantCulture),
+            _ => bucket.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         };
     }
 

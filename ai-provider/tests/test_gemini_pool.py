@@ -538,6 +538,33 @@ class GeminiPoolTests(unittest.TestCase):
             self.assertEqual(status["totalTokens"], 7)
             self.assertEqual(status["rollingEventsCount"], 1)
 
+    def test_reserves_request_before_provider_call_and_reconciles_actual_tokens(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 12, 0, 0))
+        manager: dict[str, GeminiPoolManager] = {}
+        observed_during_request: dict[str, int] = {}
+
+        def requester(*args, **kwargs):
+            status = manager["pool"].get_runtime_status()["gemini_usage_entries"][0]
+            observed_during_request["requests"] = status["totalRequests"]
+            observed_during_request["tokens"] = status["totalTokens"]
+            return ok_response("primary", total_tokens=7)
+
+        pool = GeminiPoolManager(
+            [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+            requester=requester,
+        )
+        manager["pool"] = pool
+
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            self.assertEqual(pool.generate_text("hello", max_output_tokens=100), "primary")
+            status = pool.get_runtime_status()["gemini_usage_entries"][0]
+
+        self.assertEqual(observed_during_request["requests"], 1)
+        self.assertGreater(observed_during_request["tokens"], 7)
+        self.assertEqual(status["totalRequests"], 1)
+        self.assertEqual(status["totalTokens"], 7)
+        self.assertEqual(status["rollingEventsCount"], 1)
+
     def test_persists_project_usage_state_through_store(self) -> None:
         clock = MutableClock(datetime(2026, 4, 10, 12, 0, 0))
         store = FakeUsageStateStore()

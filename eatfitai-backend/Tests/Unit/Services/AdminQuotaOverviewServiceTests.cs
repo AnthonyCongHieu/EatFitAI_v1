@@ -155,8 +155,9 @@ public class AdminQuotaOverviewServiceTests
                     RuntimeProjectId = "no-metadata",
                     ProjectAlias = "No Metadata",
                     Model = "gemini-2.0-flash",
-                    CompletedAt = new DateTime(2026, 5, 8, 1, 0, 0, DateTimeKind.Utc),
-                    Outcome = "success",
+                    CompletedAt = DateTime.UtcNow,
+                    Outcome = "failure",
+                    ProviderStatusCode = 400,
                     UsageMetadataJson = null,
                 },
             ]);
@@ -168,9 +169,72 @@ public class AdminQuotaOverviewServiceTests
 
         var overview = await service.GetOverviewAsync(new AdminQuotaOverviewQuery(), CancellationToken.None);
 
-        Assert.Empty(overview.TokenTimeline);
-        Assert.Empty(overview.ModelMix);
+        var point = Assert.Single(overview.TokenTimeline);
+        Assert.Equal(1, point.RequestCount);
+        Assert.Equal(0, point.TotalTokens);
+        var model = Assert.Single(overview.ModelMix);
+        Assert.Equal(1, model.RequestCount);
+        Assert.Equal(0, model.TotalTokens);
         Assert.All(overview.Providers, provider => Assert.Equal(0, provider.TotalTokens));
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_WithOneHourWindow_BucketsTrafficEveryFiveMinutes()
+    {
+        var now = DateTime.UtcNow;
+        var cache = new Mock<IAdminRuntimeSnapshotCache>();
+        cache
+            .Setup(service => service.GetLatestAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AdminRuntimeSnapshotDto());
+
+        var runtime = CreateRuntimeService();
+        runtime
+            .Setup(service => service.GetTelemetryAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new AdminRuntimeTelemetryDto
+                {
+                    RuntimeProjectId = "key-a",
+                    ProjectAlias = "Key A",
+                    Model = "gemini-2.5-flash",
+                    CompletedAt = new DateTime(now.Year, now.Month, now.Day, now.Hour, 12, 30, DateTimeKind.Utc),
+                    Outcome = "success",
+                    UsageMetadataJson = "{\"promptTokenCount\":10,\"candidatesTokenCount\":5,\"totalTokenCount\":15}",
+                },
+                new AdminRuntimeTelemetryDto
+                {
+                    RuntimeProjectId = "key-a",
+                    ProjectAlias = "Key A",
+                    Model = "gemini-2.5-flash",
+                    CompletedAt = new DateTime(now.Year, now.Month, now.Day, now.Hour, 14, 10, DateTimeKind.Utc),
+                    Outcome = "success",
+                    UsageMetadataJson = "{\"promptTokenCount\":20,\"candidatesTokenCount\":5,\"totalTokenCount\":25}",
+                },
+                new AdminRuntimeTelemetryDto
+                {
+                    RuntimeProjectId = "key-old",
+                    ProjectAlias = "Old Key",
+                    Model = "gemini-2.5-flash",
+                    CompletedAt = now.AddHours(-2),
+                    Outcome = "success",
+                    UsageMetadataJson = "{\"totalTokenCount\":99}",
+                },
+            ]);
+
+        var service = new AdminQuotaOverviewService(
+            cache.Object,
+            runtime.Object,
+            Mock.Of<ILogger<AdminQuotaOverviewService>>());
+
+        var overview = await service.GetOverviewAsync(
+            new AdminQuotaOverviewQuery { Provider = "gemini", Window = "1h" },
+            CancellationToken.None);
+
+        Assert.Equal("1h", overview.Window);
+        var point = Assert.Single(overview.TokenTimeline);
+        Assert.Equal(2, point.RequestCount);
+        Assert.Equal(40, point.TotalTokens);
+        Assert.EndsWith(":10:00.0000000Z", point.Date);
     }
 
     private static Mock<IGeminiRuntimeProjectService> CreateRuntimeService()
