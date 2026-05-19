@@ -19,4 +19,13 @@ describe('recipe suggestion flow source contract', () => {
     expect(source).not.toContain('youtube.com/results');
     expect(source).toContain('Chưa có video đã xác thực');
   });
+
+  it('labels recipe cards with practical visual badges instead of opaque points', () => {
+    const source = readSource('src/app/screens/ai/RecipeSuggestionsScreen.tsx');
+
+    expect(source).toContain('getRecipeBadgeLabel');
+    expect(source).toContain('Thiếu ${recipe.missingIngredientCount} món');
+    expect(source).toContain('Phù hợp ${matchValue}%');
+    expect(source).not.toContain('} điểm');
+  });
 });

@@ -74,6 +74,16 @@ const getPrimaryReason = (recipe: RecipeSuggestion): string => {
   return 'Dựa trên nguyên liệu đã chọn';
 };
 
+const getRecipeBadgeLabel = (recipe: RecipeSuggestion): string => {
+  if (recipe.canCookNow) return 'Nấu ngay';
+  if ((recipe.missingIngredientCount ?? 0) > 0) {
+    return `Thiếu ${recipe.missingIngredientCount} món`;
+  }
+
+  const matchValue = Math.round(recipe.matchPercentage || recipe.matchScore || 0);
+  return `Phù hợp ${matchValue}%`;
+};
+
 const RecipeImage = ({
   recipe,
   style,
@@ -269,7 +279,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
               <RecipeImage recipe={item} style={S.gridImageWrap} />
               <View style={S.glassOverlayTag}>
                 <ThemedText style={S.tagTextSmall}>
-                  {item.canCookNow ? 'Nấu ngay' : `${Math.round(item.matchScore || item.matchPercentage)} điểm`}
+                  {getRecipeBadgeLabel(item)}
                 </ThemedText>
               </View>
             </View>
