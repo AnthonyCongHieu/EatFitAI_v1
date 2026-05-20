@@ -99,6 +99,73 @@ class FoodCatalogImageSyncTests(unittest.TestCase):
 
         self.assertTrue(args.db_only)
         self.assertFalse(args.apply)
+        self.assertFalse(args.upload_only)
+
+    def test_upload_only_mode_is_available_without_database_relink(self) -> None:
+        args = food_catalog_image_sync.build_parser().parse_args(["--upload-only"])
+
+        self.assertTrue(args.upload_only)
+        self.assertFalse(args.db_only)
+        self.assertFalse(args.apply)
+
+    def test_load_recipe_catalog_entries_exposes_dedicated_recipe_images(self) -> None:
+        catalog = food_catalog_image_sync.load_recipe_catalog_entries()
+        entries_by_label = {entry.label: entry for entry in catalog}
+
+        self.assertEqual(len(catalog), 107)
+        self.assertIn("com-tam-suon", entries_by_label)
+        self.assertIn("canh-cai-thia", entries_by_label)
+        self.assertIn("canh cai thao thit bam", {
+            food_catalog_image_sync.normalize_key(alias)
+            for alias in entries_by_label["canh-cai-thia"].aliases
+        })
+
+    def test_recipe_catalog_mapping_uses_recipe_image_keys(self) -> None:
+        catalog = [
+            food_catalog_image_sync.CatalogEntry(
+                label="com-tam-suon",
+                display_name_vi="Cơm tấm sườn",
+                aliases=["Cơm tấm sườn", "com tam suon"],
+            )
+        ]
+        drive_files = [
+            food_catalog_image_sync.DriveImage(file_id="1", name="Cơm tấm sườn.png", mime_type="image/png")
+        ]
+
+        plan = food_catalog_image_sync.build_sync_plan(
+            catalog,
+            drive_files,
+            public_base_url="https://media.example.com",
+            object_prefix="recipe-images/v1",
+        )
+
+        item = plan.by_label["com-tam-suon"]
+        self.assertEqual(item.thumb_key, "recipe-images/v1/thumb/com-tam-suon.webp")
+        self.assertEqual(item.medium_key, "recipe-images/v1/medium/com-tam-suon.webp")
+
+    def test_recipe_catalog_mapping_handles_safe_generated_filename_variants(self) -> None:
+        catalog = food_catalog_image_sync.load_recipe_catalog_entries()
+        drive_files = [
+            food_catalog_image_sync.DriveImage(file_id="1", name="phở bò.png", mime_type="image/png"),
+            food_catalog_image_sync.DriveImage(file_id="2", name="hủ tíu xào.png", mime_type="image/png"),
+            food_catalog_image_sync.DriveImage(file_id="3", name="bánh tráng cuốn thịt heo.png", mime_type="image/png"),
+            food_catalog_image_sync.DriveImage(file_id="4", name="bò né.png", mime_type="image/png"),
+            food_catalog_image_sync.DriveImage(file_id="5", name="canh cải thìa.png", mime_type="image/png"),
+        ]
+
+        plan = food_catalog_image_sync.build_sync_plan(
+            catalog,
+            drive_files,
+            public_base_url="https://media.example.com",
+            object_prefix="recipe-images/v1",
+        )
+
+        self.assertEqual(plan.by_label["pho-bo"].source_name, "phở bò.png")
+        self.assertEqual(plan.by_label["hu-tieu-xao"].source_name, "hủ tíu xào.png")
+        self.assertEqual(plan.by_label["cuon-banh-trang-thit-heo"].source_name, "bánh tráng cuốn thịt heo.png")
+        self.assertEqual(plan.by_label["bo-ne"].source_name, "bò né.png")
+        self.assertEqual(plan.by_label["canh-cai-thia"].source_name, "canh cải thìa.png")
+        self.assertNotIn("canh-cai-thao-thit-bam", plan.by_label)
 
     def test_load_recipe_catalog_entries_exposes_dedicated_recipe_images(self) -> None:
         catalog = food_catalog_image_sync.load_recipe_catalog_entries()

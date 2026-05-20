@@ -615,10 +615,10 @@ def run(args: argparse.Namespace) -> int:
 
     results: list[dict[str, Any]] = []
     db_updated = 0
-    if args.apply or args.db_only:
+    if args.apply or args.db_only or args.upload_only:
         r2_settings = None if args.db_only else read_r2_settings(apply=True, args=args)
-        db_settings = read_db_settings(args=args)
-        if not db_settings:
+        db_settings = None if args.upload_only else read_db_settings(args=args)
+        if not args.upload_only and not db_settings:
             raise SystemExit("Missing SUPABASE_DB_PASSWORD or PGPASSWORD for database update.")
         if not args.db_only:
             download_drive_images(drive_images, download_dir, resume=True)
@@ -641,8 +641,9 @@ def run(args: argparse.Namespace) -> int:
                     "mediumBytes": len(medium_bytes),
                 }
             )
-        db_updated = update_database(db_settings, plan.items, args.catalog)
-        status = "database_only" if args.db_only else "applied"
+        if db_settings:
+            db_updated = update_database(db_settings, plan.items, args.catalog)
+        status = "database_only" if args.db_only else "uploaded" if args.upload_only else "applied"
     else:
         results = [{**asdict(item), "status": "planned"} for item in plan.items]
         status = "planned"
@@ -662,6 +663,7 @@ def build_report(args: argparse.Namespace, plan: SyncPlan, results: list[dict[st
         "status": status,
         "apply": bool(args.apply),
         "dbOnly": bool(args.db_only),
+        "uploadOnly": bool(args.upload_only),
         "catalog": args.catalog,
         "folderId": args.folder_id or (DEFAULT_RECIPE_FOLDER_ID if args.catalog == "recipe" else DEFAULT_AI_VISION_FOLDER_ID),
         "downloadDir": str(Path(args.download_dir).resolve()),
@@ -702,6 +704,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", default=str(DEFAULT_REPORT), help="JSON report path")
     parser.add_argument("--apply", action="store_true", help="Upload R2 objects and update FoodItem.ThumbNail")
     parser.add_argument("--db-only", action="store_true", help="Only update FoodItem.ThumbNail after objects already exist in R2")
+    parser.add_argument("--upload-only", action="store_true", help="Upload R2 objects without updating the database")
     parser.add_argument("--require-complete", action="store_true", help="Fail if any catalog label is not mapped")
     parser.add_argument("--r2-account-id", help="Cloudflare R2 account id")
     parser.add_argument("--r2-bucket", default=R2_BUCKET_DEFAULT, help="Cloudflare R2 bucket")

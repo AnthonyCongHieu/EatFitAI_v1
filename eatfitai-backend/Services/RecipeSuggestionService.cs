@@ -26,6 +26,7 @@ namespace EatFitAI.API.Services
         private readonly ILogger<RecipeSuggestionService> _logger;
         private readonly IMemoryCache _cache;
         private readonly IUserPreferenceService _userPreferenceService;
+        private readonly IRecipeGuideService? _recipeGuideService;
         
         // Cache configuration
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
@@ -44,6 +45,7 @@ namespace EatFitAI.API.Services
             _logger = logger;
             _cache = cache;
             _userPreferenceService = userPreferenceService;
+            _recipeGuideService = recipeGuideService;
         }
 
         public async Task<List<RecipeSuggestionDto>> SuggestRecipesAsync(
@@ -192,7 +194,7 @@ namespace EatFitAI.API.Services
                         carbs,
                         fat);
                 var canCookNow = !useDailyRecommendation && missingIngredients.Count == 0;
-                var imageUrl = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+                var imageUrl = CatalogImageKeyResolver.ResolveRecipeThumbnailKey(
                     recipe.RecipeName,
                     recipe.ImageUrl,
                     recipeIngredients.Select(ingredient => ingredient.FoodItem?.ThumbNail));
@@ -246,10 +248,10 @@ namespace EatFitAI.API.Services
                 .ThenBy(r => r.TotalIngredientsCount)
                 .ToList();
 
-            return EnrichWithStoredProductionGuides(
+            return await EnrichWithProductionGuidesAsync(
                 sortedSuggestions,
-                recipesWithIngredients,
-                maxResults);
+                maxResults,
+                cancellationToken);
         }
 
         private async Task PopulateRemainingNutritionAsync(
@@ -302,30 +304,50 @@ namespace EatFitAI.API.Services
                 : DateOnly.FromDateTime(DateTime.UtcNow);
         }
 
-        private static List<RecipeSuggestionDto> EnrichWithStoredProductionGuides(
+        private async Task<List<RecipeSuggestionDto>> EnrichWithProductionGuidesAsync(
             IReadOnlyList<RecipeSuggestionDto> suggestions,
-            IReadOnlyList<Recipe> recipes,
-            int maxResults)
+            int maxResults,
+            CancellationToken cancellationToken)
         {
-            var recipesById = recipes.ToDictionary(recipe => recipe.RecipeId);
+            var recipeIds = suggestions.Select(item => item.RecipeId).Distinct().ToList();
+            var guideRows = await _db.Recipes
+                .AsNoTracking()
+                .Where(recipe => recipeIds.Contains(recipe.RecipeId))
+                .Select(recipe => new
+                {
+                    recipe.RecipeId,
+                    recipe.InstructionsJson,
+                    recipe.SourceUrlsJson,
+                    recipe.VideoUrl
+                })
+                .ToDictionaryAsync(recipe => recipe.RecipeId, cancellationToken);
+
             var result = new List<RecipeSuggestionDto>();
             foreach (var suggestion in suggestions)
             {
-                if (!recipesById.TryGetValue(suggestion.RecipeId, out var recipe))
+                if (!HasRecipeSafeVisual(suggestion.ImageUrl))
                 {
                     continue;
                 }
 
-                var guide = BuildStoredProductionGuide(recipe);
-                if (!IsProductionGuide(guide))
+                if (!guideRows.TryGetValue(suggestion.RecipeId, out var guideRow))
                 {
                     continue;
                 }
 
-                suggestion.GuideStatus = guide!.GuideStatus;
-                suggestion.SourceUrls = guide.SourceUrls;
-                suggestion.YoutubeVideo = guide.YoutubeVideo;
-                suggestion.PrepItems = guide.PrepItems.Count > 0 ? guide.PrepItems : guide.Tips;
+                var steps = ParseInstructions(guideRow.InstructionsJson) ?? new List<string>();
+                var sourceUrls = ParseInstructions(guideRow.SourceUrlsJson) ?? new List<string>();
+                if (!IsProductionGuide(steps, sourceUrls))
+                {
+                    continue;
+                }
+
+                suggestion.GuideStatus = "stored";
+                suggestion.SourceUrls = sourceUrls;
+                suggestion.YoutubeVideo = IsDirectYoutubeVideoUrl(guideRow.VideoUrl)
+                    ? new RecipeYoutubeVideoDto { Url = guideRow.VideoUrl }
+                    : null;
+                suggestion.PrepItems = steps.Take(2).ToList();
                 result.Add(suggestion);
 
                 if (result.Count >= maxResults)
@@ -337,54 +359,39 @@ namespace EatFitAI.API.Services
             return result;
         }
 
-        private static RecipeCookingGuideDto? BuildStoredProductionGuide(Recipe recipe)
+        private static bool HasRecipeSafeVisual(string? imageUrl)
         {
-            var steps = ParseInstructions(recipe.InstructionsJson) ?? TryGetRecipeInstructions(recipe);
-            if (steps is not { Count: > 0 })
+            var key = imageUrl?.Trim();
+            if (string.IsNullOrWhiteSpace(key))
             {
-                return null;
+                return false;
             }
 
-            var sourceUrls = ParseInstructions(recipe.SourceUrlsJson) ?? new List<string>();
-            var videoUrl = IsDirectYoutubeVideoUrl(recipe.VideoUrl)
-                ? recipe.VideoUrl
-                : null;
-
-            return new RecipeCookingGuideDto
+            if (key.StartsWith("recipe-images/v1/thumb/", StringComparison.OrdinalIgnoreCase))
             {
-                RecipeId = recipe.RecipeId,
-                Steps = steps,
-                CookingTimeMinutes = recipe.CookTimeMinutes,
-                Difficulty = recipe.Difficulty,
-                SourceUrls = sourceUrls,
-                YoutubeVideo = videoUrl == null
-                    ? null
-                    : new RecipeYoutubeVideoDto { Url = videoUrl },
-                PrepItems = steps.Take(2).ToList(),
-                GuideStatus = recipe.EnhancedAt.HasValue ? "stored" : "stale"
-            };
+                return true;
+            }
+
+            const string foodThumbPrefix = "food-images/v2/thumb/";
+            if (!key.StartsWith(foodThumbPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var fileName = key[foodThumbPrefix.Length..];
+            var dot = fileName.LastIndexOf('.');
+            var label = dot > 0 ? fileName[..dot] : fileName;
+            return RecipeIngredientEligibility.IsFinishedDishKey(label);
         }
 
-        private static bool IsProductionGuide(RecipeCookingGuideDto? guide)
+        private static bool IsProductionGuide(IReadOnlyCollection<string> steps, IReadOnlyCollection<string> sourceUrls)
         {
-            if (guide == null || guide.Steps.Count < 3)
+            if (steps.Count < 3)
             {
                 return false;
             }
 
-            if (string.Equals(guide.GuideStatus, "fallback", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            var hasSource = guide.SourceUrls.Any(IsTrustedHttpsUrl);
-            if (!string.IsNullOrWhiteSpace(guide.YoutubeVideo?.Url)
-                && !IsDirectYoutubeVideoUrl(guide.YoutubeVideo.Url))
-            {
-                return false;
-            }
-
-            return hasSource;
+            return sourceUrls.Any(IsTrustedHttpsUrl);
         }
 
         private static bool IsTrustedHttpsUrl(string? url)
@@ -501,16 +508,24 @@ namespace EatFitAI.API.Services
                 })
                 .ToList();
 
-            var instructions = ParseInstructions(recipe.InstructionsJson) ?? TryGetRecipeInstructions(recipe);
-            var rawVideoUrl = recipe.VideoUrl ?? TryGetRecipeVideoUrl(recipe);
+            var guide = _recipeGuideService == null
+                ? null
+                : await _recipeGuideService.GetCookingGuideAsync(recipe.RecipeId, cancellationToken);
+            var instructions = guide?.Steps is { Count: > 0 }
+                ? guide.Steps
+                : ParseInstructions(recipe.InstructionsJson) ?? TryGetRecipeInstructions(recipe);
+            var sourceUrls = guide?.SourceUrls is { Count: > 0 }
+                ? guide.SourceUrls
+                : ParseInstructions(recipe.SourceUrlsJson) ?? new List<string>();
+            var rawVideoUrl = guide?.YoutubeVideo?.Url ?? recipe.VideoUrl ?? TryGetRecipeVideoUrl(recipe);
             var videoUrl = IsDirectYoutubeVideoUrl(rawVideoUrl) ? rawVideoUrl : null;
-            var sourceUrls = ParseInstructions(recipe.SourceUrlsJson) ?? new List<string>();
-            var isSourceBackedStoredGuide = instructions is { Count: >= 3 }
-                && sourceUrls.Any(IsTrustedHttpsUrl);
+            var youtubeVideo = videoUrl == null
+                ? null
+                : guide?.YoutubeVideo ?? new RecipeYoutubeVideoDto { Url = videoUrl };
             var requiredIngredients = ingredientDetails
                 .Select(ingredient => ingredient.FoodName)
                 .ToList();
-            var imageUrl = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+            var imageUrl = CatalogImageKeyResolver.ResolveRecipeThumbnailKey(
                 recipe.RecipeName,
                 recipe.ImageUrl,
                 recipe.RecipeIngredients.Select(ingredient => ingredient.FoodItem?.ThumbNail));
@@ -533,10 +548,8 @@ namespace EatFitAI.API.Services
                 CredibilityScore = recipe.CredibilityScore,
                 Instructions = instructions,
                 VideoUrl = videoUrl,
-                YoutubeVideo = videoUrl == null ? null : new RecipeYoutubeVideoDto { Url = videoUrl },
-                GuideStatus = isSourceBackedStoredGuide
-                    ? recipe.EnhancedAt.HasValue ? "stored" : "stale"
-                    : null,
+                YoutubeVideo = youtubeVideo,
+                GuideStatus = guide?.GuideStatus,
                 SourceUrls = sourceUrls,
                 Ingredients = ingredientDetails,
                 RequiredIngredients = requiredIngredients,

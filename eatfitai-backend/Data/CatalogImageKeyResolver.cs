@@ -4,6 +4,7 @@ public static class CatalogImageKeyResolver
 {
     private const string FoodCatalogThumbPrefix = "food-images/v2/thumb/";
     private const string FoodCatalogWebpSuffix = ".webp";
+    private const string RecipeImageThumbPrefix = "recipe-images/v1/thumb/";
     private const string LegacyRecipeImagePrefix = "recipe-images/";
 
     public static string? ResolveCatalogThumbnailKey(
@@ -25,11 +26,36 @@ public static class CatalogImageKeyResolver
             return BuildFoodCatalogThumbnailKey(label);
         }
 
-        return SelectFallbackThumbnail(fallbackThumbnailKeys ?? []);
+        return SelectCatalogFallbackThumbnail(fallbackThumbnailKeys ?? []);
+    }
+
+    public static string? ResolveRecipeThumbnailKey(
+        string? recipeName,
+        string? explicitImageKey = null,
+        IEnumerable<string?>? fallbackThumbnailKeys = null)
+    {
+        var explicitKey = explicitImageKey?.Trim();
+        if (IsRecipeThumbnailKey(explicitKey))
+        {
+            return explicitKey;
+        }
+
+        var exactDishLabel = ResolveExactFinishedDishLabel(recipeName);
+        if (!string.IsNullOrWhiteSpace(exactDishLabel))
+        {
+            return BuildFoodCatalogThumbnailKey(exactDishLabel);
+        }
+
+        return SelectNonIngredientFallback(fallbackThumbnailKeys ?? []);
     }
 
     public static string BuildFoodCatalogThumbnailKey(string label) =>
         $"{FoodCatalogThumbPrefix}{label}.webp";
+
+    public static bool IsRecipeThumbnailKey(string? imageKey) =>
+        !string.IsNullOrWhiteSpace(imageKey)
+        && imageKey.Trim().StartsWith(RecipeImageThumbPrefix, StringComparison.OrdinalIgnoreCase)
+        && imageKey.Trim().EndsWith(FoodCatalogWebpSuffix, StringComparison.OrdinalIgnoreCase);
 
     public static bool IsLegacyRecipeImageKey(string imageKey) =>
         imageKey.StartsWith(LegacyRecipeImagePrefix, StringComparison.OrdinalIgnoreCase);
@@ -81,6 +107,20 @@ public static class CatalogImageKeyResolver
             .FirstOrDefault(fallbackLabel => !string.IsNullOrWhiteSpace(fallbackLabel));
     }
 
+    private static string? ResolveExactFinishedDishLabel(string? recipeName)
+    {
+        var key = AiVisionLabelCatalog.NormalizeKey(recipeName);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return null;
+        }
+
+        return AiVisionLabelCatalog.Entries
+            .Where(entry => RecipeIngredientEligibility.IsFinishedDishKey(entry.Label))
+            .FirstOrDefault(entry => BuildExactKeys(entry).Contains(key, StringComparer.Ordinal))
+            ?.Label;
+    }
+
     private static string? ResolveKeywordFallbackLabel(string key)
     {
         if (ContainsNormalizedPhrase(key, "bo ne")) return "sizzling_beef_steak";
@@ -114,6 +154,16 @@ public static class CatalogImageKeyResolver
         }
     }
 
+    private static IEnumerable<string> BuildExactKeys(AiVisionLabelCatalog.Entry entry)
+    {
+        yield return AiVisionLabelCatalog.NormalizeKey(entry.Label.Replace('_', ' '));
+        yield return AiVisionLabelCatalog.NormalizeKey(entry.DisplayNameVi);
+        foreach (var alias in entry.Aliases)
+        {
+            yield return AiVisionLabelCatalog.NormalizeKey(alias);
+        }
+    }
+
     private static int IndexOfNormalizedPhrase(string value, string phrase)
     {
         var index = value.IndexOf(phrase, StringComparison.Ordinal);
@@ -133,7 +183,7 @@ public static class CatalogImageKeyResolver
         return -1;
     }
 
-    private static string? SelectFallbackThumbnail(IEnumerable<string?> thumbnailKeys)
+    private static string? SelectCatalogFallbackThumbnail(IEnumerable<string?> thumbnailKeys)
     {
         return thumbnailKeys
             .Select(thumbnail => thumbnail?.Trim())
@@ -143,10 +193,25 @@ public static class CatalogImageKeyResolver
             .FirstOrDefault();
     }
 
+    private static string? SelectNonIngredientFallback(IEnumerable<string?> thumbnailKeys)
+    {
+        return thumbnailKeys
+            .Select(thumbnail => thumbnail?.Trim())
+            .Where(thumbnail => !string.IsNullOrWhiteSpace(thumbnail))
+            .Where(thumbnail => IsFinishedDishFoodCatalogThumbnail(thumbnail!))
+            .FirstOrDefault();
+    }
+
     private static bool IsGenericFoodCatalogThumbnail(string thumbnail)
     {
         var label = TryGetFoodCatalogLabelFromThumbnail(thumbnail);
         return label != null && AiVisionLabelCatalog.Find(label)?.IsGeneric == true;
+    }
+
+    private static bool IsFinishedDishFoodCatalogThumbnail(string thumbnail)
+    {
+        var label = TryGetFoodCatalogLabelFromThumbnail(thumbnail);
+        return label != null && RecipeIngredientEligibility.IsFinishedDishKey(label);
     }
 
     private static string? TryGetFoodCatalogLabelFromThumbnail(string thumbnail)

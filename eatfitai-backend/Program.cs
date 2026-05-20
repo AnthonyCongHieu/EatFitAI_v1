@@ -1281,7 +1281,21 @@ using (var scope = app.Services.CreateScope())
 
     await TryRunTrackedStartupPhaseAsync(
         "database-seed",
-        () => DatabaseSeeder.SeedAsync(services),
+        async () =>
+        {
+            try
+            {
+                await DatabaseSeeder.SeedAsync(services);
+            }
+            catch (Exception ex) when (
+                app.Environment.IsProduction()
+                && Program.IsReadOnlyPostgresTransactionException(ex))
+            {
+                startupLogger.LogWarning(
+                    ex,
+                    "Skipping database seed because PostgreSQL reported a read-only transaction.");
+            }
+        },
         LogLevel.Error);
 }
 
@@ -1352,6 +1366,20 @@ app.MapGet("/discovery", () => Results.Ok(new {
 }));
 
 await app.RunAsync();
+    }
+
+    public static bool IsReadOnlyPostgresTransactionException(Exception exception)
+    {
+        for (var current = exception; current != null; current = current.InnerException)
+        {
+            if (current is PostgresException postgresException
+                && string.Equals(postgresException.SqlState, "25006", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
