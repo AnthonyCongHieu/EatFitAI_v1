@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
@@ -108,6 +108,11 @@ const RecipeDetailScreen = (): React.ReactElement => {
     isLoading: false,
   });
   const [showAddToDiarySheet, setShowAddToDiarySheet] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const handleScroll = useCallback((event: any) => {
+    const y = event.nativeEvent.contentOffset.y;
+    setScrolled(y > 20);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -238,7 +243,15 @@ const RecipeDetailScreen = (): React.ReactElement => {
       />
 
       {/* ═══ Top App Bar ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+      <View style={[
+        S.header,
+        { paddingTop: insets.top + 4 },
+        scrolled && {
+          backgroundColor: P.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: P.glassBorder,
+        }
+      ]}>
         <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </Pressable>
@@ -339,6 +352,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
       <ScrollView
         contentContainerStyle={[S.scrollContent, { paddingBottom: scrollBottomPadding }]}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {useHeroVisual ? (
           <View style={S.heroContainer}>

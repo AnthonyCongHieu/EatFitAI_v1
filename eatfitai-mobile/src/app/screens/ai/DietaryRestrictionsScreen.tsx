@@ -81,8 +81,8 @@ export const DietaryRestrictionsScreen = () => {
       });
       showAppToast({
         type: 'success',
-        text1: 'Thành công',
-        text2: 'Đã lưu thiết lập ăn uống',
+        text1: 'Lưu xong rồi! 🎉',
+        text2: 'Thiết lập ăn uống của bạn đã được cập nhật.',
         visibilityTime: 2000,
       });
       navigation.goBack();

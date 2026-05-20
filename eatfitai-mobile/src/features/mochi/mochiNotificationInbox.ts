@@ -51,6 +51,7 @@ type MoChiNotificationInboxState = {
   markRead: (id: string, now?: Date) => void;
   markActed: (id: string, now?: Date) => void;
   markDismissed: (id: string, now?: Date) => void;
+  removeItem: (id: string) => void;
   resolveMatching: (
     predicate: (item: MoChiNotificationItem) => boolean,
     now?: Date,
@@ -286,6 +287,10 @@ export const useMoChiNotificationInboxStore = create<MoChiNotificationInboxState
       markDismissed: (id, now = new Date()) =>
         set((state) => ({
           items: markMoChiNotificationDismissed(state.items, id, now),
+        })),
+      removeItem: (id) =>
+        set((state) => ({
+          items: state.items.filter((item) => item.id !== id),
         })),
       resolveMatching: (predicate, now = new Date()) =>
         set((state) => ({

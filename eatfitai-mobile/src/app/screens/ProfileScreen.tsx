@@ -237,7 +237,7 @@ const ProfileScreen = (): React.ReactElement => {
         const url = await profileService.uploadAvatar(result.assets[0].uri);
         await useProfileStore.getState().updateProfile({ avatarUrl: url });
         await fetchProfile({ force: true });
-        showAppToast({ type: 'success', text1: 'Cập nhật avatar thành công' });
+        showAppToast({ type: 'success', text1: 'Avatar mới đẹp lắm! 📸' });
       }
     } catch (e: any) {
       showAppToast({ type: 'error', text1: 'Lỗi', text2: e?.message || 'Không thể cập nhật avatar' });
@@ -425,9 +425,8 @@ const ProfileScreen = (): React.ReactElement => {
               <MoChiInlineNotice
                 mochiEvent="profile_incomplete"
                 routeName="ProfileTab"
-                title="MoChi cần thêm dữ liệu"
-                message="Bổ sung cân nặng, chiều cao và mục tiêu để MoChi tính gợi ý sát hơn."
-                ctaLabel="Hoàn thiện hồ sơ"
+                title="Để MoChi hiểu bạn hơn nha! 💕"
+                message="Hãy chia sẻ thêm cân nặng, chiều cao và mục tiêu để tớ tính toán dinh dưỡng thật chuẩn xác cho bạn nhé!"
                 compact
               />
             </Animated.View>

@@ -332,8 +332,8 @@ const HomeScreen = (): React.ReactElement => {
       if (options.showConfirmationToast) {
         Toast.show({
           type: 'success',
-          text1: 'Đã ghi nước',
-          text2: 'MoChi đã cộng thêm 200 ml vào hôm nay.',
+          text1: 'Uống nước giỏi lắm! 💧',
+          text2: 'Tốt lắm, thêm một ly nước rồi nè! 💧',
         });
       }
       return true;
@@ -929,9 +929,8 @@ const HomeScreen = (): React.ReactElement => {
             >
               <MoChiInlineNotice
                 mochiEvent="water_reminder"
-                title="Nhắc uống nước"
-                message="Ghi thêm một ly nước nếu bạn vừa uống xong."
-                ctaLabel="Ghi nước"
+                title="Tiếp nước thôi nào! 💧"
+                message="Bạn vừa uống một ly nước đúng không nè? Ghi nhận ngay để tớ đếm nhé!"
                 compact
                 hideSprite
                 tone="calm"

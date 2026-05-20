@@ -295,7 +295,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       });
       showAppToast({
         type: 'success',
-        text1: 'Đã thêm món thường dùng',
+        text1: 'Thêm xong rồi! ⭐',
         text2: `${template.name} (${Math.round(template.defaultGrams || 0)}g)`,
       });
       trackEvent('common_meal_apply_success', {

@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
@@ -212,7 +212,11 @@ const MoChiOverlayHost = ({
           />
         </Pressable>
 
-        <View
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${activeOverlay.candidate.title}. ${activeOverlay.candidate.message}`}
+          onPress={actOnOverlay}
+          onLongPress={closeOverlay}
           style={[
             styles.companionSpeech,
             {
@@ -240,19 +244,7 @@ const MoChiOverlayHost = ({
           <ThemedText style={[styles.companionMessage, { color: EN.onSurface }]} numberOfLines={2}>
             {activeOverlay.candidate.message}
           </ThemedText>
-          {activeOverlay.candidate.ctaLabel && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={activeOverlay.candidate.ctaLabel}
-              onPress={actOnOverlay}
-              style={styles.companionCtaHitbox}
-            >
-              <ThemedText style={[styles.companionCta, { color: EN.primary }]} numberOfLines={1}>
-                {activeOverlay.candidate.ctaLabel}
-              </ThemedText>
-            </Pressable>
-          )}
-        </View>
+        </Pressable>
       </Animated.View>
     </View>
   );

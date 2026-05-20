@@ -56,7 +56,7 @@ const CommonMealsScreen = (): React.ReactElement => {
                 await commonMealsQuery.refetch();
                 showAppToast({
                   type: 'success',
-                  text1: 'Đã xóa tổ hợp món',
+                  text1: 'Xóa xong rồi!',
                   text2: templateName,
                 });
               } catch (error) {

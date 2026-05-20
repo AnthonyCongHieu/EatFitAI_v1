@@ -67,7 +67,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
   const palette = { ...P_STATIC, ...useEN() };
   const items = useMoChiNotificationInboxStore((state) => state.items);
   const markRead = useMoChiNotificationInboxStore((state) => state.markRead);
-  const markActed = useMoChiNotificationInboxStore((state) => state.markActed);
+  const removeItem = useMoChiNotificationInboxStore((state) => state.removeItem);
   const unreadCount = useMemo(() => selectUnreadMoChiNotificationCount(items), [items]);
 
   const handleOpenItem = (item: MoChiNotificationItem) => {
@@ -76,7 +76,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
       return;
     }
 
-    markActed(item.id);
+    removeItem(item.id);
     performMoChiNotificationAction(item.action, item.mealTypeId);
   };
 
@@ -168,11 +168,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
                     <ThemedText style={S.notificationBody} numberOfLines={2}>
                       {item.body}
                     </ThemedText>
-                    {item.ctaLabel && !item.resolvedAt && (
-                      <ThemedText style={[S.notificationCta, { color: palette.primary }]}>
-                        {item.ctaLabel}
-                      </ThemedText>
-                    )}
+
                   </View>
                 </Pressable>
               );
@@ -308,11 +304,6 @@ const S = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: P.onSurfaceVariant,
-  },
-  notificationCta: {
-    marginTop: 5,
-    fontSize: 12,
-    fontFamily: 'BeVietnamPro_700Bold',
   },
 });
 

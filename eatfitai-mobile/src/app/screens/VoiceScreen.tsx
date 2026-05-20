@@ -323,8 +323,8 @@ const VoiceScreen = (): React.ReactElement => {
     if (newStatus === 'success') {
       showAppToast({
         type: 'success',
-        text1: 'Thành công',
-        text2: lastExecutedAction || 'Đã thực hiện lệnh.',
+        text1: 'Xong rồi nè! ✨',
+        text2: lastExecutedAction || 'Tớ đã ghi lại giúp bạn rồi.',
         visibilityTime: 3000,
       });
       trackEvent('voice_execute_success', {
@@ -385,8 +385,8 @@ const VoiceScreen = (): React.ReactElement => {
     if (newStatus === 'success') {
       showAppToast({
         type: 'success',
-        text1: 'Thành công',
-        text2: lastExecutedAction || 'Đã lưu bản nháp.',
+        text1: 'Xong rồi nè! ✨',
+        text2: lastExecutedAction || 'Tớ đã lưu lại giúp bạn rồi.',
         visibilityTime: 3000,
       });
       trackEvent('voice_execute_success', {

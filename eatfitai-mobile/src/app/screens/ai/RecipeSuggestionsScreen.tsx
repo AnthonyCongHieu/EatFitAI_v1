@@ -49,7 +49,6 @@ const SORT_OPTIONS: { key: SortMode; label: string }[] = [
   { key: 'best', label: 'Phù hợp nhất' },
   { key: 'fast', label: 'Nhanh' },
   { key: 'protein', label: 'Giàu đạm' },
-  { key: 'missing', label: 'Ít thiếu' },
 ];
 
 const selectRecipeImageUrl = (
@@ -318,7 +317,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   return (
     <View style={[S.container, { backgroundColor: P.surface }]}>
       {/* ═══ Header ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+      <View style={[S.header, { paddingTop: insets.top + 4, backgroundColor: P.surface, borderBottomWidth: 1, borderBottomColor: P.glassBorder }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </TouchableOpacity>
@@ -383,7 +382,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           disabled={loading}
         >
           <ThemedText style={S.mainActionBtnText}>
-            {loading ? 'Đang tìm...' : isDailyRecommendation ? 'Gợi ý món hôm nay' : 'Khám phá công thức'}
+            {loading ? 'Đang tìm...' : isDailyRecommendation ? 'Gợi ý món hôm nay' : 'Tìm kiếm công thức'}
           </ThemedText>
         </TouchableOpacity>
 
@@ -394,35 +393,15 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           ) : error ? (
             <View style={S.center}>
               <MoChiInlineNotice mochiEvent="recipe_error" compact />
-              <Ionicons name="alert-circle" size={48} color={P.danger} />
-              <ThemedText style={S.errorText}>{error}</ThemedText>
             </View>
           ) : recipes.length === 0 ? (
             <View style={S.centerEmpty}>
               <MoChiInlineNotice mochiEvent="recipe_empty" compact />
-              <Ionicons name="restaurant-outline" size={64} color={P.onSurfaceVariant} />
-              <ThemedText style={S.emptyText}>
-                {isDailyRecommendation
-                  ? 'Chạm vào nút phía trên để xem món phù hợp cho hôm nay.'
-                  : <>Nhập nguyên liệu nếu có, hoặc chạm nút phía trên để{'\n'}khám phá công thức phù hợp.</>}
-              </ThemedText>
             </View>
           ) : (
             <>
               <MoChiInlineNotice mochiEvent="recipe_success" compact />
-              <View style={S.disclaimerCard}>
-                <Ionicons name="information-circle-outline" size={18} color={P.onSurfaceVariant} />
-                <ThemedText style={S.disclaimerText}>
-                  {recipes[0]?.disclaimer
-                    ?? 'Gợi ý chỉ mang tính tham khảo; không phải khuyến nghị của chuyên gia dinh dưỡng, bác sĩ hoặc đầu bếp chuyên nghiệp.'}
-                </ThemedText>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={S.sortChipsScroll}
-                style={S.sortChipsSection}
-              >
+              <View style={S.sortChipsSection}>
                 {SORT_OPTIONS.map((option) => {
                   const active = sortMode === option.key;
                   return (
@@ -437,7 +416,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
+              </View>
               {groupedSections.map((section) => (
                 <View key={section.key} style={S.groupSection}>
                   <View style={S.exploreHeader}>
@@ -521,13 +500,19 @@ const S = StyleSheet.create({
   },
   mainActionBtnText: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onPrimary },
 
-  resultsWrap: { minHeight: 400 },
-  sortChipsSection: { marginHorizontal: -20, marginBottom: 16 },
-  sortChipsScroll: { paddingHorizontal: 20, gap: 10 },
+  resultsWrap: {},
+  sortChipsSection: {
+    flexDirection: 'row',
+    marginTop: 20,
+    marginBottom: 16,
+    gap: 8,
+  },
   sortChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
     backgroundColor: P_STATIC.surfaceContainerLowest,
     borderWidth: 1,
     borderColor: P_STATIC.glassBorder,
@@ -644,9 +629,9 @@ const S = StyleSheet.create({
   metricTextSmall: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant },
 
   /* Empty & Loading States */
-  centerEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+  centerEmpty: { alignItems: 'center', justifyContent: 'center', paddingTop: 8, paddingBottom: 16 },
   emptyText: { marginTop: 16, textAlign: 'center', color: P_STATIC.onSurfaceVariant, fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', lineHeight: 22 },
-  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
+  center: { alignItems: 'center', justifyContent: 'center', paddingTop: 8, paddingBottom: 16 },
   errorText: { marginTop: 12, color: P_STATIC.danger, fontFamily: 'BeVietnamPro_600SemiBold', textAlign: 'center' },
   skeletonWrap: { gap: 16 },
   skeletonCard: { height: 180, borderRadius: 24, backgroundColor: P_STATIC.surfaceContainerHigh, opacity: 0.5 },
