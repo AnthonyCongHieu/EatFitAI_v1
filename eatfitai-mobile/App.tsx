@@ -91,6 +91,10 @@ const DEV_LOGBOX_IGNORES = [
   'EatFitAI API warning:',
 ];
 
+SplashScreen.setOptions({
+  duration: 650,
+  fade: true,
+});
 void SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
 

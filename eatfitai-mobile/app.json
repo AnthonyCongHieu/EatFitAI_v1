@@ -25,6 +25,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
+        "monochromeImage": "./src/assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#090E1C"
       },
       "splash": {
@@ -63,6 +64,19 @@
         "expo-image-picker",
         {
           "photosPermission": "EatFitAI cần truy cập thư viện ảnh để chọn ảnh thực phẩm"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./src/assets/adaptive-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#090E1C",
+          "dark": {
+            "image": "./src/assets/adaptive-icon.png",
+            "backgroundColor": "#090E1C"
+          }
         }
       ],
       "@react-native-community/datetimepicker"
