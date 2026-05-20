@@ -80,11 +80,6 @@ const MoChiInlineNotice = ({
         <ThemedText style={[styles.dialogue, isCalm && styles.dialogueCalm, { color: EN.onSurface }]}>
           {message ?? state.dialogue}
         </ThemedText>
-        {(ctaLabel ?? experience.ctaLabel) && (
-          <ThemedText style={[styles.cta, isCalm && styles.ctaCalm, { color: EN.primary }]}>
-            {ctaLabel ?? experience.ctaLabel}
-          </ThemedText>
-        )}
       </View>
     </View>
   );

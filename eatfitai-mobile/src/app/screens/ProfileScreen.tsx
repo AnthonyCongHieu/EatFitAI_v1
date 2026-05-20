@@ -439,9 +439,8 @@ const ProfileScreen = (): React.ReactElement => {
               <MoChiInlineNotice
                 mochiEvent="profile_incomplete"
                 routeName="ProfileTab"
-                title="MoChi cần thêm dữ liệu"
-                message="Bổ sung cân nặng, chiều cao và mục tiêu để MoChi tính gợi ý sát hơn."
-                ctaLabel="Hoàn thiện hồ sơ"
+                title="Để MoChi hiểu bạn hơn nha! 💕"
+                message="Hãy chia sẻ thêm cân nặng, chiều cao và mục tiêu để tớ tính toán dinh dưỡng thật chuẩn xác cho bạn nhé!"
                 compact
               />
             </Animated.View>

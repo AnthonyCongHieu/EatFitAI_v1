@@ -931,9 +931,8 @@ const HomeScreen = (): React.ReactElement => {
             >
               <MoChiInlineNotice
                 mochiEvent="water_reminder"
-                title="Nhắc uống nước"
-                message="Ghi thêm một ly nước nếu bạn vừa uống xong."
-                ctaLabel="Ghi nước"
+                title="Tiếp nước thôi nào! 💧"
+                message="Bạn vừa uống một ly nước đúng không nè? Ghi nhận ngay để tớ đếm nhé!"
                 compact
                 hideSprite
                 tone="calm"

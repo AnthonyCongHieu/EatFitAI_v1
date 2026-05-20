@@ -15,15 +15,14 @@ describe('Profile and top account actions IA', () => {
     const typesSource = readSource('src/app/types/index.ts');
 
     expect(welcomeHeaderSource).not.toContain('useMoChiIslandLayout');
-    expect(welcomeHeaderSource).toContain('MoChi');
-    expect(welcomeHeaderSource).toContain('Sẵn sàng hỗ trợ');
+    expect(welcomeHeaderSource).toContain('Chào');
     expect(welcomeHeaderSource).toContain('settings-outline');
     expect(tabBarSource).not.toContain("label: 'Cài đặt'");
     expect(homeSource).toContain(
       "onNotificationPress={() => navigation.navigate('NotificationCenter')}",
     );
     expect(homeSource).toContain(
-      "onSettingsPress={() => navigation.navigate('AppTabs', { screen: 'ProfileTab' })}",
+      "onSettingsPress={() => navigation.navigate('ProfileTab')}",
     );
     expect(navigatorSource).toContain('getNotificationCenterScreen');
     expect(navigatorSource).toContain('name="NotificationCenter"');

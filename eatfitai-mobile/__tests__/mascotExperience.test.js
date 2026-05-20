@@ -182,8 +182,8 @@ describe('MoChi virtual pet experience', () => {
     expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.title');
     expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.message');
     expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel');
-    expect(nudgeContextSource).toContain('Bữa này còn trống');
-    expect(nudgeContextSource).toContain('Thêm bữa gần nhất để nhật ký hôm nay liền mạch hơn.');
+    expect(nudgeContextSource).toContain('Bữa này đang đợi bạn đó! 🍽️');
+    expect(nudgeContextSource).toContain('Hãy ghi bữa ăn gần nhất để chúng mình cùng theo dõi ngày hôm nay thật liền mạch nha!');
     expect(nudgeContextSource).toContain('Ghi bữa');
     expect(nudgeContextSource).toContain("preferredSurface: 'inline'");
     expect(nudgeContextSource).not.toContain("preferredSurface: 'overlay'");

@@ -31,8 +31,8 @@ export interface MoChiNudgeCandidate {
 const MEAL_ROUTE_NAMES = new Set(['MealDiary']);
 
 export const MEAL_DIARY_INLINE_NUDGE_COPY = {
-  title: 'Bữa này còn trống',
-  message: 'Thêm bữa gần nhất để nhật ký hôm nay liền mạch hơn.',
+  title: 'Bữa này đang đợi bạn đó! 🍽️',
+  message: 'Hãy ghi bữa ăn gần nhất để chúng mình cùng theo dõi ngày hôm nay thật liền mạch nha!',
   ctaLabel: 'Ghi bữa',
 } as const;
 

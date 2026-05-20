@@ -84,9 +84,9 @@ describe('MoChi notification surfaces', () => {
     expect(homeSource).toContain('handleAddWater({ showConfirmationToast: true })');
     expect(homeSource).toContain("text1: 'Đã ghi nước'");
     expect(homeSource).toContain('mochiEvent="water_reminder"');
-    expect(homeSource).toContain('title="Nhắc uống nước"');
-    expect(homeSource).toContain('message="Ghi thêm một ly nước nếu bạn vừa uống xong."');
-    expect(homeSource).toContain('ctaLabel="Ghi nước"');
+    expect(homeSource).toContain('title="Tiếp nước thôi nào! 💧"');
+    expect(homeSource).toContain('message="Bạn vừa uống một ly nước đúng không nè? Ghi nhận ngay để tớ đếm nhé!"');
+    expect(homeSource).not.toContain('ctaLabel=');
     expect(homeSource).not.toContain('mochiEvent="water_added"');
     expect(homeSource).toContain('hideSprite');
     expect(homeSource).toContain('tone="calm"');
