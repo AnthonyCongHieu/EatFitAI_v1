@@ -208,6 +208,12 @@ CREATE TABLE IF NOT EXISTS "MealDiary" (
     "PhotoUrl"          VARCHAR(500)    NULL,
     "Note"              VARCHAR(500)    NULL,
     "SourceMethod"      VARCHAR(30)     NULL,
+    "InputMethod"       VARCHAR(30)     NULL,
+    "IsRoughLog"        BOOLEAN         NOT NULL DEFAULT FALSE,
+    "UserConfirmed"     BOOLEAN         NOT NULL DEFAULT TRUE,
+    "ConfidenceScore"   DECIMAL(5,4)    NULL,
+    "TrustSource"       VARCHAR(50)     NULL,
+    "DiaryMissingNutrients" VARCHAR(200) NULL,
     "IsDeleted"         BOOLEAN         NOT NULL DEFAULT FALSE,
     "CreatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
     "UpdatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
@@ -221,6 +227,23 @@ CREATE TABLE IF NOT EXISTS "MealDiary" (
 );
 CREATE INDEX "IX_MealDiary_EatenDate" ON "MealDiary" ("EatenDate") WHERE "IsDeleted" = false;
 CREATE INDEX "IX_MealDiary_UserDate" ON "MealDiary" ("UserId", "EatenDate") WHERE "IsDeleted" = false;
+
+CREATE TABLE IF NOT EXISTS "MealDayMarker" (
+    "MealDayMarkerId"   SERIAL          NOT NULL,
+    "UserId"            UUID            NOT NULL,
+    "LocalDate"         DATE            NOT NULL,
+    "MealTypeId"        INT             NULL,
+    "MarkerType"        VARCHAR(40)     NOT NULL,
+    "Reason"            VARCHAR(200)    NULL,
+    "CreatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    "UpdatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    "IsDeleted"         BOOLEAN         NOT NULL DEFAULT FALSE,
+    CONSTRAINT "PK_MealDayMarker" PRIMARY KEY ("MealDayMarkerId"),
+    CONSTRAINT "FK_MealDayMarker_User" FOREIGN KEY ("UserId") REFERENCES "Users" ("UserId"),
+    CONSTRAINT "FK_MealDayMarker_MealType" FOREIGN KEY ("MealTypeId") REFERENCES "MealType" ("MealTypeId")
+);
+CREATE INDEX "IX_MealDayMarker_UserDate" ON "MealDayMarker" ("UserId", "LocalDate") WHERE "IsDeleted" = false;
+CREATE INDEX "IX_MealDayMarker_UserDateMealType" ON "MealDayMarker" ("UserId", "LocalDate", "MealTypeId", "MarkerType") WHERE "IsDeleted" = false;
 
 -- ============================================================
 -- AI SYSTEM
@@ -365,6 +388,21 @@ CREATE TABLE IF NOT EXISTS "WeeklyCheckIn" (
     CONSTRAINT "PK_WeeklyCheckIn" PRIMARY KEY ("WeeklyCheckInId"),
     CONSTRAINT "FK_WeeklyCheckIn_User" FOREIGN KEY ("UserId") REFERENCES "Users" ("UserId")
 );
+
+CREATE TABLE IF NOT EXISTS "WeeklyReviewAction" (
+    "WeeklyReviewActionId" SERIAL       NOT NULL,
+    "UserId"            UUID            NOT NULL,
+    "WeekStartDate"     DATE            NOT NULL,
+    "ActionKey"         VARCHAR(80)     NOT NULL,
+    "Label"             VARCHAR(200)    NOT NULL,
+    "Status"            VARCHAR(30)     NOT NULL DEFAULT 'suggested',
+    "ReplacementText"   VARCHAR(200)    NULL,
+    "CreatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    "UpdatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    CONSTRAINT "PK_WeeklyReviewAction" PRIMARY KEY ("WeeklyReviewActionId"),
+    CONSTRAINT "FK_WeeklyReviewAction_User" FOREIGN KEY ("UserId") REFERENCES "Users" ("UserId")
+);
+CREATE UNIQUE INDEX "UQ_WeeklyReviewAction_UserWeekAction" ON "WeeklyReviewAction" ("UserId", "WeekStartDate", "ActionKey");
 
 -- ============================================================
 -- USER PREFERENCE
@@ -522,6 +560,16 @@ CREATE TRIGGER tr_fooditem_set_updated_at
 
 CREATE TRIGGER tr_mealdiary_set_updated_at
     BEFORE UPDATE ON "MealDiary"
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER tr_mealdaymarker_set_updated_at
+    BEFORE UPDATE ON "MealDayMarker"
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER tr_weeklyreviewaction_set_updated_at
+    BEFORE UPDATE ON "WeeklyReviewAction"
     FOR EACH ROW
     EXECUTE FUNCTION fn_set_updated_at();
 

@@ -28,7 +28,6 @@ import type { CompositeNavigationProp, RouteProp } from '@react-navigation/nativ
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { LinearGradient } from 'expo-linear-gradient';
 import MeshBackground from '../../../components/ui/MeshBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -278,6 +277,35 @@ const MealDiaryScreen = (): React.ReactElement => {
       defaultMealType,
     });
   }, [dateKey, navigation]);
+
+  const handleMarkSkipped = useCallback((mealType: MealTypeId) => {
+    const mealLabel = MEAL_TYPE_LABELS[mealType];
+
+    Alert.alert('Đánh dấu bỏ bữa', `Ghi nhận bạn đã bỏ qua ${mealLabel.toLowerCase()}?`, [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Ghi nhận',
+        onPress: async () => {
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            await diaryService.markMealSkipped(dateKey, mealType);
+            await invalidateDiaryQueries(queryClient);
+            showAppToast({
+              type: 'success',
+              text1: 'Đã ghi nhận',
+              text2: 'App sẽ phân bổ nhẹ hơn cho các bữa còn lại.',
+            });
+          } catch (err: any) {
+            showAppToast({
+              type: 'error',
+              text1: 'Không thể ghi nhận',
+              text2: err?.message || 'Thử lại sau.',
+            });
+          }
+        },
+      },
+    ]);
+  }, [dateKey, queryClient]);
 
   const navigateToDetail = useCallback((entry: DiaryEntry) => {
     if (entry.recipeId) {
@@ -611,6 +639,19 @@ const MealDiaryScreen = (): React.ReactElement => {
                           </View>
                           <ThemedText style={[styles.mealEmptyText, { color: C.textMuted }]}>
                             {MEAL_ADD_LABELS[group.mealType]}
+                          </ThemedText>
+                        </Pressable>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.skipMealButton,
+                            { borderColor: C.outline },
+                            pressed && { opacity: 0.82 },
+                          ]}
+                          onPress={() => handleMarkSkipped(group.mealType)}
+                        >
+                          <Ionicons name="remove-circle-outline" size={17} color={C.textMuted} />
+                          <ThemedText style={[styles.skipMealButtonText, { color: C.textMuted }]}>
+                            Bỏ bữa này
                           </ThemedText>
                         </Pressable>
                       </View>
@@ -984,6 +1025,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.textMuted,
+  },
+  skipMealButton: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  skipMealButtonText: {
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
   },
   copyDayButton: {
     marginTop: 12,

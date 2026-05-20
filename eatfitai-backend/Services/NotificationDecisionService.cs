@@ -1,3 +1,4 @@
+using System.Globalization;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Notifications;
 
@@ -32,9 +33,11 @@ public sealed class NotificationDecisionService : INotificationDecisionService
         if (IsQuietHours(request.LocalTime, request.QuietHoursStart, request.QuietHoursEnd))
         {
             return Suppressed(
+                request,
                 NotificationSuppressReason.QuietHours,
                 "Đang trong giờ yên tĩnh.",
-                NextQuietHoursEnd(request));
+                NextQuietHoursEnd(request),
+                cooldownPassed: true);
         }
 
         if (request.LastNudgedAt.HasValue && request.CooldownMinutes > 0)
@@ -43,9 +46,25 @@ public sealed class NotificationDecisionService : INotificationDecisionService
             if (cooldownUntil > DateTimeOffset.UtcNow)
             {
                 return Suppressed(
+                    request,
                     NotificationSuppressReason.Cooldown,
                     "Đang trong thời gian giãn cách thông báo.",
-                    cooldownUntil);
+                    cooldownUntil,
+                    cooldownPassed: false);
+            }
+        }
+
+        if (request.LastIgnoredAt.HasValue && request.IgnoreCooldownMinutes > 0)
+        {
+            var ignoredCooldownUntil = request.LastIgnoredAt.Value.AddMinutes(request.IgnoreCooldownMinutes);
+            if (ignoredCooldownUntil > DateTimeOffset.UtcNow)
+            {
+                return Suppressed(
+                    request,
+                    NotificationSuppressReason.RecentlyIgnored,
+                    "Bạn vừa bỏ qua nhắc nhở gần đây nên app tạm ngưng nhắc lại.",
+                    ignoredCooldownUntil,
+                    cooldownPassed: false);
             }
         }
 
@@ -57,9 +76,12 @@ public sealed class NotificationDecisionService : INotificationDecisionService
         if (day.IsComplete)
         {
             return Suppressed(
+                request,
                 NotificationSuppressReason.AlreadyComplete,
                 "Hôm nay đã đủ dữ liệu để tính tiến độ.",
-                null);
+                null,
+                cooldownPassed: true,
+                currentDayState: day.Status);
         }
 
         var message = day.Status == DayCompletenessStatus.Empty
@@ -70,24 +92,58 @@ public sealed class NotificationDecisionService : INotificationDecisionService
         {
             ShouldNudge = true,
             Reason = NotificationSuppressReason.IncompleteDay,
+            ReasonToSend = NotificationSuppressReason.IncompleteDay,
+            ReasonToSuppress = null,
             SuggestedMessage = message,
-            DeepLink = "/diary/add",
+            DeepLink = BuildDeepLink(request),
+            QuietHours = FormatRange(request.QuietHoursStart, request.QuietHoursEnd),
+            CooldownPassed = true,
+            PredictedMealWindow = FormatPredictedWindow(request),
+            CurrentDayState = day.Status,
         };
     }
 
     private static NotificationDecisionDto Suppressed(
+        NotificationDecisionRequestDto request,
         string reason,
         string message,
-        DateTimeOffset? suppressUntil)
+        DateTimeOffset? suppressUntil,
+        bool cooldownPassed,
+        string? currentDayState = null)
     {
         return new NotificationDecisionDto
         {
             ShouldNudge = false,
             Reason = reason,
-            SuggestedMessage = message,
+            ReasonToSuppress = reason,
             SuppressUntil = suppressUntil,
-            DeepLink = "/diary/add",
+            SuggestedMessage = message,
+            DeepLink = BuildDeepLink(request),
+            QuietHours = FormatRange(request.QuietHoursStart, request.QuietHoursEnd),
+            CooldownPassed = cooldownPassed,
+            PredictedMealWindow = FormatPredictedWindow(request),
+            CurrentDayState = currentDayState,
         };
+    }
+
+    private static string BuildDeepLink(NotificationDecisionRequestDto request)
+    {
+        var date = request.LocalDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return request.MealTypeId.HasValue
+            ? $"/diary/add?date={date}&mealTypeId={request.MealTypeId.Value}"
+            : $"/diary/add?date={date}";
+    }
+
+    private static string? FormatPredictedWindow(NotificationDecisionRequestDto request)
+    {
+        return request.PredictedMealWindowStart.HasValue && request.PredictedMealWindowEnd.HasValue
+            ? FormatRange(request.PredictedMealWindowStart.Value, request.PredictedMealWindowEnd.Value)
+            : null;
+    }
+
+    private static string FormatRange(TimeOnly start, TimeOnly end)
+    {
+        return $"{start.ToString("HH:mm", CultureInfo.InvariantCulture)}-{end.ToString("HH:mm", CultureInfo.InvariantCulture)}";
     }
 
     private static bool IsQuietHours(TimeOnly now, TimeOnly start, TimeOnly end)

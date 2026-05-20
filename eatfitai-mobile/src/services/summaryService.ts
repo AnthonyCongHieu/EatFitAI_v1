@@ -33,6 +33,8 @@ export type WeeklyReview = {
   message: string;
   confidence: number;
   dataQuality: number;
+  weekStartDate?: string | null;
+  primaryAction?: WeeklyReviewPrimaryAction | null;
   suggestedActions?: {
     type?: string;
     newTargetCalories?: number | null;
@@ -50,6 +52,31 @@ export type WeeklyReview = {
     energyLevel?: string;
     recommendations: string[];
   };
+};
+
+export type WeeklyReviewPrimaryAction = {
+  actionKey: string;
+  label: string;
+  status: string;
+  deepLink: string;
+  replacementText?: string | null;
+};
+
+export type WeeklyReviewActionRequest = {
+  action: 'accept' | 'done' | 'snooze' | 'replace' | 'useful' | string;
+  actionKey?: string;
+  label?: string;
+  replacementText?: string | null;
+  weekStartDate?: string | null;
+};
+
+export type WeeklyReviewActionResponse = {
+  action: string;
+  status: string;
+  actionKey: string;
+  weekStartDate: string;
+  replacementText?: string | null;
+  recordedAt: string;
 };
 
 const toNumber = (value: unknown, fallback = 0): number => {
@@ -146,6 +173,19 @@ const normalizeWeeklyReview = (data: any): WeeklyReview => ({
   message: String(data?.message ?? 'Tiếp tục theo dõi tiến độ!'),
   confidence: toNumber(data?.confidence, 0),
   dataQuality: toNumber(data?.dataQuality, 0),
+  weekStartDate: data?.weekStartDate == null ? null : String(data.weekStartDate).slice(0, 10),
+  primaryAction: data?.primaryAction
+    ? {
+        actionKey: String(data.primaryAction?.actionKey ?? ''),
+        label: String(data.primaryAction?.label ?? ''),
+        status: String(data.primaryAction?.status ?? 'suggested'),
+        deepLink: String(data.primaryAction?.deepLink ?? '/diary'),
+        replacementText:
+          data.primaryAction?.replacementText == null
+            ? null
+            : String(data.primaryAction.replacementText),
+      }
+    : null,
   suggestedActions: data?.suggestedActions
     ? {
         type: data.suggestedActions?.type,
@@ -218,5 +258,27 @@ export const summaryService = {
       const response = await apiClient.get('/api/analytics/weekly-review');
       return normalizeWeeklyReview(response.data);
     });
+  },
+
+  async recordWeeklyReviewAction(
+    request: WeeklyReviewActionRequest,
+  ): Promise<WeeklyReviewActionResponse> {
+    const payload = {
+      action: request.action,
+      ...(request.actionKey ? { actionKey: request.actionKey } : {}),
+      ...(request.label ? { label: request.label } : {}),
+      ...(request.replacementText != null ? { replacementText: request.replacementText } : {}),
+      ...(request.weekStartDate ? { weekStartDate: request.weekStartDate } : {}),
+    };
+    const response = await apiClient.post('/api/AIReview/actions', payload);
+    return {
+      action: String(response.data?.action ?? request.action),
+      status: String(response.data?.status ?? ''),
+      actionKey: String(response.data?.actionKey ?? request.actionKey ?? ''),
+      weekStartDate: String(response.data?.weekStartDate ?? request.weekStartDate ?? '').slice(0, 10),
+      replacementText:
+        response.data?.replacementText == null ? null : String(response.data.replacementText),
+      recordedAt: String(response.data?.recordedAt ?? ''),
+    };
   },
 };

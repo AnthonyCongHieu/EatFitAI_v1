@@ -92,6 +92,8 @@ namespace EatFitAI.API.MappingProfiles
                         LastReviewedAt = src.FoodItem.LastReviewedAt
                     })
                     : null))
+                .ForMember(dest => dest.DiaryMissingNutrients, opt => opt.MapFrom(src =>
+                    FoodTrustBuilder.ParseMissingNutrients(src.DiaryMissingNutrients)))
                 .ForMember(dest => dest.UserDishName, opt => opt.MapFrom(src => src.UserDish != null ? src.UserDish.DishName : null))
                 .ForMember(dest => dest.RecipeName, opt => opt.MapFrom(src => src.Recipe != null ? src.Recipe.RecipeName : null))
                 .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit != null ? src.ServingUnit.Name : null))
@@ -102,10 +104,17 @@ namespace EatFitAI.API.MappingProfiles
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(_ => false))
+                .ForMember(dest => dest.DiaryMissingNutrients, opt => opt.MapFrom(src =>
+                    FoodTrustBuilder.SerializeMissingNutrients(src.DiaryMissingNutrients ?? new List<string>())))
                 .ForMember(dest => dest.EatenDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.EatenDate)));
 
             CreateMap<UpdateMealDiaryRequest, MealDiary>()
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.DiaryMissingNutrients, opt =>
+                    {
+                        opt.Condition(src => src.DiaryMissingNutrients != null);
+                        opt.MapFrom(src => FoodTrustBuilder.SerializeMissingNutrients(src.DiaryMissingNutrients ?? new List<string>()));
+                    })
                 .ForMember(dest => dest.EatenDate, opt =>
                     {
                         opt.Condition(src => src.EatenDate.HasValue);

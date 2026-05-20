@@ -6,6 +6,13 @@ export interface MealItemInput {
   foodItemId?: number;
   userFoodItemId?: number;
   grams: number;
+  sourceMethod?: string | null;
+  inputMethod?: string | null;
+  isRoughLog?: boolean | null;
+  userConfirmed?: boolean | null;
+  confidenceScore?: number | null;
+  trustSource?: string | null;
+  diaryMissingNutrients?: string[] | null;
 }
 
 export interface AddMealItemsPayload {

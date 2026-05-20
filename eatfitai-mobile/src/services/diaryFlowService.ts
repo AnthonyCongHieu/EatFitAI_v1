@@ -8,6 +8,7 @@ export const DIARY_QUERY_KEYS = {
   diaryEntries: ['diary-entries'] as const,
   homeSummary: ['home-summary'] as const,
   mealDiary: ['meal-diary'] as const,
+  dailyLoop: ['daily-loop'] as const,
 };
 
 export const getTodayDate = (date = new Date()): string => {
@@ -53,5 +54,6 @@ export const invalidateDiaryQueries = async (
     queryClient.invalidateQueries({ queryKey: DIARY_QUERY_KEYS.homeSummary }),
     queryClient.invalidateQueries({ queryKey: DIARY_QUERY_KEYS.diaryEntries }),
     queryClient.invalidateQueries({ queryKey: DIARY_QUERY_KEYS.mealDiary }),
+    queryClient.invalidateQueries({ queryKey: DIARY_QUERY_KEYS.dailyLoop }),
   ]);
 };

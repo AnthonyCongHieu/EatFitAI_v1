@@ -26,9 +26,20 @@ public class WeeklyReviewDto
     public string Message { get; set; } = string.Empty;
     public decimal Confidence { get; set; } // 0-1
     public int DataQuality { get; set; } // 0-100
+    public DateTime? WeekStartDate { get; set; }
+    public WeeklyReviewPrimaryActionDto? PrimaryAction { get; set; }
     
     public SuggestedActionsDto? SuggestedActions { get; set; }
     public InsightsDto Insights { get; set; } = new();
+}
+
+public class WeeklyReviewPrimaryActionDto
+{
+    public string ActionKey { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Status { get; set; } = "suggested";
+    public string DeepLink { get; set; } = "/diary";
+    public string? ReplacementText { get; set; }
 }
 
 public class SuggestedActionsDto
@@ -84,10 +95,18 @@ public class UserWeekDataDto
 public sealed class ReviewActionRequestDto
 {
     public string Action { get; set; } = string.Empty; // accept, done, snooze, useful
+    public string? ActionKey { get; set; }
+    public string? Label { get; set; }
+    public string? ReplacementText { get; set; }
+    public DateTime? WeekStartDate { get; set; }
 }
 
 public sealed class ReviewActionResponseDto
 {
     public string Action { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string ActionKey { get; set; } = string.Empty;
+    public DateTime WeekStartDate { get; set; }
+    public string? ReplacementText { get; set; }
     public DateTime RecordedAt { get; set; }
 }

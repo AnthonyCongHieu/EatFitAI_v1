@@ -168,7 +168,7 @@ public class AIReviewController : ControllerBase
             var userId = GetUserId();
             if (userId == Guid.Empty) return Unauthorized();
 
-            var result = await _reviewService.RecordReviewAction(userId, request.Action);
+            var result = await _reviewService.RecordReviewAction(userId, request);
             return Ok(result);
         }
         catch (ArgumentException)

@@ -100,9 +100,15 @@ export interface ScheduledNotification {
 export interface NotificationDecision {
   shouldNudge: boolean;
   reason: string;
+  reasonToSend?: string | null;
+  reasonToSuppress?: string | null;
   suppressUntil?: string | null;
   suggestedMessage: string;
   deepLink: string;
+  quietHours?: string;
+  cooldownPassed?: boolean;
+  predictedMealWindow?: string | null;
+  currentDayState?: string | null;
 }
 
 interface PushRegistrationCache {
@@ -233,6 +239,19 @@ const processNotificationResponse = (
     inbox.upsertItem(item);
     inbox.markRead(item.id);
   }
+
+  trackEvent('notification_opened', {
+    category: 'retention',
+    flow: 'notification',
+    step: String(content?.data?.mochiEventType ?? content?.data?.target ?? 'unknown'),
+    status: source,
+    metadata: {
+      source,
+      target: content?.data?.target,
+      mochiAction: content?.data?.mochiAction,
+      mealTypeId: content?.data?.mealTypeId,
+    },
+  });
 
   const target = resolveNotificationTarget(response);
   if (!target) {
@@ -464,6 +483,18 @@ async function scheduleDailyNotification(
     });
 
     logger.info(`[NotificationService] Đã schedule ${identifier} lúc ${time}`);
+    trackEvent('notification_sent', {
+      category: 'retention',
+      flow: 'notification',
+      step: identifier,
+      status: 'scheduled',
+      metadata: {
+        identifier,
+        time,
+        mochiEventType: options?.data?.mochiEventType,
+        mealTypeId: options?.data?.mealTypeId,
+      },
+    });
     return notificationId;
   } catch (error) {
     logger.error(`[NotificationService] Lỗi schedule ${identifier}:`, error);
@@ -531,6 +562,13 @@ export async function shouldNudgeFromBackend(input: {
   localDate: string;
   localTime: string;
   nudgeType?: string;
+  mealTypeId?: number;
+  predictedMealWindowStart?: string;
+  predictedMealWindowEnd?: string;
+  lastNudgedAt?: string;
+  cooldownMinutes?: number;
+  lastIgnoredAt?: string;
+  ignoreCooldownMinutes?: number;
   quietHoursStart?: string;
   quietHoursEnd?: string;
 }): Promise<NotificationDecision | null> {
@@ -539,10 +577,34 @@ export async function shouldNudgeFromBackend(input: {
       localDate: input.localDate,
       localTime: input.localTime,
       nudgeType: input.nudgeType ?? 'meal',
+      mealTypeId: input.mealTypeId,
+      predictedMealWindowStart: input.predictedMealWindowStart,
+      predictedMealWindowEnd: input.predictedMealWindowEnd,
+      lastNudgedAt: input.lastNudgedAt,
+      cooldownMinutes: input.cooldownMinutes,
+      lastIgnoredAt: input.lastIgnoredAt,
+      ignoreCooldownMinutes: input.ignoreCooldownMinutes,
       quietHoursStart: input.quietHoursStart,
       quietHoursEnd: input.quietHoursEnd,
     });
-    return response.data as NotificationDecision;
+    const decision = response.data as NotificationDecision;
+    if (!decision.shouldNudge) {
+      trackEvent('notification_suppressed', {
+        category: 'retention',
+        flow: 'notification',
+        step: input.nudgeType ?? 'meal',
+        status: decision.reasonToSuppress ?? decision.reason,
+        metadata: {
+          reason: decision.reason,
+          reasonToSuppress: decision.reasonToSuppress,
+          quietHours: decision.quietHours,
+          cooldownPassed: decision.cooldownPassed,
+          currentDayState: decision.currentDayState,
+          mealTypeId: input.mealTypeId,
+        },
+      });
+    }
+    return decision;
   } catch (error) {
     logger.warn('[NotificationService] Backend nudge decision unavailable', error);
     return null;

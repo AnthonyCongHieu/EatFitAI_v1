@@ -178,6 +178,20 @@ namespace EatFitAI.API.Services
                 .Where(m => m.UserId == userId && m.EatenDate >= startDate && m.EatenDate <= today)
                 .ToListAsync(cancellationToken);
 
+            var markerDates = await _db.MealDayMarkers
+                .AsNoTracking()
+                .Where(marker =>
+                    marker.UserId == userId &&
+                    marker.LocalDate >= startDate &&
+                    marker.LocalDate <= today &&
+                    !marker.IsDeleted &&
+                    (marker.MarkerType == MealDayMarkerType.SkippedMeal ||
+                        marker.MarkerType == MealDayMarkerType.SkippedDay))
+                .Select(marker => marker.LocalDate)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+            var markerDateSet = markerDates.ToHashSet();
+
             // Calculate averages from complete local days only. Partial-heavy logs should never move targets.
             var dailyStats = mealHistory
                 .GroupBy(m => m.EatenDate)
@@ -188,8 +202,12 @@ namespace EatFitAI.API.Services
                     TotalProtein = g.Sum(m => m.Protein),
                     TotalCarbs = g.Sum(m => m.Carb),
                     TotalFat = g.Sum(m => m.Fat),
+                    HasRoughLog = g.Any(m => m.IsRoughLog || m.InputMethod == "rough" || m.SourceMethod == "rough"),
+                    HasLowConfidence = g.Any(m => m.ConfidenceScore.HasValue && m.ConfidenceScore.Value < 0.60m),
+                    HasMarker = markerDateSet.Contains(g.Key),
                     Meals = g.Select(m => new { m.MealTypeId, m.Calories }).ToList()
                 })
+                .Where(day => !day.HasRoughLog && !day.HasLowConfidence && !day.HasMarker)
                 .Where(day => DayCompletenessService.IsCompleteDay(
                     day.Meals.Select(meal => (meal.MealTypeId, meal.Calories))))
                 .ToList();
@@ -238,11 +256,10 @@ namespace EatFitAI.API.Services
                 Applied = false
             };
 
-            // Auto-apply if requested and confidence is high
-            if (request.AutoApply && confidence >= 75)
+            if (request.AutoApply)
             {
-                await ApplyAdaptiveTargetAsync(userId, adaptiveTarget.SuggestedTarget, cancellationToken);
-                adaptiveTarget.Applied = true;
+                adaptiveTarget.AdjustmentReasons.Add(
+                    "App chỉ tạo đề xuất mục tiêu; thay đổi chỉ được áp dụng khi bạn xác nhận.");
             }
 
             return adaptiveTarget;

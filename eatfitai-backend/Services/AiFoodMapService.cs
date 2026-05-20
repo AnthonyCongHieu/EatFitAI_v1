@@ -206,6 +206,11 @@ namespace EatFitAI.API.Services
                 }
             }
 
+            foreach (var item in result)
+            {
+                ApplyConfidenceMetadata(item);
+            }
+
             return result;
         }
 
@@ -266,6 +271,64 @@ namespace EatFitAI.API.Services
                 NutrientCompletenessScore = food.NutrientCompletenessScore,
                 TrustSummary = BuildTrustSummary(food, labelEntry, detection.Confidence, minConfidence)
             };
+        }
+
+        private static void ApplyConfidenceMetadata(MappedFoodDto item)
+        {
+            var missingRequiredNutrition = item.MissingNutrients.Any(nutrient =>
+                RequiredMacroNutrients.Contains(nutrient, System.StringComparer.OrdinalIgnoreCase));
+            var missingNutritionValues = !item.CaloriesPer100g.HasValue ||
+                !item.ProteinPer100g.HasValue ||
+                !item.CarbPer100g.HasValue ||
+                !item.FatPer100g.HasValue;
+            var needsReview = item.TrustSummary?.NeedsReview == true;
+
+            item.ConfidenceLevel = !item.IsMatched || missingRequiredNutrition || missingNutritionValues
+                ? "low"
+                : item.Confidence switch
+                {
+                    >= 0.85f => "high",
+                    >= 0.70f => "medium",
+                    _ => "low"
+                };
+
+            item.RequiresUserConfirmation = !item.IsMatched ||
+                item.ConfidenceLevel != "high" ||
+                needsReview ||
+                missingRequiredNutrition ||
+                missingNutritionValues;
+
+            item.WarningMessage = item.RequiresUserConfirmation
+                ? BuildWarningMessage(item, missingRequiredNutrition || missingNutritionValues, needsReview)
+                : null;
+        }
+
+        private static string BuildWarningMessage(
+            MappedFoodDto item,
+            bool missingRequiredNutrition,
+            bool needsReview)
+        {
+            if (!item.IsMatched)
+            {
+                return "Cần xác nhận món trước khi lưu.";
+            }
+
+            if (missingRequiredNutrition)
+            {
+                return "Thiếu dữ liệu dinh dưỡng bắt buộc, cần bổ sung trước khi lưu.";
+            }
+
+            if (item.ConfidenceLevel != "high")
+            {
+                return "Cần kiểm tra lại món và khẩu phần trước khi lưu.";
+            }
+
+            if (needsReview)
+            {
+                return "Nguồn dữ liệu cần kiểm tra trước khi lưu.";
+            }
+
+            return "Cần xác nhận món trước khi lưu.";
         }
 
         private static FoodCatalogMatch ToFoodCatalogMatch(vw_AiFoodMap row) =>

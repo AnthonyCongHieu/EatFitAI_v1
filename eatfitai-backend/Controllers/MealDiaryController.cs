@@ -80,6 +80,10 @@ namespace EatFitAI.API.Controllers
                 var mealDiary = await _mealDiaryService.GetMealDiaryByIdAsync(id, userId);
                 return Ok(mealDiary);
             }
+            catch (ArgumentException)
+            {
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu yêu cầu không hợp lệ", HttpContext));
+            }
             catch (KeyNotFoundException)
             {
                 return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy nhật ký bữa ăn", HttpContext));
@@ -102,6 +106,10 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 var mealDiary = await _mealDiaryService.CreateMealDiaryAsync(userId, request);
                 return CreatedAtAction(nameof(GetMealDiary), new { id = mealDiary.MealDiaryId }, mealDiary);
+            }
+            catch (ArgumentException)
+            {
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu yêu cầu không hợp lệ", HttpContext));
             }
             catch (UnauthorizedAccessException)
             {
@@ -149,6 +157,34 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        [HttpPost("day-markers")]
+        public async Task<ActionResult<MealDayMarkerDto>> UpsertMealDayMarker([FromBody] UpsertMealDayMarkerRequest? request)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return BadRequest(new { message = "Request body is required" });
+                }
+
+                var userId = GetUserIdFromToken();
+                var marker = await _mealDiaryService.UpsertMealDayMarkerAsync(userId, request);
+                return Ok(marker);
+            }
+            catch (ArgumentException)
+            {
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu yêu cầu không hợp lệ", HttpContext));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi đánh dấu bữa ăn", HttpContext));
+            }
+        }
+
         [HttpPost("copy-previous-day")]
         public async Task<ActionResult<IEnumerable<MealDiaryDto>>> CopyPreviousDay([FromBody] CopyPreviousDayRequest? request)
         {
@@ -193,6 +229,10 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 var mealDiary = await _mealDiaryService.UpdateMealDiaryAsync(id, userId, request);
                 return Ok(mealDiary);
+            }
+            catch (ArgumentException)
+            {
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu yêu cầu không hợp lệ", HttpContext));
             }
             catch (KeyNotFoundException)
             {

@@ -41,6 +41,18 @@ public partial class MealDiary
 
     public string? SourceMethod { get; set; }
 
+    public string? InputMethod { get; set; }
+
+    public bool IsRoughLog { get; set; }
+
+    public bool UserConfirmed { get; set; } = true;
+
+    public decimal? ConfidenceScore { get; set; }
+
+    public string? TrustSource { get; set; }
+
+    public string? DiaryMissingNutrients { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }

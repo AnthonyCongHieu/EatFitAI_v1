@@ -115,7 +115,6 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
   const EN = useEN();
-  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = {
     ...P_STATIC,
     primary: EN.primary,

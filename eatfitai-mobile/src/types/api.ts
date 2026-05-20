@@ -143,6 +143,13 @@ export interface ApiDiaryEntry {
   carbs: number;
   fat: number;
   note?: string;
+  sourceMethod?: string | null;
+  inputMethod?: string | null;
+  isRoughLog?: boolean | null;
+  userConfirmed?: boolean | null;
+  confidenceScore?: number | null;
+  trustSource?: string | null;
+  diaryMissingNutrients?: string[] | null;
   createdAt: string;
 }
 

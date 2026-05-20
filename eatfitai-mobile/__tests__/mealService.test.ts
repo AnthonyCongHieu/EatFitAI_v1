@@ -42,6 +42,40 @@ describe('mealService', () => {
     });
   });
 
+  it('posts diary trust metadata for AI vision meal items', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue({ data: {} });
+
+    await mealService.addMealItems('2026-04-17', 2, [
+      {
+        source: 'catalog',
+        foodItemId: 42,
+        grams: 120,
+        sourceMethod: 'photo',
+        inputMethod: 'photo',
+        confidenceScore: 0.72,
+        trustSource: 'ai_estimate',
+        userConfirmed: true,
+        isRoughLog: false,
+        diaryMissingNutrients: ['sodium'],
+      },
+    ]);
+
+    expect(apiClient.post).toHaveBeenCalledWith('/api/meal-diary', {
+      eatenDate: '2026-04-17',
+      mealTypeId: 2,
+      foodItemId: 42,
+      grams: 120,
+      note: null,
+      sourceMethod: 'photo',
+      inputMethod: 'photo',
+      confidenceScore: 0.72,
+      trustSource: 'ai_estimate',
+      userConfirmed: true,
+      isRoughLog: false,
+      diaryMissingNutrients: ['sodium'],
+    });
+  });
+
   it('posts user meal items with userFoodItemId', async () => {
     (apiClient.post as jest.Mock).mockResolvedValue({ data: {} });
 

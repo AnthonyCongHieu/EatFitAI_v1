@@ -58,6 +58,8 @@ public sealed class NotificationDecisionServiceTests : IDisposable
 
         Assert.False(result.ShouldNudge);
         Assert.Equal(NotificationSuppressReason.QuietHours, result.Reason);
+        Assert.Equal(NotificationSuppressReason.QuietHours, result.ReasonToSuppress);
+        Assert.Equal("21:30-07:00", result.QuietHours);
         Assert.NotNull(result.SuppressUntil);
     }
 
@@ -77,6 +79,8 @@ public sealed class NotificationDecisionServiceTests : IDisposable
 
         Assert.False(result.ShouldNudge);
         Assert.Equal(NotificationSuppressReason.AlreadyComplete, result.Reason);
+        Assert.Equal(NotificationSuppressReason.AlreadyComplete, result.ReasonToSuppress);
+        Assert.Equal("complete", result.CurrentDayState);
     }
 
     [Fact]
@@ -89,13 +93,40 @@ public sealed class NotificationDecisionServiceTests : IDisposable
         {
             LocalDate = new DateOnly(2026, 5, 8),
             LocalTime = new TimeOnly(18, 0),
-            NudgeType = "meal"
+            NudgeType = "meal",
+            MealTypeId = 3,
+            PredictedMealWindowStart = new TimeOnly(17, 30),
+            PredictedMealWindowEnd = new TimeOnly(20, 0)
         });
 
         Assert.True(result.ShouldNudge);
         Assert.Equal(NotificationSuppressReason.IncompleteDay, result.Reason);
-        Assert.Equal("/diary/add", result.DeepLink);
+        Assert.Equal(NotificationSuppressReason.IncompleteDay, result.ReasonToSend);
+        Assert.Null(result.ReasonToSuppress);
+        Assert.True(result.CooldownPassed);
+        Assert.Equal("partial", result.CurrentDayState);
+        Assert.Equal("17:30-20:00", result.PredictedMealWindow);
+        Assert.Equal("21:30-07:00", result.QuietHours);
+        Assert.Equal("/diary/add?date=2026-05-08&mealTypeId=3", result.DeepLink);
         Assert.Contains("bữa", result.SuggestedMessage);
+    }
+
+    [Fact]
+    public async Task ShouldNudgeAsync_RecentlyIgnored_SuppressesWithReason()
+    {
+        var result = await _service.ShouldNudgeAsync(_userId, new NotificationDecisionRequestDto
+        {
+            LocalDate = new DateOnly(2026, 5, 8),
+            LocalTime = new TimeOnly(12, 30),
+            NudgeType = "meal",
+            LastIgnoredAt = DateTimeOffset.UtcNow.AddMinutes(-20),
+            IgnoreCooldownMinutes = 60
+        });
+
+        Assert.False(result.ShouldNudge);
+        Assert.Equal(NotificationSuppressReason.RecentlyIgnored, result.Reason);
+        Assert.Equal(NotificationSuppressReason.RecentlyIgnored, result.ReasonToSuppress);
+        Assert.False(result.CooldownPassed);
     }
 
     private void AddMeal(DateOnly date, int mealTypeId, decimal calories)

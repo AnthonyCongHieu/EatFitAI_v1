@@ -41,6 +41,9 @@ namespace EatFitAI.API.DTOs.AI
         public List<string> MissingNutrients { get; set; } = new();
         public decimal? NutrientCompletenessScore { get; set; }
         public FoodTrustSummaryDto? TrustSummary { get; set; }
+        public string ConfidenceLevel { get; set; } = "low";
+        public bool RequiresUserConfirmation { get; set; } = true;
+        public string? WarningMessage { get; set; }
 
         public bool IsMatched => FoodItemId.HasValue;
     }

@@ -338,6 +338,13 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               source: 'user' as const,
               userFoodItemId,
               grams: detection.grams,
+              sourceMethod: 'photo',
+              inputMethod: 'photo',
+              confidenceScore: detection.item.confidence ?? null,
+              trustSource: 'user_custom',
+              userConfirmed: true,
+              isRoughLog: false,
+              diaryMissingNutrients: detection.item.missingNutrients ?? [],
             };
           }
 
@@ -345,6 +352,13 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             source: 'catalog' as const,
             foodItemId: Number(detection.item.foodItemId),
             grams: detection.grams,
+            sourceMethod: 'photo',
+            inputMethod: 'photo',
+            confidenceScore: detection.item.confidence ?? null,
+            trustSource: 'ai_estimate',
+            userConfirmed: true,
+            isRoughLog: false,
+            diaryMissingNutrients: detection.item.missingNutrients ?? [],
           };
         }),
         { mealTypeId: selectedMealType },

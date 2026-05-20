@@ -562,6 +562,13 @@ export interface components {
       note?: string | null;
       photoUrl?: string | null;
       sourceMethod?: string | null;
+      inputMethod?: string | null;
+      isRoughLog?: boolean;
+      userConfirmed?: boolean;
+      /** Format: double */
+      confidenceScore?: number | null;
+      trustSource?: string | null;
+      diaryMissingNutrients?: string[] | null;
     };
     FoodItemDto: {
       /** Format: int32 */
@@ -646,6 +653,13 @@ export interface components {
       note?: string | null;
       photoUrl?: string | null;
       sourceMethod?: string | null;
+      inputMethod?: string | null;
+      isRoughLog?: boolean;
+      userConfirmed?: boolean;
+      /** Format: double */
+      confidenceScore?: number | null;
+      trustSource?: string | null;
+      diaryMissingNutrients?: string[] | null;
       trustSummary?: components['schemas']['FoodTrustSummaryDto'];
       /** Format: date-time */
       createdAt?: string;
@@ -726,6 +740,13 @@ export interface components {
       note?: string | null;
       photoUrl?: string | null;
       sourceMethod?: string | null;
+      inputMethod?: string | null;
+      isRoughLog?: boolean | null;
+      userConfirmed?: boolean | null;
+      /** Format: double */
+      confidenceScore?: number | null;
+      trustSource?: string | null;
+      diaryMissingNutrients?: string[] | null;
     };
     UserDto: {
       /** Format: uuid */

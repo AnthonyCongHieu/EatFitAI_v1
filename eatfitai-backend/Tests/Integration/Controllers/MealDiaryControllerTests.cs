@@ -2,9 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.MealDiary;
+using EatFitAI.API.Services;
 using EatFitAI.API.Tests.Integration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -79,6 +81,36 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             var response = await client.PostAsJsonAsync("/api/meal-diary", createRequest);
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateMealDiary_InvalidTrustMetadata_ReturnsBadRequestAndDoesNotSave()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var eatenDate = new DateTime(2026, 4, 3);
+            var createRequest = new CreateMealDiaryRequest
+            {
+                EatenDate = eatenDate,
+                MealTypeId = await GetAnyMealTypeIdAsync(),
+                FoodItemId = await GetAnyFoodItemIdAsync(),
+                Grams = 200,
+                ConfidenceScore = 1.5m,
+                InputMethod = "photo",
+                TrustSource = "ai_estimate"
+            };
+
+            var response = await client.PostAsJsonAsync("/api/meal-diary", createRequest);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var savedCount = await context.MealDiaries.CountAsync(item =>
+                item.UserId == userId &&
+                item.EatenDate == DateOnly.FromDateTime(eatenDate));
+
+            Assert.Equal(0, savedCount);
         }
 
         [Fact]
@@ -187,6 +219,32 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 item.EatenDate == DateOnly.FromDateTime(eatenDate));
 
             Assert.Equal(0, savedCount);
+        }
+
+        [Fact]
+        public async Task UpsertMealDayMarker_SkippedMeal_UpdatesDayStateWithoutFakeCalories()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var localDate = new DateTime(2026, 4, 4);
+
+            var markerResponse = await client.PostAsJsonAsync("/api/meal-diary/day-markers", new
+            {
+                localDate,
+                mealTypeId = 1,
+                markerType = "skipped_meal",
+                reason = "busy"
+            });
+
+            markerResponse.EnsureSuccessStatusCode();
+
+            var dayStateResponse = await client.GetAsync($"/api/meal-diary/day-state?date={localDate:yyyy-MM-dd}");
+            dayStateResponse.EnsureSuccessStatusCode();
+            var dayState = await dayStateResponse.Content.ReadFromJsonAsync<DayCompletenessDto>();
+
+            Assert.NotNull(dayState);
+            Assert.Equal(DayCompletenessStatus.Skipped, dayState!.Status);
+            Assert.Equal(0, dayState.TotalCalories);
         }
 
         [Fact]

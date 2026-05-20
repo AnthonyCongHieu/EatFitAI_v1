@@ -5,6 +5,7 @@ jest.mock('../src/services/apiClient', () => ({
   __esModule: true,
   default: {
     get: jest.fn(),
+    post: jest.fn(),
   },
 }));
 
@@ -50,6 +51,14 @@ describe('summaryService', () => {
         message: 'Tuần này bạn đang đi đúng hướng.',
         confidence: '88',
         dataQuality: '91',
+        weekStartDate: '2026-05-18',
+        primaryAction: {
+          actionKey: 'log_four_days',
+          label: 'Log 4 ngày trong tuần',
+          status: 'accepted',
+          deepLink: '/diary',
+          replacementText: null,
+        },
         suggestedActions: {
           type: 'adjust_calories',
           newTargetCalories: '2100',
@@ -78,6 +87,14 @@ describe('summaryService', () => {
       message: 'Tuần này bạn đang đi đúng hướng.',
       confidence: 88,
       dataQuality: 91,
+      weekStartDate: '2026-05-18',
+      primaryAction: {
+        actionKey: 'log_four_days',
+        label: 'Log 4 ngày trong tuần',
+        status: 'accepted',
+        deepLink: '/diary',
+        replacementText: null,
+      },
       suggestedActions: {
         type: 'adjust_calories',
         newTargetCalories: 2100,
@@ -96,5 +113,32 @@ describe('summaryService', () => {
         recommendations: ['Giữ mức protein ổn định'],
       },
     });
+  });
+
+  it('records weekly review action outcomes', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue({
+      data: {
+        action: 'accept',
+        status: 'accepted',
+        actionKey: 'log_four_days',
+        weekStartDate: '2026-05-18',
+        recordedAt: '2026-05-20T10:00:00Z',
+      },
+    });
+
+    const result = await summaryService.recordWeeklyReviewAction({
+      action: 'accept',
+      actionKey: 'log_four_days',
+      label: 'Log 4 ngày trong tuần',
+      weekStartDate: '2026-05-18',
+    });
+
+    expect(apiClient.post).toHaveBeenCalledWith('/api/AIReview/actions', {
+      action: 'accept',
+      actionKey: 'log_four_days',
+      label: 'Log 4 ngày trong tuần',
+      weekStartDate: '2026-05-18',
+    });
+    expect(result.status).toBe('accepted');
   });
 });

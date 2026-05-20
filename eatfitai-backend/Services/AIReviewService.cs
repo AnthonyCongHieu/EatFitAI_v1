@@ -114,11 +114,12 @@ public class AIReviewService
     {
         var userData = await AggregateUserData(userId);
         var dataQuality = CalculateDataQuality(userData);
+        WeeklyReviewDto review;
         
         // Not enough data
         if (dataQuality < 50)
         {
-            return new WeeklyReviewDto
+            review = new WeeklyReviewDto
             {
                 Status = "NEED_MORE_DATA",
                 Message = $"Chỉ log {userData.DaysLogged}/7 ngày. Hãy log đầy đủ hơn!",
@@ -135,31 +136,83 @@ public class AIReviewService
                 }
             };
         }
-        
-        // Analyze based on goal
-        return userData.Goal.ToLower() switch
+        else
         {
-            "lose" => AnalyzeWeightLoss(userData, dataQuality),
-            "gain" => AnalyzeWeightGain(userData, dataQuality),
-            "maintain" => AnalyzeMaintain(userData, dataQuality),
-            _ => AnalyzeMaintain(userData, dataQuality)
-        };
+            // Analyze based on goal
+            review = userData.Goal.ToLower() switch
+            {
+                "lose" => AnalyzeWeightLoss(userData, dataQuality),
+                "gain" => AnalyzeWeightGain(userData, dataQuality),
+                "maintain" => AnalyzeMaintain(userData, dataQuality),
+                _ => AnalyzeMaintain(userData, dataQuality)
+            };
+        }
+
+        return await AttachPrimaryActionAsync(userId, userData, review);
     }
 
-    public async Task<ReviewActionResponseDto> RecordReviewAction(Guid userId, string action)
+    public async Task<ReviewActionResponseDto> RecordReviewAction(Guid userId, ReviewActionRequestDto request)
     {
-        var normalizedAction = (action ?? string.Empty).Trim().ToLowerInvariant();
-        var allowed = new HashSet<string> { "accept", "done", "snooze", "useful" };
-        if (!allowed.Contains(normalizedAction))
+        if (request == null)
         {
-            throw new ArgumentException("Unsupported review action", nameof(action));
+            throw new ArgumentException("Review action request is required", nameof(request));
+        }
+
+        var normalizedAction = (request.Action ?? string.Empty).Trim().ToLowerInvariant();
+        var status = normalizedAction switch
+        {
+            "accept" => "accepted",
+            "done" => "done",
+            "snooze" => "snoozed",
+            "replace" => "replaced",
+            "useful" => "useful",
+            _ => string.Empty
+        };
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            throw new ArgumentException("Unsupported review action", nameof(request));
         }
 
         var user = await _db.Users.FindAsync(userId)
             ?? throw new Exception("Không tìm thấy người dùng");
 
         var now = DateTime.UtcNow;
-        if (normalizedAction is "accept" or "done" or "useful")
+        var weekStartDate = request.WeekStartDate.HasValue
+            ? DateOnly.FromDateTime(request.WeekStartDate.Value.Date)
+            : GetWeekStartDate(await _businessDateService.GetTodayAsync(userId));
+        var actionKey = string.IsNullOrWhiteSpace(request.ActionKey)
+            ? "weekly_one_action"
+            : request.ActionKey.Trim();
+        var label = string.IsNullOrWhiteSpace(request.Label)
+            ? "Hành động nhỏ tuần này"
+            : request.Label.Trim();
+
+        var savedAction = await _db.WeeklyReviewActions
+            .FirstOrDefaultAsync(item =>
+                item.UserId == userId &&
+                item.WeekStartDate == weekStartDate &&
+                item.ActionKey == actionKey);
+
+        if (savedAction == null)
+        {
+            savedAction = new WeeklyReviewAction
+            {
+                UserId = userId,
+                WeekStartDate = weekStartDate,
+                ActionKey = actionKey,
+                CreatedAt = now
+            };
+            await _db.WeeklyReviewActions.AddAsync(savedAction);
+        }
+
+        savedAction.Label = label;
+        savedAction.Status = status;
+        savedAction.ReplacementText = status == "replaced" && !string.IsNullOrWhiteSpace(request.ReplacementText)
+            ? request.ReplacementText.Trim()
+            : savedAction.ReplacementText;
+        savedAction.UpdatedAt = now;
+
+        if (status is "accepted" or "done" or "useful")
         {
             user.LastReviewDate = now;
         }
@@ -169,8 +222,97 @@ public class AIReviewService
         return new ReviewActionResponseDto
         {
             Action = normalizedAction,
+            Status = status,
+            ActionKey = actionKey,
+            WeekStartDate = weekStartDate.ToDateTime(TimeOnly.MinValue),
+            ReplacementText = savedAction.ReplacementText,
             RecordedAt = now
         };
+    }
+
+    private async Task<WeeklyReviewDto> AttachPrimaryActionAsync(
+        Guid userId,
+        UserWeekDataDto userData,
+        WeeklyReviewDto review)
+    {
+        var today = await _businessDateService.GetTodayAsync(userId);
+        var weekStartDate = GetWeekStartDate(today);
+        var primaryAction = BuildPrimaryAction(userData, review);
+
+        var savedAction = await _db.WeeklyReviewActions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item =>
+                item.UserId == userId &&
+                item.WeekStartDate == weekStartDate &&
+                item.ActionKey == primaryAction.ActionKey);
+
+        if (savedAction != null)
+        {
+            primaryAction.Status = savedAction.Status;
+            primaryAction.ReplacementText = savedAction.ReplacementText;
+        }
+
+        review.WeekStartDate = weekStartDate.ToDateTime(TimeOnly.MinValue);
+        review.PrimaryAction = primaryAction;
+        review.Insights.Recommendations = review.Insights.Recommendations
+            .Take(1)
+            .ToList();
+
+        return review;
+    }
+
+    private static WeeklyReviewPrimaryActionDto BuildPrimaryAction(
+        UserWeekDataDto userData,
+        WeeklyReviewDto review)
+    {
+        if (review.Status == "NEED_MORE_DATA" || userData.DaysLogged < 4)
+        {
+            return new WeeklyReviewPrimaryActionDto
+            {
+                ActionKey = "log_four_days",
+                Label = "Log ít nhất 4 ngày trong tuần",
+                DeepLink = "/diary",
+                Status = "suggested"
+            };
+        }
+
+        if (review.SuggestedActions?.NewTargetCalories.HasValue == true)
+        {
+            return new WeeklyReviewPrimaryActionDto
+            {
+                ActionKey = "review_target_suggestion",
+                Label = "Xem đề xuất chỉnh mục tiêu",
+                DeepLink = "/ai/nutrition-insights",
+                Status = "suggested"
+            };
+        }
+
+        var recommendation = review.Insights.Recommendations.FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(recommendation))
+        {
+            return new WeeklyReviewPrimaryActionDto
+            {
+                ActionKey = "weekly_recommendation",
+                Label = recommendation,
+                DeepLink = "/diary",
+                Status = "suggested"
+            };
+        }
+
+        return new WeeklyReviewPrimaryActionDto
+        {
+            ActionKey = "keep_steady_week",
+            Label = "Giữ nhịp log và ăn trong range tuần này",
+            DeepLink = "/diary",
+            Status = "suggested"
+        };
+    }
+
+    private static DateOnly GetWeekStartDate(DateOnly date)
+    {
+        var dayOfWeek = (int)date.DayOfWeek;
+        var diff = dayOfWeek == 0 ? -6 : 1 - dayOfWeek;
+        return date.AddDays(diff);
     }
 
     #region Analysis Methods

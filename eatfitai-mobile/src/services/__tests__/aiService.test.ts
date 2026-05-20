@@ -41,6 +41,22 @@ describe('normalizeMappedFoodItem', () => {
     expect(item.defaultPortionQuantity).toBeNull();
     expect(item.servingUnit).toBeNull();
   });
+
+  it('normalizes confidence review metadata from backend payloads', () => {
+    const item = normalizeMappedFoodItem({
+      Label: 'rice',
+      Confidence: '0.72',
+      FoodItemId: '42',
+      FoodName: 'Rice',
+      ConfidenceLevel: 'medium',
+      RequiresUserConfirmation: true,
+      WarningMessage: 'Check before save',
+    });
+
+    expect(item.confidenceLevel).toBe('medium');
+    expect(item.requiresUserConfirmation).toBe(true);
+    expect(item.warningMessage).toBe('Check before save');
+  });
 });
 
 describe('normalizeRecipeSuggestionForTest', () => {

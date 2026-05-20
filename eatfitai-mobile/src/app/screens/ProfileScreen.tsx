@@ -11,7 +11,6 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Switch,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -41,7 +40,6 @@ import type { AppTabsParamList } from '../navigation/AppTabs';
 import { t } from '../../i18n/vi';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
-import { useAppTheme } from '../../theme/ThemeProvider';
 import {
   getProfileCompletionDestination,
   hasProfileCompletionGaps,
@@ -153,7 +151,6 @@ const ProfileScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const P = useEN();
-  const { mode, toggleTheme } = useAppTheme();
   const { startTutorial } = useMoChiTutorial();
 
   const logout = useAuthStore((s) => s.logout);
@@ -164,17 +161,6 @@ const ProfileScreen = (): React.ReactElement => {
   }));
 
   const [refreshing, setRefreshing] = useState(false);
-  const [isDarkLocal, setIsDarkLocal] = useState(mode === 'dark');
-
-  useEffect(() => {
-    setIsDarkLocal(mode === 'dark');
-  }, [mode]);
-
-  const handleToggleTheme = useCallback((newVal: boolean) => {
-    setIsDarkLocal(newVal);
-    // Defer global theme update to prevent JS thread from blocking the native switch animation
-    setTimeout(() => { toggleTheme(); }, 350);
-  }, [toggleTheme]);
 
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);

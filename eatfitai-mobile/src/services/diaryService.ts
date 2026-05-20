@@ -28,6 +28,12 @@ export type DiaryEntry = {
   updatedAt?: string | null;
   isDeleted?: boolean | null;
   sourceMethod?: string | null;
+  inputMethod?: string | null;
+  isRoughLog?: boolean | null;
+  userConfirmed?: boolean | null;
+  confidenceScore?: number | null;
+  trustSource?: string | null;
+  diaryMissingNutrients?: string[] | null;
   photoUrl?: string | null;
   foodItemId?: number | null;
   userDishId?: number | null;
@@ -65,6 +71,14 @@ export type WeekSummary = {
   dailyCalories: Record<string, number>;
 };
 
+export type MealDayMarker = {
+  mealDayMarkerId?: number;
+  localDate: string;
+  mealTypeId?: MealTypeId | null;
+  markerType: 'skipped_meal' | 'skipped_day' | string;
+  reason?: string | null;
+};
+
 const toNumberOrNull = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) {
     return value;
@@ -77,6 +91,20 @@ const toNumberOrNull = (value: unknown): number | null => {
 
   return null;
 };
+
+const toBooleanOrNull = (value: unknown): boolean | null => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return null;
+};
+
+const toStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
 
 const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   id: String(data?.mealDiaryId ?? ''),
@@ -96,6 +124,12 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   updatedAt: data?.updatedAt ?? null,
   isDeleted: data?.isDeleted ?? null,
   sourceMethod: data?.sourceMethod ?? null,
+  inputMethod: data?.inputMethod ?? null,
+  isRoughLog: toBooleanOrNull(data?.isRoughLog),
+  userConfirmed: toBooleanOrNull(data?.userConfirmed),
+  confidenceScore: toNumberOrNull(data?.confidenceScore),
+  trustSource: data?.trustSource ?? null,
+  diaryMissingNutrients: toStringArray(data?.diaryMissingNutrients),
   photoUrl: data?.photoUrl || data?.PhotoUrl || data?.foodItemThumbNail || null,
   foodItemId: data?.foodItemId ?? null,
   userDishId: data?.userDishId ?? null,
@@ -238,6 +272,30 @@ export const diaryService = {
 
   async deleteEntry(entryId: string): Promise<void> {
     await apiClient.delete(`/api/meal-diary/${entryId}`);
+  },
+
+  async markMealSkipped(
+    date: string,
+    mealTypeId: MealTypeId,
+    reason?: string,
+  ): Promise<MealDayMarker> {
+    const response = await apiClient.post('/api/meal-diary/day-markers', {
+      localDate: date,
+      mealTypeId,
+      markerType: 'skipped_meal',
+      reason: reason ?? null,
+    });
+    return response.data as MealDayMarker;
+  },
+
+  async markDaySkipped(date: string, reason?: string): Promise<MealDayMarker> {
+    const response = await apiClient.post('/api/meal-diary/day-markers', {
+      localDate: date,
+      mealTypeId: null,
+      markerType: 'skipped_day',
+      reason: reason ?? null,
+    });
+    return response.data as MealDayMarker;
   },
 
   async updateEntry(

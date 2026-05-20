@@ -108,6 +108,50 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(550, item.DefaultGrams);
             Assert.False(item.TrustSummary?.NeedsReview);
             Assert.Equal("trusted", item.TrustSummary?.Status);
+            Assert.Equal("high", item.ConfidenceLevel);
+            Assert.False(item.RequiresUserConfirmation);
+            Assert.Null(item.WarningMessage);
+        }
+
+        [Fact]
+        public async Task MapDetectionsAsync_MediumConfidenceRequiresUserConfirmation()
+        {
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 911,
+                FoodName = "Rice",
+                FoodNameUnsigned = "rice",
+                CaloriesPer100g = 130,
+                ProteinPer100g = 2.7m,
+                CarbPer100g = 28,
+                FatPer100g = 0.3m,
+                IsActive = true,
+                IsDeleted = false,
+                CredibilityScore = 95,
+                NutrientCompletenessScore = 100,
+                VerificationStatus = "trusted_reference"
+            });
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "rice",
+                FoodItemId = 911,
+                MinConfidence = 0.60m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "rice", Confidence = 0.72f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.True(item.IsMatched);
+            Assert.Equal("medium", item.ConfidenceLevel);
+            Assert.True(item.RequiresUserConfirmation);
+            Assert.NotNull(item.WarningMessage);
         }
 
         [Fact]
@@ -166,6 +210,9 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Null(item.FoodItemId);
             Assert.Equal("Cơm tấm", item.DetectedLabelVi);
             Assert.True(item.TrustSummary?.NeedsReview);
+            Assert.Equal("low", item.ConfidenceLevel);
+            Assert.True(item.RequiresUserConfirmation);
+            Assert.NotNull(item.WarningMessage);
             Assert.Contains("calories", item.MissingNutrients);
         }
 

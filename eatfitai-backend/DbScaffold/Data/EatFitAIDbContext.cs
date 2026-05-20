@@ -30,6 +30,8 @@ public partial class EatFitAIDbContext : DbContext
 
     public virtual DbSet<MealDiary> MealDiaries { get; set; }
 
+    public virtual DbSet<MealDayMarker> MealDayMarkers { get; set; }
+
     public virtual DbSet<MealType> MealTypes { get; set; }
 
     public virtual DbSet<NutritionTarget> NutritionTargets { get; set; }
@@ -236,6 +238,11 @@ public partial class EatFitAIDbContext : DbContext
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.Fat).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Grams).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.ConfidenceScore).HasColumnType("decimal(5, 4)");
+            entity.Property(e => e.DiaryMissingNutrients).HasMaxLength(200);
+            entity.Property(e => e.InputMethod).HasMaxLength(30);
+            entity.Property(e => e.TrustSource).HasMaxLength(50);
+            entity.Property(e => e.UserConfirmed).HasDefaultValue(true);
             entity.Property(e => e.Note).HasMaxLength(500);
             entity.Property(e => e.PhotoUrl).HasMaxLength(500);
             entity.Property(e => e.PortionQuantity).HasColumnType("decimal(10, 2)");
@@ -270,6 +277,37 @@ public partial class EatFitAIDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_MealDiary_User");
+        });
+
+        modelBuilder.Entity<MealDayMarker>(entity =>
+        {
+            entity.ToTable("MealDayMarker");
+
+            entity.HasIndex(e => new { e.UserId, e.LocalDate }, "IX_MealDayMarker_UserDate")
+                .HasFilter("\"IsDeleted\" = false");
+
+            entity.HasIndex(e => new { e.UserId, e.LocalDate, e.MealTypeId, e.MarkerType }, "IX_MealDayMarker_UserDateMealType")
+                .HasFilter("\"IsDeleted\" = false");
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.MarkerType).HasMaxLength(40);
+            entity.Property(e => e.Reason).HasMaxLength(200);
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+            entity.HasOne(d => d.MealType)
+                .WithMany()
+                .HasForeignKey(d => d.MealTypeId)
+                .HasConstraintName("FK_MealDayMarker_MealType");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MealDayMarker_User");
         });
 
         modelBuilder.Entity<MealType>(entity =>

@@ -5,6 +5,9 @@ public static class DayCompletenessStatus
     public const string Empty = "empty";
     public const string Partial = "partial";
     public const string Complete = "complete";
+    public const string Rough = "rough";
+    public const string Skipped = "skipped";
+    public const string LowConfidence = "low_confidence";
 }
 
 public static class FoodTrustStatus
@@ -21,4 +24,10 @@ public static class LapseTier
     public const string Slipping = "slipping";
     public const string Recovery = "recovery";
     public const string Restart = "restart";
+}
+
+public static class MealDayMarkerType
+{
+    public const string SkippedMeal = "skipped_meal";
+    public const string SkippedDay = "skipped_day";
 }

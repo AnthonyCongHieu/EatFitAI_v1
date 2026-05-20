@@ -9,6 +9,20 @@ const todayDate = (): string => {
   return formatLocalDate(new Date());
 };
 
+const appendDiaryTrustFields = (payload: Record<string, unknown>, item: MealItemInput) => {
+  if (item.sourceMethod != null) payload.sourceMethod = item.sourceMethod;
+  if (item.inputMethod != null) payload.inputMethod = item.inputMethod;
+  if (item.isRoughLog != null) payload.isRoughLog = item.isRoughLog;
+  if (item.userConfirmed != null) payload.userConfirmed = item.userConfirmed;
+  if (item.confidenceScore != null) payload.confidenceScore = item.confidenceScore;
+  if (item.trustSource != null) payload.trustSource = item.trustSource;
+  if (item.diaryMissingNutrients != null) {
+    payload.diaryMissingNutrients = item.diaryMissingNutrients;
+  }
+
+  return payload;
+};
+
 const buildDiaryPayload = (date: string, mealType: number, item: MealItemInput) => {
   const source = item.source ?? (item.userFoodItemId != null ? 'user' : 'catalog');
 
@@ -17,26 +31,26 @@ const buildDiaryPayload = (date: string, mealType: number, item: MealItemInput) 
       throw new Error('userFoodItemId is required for user food items');
     }
 
-    return {
+    return appendDiaryTrustFields({
       eatenDate: date,
       mealTypeId: mealType,
       userFoodItemId: item.userFoodItemId,
       grams: item.grams,
       note: null,
-    };
+    }, item);
   }
 
   if (item.foodItemId == null) {
     throw new Error('foodItemId is required for catalog food items');
   }
 
-  return {
+  return appendDiaryTrustFields({
     eatenDate: date,
     mealTypeId: mealType,
     foodItemId: item.foodItemId,
     grams: item.grams,
     note: null,
-  };
+  }, item);
 };
 
 const hasBusinessErrorPayload = (data: unknown): boolean => {

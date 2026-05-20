@@ -1407,7 +1407,7 @@ const StatsScreen = (): React.ReactElement => {
                             const isRealDay = d > 0 && d <= daysInMonth;
 
                             let bgColor = 'rgba(255,255,255,0.03)'; // Default
-                            let txtColor: string = P.textSlate500;
+                            const txtColor: string = P.textSlate500;
                             let opacity = 0.5;
 
                             if (isRealDay) {
@@ -1417,7 +1417,6 @@ const StatsScreen = (): React.ReactElement => {
                               });
                               const cal = dData?.calories || 0;
                               if (cal > 0) {
-                                
                                 opacity = 1;
                                 const pct = cal / targetCal;
                                 if (pct < 0.3) bgColor = '#3f3f46'; // Rất ít

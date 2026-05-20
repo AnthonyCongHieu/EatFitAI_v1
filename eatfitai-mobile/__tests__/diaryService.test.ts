@@ -141,6 +141,12 @@ describe('diaryService', () => {
         fat: 10,
         note: 'Ít giá',
         sourceMethod: 'ai_vision',
+        inputMethod: 'photo',
+        isRoughLog: true,
+        userConfirmed: false,
+        confidenceScore: '0.42',
+        trustSource: 'ai_estimate',
+        diaryMissingNutrients: ['sodium'],
       };
 
       (apiClient.get as jest.Mock).mockResolvedValue({ data: [mockEntry] });
@@ -153,6 +159,12 @@ describe('diaryService', () => {
       expect(result[0]!.note).toBe('Ít giá');
       expect(result[0]!.carbs).toBe(55); // carb -> carbs
       expect(result[0]!.sourceMethod).toBe('ai_vision');
+      expect(result[0]!.inputMethod).toBe('photo');
+      expect(result[0]!.isRoughLog).toBe(true);
+      expect(result[0]!.userConfirmed).toBe(false);
+      expect(result[0]!.confidenceScore).toBe(0.42);
+      expect(result[0]!.trustSource).toBe('ai_estimate');
+      expect(result[0]!.diaryMissingNutrients).toEqual(['sodium']);
     });
   });
 
@@ -169,6 +181,21 @@ describe('diaryService', () => {
       (apiClient.delete as jest.Mock).mockRejectedValue(new Error('Not found'));
 
       await expect(diaryService.deleteEntry('999')).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('day markers', () => {
+    it('should mark a meal as skipped without creating diary calories', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue({ data: { markerType: 'skipped_meal' } });
+
+      await diaryService.markMealSkipped('2026-04-04', 1, 'busy');
+
+      expect(apiClient.post).toHaveBeenCalledWith('/api/meal-diary/day-markers', {
+        localDate: '2026-04-04',
+        mealTypeId: 1,
+        markerType: 'skipped_meal',
+        reason: 'busy',
+      });
     });
   });
 

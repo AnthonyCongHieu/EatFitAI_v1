@@ -97,7 +97,60 @@ public sealed class NutritionInsightServiceBranchBTests : IDisposable
         Assert.Contains(result.AdjustmentReasons, reason => reason.Contains("an toàn"));
     }
 
-    private void AddMeal(DateOnly date, int mealTypeId, decimal calories)
+    [Fact]
+    public async Task GetAdaptiveTargetAsync_AutoApplyRequested_ReturnsSuggestionOnly()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        for (var i = 0; i < 14; i++)
+        {
+            AddMeal(today.AddDays(-i), mealTypeId: 1, calories: 1500);
+            AddMeal(today.AddDays(-i), mealTypeId: 2, calories: 1500);
+        }
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetAdaptiveTargetAsync(
+            _userId,
+            new AdaptiveTargetRequest { AnalysisDays = 14, AutoApply = true });
+
+        Assert.False(result.Applied);
+        Assert.NotEqual(2000, result.SuggestedTarget.TargetCalories);
+        Assert.Equal(1, await _context.NutritionTargets.CountAsync(item => item.UserId == _userId));
+        Assert.Contains(result.AdjustmentReasons, reason => reason.Contains("đề xuất"));
+    }
+
+    [Fact]
+    public async Task GetAdaptiveTargetAsync_RoughAndLowConfidenceDays_DoNotMoveTarget()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        for (var i = 0; i < 7; i++)
+        {
+            AddMeal(today.AddDays(-i), mealTypeId: 1, calories: 1500, isRoughLog: true);
+            AddMeal(today.AddDays(-i), mealTypeId: 2, calories: 1500);
+        }
+
+        for (var i = 7; i < 14; i++)
+        {
+            AddMeal(today.AddDays(-i), mealTypeId: 1, calories: 1500, confidenceScore: 0.42m);
+            AddMeal(today.AddDays(-i), mealTypeId: 2, calories: 1500);
+        }
+
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetAdaptiveTargetAsync(
+            _userId,
+            new AdaptiveTargetRequest { AnalysisDays = 14 });
+
+        Assert.False(result.Applied);
+        Assert.Equal(2000, result.SuggestedTarget.TargetCalories);
+        Assert.True(result.ConfidenceScore < 75);
+    }
+
+    private void AddMeal(
+        DateOnly date,
+        int mealTypeId,
+        decimal calories,
+        bool isRoughLog = false,
+        decimal? confidenceScore = null)
     {
         _context.MealDiaries.Add(new MealDiary
         {
@@ -109,6 +162,8 @@ public sealed class NutritionInsightServiceBranchBTests : IDisposable
             Carb = 50,
             Fat = 12,
             Grams = 100,
+            IsRoughLog = isRoughLog,
+            ConfidenceScore = confidenceScore,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         });

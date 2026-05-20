@@ -31,6 +31,9 @@ export interface MappedFoodItem {
   missingNutrients?: string[] | null;
   nutrientCompletenessScore?: number | null;
   trustSummary?: ApiFoodTrustSummary | null;
+  confidenceLevel?: 'high' | 'medium' | 'low' | string | null;
+  requiresUserConfirmation?: boolean | null;
+  warningMessage?: string | null;
 
   isMatched: boolean;
 }

@@ -116,6 +116,17 @@ const toStringArray = (value: unknown): string[] => {
   return value.map((item) => String(item).trim()).filter(Boolean);
 };
 
+const toBooleanOrNull = (value: unknown): boolean | null => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return null;
+};
+
 const normalizeRecipeIngredientName = (value: string | null | undefined): string =>
   (value ?? '').trim().toLocaleLowerCase('vi-VN');
 
@@ -338,6 +349,11 @@ export const normalizeMappedFoodItem = (item: any): MappedFoodItem => {
       readField(item, 'nutrientCompletenessScore', 'NutrientCompletenessScore'),
     ),
     trustSummary: normalizeFoodTrustSummary(readField(item, 'trustSummary', 'TrustSummary')),
+    confidenceLevel: toStringOrNull(readField(item, 'confidenceLevel', 'ConfidenceLevel')),
+    requiresUserConfirmation: toBooleanOrNull(
+      readField(item, 'requiresUserConfirmation', 'RequiresUserConfirmation'),
+    ),
+    warningMessage: toStringOrNull(readField(item, 'warningMessage', 'WarningMessage')),
     isMatched: Boolean(
       readField(item, 'isMatched', 'IsMatched') ??
         readField(item, 'foodItemId', 'FoodItemId') ??

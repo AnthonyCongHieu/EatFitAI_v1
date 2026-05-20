@@ -19,6 +19,32 @@ namespace EatFitAI.API.Services
             Recipe
         }
 
+        private static readonly HashSet<string> AllowedCaptureMethods = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "search",
+            "photo",
+            "voice",
+            "barcode",
+            "quick",
+            "manual",
+            "copy",
+            "rough",
+            "recipe",
+            "user",
+            "catalog",
+            "ai",
+            "ai_vision",
+            "template"
+        };
+
+        private static readonly HashSet<string> AllowedTrustSources = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "verified_db",
+            "barcode_provider",
+            "ai_estimate",
+            "user_custom"
+        };
+
         private readonly IMealDiaryRepository _mealDiaryRepository;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
@@ -62,6 +88,8 @@ namespace EatFitAI.API.Services
 
         public async Task<MealDiaryDto> CreateMealDiaryAsync(Guid userId, CreateMealDiaryRequest request)
         {
+            ValidateMealDiaryTrustMetadata(request);
+
             var mealDiary = _mapper.Map<MealDiary>(request);
             mealDiary.UserId = userId;
             mealDiary.MealTypeId = await ResolveMealTypeIdAsync(request.MealTypeId);
@@ -109,6 +137,8 @@ namespace EatFitAI.API.Services
                         throw new ArgumentException("Meal diary entry is required");
                     }
 
+                    ValidateMealDiaryTrustMetadata(item);
+
                     var mealDiary = _mapper.Map<MealDiary>(item);
                     mealDiary.UserId = userId;
                     mealDiary.MealTypeId = await ResolveMealTypeIdAsync(item.MealTypeId);
@@ -132,6 +162,58 @@ namespace EatFitAI.API.Services
             });
 
             return await GetMappedMealDiariesAsync(userId, mealDiaryIds);
+        }
+
+        public async Task<MealDayMarkerDto> UpsertMealDayMarkerAsync(
+            Guid userId,
+            UpsertMealDayMarkerRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentException("Request body is required");
+            }
+
+            var markerType = request.MarkerType.Trim().ToLowerInvariant();
+            if (markerType != MealDayMarkerType.SkippedMeal &&
+                markerType != MealDayMarkerType.SkippedDay)
+            {
+                throw new ArgumentException("Marker type is invalid");
+            }
+
+            var mealTypeId = markerType == MealDayMarkerType.SkippedMeal
+                ? await ResolveMealTypeIdAsync(request.MealTypeId ?? 0)
+                : (int?)null;
+            var localDate = DateOnly.FromDateTime(request.LocalDate.Date);
+            var utcNow = DateTime.UtcNow;
+
+            var marker = await _context.MealDayMarkers
+                .FirstOrDefaultAsync(item =>
+                    item.UserId == userId &&
+                    item.LocalDate == localDate &&
+                    item.MealTypeId == mealTypeId &&
+                    item.MarkerType == markerType &&
+                    !item.IsDeleted);
+
+            if (marker == null)
+            {
+                marker = new MealDayMarker
+                {
+                    UserId = userId,
+                    LocalDate = localDate,
+                    MealTypeId = mealTypeId,
+                    MarkerType = markerType,
+                    CreatedAt = utcNow
+                };
+                await _context.MealDayMarkers.AddAsync(marker);
+            }
+
+            marker.Reason = string.IsNullOrWhiteSpace(request.Reason)
+                ? null
+                : request.Reason.Trim();
+            marker.UpdatedAt = utcNow;
+
+            await _context.SaveChangesAsync();
+            return ToMealDayMarkerDto(marker);
         }
 
         public async Task<IEnumerable<MealDiaryDto>> CopyPreviousDayAsync(Guid userId, CopyPreviousDayRequest request)
@@ -215,6 +297,8 @@ namespace EatFitAI.API.Services
 
         public async Task<MealDiaryDto> UpdateMealDiaryAsync(int id, Guid userId, UpdateMealDiaryRequest request)
         {
+            ValidateMealDiaryTrustMetadata(request);
+
             var mealDiary = await _mealDiaryRepository.GetByIdAsync(id);
             if (mealDiary == null || mealDiary.UserId != userId || mealDiary.IsDeleted)
             {
@@ -247,6 +331,18 @@ namespace EatFitAI.API.Services
                 mealDiary.PhotoUrl = request.PhotoUrl;
             if (request.SourceMethod != null)
                 mealDiary.SourceMethod = request.SourceMethod;
+            if (request.InputMethod != null)
+                mealDiary.InputMethod = request.InputMethod;
+            if (request.IsRoughLog.HasValue)
+                mealDiary.IsRoughLog = request.IsRoughLog.Value;
+            if (request.UserConfirmed.HasValue)
+                mealDiary.UserConfirmed = request.UserConfirmed.Value;
+            if (request.ConfidenceScore.HasValue)
+                mealDiary.ConfidenceScore = request.ConfidenceScore.Value;
+            if (request.TrustSource != null)
+                mealDiary.TrustSource = request.TrustSource;
+            if (request.DiaryMissingNutrients != null)
+                mealDiary.DiaryMissingNutrients = FoodTrustBuilder.SerializeMissingNutrients(request.DiaryMissingNutrients);
 
             if (HasAnySourceChange(request))
             {
@@ -308,6 +404,69 @@ namespace EatFitAI.API.Services
                 || request.UserFoodItemId.HasValue
                 || request.UserDishId.HasValue
                 || request.RecipeId.HasValue;
+        }
+
+        private static MealDayMarkerDto ToMealDayMarkerDto(MealDayMarker marker)
+        {
+            return new MealDayMarkerDto
+            {
+                MealDayMarkerId = marker.MealDayMarkerId,
+                UserId = marker.UserId,
+                LocalDate = marker.LocalDate.ToDateTime(TimeOnly.MinValue),
+                MealTypeId = marker.MealTypeId,
+                MarkerType = marker.MarkerType,
+                Reason = marker.Reason
+            };
+        }
+
+        private static void ValidateMealDiaryTrustMetadata(CreateMealDiaryRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentException("Request body is required");
+            }
+
+            ValidateConfidenceScore(request.ConfidenceScore);
+            ValidateCodeValue(request.SourceMethod, AllowedCaptureMethods, nameof(request.SourceMethod));
+            ValidateCodeValue(request.InputMethod, AllowedCaptureMethods, nameof(request.InputMethod));
+            ValidateCodeValue(request.TrustSource, AllowedTrustSources, nameof(request.TrustSource));
+        }
+
+        private static void ValidateMealDiaryTrustMetadata(UpdateMealDiaryRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentException("Request body is required");
+            }
+
+            ValidateConfidenceScore(request.ConfidenceScore);
+            ValidateCodeValue(request.SourceMethod, AllowedCaptureMethods, nameof(request.SourceMethod));
+            ValidateCodeValue(request.InputMethod, AllowedCaptureMethods, nameof(request.InputMethod));
+            ValidateCodeValue(request.TrustSource, AllowedTrustSources, nameof(request.TrustSource));
+        }
+
+        private static void ValidateConfidenceScore(decimal? confidenceScore)
+        {
+            if (confidenceScore is < 0m or > 1m)
+            {
+                throw new ArgumentException("Confidence score must be between 0 and 1");
+            }
+        }
+
+        private static void ValidateCodeValue(
+            string? value,
+            HashSet<string> allowedValues,
+            string fieldName)
+        {
+            if (value == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(value) || !allowedValues.Contains(value.Trim()))
+            {
+                throw new ArgumentException($"{fieldName} is invalid");
+            }
         }
 
         private async Task<int> ResolveMealTypeIdAsync(int requestedMealTypeId)
@@ -388,6 +547,12 @@ namespace EatFitAI.API.Services
                 Note = sourceEntry.Note,
                 PhotoUrl = sourceEntry.PhotoUrl,
                 SourceMethod = sourceEntry.SourceMethod,
+                InputMethod = sourceEntry.InputMethod ?? "copy",
+                IsRoughLog = sourceEntry.IsRoughLog,
+                UserConfirmed = sourceEntry.UserConfirmed,
+                ConfidenceScore = sourceEntry.ConfidenceScore,
+                TrustSource = sourceEntry.TrustSource,
+                DiaryMissingNutrients = sourceEntry.DiaryMissingNutrients,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow,
                 IsDeleted = false
