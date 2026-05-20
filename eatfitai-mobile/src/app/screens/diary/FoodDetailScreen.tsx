@@ -98,6 +98,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const isUserFood = route.params.source === 'user';
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const handleScroll = useCallback((event: any) => {
+    const y = event.nativeEvent.contentOffset.y;
+    setScrolled(y > 20);
+  }, []);
 
   const { data: detail, isLoading, error } = useQuery<FoodDetail | null, unknown>({
     queryKey: ['food-detail', foodKey],
@@ -295,7 +300,15 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       />
 
       {/* ═══ Top App Bar ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+      <View style={[
+        S.header,
+        { paddingTop: insets.top + 4 },
+        scrolled && {
+          backgroundColor: P.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: P.glassBorder,
+        }
+      ]}>
         <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </Pressable>
@@ -309,7 +322,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={S.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         {/* ═══ Hero Image ═══ */}
         <View style={S.heroContainer}>
           <ImageBackground

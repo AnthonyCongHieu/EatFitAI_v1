@@ -318,7 +318,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   return (
     <View style={[S.container, { backgroundColor: P.surface }]}>
       {/* ═══ Header ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 4 }]}>
+      <View style={[S.header, { paddingTop: insets.top + 4, backgroundColor: P.surface, borderBottomWidth: 1, borderBottomColor: P.glassBorder }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </TouchableOpacity>
