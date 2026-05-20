@@ -251,7 +251,7 @@ const ProfileScreen = (): React.ReactElement => {
         const url = await profileService.uploadAvatar(result.assets[0].uri);
         await useProfileStore.getState().updateProfile({ avatarUrl: url });
         await fetchProfile({ force: true });
-        showAppToast({ type: 'success', text1: 'Cập nhật avatar thành công' });
+        showAppToast({ type: 'success', text1: 'Avatar mới đẹp lắm! 📸' });
       }
     } catch (e: any) {
       showAppToast({ type: 'error', text1: 'Lỗi', text2: e?.message || 'Không thể cập nhật avatar' });

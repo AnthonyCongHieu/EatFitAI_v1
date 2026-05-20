@@ -247,7 +247,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
         showAppToast({
           type: 'success',
-          text1: 'Đã dạy AI',
+          text1: 'AI học xong rồi! 🧠',
           text2: `"${currentTeachItem.label}" -> ${foodItem.name}`,
         });
       } catch (error) {
@@ -301,7 +301,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       closeReplacePicker();
       showAppToast({
         type: 'success',
-        text1: 'Đã thay món',
+        text1: 'Đổi món xong rồi!',
         text2: foodItem.name,
       });
     },
@@ -352,7 +352,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
       showAppToast({
         type: 'success',
-        text1: 'Đã thêm vào nhật ký',
+        text1: 'Ghi nhật ký xong rồi! 🎉',
         text2: `${selectedItems.length} món - ${Math.round(totalCalories)} kcal`,
       });
 

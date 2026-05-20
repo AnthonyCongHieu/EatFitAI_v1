@@ -82,7 +82,7 @@ describe('MoChi notification surfaces', () => {
     expect(homeSource).toContain('markMoChiNotificationActed(homeWaterReminder.id)');
     expect(homeSource).toContain('homeWaterReminder && waterTargetInlineReady');
     expect(homeSource).toContain('handleAddWater({ showConfirmationToast: true })');
-    expect(homeSource).toContain("text1: 'Đã ghi nước'");
+    expect(homeSource).toContain("text1: 'Uống nước giỏi lắm! 💧'");
     expect(homeSource).toContain('mochiEvent="water_reminder"');
     expect(homeSource).toContain('title="Tiếp nước thôi nào! 💧"');
     expect(homeSource).toContain('message="Bạn vừa uống một ly nước đúng không nè? Ghi nhận ngay để tớ đếm nhé!"');

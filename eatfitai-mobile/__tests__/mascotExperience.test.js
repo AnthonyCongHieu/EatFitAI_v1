@@ -129,7 +129,7 @@ describe('MoChi virtual pet experience', () => {
     expect(homeSource).toContain('<MoChiTutorialTarget targetId="home_water" highlightProfile="homeWater">');
     expect(homeSource).toContain('Ghi nước');
     expect(homeSource).toContain('handleAddWater({ showConfirmationToast: true })');
-    expect(homeSource).toContain("text1: 'Đã ghi nước'");
+    expect(homeSource).toContain("text1: 'Uống nước giỏi lắm! 💧'");
     expect(scanSource).toContain('ScanProgressCard');
     expect(scanSource).toContain('mochiEvent="scan_empty"');
     expect(scanSource).toContain('mochiEvent="scan_error"');

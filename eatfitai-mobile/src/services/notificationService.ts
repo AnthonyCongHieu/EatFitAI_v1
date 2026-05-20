@@ -155,39 +155,39 @@ const getChannel = (): string => Updates.channel || 'production';
 const MEAL_MESSAGES = {
   breakfast: {
     title: '🌅 Bữa sáng!',
-    body: 'Đã đến giờ ghi bữa sáng. Hãy log những gì bạn ăn nhé!',
+    body: 'Sáng nay bạn ăn gì ngon chưa nè? Ghi lại cho tớ biết nha!',
   },
   lunch: {
     title: '☀️ Bữa trưa!',
-    body: 'Đã đến giờ ghi bữa trưa. Bạn ăn gì hôm nay?',
+    body: 'Trưa rồi, bạn ăn gì chưa ta? Kể cho tớ nghe nhé!',
   },
   dinner: {
     title: '🌙 Bữa tối!',
-    body: 'Đã đến giờ ghi bữa tối. Đừng quên log bữa ăn nhé!',
+    body: 'Tối nay bạn ăn gì ngon nè? Đừng quên ghi lại nha!',
   },
   snack: {
     title: '🥤 Bữa phụ!',
-    body: 'Nhớ ghi nhận các bữa ăn nhẹ trong ngày nhé!',
+    body: 'Có ăn vặt gì không nè? Ghi lại để nhật ký đầy đủ nha!',
   },
   water: {
-    title: '💧 Đã đến lúc uống nước!',
-    body: 'Hãy uống một cốc nước để giữ cơ thể luôn đủ nước nhé.',
+    title: '💧 Uống nước thôi!',
+    body: 'Nhớ uống nước cho khoẻ nha bạn ơi!',
   },
   aiRecipes: {
-    title: '🥗 Gợi ý món mới từ AI',
-    body: 'Khám phá ngay công thức mới phù hợp với mục tiêu của bạn.',
+    title: '🥗 Gợi ý món mới nè!',
+    body: 'Tớ tìm được công thức hay ho phù hợp với bạn đó, ghé xem nhé!',
   },
   aiTips: {
-    title: '💡 Mẹo dinh dưỡng',
-    body: 'Tips hay từ AI hôm nay giúp bạn ăn uống khoa học hơn.',
+    title: '💡 Mẹo dinh dưỡng nè!',
+    body: 'Tớ có mẹo hay giúp bạn ăn uống khoa học hơn, xem thử nhé!',
   },
   streak: {
-    title: '⚠️ Đừng bỏ lỡ ngày hôm nay!',
-    body: 'Chuỗi theo dõi của bạn sắp bị gián đoạn. Hãy ghi nhật ký ngay.',
+    title: '⚠️ Đừng quên hôm nay nha!',
+    body: 'Chuỗi theo dõi sắp bị gián đoạn rồi, ghi nhật ký nhanh nha bạn!',
   },
   weekly: {
-    title: '📊 Báo cáo tiến độ tuần',
-    body: 'Báo cáo dinh dưỡng tuần qua của bạn đã sẵn sàng. Xem ngay!',
+    title: '📊 Báo cáo tuần đây!',
+    body: 'Tuần vừa rồi bạn ăn uống thế nào? Ghé xem báo cáo nhé!',
   },
 };
 

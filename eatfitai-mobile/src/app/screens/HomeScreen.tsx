@@ -334,8 +334,8 @@ const HomeScreen = (): React.ReactElement => {
       if (options.showConfirmationToast) {
         Toast.show({
           type: 'success',
-          text1: 'Đã ghi nước',
-          text2: 'MoChi đã cộng thêm 200 ml vào hôm nay.',
+          text1: 'Uống nước giỏi lắm! 💧',
+          text2: 'Tốt lắm, thêm một ly nước rồi nè! 💧',
         });
       }
       return true;

@@ -1,4 +1,4 @@
-﻿import { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigation } from '@react-navigation/native';
@@ -132,7 +132,7 @@ const CustomDishScreen = (): React.ReactElement => {
 
         showAppToast({
           type: 'success',
-          text1: 'Đã lưu món nhập tay',
+          text1: 'Lưu xong rồi nè! 🍽️',
           text2: 'Món ăn đã được thêm vào thư viện cá nhân.',
         });
 

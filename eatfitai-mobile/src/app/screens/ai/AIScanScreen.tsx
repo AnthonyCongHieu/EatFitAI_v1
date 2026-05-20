@@ -483,7 +483,7 @@ const AIScanScreen: React.FC = () => {
         });
         showAppToast({
           type: 'success',
-          text1: 'Đã nhận diện mã vạch',
+          text1: 'Tìm thấy rồi nè! 🌟',
           text2: foodDetail.name,
         });
         navigation.navigate('FoodDetail', {
@@ -559,7 +559,7 @@ const AIScanScreen: React.FC = () => {
         navigation.navigate('RecipeSuggestions', { mode: 'daily_recommendation' });
         showAppToast({
           type: 'info',
-          text1: 'Đây là món đã nấu xong',
+          text1: 'Đây là món đã nấu xong nè',
           text2: 'Mở gợi ý món nên ăn hôm nay thay vì thêm vào giỏ nguyên liệu',
           visibilityTime: 1800,
         });
@@ -578,7 +578,7 @@ const AIScanScreen: React.FC = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showAppToast({
         type: 'success',
-        text1: ingredientItems.length > 1 ? 'Đã thêm các nguyên liệu vào giỏ' : 'Đã thêm vào giỏ',
+        text1: ingredientItems.length > 1 ? 'Thêm nguyên liệu xong rồi! 🧂' : 'Thêm vào giỏ rồi nè!',
         text2:
           ingredientItems.length > 1
             ? `${ingredientItems.length} nguyên liệu đã được ghi nhận`

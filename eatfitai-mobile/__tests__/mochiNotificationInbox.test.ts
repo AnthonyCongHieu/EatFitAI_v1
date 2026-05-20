@@ -17,7 +17,7 @@ const makeItem = (overrides: Partial<MoChiNotificationItem> = {}): MoChiNotifica
   severity: 'active',
   source: 'orchestrator',
   title: 'Đến giờ ghi bữa',
-  body: 'Nếu bạn đã ăn rồi, thêm nhanh bữa gần nhất để nhật ký liền mạch hơn.',
+  body: 'Bạn đã ăn gì chưa nè? Ghi lại nhanh để nhật ký hôm nay đầy đủ nha!',
   ctaLabel: 'Ghi bữa',
   action: 'addMeal',
   mealTypeId: 1,

@@ -331,7 +331,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           try {
             await diaryService.deleteEntry(entry.id);
             await invalidateDiaryQueries(queryClient);
-            showAppToast({ type: 'success', text1: 'Đã xóa', text2: `Đã xóa ${entry.foodName}` });
+            showAppToast({ type: 'success', text1: 'Xóa xong rồi!', text2: `Đã bỏ ${entry.foodName} khỏi nhật ký` });
           } catch (err: any) {
             showAppToast({ type: 'error', text1: 'Lỗi xóa', text2: err?.message || 'Thử lại sau.' });
           }
