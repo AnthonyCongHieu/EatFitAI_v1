@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 import { z } from 'zod';
 
 import Button from '../../../components/Button';
@@ -130,7 +130,7 @@ const CustomDishScreen = (): React.ReactElement => {
 
         await foodService.createUserFoodItem(formData);
 
-        Toast.show({
+        showAppToast({
           type: 'success',
           text1: 'Đã lưu món nhập tay',
           text2: 'Món ăn đã được thêm vào thư viện cá nhân.',

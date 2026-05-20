@@ -14,15 +14,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 
 import { ThemedText } from '../../../components/ThemedText';
 import { aiService } from '../../../services/aiService';
 import { foodService } from '../../../services/foodService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { diaryService } from '../../../services/diaryService';
-import AppImage from '../../../components/ui/AppImage';
-import { sanitizeFoodImageUrl } from '../../../utils/imageHelpers';
+import RecipeVisual from '../../../components/recipe/RecipeVisual';
+import {
+  buildRecipeIngredientRows,
+  formatRecipeSourceLabel,
+  hasDetailHeroVisual,
+  type IngredientAvailabilityStatus,
+} from '../../../components/recipe/recipeVisuals';
 import type { RootStackParamList } from '../../types';
 import type { RecipeDetail } from '../../../types/aiEnhanced';
 import type { MealTypeId } from '../../../types';
@@ -66,6 +71,23 @@ const P = {
 
 const DEFAULT_RECIPE_DISCLAIMER =
   'Gợi ý chỉ mang tính tham khảo; không phải khuyến nghị của chuyên gia dinh dưỡng, bác sĩ hoặc đầu bếp chuyên nghiệp.';
+
+const FLOATING_CTA_BOTTOM = 16;
+const FLOATING_CTA_HEIGHT = 56;
+const SCROLL_BOTTOM_GAP = 48;
+
+const getIngredientStatusMeta = (status: IngredientAvailabilityStatus) => {
+  if (status === 'available') {
+    return { label: 'Đã có', icon: 'checkmark' as const, tone: P.primary };
+  }
+  if (status === 'missing') {
+    return { label: 'Còn thiếu', icon: 'close' as const, tone: P.danger };
+  }
+  if (status === 'extra') {
+    return { label: 'Chưa dùng trong món', icon: 'add' as const, tone: P.macroC };
+  }
+  return { label: 'Cần chuẩn bị', icon: 'ellipse' as const, tone: P.onSurfaceVariant };
+};
 
 
 
@@ -190,7 +212,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         promptIfFirstLog();
       }
 
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: route.params.diaryEntryId ? 'Đã cập nhật khẩu phần' : 'Đã thêm vào nhật ký',
         text2: `${recipe.recipeName} (${servings} khẩu phần)`,
@@ -198,7 +220,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
       setShowAddToDiarySheet(false);
       navigation.goBack();
     } catch (err: any) {
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Thêm thất bại',
         text2: 'Vui lòng thử lại',
@@ -242,10 +264,6 @@ const RecipeDetailScreen = (): React.ReactElement => {
     );
   }
 
-  const heroImageUrl = sanitizeFoodImageUrl(
-    recipe.imageVariants?.mediumUrl ?? recipe.imageUrl,
-    'medium',
-  );
   const guideSteps = aiInstructions.steps.length > 0
     ? aiInstructions.steps
     : recipe.instructions ?? [];
@@ -266,6 +284,17 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const guideSourceUrls = aiInstructions.sourceUrls?.length
     ? aiInstructions.sourceUrls
     : recipe.sourceUrls ?? [];
+  const ingredientRows = buildRecipeIngredientRows({
+    recipeName: recipe.recipeName,
+    ingredients: recipe.ingredients ?? [],
+    availableIngredients,
+    missingIngredients,
+    extraIngredients,
+    requiredIngredients,
+  });
+  const useHeroVisual = hasDetailHeroVisual(recipe);
+  const scrollBottomPadding =
+    insets.bottom + FLOATING_CTA_BOTTOM + FLOATING_CTA_HEIGHT + SCROLL_BOTTOM_GAP;
   const youtubeVideo = aiInstructions.youtubeVideo ?? recipe.youtubeVideo ?? null;
   const youtubeUrl = youtubeVideo?.url || recipe.videoUrl;
   const cookingTimeLabel =
@@ -285,7 +314,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
   return (
     <View style={S.container}>
       {/* Absolute Add Button at bottom safely above tabs */}
-      <Animated.View entering={FadeInUp.delay(500)} style={[S.floatBottomBtn, { bottom: insets.bottom + 20 }]}>
+      <Animated.View entering={FadeInUp.delay(500)} style={[S.floatBottomBtn, { bottom: insets.bottom + FLOATING_CTA_BOTTOM }]}>
         <Pressable
           style={S.addBtn}
           onPress={() => setShowAddToDiarySheet(true)}
@@ -296,39 +325,56 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
       <TopHeader />
 
-      <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={S.heroContainer}>
-          <View style={S.heroImage}>
-            {heroImageUrl ? (
-              <AppImage
-                source={{ uri: heroImageUrl }}
+      <ScrollView
+        contentContainerStyle={[S.scrollContent, { paddingBottom: scrollBottomPadding }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {useHeroVisual ? (
+          <View style={S.heroContainer}>
+            <View style={S.heroImage}>
+              <RecipeVisual
+                recipe={recipe}
                 style={S.heroImage}
-                fallbackEmoji="🍽️"
-                showPlaceholder
+                size="medium"
+                allowGenericFallback
               />
-            ) : (
-              <View style={[S.heroImage, S.heroFallback]}>
-                <Ionicons name="restaurant-outline" size={56} color={P.onSurfaceVariant} />
-              </View>
-            )}
-            <LinearGradient colors={['transparent', P.surface]} style={S.gradientMask} />
+              <LinearGradient colors={['transparent', P.surface]} style={S.gradientMask} />
+            </View>
+            <View style={S.heroTextWrap}>
+              <ThemedText style={S.heroMainTitle} numberOfLines={3}>{recipe.recipeName}</ThemedText>
+              {cookingTimeLabel && (
+                <View style={S.badgeWrap}>
+                  <Ionicons name="time" size={14} color={P.primary} />
+                  <ThemedText style={S.badgeText}>{cookingTimeLabel}</ThemedText>
+                </View>
+              )}
+              {!!(aiInstructions.difficulty ?? recipe.difficulty) && (
+                <View style={S.badgeWrap}>
+                  <Ionicons name="speedometer-outline" size={14} color={P.primary} />
+                  <ThemedText style={S.badgeText}>{aiInstructions.difficulty ?? recipe.difficulty}</ThemedText>
+                </View>
+              )}
+            </View>
           </View>
-          <View style={S.heroTextWrap}>
-            <ThemedText style={S.heroMainTitle} numberOfLines={3}>{recipe.recipeName}</ThemedText>
-            {cookingTimeLabel && (
-              <View style={S.badgeWrap}>
-                <Ionicons name="time" size={14} color={P.primary} />
-                <ThemedText style={S.badgeText}>{cookingTimeLabel}</ThemedText>
-              </View>
-            )}
-            {!!(aiInstructions.difficulty ?? recipe.difficulty) && (
-              <View style={S.badgeWrap}>
-                <Ionicons name="speedometer-outline" size={14} color={P.primary} />
-                <ThemedText style={S.badgeText}>{aiInstructions.difficulty ?? recipe.difficulty}</ThemedText>
-              </View>
-            )}
+        ) : (
+          <View style={[S.compactHero, { paddingTop: insets.top + 88 }]}>
+            <ThemedText style={S.compactHeroTitle} numberOfLines={3}>{recipe.recipeName}</ThemedText>
+            <View style={S.compactBadgeRow}>
+              {cookingTimeLabel && (
+                <View style={S.badgeWrap}>
+                  <Ionicons name="time" size={14} color={P.primary} />
+                  <ThemedText style={S.badgeText}>{cookingTimeLabel}</ThemedText>
+                </View>
+              )}
+              {!!(aiInstructions.difficulty ?? recipe.difficulty) && (
+                <View style={S.badgeWrap}>
+                  <Ionicons name="speedometer-outline" size={14} color={P.primary} />
+                  <ThemedText style={S.badgeText}>{aiInstructions.difficulty ?? recipe.difficulty}</ThemedText>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={S.mainCanvas}>
           {/* Nutrition Row */}
@@ -365,48 +411,30 @@ const RecipeDetailScreen = (): React.ReactElement => {
           )}
 
           {/* Ingredients */}
-          {recipe.ingredients && recipe.ingredients.length > 0 && (
+          {ingredientRows.length > 0 && (
             <Animated.View entering={FadeInDown.delay(300)} style={S.glassCard}>
               <ThemedText style={S.sectionTitle}>Nguyên liệu</ThemedText>
               <View style={S.ingredientsWrap}>
-                {recipe.ingredients.map((ing, i) => (
-                  <View key={i} style={S.ingredientRow}>
-                    <View style={S.ingDot} />
-                    <ThemedText style={S.bodyTextItem}>{ing.foodName}</ThemedText>
-                    <ThemedText style={S.bodyTextWeight}>{ing.grams}g</ThemedText>
-                  </View>
-                ))}
+                {ingredientRows.map((row) => {
+                  const statusMeta = getIngredientStatusMeta(row.status);
+                  return (
+                    <View key={row.key} style={S.ingredientRow}>
+                      <View style={[S.ingredientStatusIcon, { backgroundColor: statusMeta.tone + '22', borderColor: statusMeta.tone + '55' }]}>
+                        <Ionicons name={statusMeta.icon} size={12} color={statusMeta.tone} />
+                      </View>
+                      <View style={S.ingredientNameWrap}>
+                        <ThemedText style={S.bodyTextItem}>{row.name}</ThemedText>
+                        <ThemedText style={[S.ingredientStatusText, { color: statusMeta.tone }]}>
+                          {statusMeta.label}
+                        </ThemedText>
+                      </View>
+                      {typeof row.grams === 'number' && row.grams > 0 && (
+                        <ThemedText style={S.bodyTextWeight}>{Math.round(row.grams)}g</ThemedText>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
-            </Animated.View>
-          )}
-
-          {(requiredIngredients.length > 0 || availableIngredients.length > 0 || missingIngredients.length > 0 || extraIngredients.length > 0) && (
-            <Animated.View entering={FadeInDown.delay(350)} style={S.glassCard}>
-              <ThemedText style={S.sectionTitle}>Tình trạng nguyên liệu</ThemedText>
-              {requiredIngredients.length > 0 && (
-                <View style={S.ingredientStatusBlock}>
-                  <ThemedText style={S.ingredientStatusTitle}>Bắt buộc cho món này</ThemedText>
-                  <ThemedText style={S.bodyText}>{requiredIngredients.join(', ')}</ThemedText>
-                </View>
-              )}
-              {availableIngredients.length > 0 && (
-                <View style={S.ingredientStatusBlock}>
-                  <ThemedText style={S.ingredientStatusTitle}>Đã có</ThemedText>
-                  <ThemedText style={S.bodyText}>{availableIngredients.join(', ')}</ThemedText>
-                </View>
-              )}
-              {missingIngredients.length > 0 && (
-                <View style={S.ingredientStatusBlock}>
-                  <ThemedText style={S.ingredientStatusTitle}>Còn thiếu</ThemedText>
-                  <ThemedText style={S.bodyText}>{missingIngredients.join(', ')}</ThemedText>
-                </View>
-              )}
-              {extraIngredients.length > 0 && (
-                <View style={S.ingredientStatusBlock}>
-                  <ThemedText style={S.ingredientStatusTitle}>Nguyên liệu nhập thêm/chưa dùng</ThemedText>
-                  <ThemedText style={S.bodyText}>{extraIngredients.join(', ')}</ThemedText>
-                </View>
-              )}
             </Animated.View>
           )}
 
@@ -488,18 +516,9 @@ const RecipeDetailScreen = (): React.ReactElement => {
                 <Ionicons name="open-outline" size={20} color={P.onSurfaceVariant} />
               </Pressable>
             ) : (
-              <View style={[S.videoBox, S.videoBoxDisabled]}>
-                <View style={S.videoIconBg}>
-                  <Ionicons name="alert-circle-outline" size={24} color={P.onSurfaceVariant} />
-                </View>
-                <View style={S.videoTextWrap}>
-                  <ThemedText style={S.videoTitle} numberOfLines={1}>
-                    Chưa có video đã xác thực
-                  </ThemedText>
-                  <ThemedText style={S.videoSub} numberOfLines={2}>
-                    EatFitAI sẽ không mở trang tìm kiếm chung để tránh nhầm video sai món.
-                  </ThemedText>
-                </View>
+              <View style={S.videoUnavailable}>
+                <Ionicons name="alert-circle-outline" size={16} color={P.onSurfaceVariant} />
+                <ThemedText style={S.videoUnavailableText}>Chưa có video đã xác thực</ThemedText>
               </View>
             )}
           </Animated.View>
@@ -510,13 +529,12 @@ const RecipeDetailScreen = (): React.ReactElement => {
               {guideSourceUrls.slice(0, 3).map((url) => (
                 <Pressable key={url} style={S.sourceRow} onPress={() => Linking.openURL(url)}>
                   <Ionicons name="link-outline" size={16} color={P.primary} />
-                  <ThemedText style={S.sourceText} numberOfLines={1}>{url}</ThemedText>
+                  <ThemedText style={S.sourceText} numberOfLines={1}>{formatRecipeSourceLabel(url)}</ThemedText>
+                  <Ionicons name="open-outline" size={16} color={P.onSurfaceVariant} />
                 </Pressable>
               ))}
             </Animated.View>
           )}
-
-          <View style={{ height: 100 }} />
         </View>
       </ScrollView>
 
@@ -556,16 +574,22 @@ const S = StyleSheet.create({
     borderWidth: 1, borderColor: P.glassBorder,
   },
 
-  scrollContent: { paddingBottom: 60 },
+  scrollContent: {},
 
   heroContainer: { width: '100%', height: 350, position: 'relative' },
   heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  heroFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: P.surfaceContainerLow },
   gradientMask: { ...StyleSheet.absoluteFillObject },
   heroTextWrap: {
     position: 'absolute', bottom: 20, left: 24, right: 24, gap: 12,
   },
   heroMainTitle: { fontSize: 32, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, lineHeight: 40 },
+  compactHero: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    gap: 14,
+  },
+  compactHeroTitle: { fontSize: 32, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface, lineHeight: 40 },
+  compactBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   badgeWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: P.surfaceContainerHigh,
@@ -619,13 +643,21 @@ const S = StyleSheet.create({
   },
   statusBadgeText: { fontSize: 10, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
   bodyText: { fontSize: 14, fontFamily: 'BeVietnamPro_400Regular', color: P.onSurfaceVariant, lineHeight: 22 },
-  ingredientStatusBlock: { gap: 4 },
-  ingredientStatusTitle: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
 
   ingredientsWrap: { gap: 10 },
   ingredientRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   ingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.primary },
+  ingredientStatusIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  ingredientNameWrap: { flex: 1, gap: 2 },
   bodyTextItem: { flex: 1, fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurface },
+  ingredientStatusText: { fontSize: 11, fontFamily: 'BeVietnamPro_700Bold' },
   bodyTextWeight: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
 
   stepsWrap: { gap: 16 },
@@ -647,6 +679,16 @@ const S = StyleSheet.create({
   videoTextWrap: { flex: 1 },
   videoTitle: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
   videoSub: { fontSize: 12, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant },
+  videoUnavailable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: P.surfaceContainerLowest,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  videoUnavailableText: { fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant },
   sourceRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -665,7 +707,7 @@ const S = StyleSheet.create({
   addBtn: {
     backgroundColor: P.primary, borderRadius: 99,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 18,
+    height: FLOATING_CTA_HEIGHT,
   },
   addBtnText: { fontSize: 16, fontFamily: 'BeVietnamPro_700Bold', color: P.onPrimary },
 });

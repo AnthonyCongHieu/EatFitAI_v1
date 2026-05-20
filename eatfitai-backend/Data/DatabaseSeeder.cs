@@ -584,9 +584,13 @@ namespace EatFitAI.API.Data
                 food.FoodName = seed.FoodName.Trim();
                 food.FoodNameEn = string.IsNullOrWhiteSpace(seed.FoodNameEn) ? food.FoodNameEn : seed.FoodNameEn.Trim();
                 food.FoodNameUnsigned = VietnameseFoodCatalog.BuildSearchText(seed);
-                if (!string.IsNullOrWhiteSpace(seed.ImageKey))
+                var imageKey = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+                    seed.FoodName,
+                    seed.ImageKey,
+                    aliases: seed.Aliases);
+                if (!string.IsNullOrWhiteSpace(imageKey))
                 {
-                    food.ThumbNail = seed.ImageKey.Trim();
+                    food.ThumbNail = imageKey;
                 }
                 else if (string.IsNullOrWhiteSpace(food.ThumbNail))
                 {
@@ -881,9 +885,10 @@ namespace EatFitAI.API.Data
 
                 recipe.RecipeName = seed.Name;
                 recipe.Description = seed.Description;
-                recipe.ImageUrl = ResolveSeedRecipeImageUrl(recipe.ImageUrl, resolvedFoodIngredients
-                    .Select(item => item.Food!.ThumbNail)
-                    .FirstOrDefault(image => !string.IsNullOrWhiteSpace(image)));
+                recipe.ImageUrl = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+                    seed.Name,
+                    recipe.ImageUrl,
+                    resolvedFoodIngredients.Select(item => item.Food!.ThumbNail));
                 recipe.CookTimeMinutes = seed.CookTimeMinutes;
                 recipe.Difficulty = seed.Difficulty;
                 recipe.ServingCount = seed.ServingCount;
@@ -979,19 +984,6 @@ namespace EatFitAI.API.Data
                      seedKey.Contains(foodKey, StringComparison.Ordinal))));
         }
 
-        private static string? ResolveSeedRecipeImageUrl(string? currentImageUrl, string? primaryIngredientImageUrl)
-        {
-            if (!string.IsNullOrWhiteSpace(currentImageUrl)
-                && currentImageUrl.StartsWith("recipe-images/", StringComparison.OrdinalIgnoreCase))
-            {
-                return currentImageUrl;
-            }
-
-            return string.IsNullOrWhiteSpace(primaryIngredientImageUrl)
-                ? currentImageUrl
-                : primaryIngredientImageUrl;
-        }
-
         private static async Task SeedVietnameseRecipesAsync(EatFitAIDbContext context, string contentRootPath)
         {
             var seeds = VietnameseFoodCatalog.LoadRecipeSeeds(contentRootPath);
@@ -1013,13 +1005,15 @@ namespace EatFitAI.API.Data
 
             foreach (var seed in seeds)
             {
-                var resolvedIngredients = seed.Ingredients
+                var resolvedIngredientFoods = seed.Ingredients
                     .Select(ingredient => new
                     {
                         Food = FindSeedFood(foodItems, ingredient.Keys),
                         ingredient.Grams
                     })
                     .Where(item => item.Food != null)
+                    .ToList();
+                var resolvedIngredients = resolvedIngredientFoods
                     .Select(item => new RecipeIngredient
                     {
                         FoodItemId = item.Food!.FoodItemId,
@@ -1052,9 +1046,10 @@ namespace EatFitAI.API.Data
 
                 recipe.RecipeName = seed.RecipeName;
                 recipe.Description = seed.Description;
-                recipe.ImageUrl = string.IsNullOrWhiteSpace(seed.ImageKey)
-                    ? recipe.ImageUrl
-                    : seed.ImageKey.Trim();
+                recipe.ImageUrl = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+                    seed.RecipeName,
+                    seed.ImageKey,
+                    resolvedIngredientFoods.Select(item => item.Food!.ThumbNail));
                 recipe.CookTimeMinutes = seed.CookTimeMinutes;
                 recipe.Difficulty = seed.Difficulty;
                 recipe.ServingCount = seed.ServingCount;

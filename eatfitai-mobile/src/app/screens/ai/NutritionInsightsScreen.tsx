@@ -25,7 +25,7 @@ import {
   translateRecommendationType,
 } from '../../../utils/translate';
 import { t } from '../../../i18n/vi';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -209,14 +209,14 @@ const NutritionInsightsScreen = (): React.ReactElement => {
     setApplying(true);
     try {
       await aiService.applyAdaptiveTarget(adaptiveTarget.suggestedTarget);
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: t('nutrition_insights.apply_success'),
         visibilityTime: 2000,
       });
       navigation.goBack();
     } catch (err: any) {
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: t('nutrition_insights.apply_error'),
         text2: err?.message,

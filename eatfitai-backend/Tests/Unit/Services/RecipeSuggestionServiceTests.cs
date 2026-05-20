@@ -274,7 +274,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.NotEqual("fallback", chickenRecipe.GuideStatus, StringComparer.OrdinalIgnoreCase);
             Assert.Contains("Thịt gà", chickenRecipe.MatchedIngredients);
             Assert.NotNull(chickenRecipe.ImageVariants);
-            Assert.Equal("recipe-images/v1/medium/ga-kho-gung.webp", chickenRecipe.ImageVariants!.MediumUrl);
+            Assert.Equal("food-images/v2/thumb/chicken.webp", chickenRecipe.ImageUrl);
+            Assert.Equal("food-images/v2/medium/chicken.webp", chickenRecipe.ImageVariants!.MediumUrl);
             Assert.Contains(chickenRecipe.SourceUrls, IsTrustedHttpsUrl);
             Assert.NotNull(chickenRecipe.YoutubeVideo);
             Assert.True(IsDirectYoutubeVideoUrl(chickenRecipe.YoutubeVideo!.Url));
@@ -303,6 +304,49 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Contains(eggRecipe.SourceUrls, IsTrustedHttpsUrl);
             Assert.Null(eggRecipe.YoutubeVideo);
             Assert.NotEmpty(eggRecipe.PrepItems);
+        }
+
+        [Fact]
+        public async Task SuggestRecipesAsync_SourceBackedPhoGaWithoutImageStillReturnsWithSpecificNoodleDisplay()
+        {
+            await SeedVietnamesePhoGaWithoutImageAsync();
+            var service = CreateServiceWithRealRecipeGuide();
+
+            var result = await service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "auto",
+                AvailableIngredients = new List<string> { "Gà" },
+                IngredientHints = new List<RecipeIngredientHintDto>
+                {
+                    new() { Name = "Gà", FoodItemId = null, Confidence = null }
+                },
+                MaxResults = 12
+            });
+
+            var phoGa = Assert.Single(result, item => item.RecipeName == "Phở gà");
+            Assert.Equal("food-images/v2/thumb/pho.webp", phoGa.ImageUrl);
+            Assert.Equal("food-images/v2/medium/pho.webp", phoGa.ImageVariants!.MediumUrl);
+            Assert.Contains("Thịt gà", phoGa.AvailableIngredients);
+            Assert.Contains("Bánh phở", phoGa.RequiredIngredients);
+            Assert.Contains("Bánh phở", phoGa.MissingIngredients);
+            Assert.DoesNotContain("Mì/bún/phở", phoGa.RequiredIngredients);
+            Assert.DoesNotContain("Mì/bún/phở", phoGa.MissingIngredients);
+            Assert.Contains(phoGa.SourceUrls, IsTrustedHttpsUrl);
+        }
+
+        [Fact]
+        public async Task GetRecipeDetailAsync_NormalizesPhoGaGenericNoodlesToBanhPho()
+        {
+            var recipe = await SeedVietnamesePhoGaWithoutImageAsync();
+            var service = CreateServiceWithRealRecipeGuide();
+
+            var result = await service.GetRecipeDetailAsync(recipe.RecipeId);
+
+            Assert.NotNull(result);
+            Assert.Contains(result!.Ingredients, ingredient => ingredient.FoodName == "Bánh phở");
+            Assert.DoesNotContain(result.Ingredients, ingredient => ingredient.FoodName == "Mì/bún/phở");
+            Assert.Contains("Bánh phở", result.RequiredIngredients);
+            Assert.DoesNotContain("Mì/bún/phở", result.RequiredIngredients);
         }
 
         [Fact]
@@ -716,7 +760,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                 {
                     Assert.True(suggestion.MatchedIngredientsCount > 0);
                     Assert.NotEqual("fallback", suggestion.GuideStatus, StringComparer.OrdinalIgnoreCase);
-                    Assert.NotNull(suggestion.ImageVariants);
+                    if (!string.IsNullOrWhiteSpace(suggestion.ImageUrl))
+                    {
+                        Assert.NotNull(suggestion.ImageVariants);
+                    }
                     Assert.Contains(suggestion.SourceUrls, IsTrustedHttpsUrl);
                 });
             }
@@ -743,8 +790,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(18, result!.CookTimeMinutes);
             Assert.Equal("Dễ", result.Difficulty);
             Assert.Equal(2, result.ServingCount);
-            Assert.Equal("recipe-images/v1/thumb/trung-xao-ca-chua.webp", result.ImageUrl);
-            Assert.Equal("recipe-images/v1/medium/trung-xao-ca-chua.webp", result.ImageVariants!.MediumUrl);
+            Assert.Equal("food-images/v2/thumb/egg.webp", result.ImageUrl);
+            Assert.Equal("food-images/v2/medium/egg.webp", result.ImageVariants!.MediumUrl);
             Assert.Equal(new[] { "Chuẩn bị", "Xào chín", "Nêm lại" }, result.Instructions);
             Assert.Equal(new[] { "Trứng", "Cà chua", "Hành tây" }, result.RequiredIngredients);
             Assert.Equal("stored", result.GuideStatus);
@@ -931,6 +978,77 @@ namespace EatFitAI.API.Tests.Unit.Services
                     Grams = 100
                 });
             await _context.SaveChangesAsync();
+        }
+
+        private async Task<Recipe> SeedVietnamesePhoGaWithoutImageAsync()
+        {
+            var seed = Assert.Single(VietnameseFoodCatalog.LoadRecipeSeeds(), item => item.Slug == "pho-ga");
+            var noodles = new FoodItem
+            {
+                FoodName = "Mì/bún/phở",
+                FoodNameUnsigned = "mi bun pho noodles",
+                FoodNameEn = "noodles",
+                CaloriesPer100g = 138,
+                ProteinPer100g = 4.5m,
+                CarbPer100g = 25,
+                FatPer100g = 2,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            var chicken = new FoodItem
+            {
+                FoodName = "Thịt gà",
+                FoodNameUnsigned = "thit ga ga chicken",
+                FoodNameEn = "chicken",
+                CaloriesPer100g = 165,
+                ProteinPer100g = 31,
+                CarbPer100g = 0,
+                FatPer100g = 3.6m,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _context.FoodItems.AddRangeAsync(noodles, chicken);
+
+            var recipe = new Recipe
+            {
+                RecipeName = seed.RecipeName,
+                Description = seed.Description,
+                ImageUrl = null,
+                CookTimeMinutes = seed.CookTimeMinutes,
+                Difficulty = seed.Difficulty,
+                ServingCount = seed.ServingCount,
+                CredibilityScore = seed.CredibilityScore,
+                InstructionsJson = JsonSerializer.Serialize(seed.Instructions),
+                SourceUrlsJson = JsonSerializer.Serialize(seed.SourceUrls),
+                VideoUrl = null,
+                EnhancedAt = null,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await _context.Recipes.AddAsync(recipe);
+            await _context.SaveChangesAsync();
+
+            await _context.RecipeIngredients.AddRangeAsync(
+                new RecipeIngredient
+                {
+                    RecipeId = recipe.RecipeId,
+                    FoodItemId = noodles.FoodItemId,
+                    Grams = 180
+                },
+                new RecipeIngredient
+                {
+                    RecipeId = recipe.RecipeId,
+                    FoodItemId = chicken.FoodItemId,
+                    Grams = 150
+                });
+            await _context.SaveChangesAsync();
+
+            return recipe;
         }
 
         private static bool IsTrustedHttpsUrl(string? url)

@@ -159,7 +159,9 @@ namespace EatFitAI.API.Services
                     .ToHashSet();
                 var missingIngredients = recipeIngredients
                     .Where(ingredient => !matchedIngredientIds.Contains(ingredient.FoodItemId))
-                    .Select(ingredient => ingredient.FoodItem.FoodName)
+                    .Select(ingredient => GetRecipeIngredientDisplayName(
+                        recipe.RecipeName,
+                        ingredient.FoodItem.FoodName))
                     .ToList();
                 var matchedIngredientKeys = matchedIngredients
                     .SelectMany(item => GetIngredientKeys(item.Ingredient.FoodItem))
@@ -171,7 +173,9 @@ namespace EatFitAI.API.Services
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .ToList();
                 var requiredIngredients = recipeIngredients
-                    .Select(ingredient => ingredient.FoodItem.FoodName)
+                    .Select(ingredient => GetRecipeIngredientDisplayName(
+                        recipe.RecipeName,
+                        ingredient.FoodItem.FoodName))
                     .ToList();
                 var matchPercentage = !useDailyRecommendation && recipeIngredients.Count > 0
                     ? ((decimal)matchCount / recipeIngredients.Count) * 100m
@@ -188,6 +192,10 @@ namespace EatFitAI.API.Services
                         carbs,
                         fat);
                 var canCookNow = !useDailyRecommendation && missingIngredients.Count == 0;
+                var imageUrl = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+                    recipe.RecipeName,
+                    recipe.ImageUrl,
+                    recipeIngredients.Select(ingredient => ingredient.FoodItem?.ThumbNail));
 
                 recipeSuggestions.Add(new RecipeSuggestionDto
                 {
@@ -199,8 +207,8 @@ namespace EatFitAI.API.Services
                     TotalCarbs = carbs,
                     TotalFat = fat,
                     TotalGrams = totalGrams,
-                    ImageUrl = recipe.ImageUrl,
-                    ImageVariants = MediaVariantHelper.FromThumbUrl(recipe.ImageUrl),
+                    ImageUrl = imageUrl,
+                    ImageVariants = MediaVariantHelper.FromThumbUrl(imageUrl),
                     CookTimeMinutes = recipe.CookTimeMinutes,
                     Difficulty = recipe.Difficulty,
                     ServingCount = recipe.ServingCount,
@@ -215,10 +223,14 @@ namespace EatFitAI.API.Services
                         : canCookNow ? "readyNow" : "needsMore",
                     CanCookNow = canCookNow,
                     AvailableIngredients = matchedIngredients
-                        .Select(item => item.Ingredient.FoodItem.FoodName)
+                        .Select(item => GetRecipeIngredientDisplayName(
+                            recipe.RecipeName,
+                            item.Ingredient.FoodItem.FoodName))
                         .ToList(),
                     MatchedIngredients = matchedIngredients
-                        .Select(item => item.Ingredient.FoodItem.FoodName)
+                        .Select(item => GetRecipeIngredientDisplayName(
+                            recipe.RecipeName,
+                            item.Ingredient.FoodItem.FoodName))
                         .ToList(),
                     MissingIngredients = missingIngredients,
                     ExtraIngredients = extraIngredients,
@@ -299,8 +311,7 @@ namespace EatFitAI.API.Services
             var result = new List<RecipeSuggestionDto>();
             foreach (var suggestion in suggestions)
             {
-                if (suggestion.ImageVariants == null
-                    || !recipesById.TryGetValue(suggestion.RecipeId, out var recipe))
+                if (!recipesById.TryGetValue(suggestion.RecipeId, out var recipe))
                 {
                     continue;
                 }
@@ -478,7 +489,9 @@ namespace EatFitAI.API.Services
                     return new RecipeIngredientDetailDto
                     {
                         FoodItemId = ri.FoodItemId,
-                        FoodName = ri.FoodItem.FoodName,
+                        FoodName = GetRecipeIngredientDisplayName(
+                            recipe.RecipeName,
+                            ri.FoodItem.FoodName),
                         Grams = ri.Grams,
                         Calories = ri.FoodItem.CaloriesPer100g * factor,
                         Protein = ri.FoodItem.ProteinPer100g * factor,
@@ -497,6 +510,10 @@ namespace EatFitAI.API.Services
             var requiredIngredients = ingredientDetails
                 .Select(ingredient => ingredient.FoodName)
                 .ToList();
+            var imageUrl = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+                recipe.RecipeName,
+                recipe.ImageUrl,
+                recipe.RecipeIngredients.Select(ingredient => ingredient.FoodItem?.ThumbNail));
 
             return new RecipeDetailDto
             {
@@ -508,8 +525,8 @@ namespace EatFitAI.API.Services
                 TotalCarbs = totalCarbs,
                 TotalFat = totalFat,
                 TotalGrams = totalGrams,
-                ImageUrl = recipe.ImageUrl,
-                ImageVariants = MediaVariantHelper.FromThumbUrl(recipe.ImageUrl),
+                ImageUrl = imageUrl,
+                ImageVariants = MediaVariantHelper.FromThumbUrl(imageUrl),
                 CookTimeMinutes = recipe.CookTimeMinutes,
                 Difficulty = recipe.Difficulty,
                 ServingCount = recipe.ServingCount,
@@ -717,6 +734,30 @@ namespace EatFitAI.API.Services
             }
 
             return displayNames;
+        }
+
+        private static string GetRecipeIngredientDisplayName(
+            string? recipeName,
+            string ingredientName)
+        {
+            var recipeKey = AiVisionLabelCatalog.NormalizeKey(recipeName);
+            var ingredientKey = AiVisionLabelCatalog.NormalizeKey(ingredientName);
+
+            if (ingredientKey == "noodles"
+                || ingredientKey == "mi bun pho"
+                || ingredientKey == "mi pho"
+                || ingredientKey == "bun pho")
+            {
+                if (recipeKey.Contains("pho", StringComparison.Ordinal)) return "Bánh phở";
+                if (recipeKey.Contains("hu tieu", StringComparison.Ordinal)) return "Hủ tiếu";
+                if (recipeKey.Contains("mi quang", StringComparison.Ordinal)) return "Mì Quảng";
+                if (recipeKey.Contains("mien", StringComparison.Ordinal)) return "Miến";
+                if (recipeKey.Contains("cao lau", StringComparison.Ordinal)) return "Sợi cao lầu";
+                if (recipeKey.Contains("bun", StringComparison.Ordinal)) return "Bún";
+                if (recipeKey.Contains("mi", StringComparison.Ordinal)) return "Mì";
+            }
+
+            return ingredientName;
         }
 
         private static bool InputNameMatchesIngredientKeys(

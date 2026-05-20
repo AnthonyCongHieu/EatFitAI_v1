@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -225,7 +225,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       if (activeTab === 'favorites' && !isFavorite) {
         setItems((prev) => prev.filter((i) => i.id !== item.id));
       }
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: isFavorite ? t('food_search.added_favorite') : t('food_search.removed_favorite'),
         visibilityTime: 2000,
@@ -244,7 +244,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           : [{ source: 'catalog', foodItemId: Number(item.id), grams: 100 }],
         { date: selectedDate, mealTypeId: defaultMealType },
       );
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: t('food_search.quick_add_success'),
         text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
@@ -293,7 +293,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         mealTypeId: getSuggestedMealType(),
         grams: template.defaultGrams > 0 ? template.defaultGrams : undefined,
       });
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: 'Đã thêm món thường dùng',
         text2: `${template.name} (${Math.round(template.defaultGrams || 0)}g)`,
@@ -344,7 +344,7 @@ const FoodSearchScreen = (): React.ReactElement => {
     async (searchTerm: string, append = false) => {
       setActiveTab(null);
       if (!searchTerm.trim()) {
-        Toast.show({
+        showAppToast({
           type: 'info',
           text1: t('food_search.empty_search'),
           text2: t('food_search.empty_search_hint'),
@@ -709,7 +709,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
         ) : errorMessage ? (
           <View style={{ marginTop: 24 }}>
-            <MoChiInlineNotice mochiEvent="food_search_error" compact />
+            <MoChiInlineNotice mochiEvent="food_search_error" routeName="FoodSearch" compact />
             <AnimatedEmptyState
               variant="error"
               title="Tìm kiếm thất bại"
@@ -795,7 +795,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
         ) : query.trim() && items.length === 0 && hasSearched ? (
           <View style={{ marginTop: 24 }}>
-            <MoChiInlineNotice mochiEvent="food_search_no_results" compact />
+            <MoChiInlineNotice mochiEvent="food_search_no_results" routeName="FoodSearch" compact />
             <AnimatedEmptyState
               variant="no-search-results"
               title="Không tìm thấy kết quả"
@@ -804,7 +804,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
         ) : (
           <View style={S.recentArea}>
-            <MoChiInlineNotice mochiEvent="food_search_empty" compact />
+            <MoChiInlineNotice mochiEvent="food_search_empty" routeName="FoodSearch" compact />
             <View style={S.sectionHeader}>
               <ThemedText style={S.sectionTitle}>TÌM KIẾM GẦN ĐÂY</ThemedText>
             </View>

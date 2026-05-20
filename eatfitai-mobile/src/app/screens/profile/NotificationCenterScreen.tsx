@@ -131,6 +131,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
         {items.length === 0 ? (
           <MoChiInlineNotice
             mochiEvent="weekly_review"
+            routeName="NotificationCenter"
             title="Chưa có việc cần xem"
             message="Khi có nhắc nhở quan trọng, MoChi sẽ gom lại ở đây để bạn xử lý khi tiện."
             compact

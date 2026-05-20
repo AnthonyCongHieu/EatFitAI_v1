@@ -2,7 +2,7 @@
   {
     "slug": "pho-bo",
     "recipeName": "Phở bò",
-    "description": "Công thức gợi ý cho Phở bò, dùng nguyên liệu chính: mì/phở, thịt bò.",
+    "description": "Công thức gợi ý cho Phở bò, dùng nguyên liệu chính: bánh phở, thịt bò.",
     "imageKey": "recipe-images/v1/thumb/pho-bo.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -37,7 +37,7 @@
   {
     "slug": "pho-ga",
     "recipeName": "Phở gà",
-    "description": "Công thức gợi ý cho Phở gà, dùng nguyên liệu chính: mì/phở, thịt gà.",
+    "description": "Công thức gợi ý cho Phở gà, dùng nguyên liệu chính: bánh phở, thịt gà.",
     "imageKey": "recipe-images/v1/thumb/pho-ga.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -177,7 +177,7 @@
   {
     "slug": "hu-tieu",
     "recipeName": "Hủ tiếu",
-    "description": "Công thức gợi ý cho Hủ tiếu, dùng nguyên liệu chính: mì/phở, hành lá.",
+    "description": "Công thức gợi ý cho Hủ tiếu, dùng nguyên liệu chính: hủ tiếu, hành lá.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -212,7 +212,7 @@
   {
     "slug": "mi-quang",
     "recipeName": "Mì Quảng",
-    "description": "Công thức gợi ý cho Mì Quảng, dùng nguyên liệu chính: mì/phở, hành lá.",
+    "description": "Công thức gợi ý cho Mì Quảng, dùng nguyên liệu chính: mì Quảng, hành lá.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -247,7 +247,7 @@
   {
     "slug": "cao-lau",
     "recipeName": "Cao lầu",
-    "description": "Công thức gợi ý cho Cao lầu, dùng nguyên liệu chính: mì/phở, hành lá.",
+    "description": "Công thức gợi ý cho Cao lầu, dùng nguyên liệu chính: sợi cao lầu, hành lá.",
     "imageKey": null,
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -1701,7 +1701,7 @@
   {
     "slug": "mi-xao-bo",
     "recipeName": "Mì xào bò",
-    "description": "Công thức gợi ý cho Mì xào bò, dùng nguyên liệu chính: mì/phở, thịt bò, sả.",
+    "description": "Công thức gợi ý cho Mì xào bò, dùng nguyên liệu chính: mì, thịt bò, sả.",
     "imageKey": "recipe-images/v1/thumb/mi-xao-bo.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -1748,7 +1748,7 @@
   {
     "slug": "mi-xao-hai-san",
     "recipeName": "Mì xào hải sản",
-    "description": "Công thức gợi ý cho Mì xào hải sản, dùng nguyên liệu chính: mì/phở, sả, tỏi.",
+    "description": "Công thức gợi ý cho Mì xào hải sản, dùng nguyên liệu chính: mì, sả, tỏi.",
     "imageKey": "recipe-images/v1/thumb/mi-xao-hai-san.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -1789,7 +1789,7 @@
   {
     "slug": "hu-tieu-xao",
     "recipeName": "Hủ tiếu xào",
-    "description": "Công thức gợi ý cho Hủ tiếu xào, dùng nguyên liệu chính: mì/phở, sả, tỏi.",
+    "description": "Công thức gợi ý cho Hủ tiếu xào, dùng nguyên liệu chính: hủ tiếu, sả, tỏi.",
     "imageKey": "recipe-images/v1/thumb/hu-tieu-xao.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -1830,7 +1830,7 @@
   {
     "slug": "hu-tieu-nam-vang",
     "recipeName": "Hủ tiếu Nam Vang",
-    "description": "Công thức gợi ý cho Hủ tiếu Nam Vang, dùng nguyên liệu chính: mì/phở, nấm.",
+    "description": "Công thức gợi ý cho Hủ tiếu Nam Vang, dùng nguyên liệu chính: hủ tiếu, nấm.",
     "imageKey": "recipe-images/v1/thumb/hu-tieu-nam-vang.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -1865,7 +1865,7 @@
   {
     "slug": "nui-xao-bo",
     "recipeName": "Nui xào bò",
-    "description": "Công thức gợi ý cho Nui xào bò, dùng nguyên liệu chính: mì/phở, thịt bò, sả.",
+    "description": "Công thức gợi ý cho Nui xào bò, dùng nguyên liệu chính: nui, thịt bò, sả.",
     "imageKey": "recipe-images/v1/thumb/nui-xao-bo.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",

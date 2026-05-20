@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 
 import { ThemedText } from '../../../components/ThemedText';
 import MeshBackground from '../../../components/ui/MeshBackground';
@@ -185,7 +185,7 @@ const BasicInfoScreen = (): React.ReactElement => {
       if (editField === 'age') {
         const age = Number(editValue);
         if (isNaN(age) || age < 1 || age > 120) {
-          Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Tuổi phải từ 1-120' });
+          showAppToast({ type: 'error', text1: 'Lỗi', text2: 'Tuổi phải từ 1-120' });
           return;
         }
         // Calculate dateOfBirth from age
@@ -196,7 +196,7 @@ const BasicInfoScreen = (): React.ReactElement => {
       if (editField === 'heightCm') {
         const h = Number(editValue);
         if (isNaN(h) || h < 100 || h > 250) {
-          Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Chiều cao từ 100-250 cm' });
+          showAppToast({ type: 'error', text1: 'Lỗi', text2: 'Chiều cao từ 100-250 cm' });
           return;
         }
         payload.heightCm = h;

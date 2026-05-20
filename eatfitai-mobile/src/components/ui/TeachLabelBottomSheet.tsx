@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../utils/showAppToast';
 
 import { ThemedText } from '../ThemedText';
 import { ThemedTextInput } from '../ThemedTextInput';
@@ -136,7 +136,7 @@ export const TeachLabelBottomSheet = ({
       try {
         await Promise.resolve(onSelectFood(food));
       } catch (err) {
-        Toast.show({
+        showAppToast({
           type: 'error',
           text1: 'Lỗi',
           text2: 'Không thể chọn món ăn. Vui lòng thử lại.',

@@ -18,6 +18,9 @@ import { useMoChiNotificationInboxStore } from './mochiNotificationInbox';
 import { performMoChiNotificationAction } from './mochiNotificationActions';
 import { useIsMoChiTopOverlayBlocked } from './mochiTransientGate';
 import type { MoChiSurfaceDecision } from './mochiNudgePolicy';
+import { useMoChiOverlayReadiness } from './useMoChiOverlayReadiness';
+import { useMoChiSurfaceCoordinator } from './mochiSurfaceCoordinator';
+import { useMoChiSurfacePresence } from './useMoChiSurfacePresence';
 
 type MoChiOverlayHostProps = {
   currentRouteName?: string | null;
@@ -63,12 +66,31 @@ const MoChiOverlayHost = ({
   const candidate = topNotificationCandidate ?? inlineCandidate;
   const { decision, recordDecision } = useMoChiSurfaceDecision(candidate);
   const isTopOverlayBlocked = useIsMoChiTopOverlayBlocked();
+  const isOverlayReady = useMoChiOverlayReadiness(currentRouteName);
+  const canShowTopOverlay = useMoChiSurfaceCoordinator((state) => state.canShowTopOverlay);
   const markDismissed = useMoChiNotificationInboxStore((state) => state.markDismissed);
   const markActed = useMoChiNotificationInboxStore((state) => state.markActed);
   const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay | null>(null);
+  const activeOverlaySurfaceId = activeOverlay
+    ? `overlay:${activeOverlay.decision.cadenceKey}`
+    : undefined;
+  const isCoordinatorTopOverlayAllowed = canShowTopOverlay(
+    currentRouteName,
+    candidate?.eventType,
+    activeOverlaySurfaceId,
+  );
+
+  useMoChiSurfacePresence({
+    id: activeOverlaySurfaceId ?? 'overlay:none',
+    surface: 'topOverlay',
+    routeName: currentRouteName ?? activeOverlay?.candidate.routeName,
+    eventType: activeOverlay?.candidate.eventType,
+    priority: 70,
+    enabled: Boolean(activeOverlay),
+  });
 
   useEffect(() => {
-    if (isTopOverlayBlocked) {
+    if (isTopOverlayBlocked || !isOverlayReady || !isCoordinatorTopOverlayAllowed) {
       setActiveOverlay(null);
       return;
     }
@@ -88,7 +110,15 @@ const MoChiOverlayHost = ({
 
     setActiveOverlay({ candidate, decision });
     recordDecision(decision, 'shown');
-  }, [activeOverlay?.decision.cadenceKey, candidate, decision, isTopOverlayBlocked, recordDecision]);
+  }, [
+    activeOverlay?.decision.cadenceKey,
+    candidate,
+    decision,
+    isCoordinatorTopOverlayAllowed,
+    isOverlayReady,
+    isTopOverlayBlocked,
+    recordDecision,
+  ]);
 
   const closeOverlay = useCallback(() => {
     if (!activeOverlay) {

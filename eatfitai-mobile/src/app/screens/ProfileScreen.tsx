@@ -25,7 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import MeshBackground from '../../components/ui/MeshBackground';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../utils/showAppToast';
 
 import { ThemedText } from '../../components/ThemedText';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -251,10 +251,10 @@ const ProfileScreen = (): React.ReactElement => {
         const url = await profileService.uploadAvatar(result.assets[0].uri);
         await useProfileStore.getState().updateProfile({ avatarUrl: url });
         await fetchProfile({ force: true });
-        Toast.show({ type: 'success', text1: 'Cập nhật avatar thành công' });
+        showAppToast({ type: 'success', text1: 'Cập nhật avatar thành công' });
       }
     } catch (e: any) {
-      Toast.show({ type: 'error', text1: 'Lỗi', text2: e?.message || 'Không thể cập nhật avatar' });
+      showAppToast({ type: 'error', text1: 'Lỗi', text2: e?.message || 'Không thể cập nhật avatar' });
     } finally {
       setIsAvatarUploading(false);
     }
@@ -271,7 +271,7 @@ const ProfileScreen = (): React.ReactElement => {
 
   const handleProPress = useCallback(() => {
     const isPremium = subscription?.isPremium ?? false;
-    Toast.show({
+    showAppToast({
       type: isPremium ? 'success' : 'info',
       text1: isPremium ? 'Premium đang hoạt động' : 'Tài khoản Free',
       text2: isPremium
@@ -438,6 +438,7 @@ const ProfileScreen = (): React.ReactElement => {
             <Animated.View entering={FadeInUp.delay(260).duration(400)} style={S.profileNotice}>
               <MoChiInlineNotice
                 mochiEvent="profile_incomplete"
+                routeName="ProfileTab"
                 title="MoChi cần thêm dữ liệu"
                 message="Bổ sung cân nặng, chiều cao và mục tiêu để MoChi tính gợi ý sát hơn."
                 ctaLabel="Hoàn thiện hồ sơ"

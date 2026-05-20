@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
@@ -79,7 +79,7 @@ export const DietaryRestrictionsScreen = () => {
         preferredMealsPerDay: preferences?.preferredMealsPerDay || 3,
         preferredCuisine: preferences?.preferredCuisine || null,
       });
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: 'Thành công',
         text2: 'Đã lưu thiết lập ăn uống',
@@ -87,7 +87,7 @@ export const DietaryRestrictionsScreen = () => {
       });
       navigation.goBack();
     } catch (error) {
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Lỗi',
         text2: 'Không thể lưu thay đổi',

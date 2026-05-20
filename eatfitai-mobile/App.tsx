@@ -18,6 +18,7 @@ import {
 } from '@expo-google-fonts/be-vietnam-pro';
 
 import Toast from 'react-native-toast-message';
+import { showAppToast } from './src/utils/showAppToast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -153,7 +154,7 @@ const AppInner = () => {
         timeoutMs: 15000,
       });
       if (!cancelled && !res.ok) {
-        Toast.show({
+        showAppToast({
           type: 'error',
           text1: t('app.serverConnectionError'),
           text2: t('app.checkApiUrl'),

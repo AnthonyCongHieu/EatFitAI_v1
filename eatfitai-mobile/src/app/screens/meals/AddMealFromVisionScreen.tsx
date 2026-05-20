@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
@@ -138,7 +138,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       }
 
       if (!target.item.isMatched && !target.selected) {
-        Toast.show({
+        showAppToast({
           type: 'info',
           text1: 'Cần xác nhận món',
           text2: 'Hãy Tìm kiếm món để xác nhận trước khi lưu.',
@@ -190,7 +190,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       }
 
       if (foodItem.source === 'user') {
-        Toast.show({
+        showAppToast({
           type: 'info',
           text1: 'Chọn món trong thư viện',
           text2: 'Dạy AI cần món catalog để lưu mapping dùng chung.',
@@ -245,7 +245,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
         await aiService.teachLabel(request);
 
-        Toast.show({
+        showAppToast({
           type: 'success',
           text1: 'Đã dạy AI',
           text2: `"${currentTeachItem.label}" -> ${foodItem.name}`,
@@ -299,7 +299,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       }));
 
       closeReplacePicker();
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: 'Đã thay món',
         text2: foodItem.name,
@@ -310,7 +310,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
   const handleAddToDiary = useCallback(async () => {
     if (selectedItems.length === 0) {
-      Toast.show({
+      showAppToast({
         type: 'info',
         text1: 'Chưa chọn món nào',
         text2: 'Vui lòng chọn ít nhất 1 món, hoặc dùng "Tìm kiếm món" cho món chưa rõ.',
@@ -320,7 +320,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
     const saveBlocker = getVisionReviewSaveBlocker(selectedItems);
     if (saveBlocker) {
-      Toast.show({
+      showAppToast({
         type: 'info',
         text1: 'Còn món cần sửa',
         text2: saveBlocker,
@@ -350,7 +350,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         { mealTypeId: selectedMealType },
       );
 
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: 'Đã thêm vào nhật ký',
         text2: `${selectedItems.length} món - ${Math.round(totalCalories)} kcal`,
@@ -571,7 +571,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           </ThemedText>
         </View>
 
-        {showSavedMoChi && <MoChiInlineNotice mochiEvent="meal_logged" compact />}
+        {showSavedMoChi && (
+          <MoChiInlineNotice mochiEvent="meal_logged" routeName="AddMealFromVision" compact />
+        )}
 
         {matchedItems.length > 0 ? (
           <>

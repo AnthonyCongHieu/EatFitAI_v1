@@ -577,7 +577,7 @@ const StatsScreen = (): React.ReactElement => {
         }
       >
         {activeTab === 'today' && !isLoading && todayCal <= 0 && (
-          <MoChiInlineNotice mochiEvent="stats_low_data" compact tone="calm" />
+          <MoChiInlineNotice mochiEvent="stats_low_data" routeName="StatsTab" compact tone="calm" />
         )}
 
         {/* ═══════════ TODAY ═══════════ */}

@@ -8,7 +8,7 @@ import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../utils/showAppToast';
 
 import { BottomSheet } from '../BottomSheet';
 import { ThemedText } from '../ThemedText';
@@ -54,7 +54,7 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
   const handleSuggestRecipes = useCallback(() => {
     const names = getIngredientNames();
     if (names.length === 0) {
-      Toast.show({
+      showAppToast({
         type: 'info',
         text1: 'Chưa có nguyên liệu',
         text2: 'Quét thêm nguyên liệu để gợi ý công thức',

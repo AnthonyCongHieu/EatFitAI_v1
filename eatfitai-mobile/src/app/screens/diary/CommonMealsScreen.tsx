@@ -10,7 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 
 import Button from '../../../components/Button';
 import SubScreenLayout from '../../../components/ui/SubScreenLayout';
@@ -54,7 +54,7 @@ const CommonMealsScreen = (): React.ReactElement => {
                 await foodService.deleteCommonMeal(templateId);
                 await queryClient.invalidateQueries({ queryKey: ['common-meals'] });
                 await commonMealsQuery.refetch();
-                Toast.show({
+                showAppToast({
                   type: 'success',
                   text1: 'Đã xóa tổ hợp món',
                   text2: templateName,

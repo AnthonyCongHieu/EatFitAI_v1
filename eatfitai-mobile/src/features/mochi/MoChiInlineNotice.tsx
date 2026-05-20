@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../../components/ThemedText';
@@ -6,31 +6,60 @@ import { useEN } from '../../theme/emeraldNebula';
 import MoChiSprite from './MoChiSprite';
 import { getMoChiEventState, type MoChiPetEventType } from './mochiPetEngine';
 import { getMoChiExperience } from './mochiExperienceCatalog';
+import { useMoChiVisibleTargetsStore } from './mochiVisibleTargets';
+import { useMoChiSurfacePresence } from './useMoChiSurfacePresence';
 
 type MoChiInlineNoticeProps = {
   mochiEvent: MoChiPetEventType;
+  routeName?: string | null;
   title?: string;
   message?: string;
   ctaLabel?: string;
   compact?: boolean;
   hideSprite?: boolean;
   tone?: 'standard' | 'calm';
+  registerSurface?: boolean;
 };
+
+const INLINE_NOTICE_BLOCKS = ['topOverlay'] as const;
 
 const MoChiInlineNotice = ({
   mochiEvent,
+  routeName,
   title,
   message,
   ctaLabel,
   compact = false,
   hideSprite = false,
   tone = 'standard',
+  registerSurface = true,
 }: MoChiInlineNoticeProps): React.ReactElement => {
   const EN = useEN();
   const state = getMoChiEventState(mochiEvent);
   const experience = getMoChiExperience(mochiEvent);
   const isCalm = tone === 'calm';
   const spriteSize = isCalm ? 70 : compact ? 80 : 102;
+  const setVisibleTarget = useMoChiVisibleTargetsStore((store) => store.setVisibleTarget);
+  const shouldRegisterSurface = registerSurface && Boolean(routeName) && !hideSprite;
+
+  useMoChiSurfacePresence({
+    id: `inline:${routeName ?? 'global'}:${mochiEvent}`,
+    surface: 'inlineNotice',
+    routeName,
+    eventType: mochiEvent,
+    priority: 60,
+    blocks: INLINE_NOTICE_BLOCKS,
+    enabled: shouldRegisterSurface,
+  });
+
+  useEffect(() => {
+    if (!shouldRegisterSurface || !routeName) {
+      return undefined;
+    }
+
+    setVisibleTarget(routeName, mochiEvent, true);
+    return () => setVisibleTarget(routeName, mochiEvent, false);
+  }, [mochiEvent, routeName, setVisibleTarget, shouldRegisterSurface]);
 
   return (
     <View

@@ -33,7 +33,7 @@ import MeshBackground from '../../../components/ui/MeshBackground';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Swipeable from '../../../components/Swipeable';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 import * as Haptics from 'expo-haptics';
 
 import { ThemedText } from '../../../components/ThemedText';
@@ -308,7 +308,7 @@ const MealDiaryScreen = (): React.ReactElement => {
     }
 
     if (!foodId) {
-      Toast.show({ type: 'info', text1: 'Không có dữ liệu chi tiết' });
+      showAppToast({ type: 'info', text1: 'Không có dữ liệu chi tiết' });
       return;
     }
 
@@ -331,9 +331,9 @@ const MealDiaryScreen = (): React.ReactElement => {
           try {
             await diaryService.deleteEntry(entry.id);
             await invalidateDiaryQueries(queryClient);
-            Toast.show({ type: 'success', text1: 'Đã xóa', text2: `Đã xóa ${entry.foodName}` });
+            showAppToast({ type: 'success', text1: 'Đã xóa', text2: `Đã xóa ${entry.foodName}` });
           } catch (err: any) {
-            Toast.show({ type: 'error', text1: 'Lỗi xóa', text2: err?.message || 'Thử lại sau.' });
+            showAppToast({ type: 'error', text1: 'Lỗi xóa', text2: err?.message || 'Thử lại sau.' });
           }
         },
       },
@@ -590,6 +590,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                           >
                             <MoChiInlineNotice
                               mochiEvent="meal_reminder"
+                              routeName="MealDiary"
                               title={MEAL_DIARY_INLINE_NUDGE_COPY.title}
                               message={MEAL_DIARY_INLINE_NUDGE_COPY.message}
                               ctaLabel={MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel}

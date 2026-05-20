@@ -26,6 +26,8 @@ import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
 import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
 import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
 import type { MoChiTutorialTargetId } from '../../features/mochi/tutorial/mochiTutorialCatalog';
+import { useMoChiSurfaceCoordinator } from '../../features/mochi/mochiSurfaceCoordinator';
+import { useMoChiSurfacePresence } from '../../features/mochi/useMoChiSurfacePresence';
 
 type CommandTarget = 'HomeTab' | 'MealDiary' | 'MoChiHub' | 'StatsTab' | 'ProfileTab';
 
@@ -84,6 +86,7 @@ const COMMAND_ITEMS: CommandItem[] = [
 ];
 
 const TAB_BAR_HEIGHT = 58;
+const SHEET_BLOCKS = ['topOverlay'] as const;
 
 const resolveMoChiDockPose = (currentRouteName: string): MoChiPoseKey => {
   if (currentRouteName === 'AiCamera') {
@@ -112,12 +115,14 @@ const CommandButton = ({
   dockPose,
   colors,
   isHubOpen,
+  isMoChiBusy,
 }: {
   command: CommandItem;
   isFocused: boolean;
   onPress: () => void;
   dockPose: MoChiPoseKey;
   isHubOpen: boolean;
+  isMoChiBusy: boolean;
   colors: { primary: string; onPrimary: string; textMuted: string; bg: string };
 }) => {
   const scale = useSharedValue(1);
@@ -185,10 +190,19 @@ const CommandButton = ({
       ]}
     >
       {command.isPrimary ? (
-        <View style={styles.primaryDockHalo}>
+        <View
+          style={[
+            styles.primaryDockHalo,
+            isMoChiBusy && !isHubOpen && styles.primaryDockHaloQuiet,
+          ]}
+        >
           <View style={styles.primaryDockCore}>
             <View style={styles.primaryDockMascotPlate}>
-              <MoChiSprite poseKey={dockPose} size={54} animated={false} />
+              <MoChiSprite
+                poseKey={isMoChiBusy && !isHubOpen ? 'boxIdle' : dockPose}
+                size={54}
+                animated={false}
+              />
             </View>
           </View>
         </View>
@@ -281,8 +295,25 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
 
   const safeBottom = resolveBottomTabSafePadding(Platform.OS, insets.bottom);
   const current = state.routes[state.index]?.name ?? '';
+  const isMoChiBusy = useMoChiSurfaceCoordinator((store) => store.isBusy(current));
   const mochiDockPose = resolveMoChiDockPose(current);
   const navigateTab = navigation.navigate as unknown as (name: string, params?: unknown) => void;
+
+  useMoChiSurfacePresence({
+    id: 'bottomDock:main',
+    surface: 'bottomDock',
+    routeName: current,
+    priority: 10,
+  });
+
+  useMoChiSurfacePresence({
+    id: 'sheet:mochiHub',
+    surface: 'sheet',
+    routeName: current,
+    priority: 90,
+    blocks: SHEET_BLOCKS,
+    enabled: isHubVisible,
+  });
 
   const runCommand = (command: CommandItem) => {
     if (command.kind === 'hub') {
@@ -342,6 +373,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
               colors={colors}
               dockPose={isHubVisible ? 'nutritionCoachNotice' : mochiDockPose}
               isHubOpen={isHubVisible}
+              isMoChiBusy={isMoChiBusy}
               isFocused={current === command.target}
               onPress={() => runCommand(command)}
             />
@@ -407,6 +439,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(16, 185, 129, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(74, 222, 128, 0.22)',
+  },
+  primaryDockHaloQuiet: {
+    opacity: 0.72,
   },
   primaryDockCore: {
     width: 64,

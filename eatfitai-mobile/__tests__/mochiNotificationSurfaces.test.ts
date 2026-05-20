@@ -9,6 +9,8 @@ describe('MoChi notification surfaces', () => {
     const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
     const surfaceDecisionSource = readSource('src/features/mochi/useMoChiSurfaceDecision.ts');
     const topCandidateSource = readSource('src/features/mochi/useMoChiTopNotificationCandidate.ts');
+    const inlineNoticeSource = readSource('src/features/mochi/MoChiInlineNotice.tsx');
+    const statsSource = readSource('src/app/screens/stats/StatsScreen.tsx');
 
     expect(overlayHostSource).toContain('resolveMoChiTopOverlayOffset');
     expect(overlayHostSource).toContain('top: topOffset');
@@ -16,20 +18,31 @@ describe('MoChi notification surfaces', () => {
     expect(overlayHostSource).toContain('useMoChiTopNotificationCandidate');
     expect(overlayHostSource).toContain('useIsMoChiTopOverlayBlocked');
     expect(overlayHostSource).toContain('isTopOverlayBlocked');
+    expect(overlayHostSource).toContain('useMoChiOverlayReadiness');
+    expect(overlayHostSource).toContain('canShowTopOverlay');
+    expect(overlayHostSource).toContain('useMoChiSurfacePresence');
     expect(surfaceDecisionSource).not.toContain('isCollisionSafe: true');
     expect(topCandidateSource).toContain('useMoChiVisibleTargetsStore');
     expect(topCandidateSource).toContain('visibleTargets');
+    expect(inlineNoticeSource).toContain('useMoChiSurfacePresence');
+    expect(inlineNoticeSource).toContain('setVisibleTarget(routeName, mochiEvent, true)');
+    expect(statsSource).toContain('routeName="StatsTab"');
   });
 
   it('registers toast transients as top-overlay blockers', () => {
     const toastConfigSource = readSource('src/config/toastConfig.tsx');
     const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
+    const showAppToastSource = readSource('src/utils/showAppToast.ts');
 
     expect(toastConfigSource).toContain('blockMoChiTopOverlay');
     expect(toastConfigSource).toContain("blockMoChiTopOverlay('toast', 4500)");
     expect(toastConfigSource).toContain('size={56}');
     expect(toastConfigSource).toContain('width: 62');
-    expect(overlayHostSource).toContain('if (isTopOverlayBlocked)');
+    expect(showAppToastSource).toContain('registerSurface({');
+    expect(showAppToastSource.indexOf('registerSurface({')).toBeLessThan(
+      showAppToastSource.indexOf('Toast.show({'),
+    );
+    expect(overlayHostSource).toContain('if (isTopOverlayBlocked || !isOverlayReady || !isCoordinatorTopOverlayAllowed)');
     expect(overlayHostSource).toContain('setActiveOverlay(null)');
   });
 

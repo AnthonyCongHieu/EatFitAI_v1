@@ -19,4 +19,23 @@ describe('recipe suggestion flow source contract', () => {
     expect(source).not.toContain('youtube.com/results');
     expect(source).toContain('Chưa có video đã xác thực');
   });
+
+  it('uses recipe visual fallback states instead of permanent plate placeholders', () => {
+    const source = readSource('src/app/screens/ai/RecipeSuggestionsScreen.tsx');
+
+    expect(source).toContain('RecipeVisual');
+    expect(source).toContain('getRecipeMatchBadgeLabel');
+    expect(source).not.toContain('restaurant-outline" size={34}');
+    expect(source).not.toContain(' điểm');
+  });
+
+  it('keeps recipe detail content readable around ingredients, CTA, and references', () => {
+    const source = readSource('src/app/screens/ai/RecipeDetailScreen.tsx');
+
+    expect(source).toContain('RecipeVisual');
+    expect(source).toContain('buildRecipeIngredientRows');
+    expect(source).toContain('formatRecipeSourceLabel');
+    expect(source).not.toContain('Tình trạng nguyên liệu');
+    expect(source).not.toContain('<ThemedText style={S.sourceText} numberOfLines={1}>{url}</ThemedText>');
+  });
 });

@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
@@ -221,7 +221,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         }
       }
 
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: route.params.diaryEntryId ? 'Đã cập nhật khẩu phần' : 'Đã thêm món vào nhật ký',
         text2: route.params.diaryEntryId ? 'Đã lưu thay đổi của bạn.' : 'Tiếp tục theo dõi dinh dưỡng của bạn!',

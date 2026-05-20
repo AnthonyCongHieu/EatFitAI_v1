@@ -10,7 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 
 import Button from '../../../components/Button';
 import SubScreenLayout from '../../../components/ui/SubScreenLayout';
@@ -84,7 +84,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
   const handleSearch = useCallback(async () => {
     const trimmed = searchQuery.trim();
     if (!trimmed) {
-      Toast.show({
+      showAppToast({
         type: 'info',
         text1: 'Nhập tên món cần tìm',
         text2: 'Tìm món trong danh mục để thêm vào tổ hợp.',
@@ -168,7 +168,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
   const handleSave = useCallback(async () => {
     const normalizedName = dishName.trim();
     if (!normalizedName) {
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Thiếu tên tổ hợp',
         text2: 'Hãy đặt tên để bạn dễ tìm lại về sau.',
@@ -177,7 +177,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
     }
 
     if (selectedIngredients.length === 0) {
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Chưa có món nào',
         text2: 'Thêm ít nhất một món từ danh mục để lưu tổ hợp.',
@@ -191,7 +191,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
     }));
 
     if (ingredients.some((ingredient) => !Number.isFinite(ingredient.grams) || ingredient.grams <= 0)) {
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Khối lượng chưa hợp lệ',
         text2: 'Mỗi món cần có số gram lớn hơn 0.',
@@ -220,7 +220,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
         queryClient.invalidateQueries({ queryKey: ['common-meal-detail', templateId] }),
       ]);
 
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: isEditMode ? 'Đã cập nhật tổ hợp món' : 'Đã tạo tổ hợp món',
         text2: normalizedName,

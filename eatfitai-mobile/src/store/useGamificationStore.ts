@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../utils/showAppToast';
 import { diaryService } from '../services/diaryService';
 import { addDaysToDateOnly, daysBetweenDateOnly, formatBusinessDate } from '../utils/businessDate';
 
@@ -326,7 +326,7 @@ export const useGamificationStore = create<GamificationState>()(
 
                 // Hiện Toast thông báo thành công
                 setTimeout(() => {
-                  Toast.show({
+                  showAppToast({
                     type: 'success',
                     text1: 'Phục hồi chuỗi thành công!',
                     text2: `Chuỗi ${newStreak} ngày của bạn đã quay trở lại.`,
@@ -382,7 +382,7 @@ export const useGamificationStore = create<GamificationState>()(
                  newBrokenStreakDate = firstMissedStr;
               } else if (newStreak > 0 && newStreakRecoveriesLeft === 0) {
                  setTimeout(() => {
-                   Toast.show({
+                   showAppToast({
                      type: 'error',
                      text1: 'Chuỗi đã bị đứt!',
                      text2: 'Bạn đã dùng hết quyền khôi phục trong tháng.',
@@ -446,7 +446,7 @@ export const useGamificationStore = create<GamificationState>()(
           if (achievement && !achievement.unlockedAt) {
             // Hiển thị thông báo chúc mừng
             setTimeout(() => {
-              Toast.show({
+              showAppToast({
                 type: 'achievement',
                 text1: 'Thành tựu mới!',
                 text2: `Đã mở khóa: ${achievement.title}`,
@@ -505,7 +505,7 @@ export const useGamificationStore = create<GamificationState>()(
           // Auto unlock nếu đạt target
           if (newProgress >= a.target) {
             setTimeout(() => {
-              Toast.show({
+              showAppToast({
                 type: 'achievement',
                 text1: 'Thành tựu mới!',
                 text2: `Đã mở khóa: ${a.title}`,

@@ -25,6 +25,7 @@ import {
   MoChiTutorialProvider,
   useMoChiTutorial,
 } from '../../features/mochi/tutorial/MoChiTutorialContext';
+import { useMoChiSurfacePresence } from '../../features/mochi/useMoChiSurfacePresence';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -37,6 +38,7 @@ const AUTH_FLOW_ROUTES = new Set([
   'ForgotPassword',
   'Onboarding',
 ]);
+const TUTORIAL_SURFACE_BLOCKS = ['topOverlay'] as const;
 
 const inferScreenFlow = (routeName: string | undefined): string => {
   if (!routeName) {
@@ -147,6 +149,14 @@ const AuthenticatedMoChiSurfaces = ({
 }): React.ReactElement => {
   const { isTutorialVisible } = useMoChiTutorial();
   useMoChiReminderOrchestrator(true);
+  useMoChiSurfacePresence({
+    id: 'tutorial:global',
+    surface: 'tutorial',
+    routeName: currentRouteName,
+    priority: 100,
+    blocks: TUTORIAL_SURFACE_BLOCKS,
+    enabled: isTutorialVisible,
+  });
 
   return (
     <>

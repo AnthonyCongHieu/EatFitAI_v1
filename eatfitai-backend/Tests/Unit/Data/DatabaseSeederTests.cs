@@ -107,7 +107,7 @@ public class DatabaseSeederTests
         Assert.Single(seededRecipes, recipe => recipe.RecipeName == "Cơm gà xào rau củ");
 
         var canhBiDo = Assert.Single(seededRecipes, recipe => recipe.RecipeName == "Canh bí đỏ tôm");
-        Assert.StartsWith("recipe-images/v1/thumb/", canhBiDo.ImageUrl);
+        Assert.Equal("food-images/v2/thumb/pumpkin_soup.webp", canhBiDo.ImageUrl);
         Assert.Equal(25, canhBiDo.CookTimeMinutes);
         Assert.True(canhBiDo.RecipeIngredients.Count >= 2);
     }
@@ -292,7 +292,7 @@ public class DatabaseSeederTests
     }
 
     [Fact]
-    public void VietnameseFoodCatalog_CoversDishListAndDedicatedRecipeImages()
+    public void VietnameseFoodCatalog_CoversDishListAndResolvableR2Images()
     {
         var seeds = VietnameseFoodCatalog.LoadFoodSeeds(Directory.GetCurrentDirectory());
         var uniqueSlugs = seeds.Select(seed => seed.Slug).ToHashSet(StringComparer.Ordinal);
@@ -307,8 +307,20 @@ public class DatabaseSeederTests
 
         Assert.Contains(seeds, seed => seed.FoodName == "Súp cua" && seed.Aliases.Contains("Cua soup"));
         Assert.All(
-            seeds.Where(seed => !string.IsNullOrWhiteSpace(seed.ImageKey)),
-            seed => Assert.StartsWith("recipe-images/v1/thumb/", seed.ImageKey));
+            seeds,
+            seed => Assert.StartsWith(
+                "food-images/v2/thumb/",
+                CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+                    seed.FoodName,
+                    seed.ImageKey,
+                    aliases: seed.Aliases)));
+
+        var recipeSeeds = VietnameseFoodCatalog.LoadRecipeSeeds(Directory.GetCurrentDirectory());
+        Assert.All(
+            recipeSeeds,
+            seed => Assert.StartsWith(
+                "food-images/v2/thumb/",
+                CatalogImageKeyResolver.ResolveCatalogThumbnailKey(seed.RecipeName, seed.ImageKey)));
     }
 
     [Fact]
@@ -330,7 +342,7 @@ public class DatabaseSeederTests
         var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
 
         var comTamSuon = await context.FoodItems.SingleAsync(food => food.FoodName == "Cơm tấm sườn");
-        Assert.Equal("recipe-images/v1/thumb/com-tam-suon.webp", comTamSuon.ThumbNail);
+        Assert.Equal("food-images/v2/thumb/com_tam.webp", comTamSuon.ThumbNail);
 
         var canhCaiThao = await context.FoodItems.SingleAsync(food => food.FoodName == "Canh cải thảo thịt bằm");
         Assert.Contains("canh cai thua thit bam", canhCaiThao.FoodNameUnsigned);
@@ -340,7 +352,7 @@ public class DatabaseSeederTests
             .Include(item => item.RecipeIngredients)
             .SingleAsync(item => item.RecipeName == "Cơm tấm sườn");
 
-        Assert.Equal("recipe-images/v1/thumb/com-tam-suon.webp", recipe.ImageUrl);
+        Assert.Equal("food-images/v2/thumb/com_tam.webp", recipe.ImageUrl);
         Assert.Null(recipe.EnhancedAt);
         Assert.Contains("monngonmoingay.com", recipe.SourceUrlsJson);
         Assert.Null(recipe.VideoUrl);
@@ -355,6 +367,21 @@ public class DatabaseSeederTests
 
         Assert.True(RecipeIngredientEligibility.IsFinishedDishKey("Canh cải thừa thịt bằm"));
         Assert.True(RecipeIngredientEligibility.IsIngredientKey("Thịt bò"));
+    }
+
+    [Fact]
+    public void CatalogImageKeyResolver_IgnoresLegacyRecipeImageFallbackKeys()
+    {
+        var resolved = CatalogImageKeyResolver.ResolveCatalogThumbnailKey(
+            "Món thử nghiệm chưa có trong catalog",
+            "recipe-images/v1/thumb/missing.webp",
+            new[]
+            {
+                "recipe-images/v1/thumb/also-missing.webp",
+                "food-images/v2/thumb/chicken.webp"
+            });
+
+        Assert.Equal("food-images/v2/thumb/chicken.webp", resolved);
     }
 
     private static readonly string[] ExpectedYolo11mCleanV1Labels =

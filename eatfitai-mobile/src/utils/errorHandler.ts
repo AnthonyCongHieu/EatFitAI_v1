@@ -1,7 +1,9 @@
 // Centralized error handling utility
-// Replaces 94+ duplicate Toast.show() calls across the app
+// Replaces 94+ duplicate showAppToast() calls across the app
 
 import Toast from 'react-native-toast-message';
+
+import { showAppToast } from './showAppToast';
 
 export type ApiErrorType =
   | 'unauthorized'
@@ -37,7 +39,7 @@ export const handleApiError = (error: any): ApiError => {
     error?.message === 'Network Error' || error?.message === 'Network request failed';
 
   if (isNetworkError) {
-    Toast.show({
+    showAppToast({
       type: 'error',
       text1: 'Không có kết nối mạng',
       text2: 'Kiểm tra kết nối và thử lại',
@@ -48,7 +50,7 @@ export const handleApiError = (error: any): ApiError => {
   // HTTP status-based errors
   switch (status) {
     case 401:
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Phiên đăng nhập đã hết hạn',
         text2: 'Vui lòng đăng nhập lại',
@@ -56,7 +58,7 @@ export const handleApiError = (error: any): ApiError => {
       return { type: 'unauthorized', status, message: serverMessage };
 
     case 403:
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Không có quyền',
         text2: 'Bạn không có quyền thực hiện thao tác này',
@@ -64,7 +66,7 @@ export const handleApiError = (error: any): ApiError => {
       return { type: 'forbidden', status, message: serverMessage };
 
     case 404:
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Không tìm thấy',
         text2: 'Dữ liệu không tồn tại hoặc đã bị xóa',
@@ -72,7 +74,7 @@ export const handleApiError = (error: any): ApiError => {
       return { type: 'not_found', status, message: serverMessage };
 
     case 422:
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Dữ liệu không hợp lệ',
         text2: 'Vui lòng kiểm tra lại thông tin',
@@ -83,7 +85,7 @@ export const handleApiError = (error: any): ApiError => {
     case 502:
     case 503:
     case 504:
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Lỗi máy chủ',
         text2: 'Vui lòng thử lại sau',
@@ -91,7 +93,7 @@ export const handleApiError = (error: any): ApiError => {
       return { type: 'server_error', status, message: serverMessage };
 
     default:
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Có lỗi xảy ra',
         text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ',
@@ -113,7 +115,7 @@ export const handleApiErrorWithCustomMessage = (
   // Override with custom message if provided
   if (customMessages && customMessages[apiError.type]) {
     const custom = customMessages[apiError.type]!;
-    Toast.show({
+    showAppToast({
       type: 'error',
       text1: custom.text1,
       text2: custom.text2,
@@ -215,7 +217,7 @@ export const showSuccess = (
   customMessage?: { text1?: string; text2?: string },
 ) => {
   const msg = successMessages[type];
-  Toast.show({
+  showAppToast({
     type: 'success',
     text1: customMessage?.text1 ?? msg.text1,
     text2: customMessage?.text2 ?? msg.text2,
@@ -229,7 +231,7 @@ export const showSuccess = (
  * Show info toast for neutral notifications
  */
 export const showInfo = (text1: string, text2?: string) => {
-  Toast.show({
+  showAppToast({
     type: 'info',
     text1,
     text2,
@@ -243,7 +245,7 @@ export const showInfo = (text1: string, text2?: string) => {
  * Show warning toast for non-critical issues
  */
 export const showWarning = (text1: string, text2?: string) => {
-  Toast.show({
+  showAppToast({
     type: 'error', // Using error type with orange styling suggested
     text1: `⚠️ ${text1}`,
     text2,
@@ -257,7 +259,7 @@ export const showWarning = (text1: string, text2?: string) => {
  * Show loading indicator toast (auto-dismiss disabled)
  */
 export const showLoading = (message: string = 'Đang xử lý...') => {
-  Toast.show({
+  showAppToast({
     type: 'info',
     text1: '⏳ ' + message,
     autoHide: false,

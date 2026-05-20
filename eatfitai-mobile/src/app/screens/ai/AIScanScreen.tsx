@@ -26,7 +26,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../../utils/showAppToast';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -205,7 +205,7 @@ const AIScanScreen: React.FC = () => {
   /* ── All business-logic handlers ── */
 
   const notifyVisionUnavailable = useCallback(() => {
-    Toast.show({
+    showAppToast({
       type: 'info',
       text1: visionAvailability.title,
       text2:
@@ -461,7 +461,7 @@ const AIScanScreen: React.FC = () => {
             status: 'not_found',
             metadata: { barcode },
           });
-          Toast.show({
+          showAppToast({
             type: 'info',
             text1: 'Chưa có món cho mã vạch này',
             text2: 'Đang chuyển sang tìm kiếm thủ công...',
@@ -481,7 +481,7 @@ const AIScanScreen: React.FC = () => {
             foodName: foodDetail.name,
           },
         });
-        Toast.show({
+        showAppToast({
           type: 'success',
           text1: 'Đã nhận diện mã vạch',
           text2: foodDetail.name,
@@ -557,7 +557,7 @@ const AIScanScreen: React.FC = () => {
 
       if (ingredientItems.length === 0 && finishedDishItems.length > 0) {
         navigation.navigate('RecipeSuggestions', { mode: 'daily_recommendation' });
-        Toast.show({
+        showAppToast({
           type: 'info',
           text1: 'Đây là món đã nấu xong',
           text2: 'Mở gợi ý món nên ăn hôm nay thay vì thêm vào giỏ nguyên liệu',
@@ -576,7 +576,7 @@ const AIScanScreen: React.FC = () => {
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: ingredientItems.length > 1 ? 'Đã thêm các nguyên liệu vào giỏ' : 'Đã thêm vào giỏ',
         text2:
@@ -936,7 +936,7 @@ const AIScanScreen: React.FC = () => {
           >
             {hasDetectedItems && topItem ? (
               <View style={S.drawerContent}>
-                <MoChiInlineNotice mochiEvent="scan_success" compact />
+                <MoChiInlineNotice mochiEvent="scan_success" routeName="AiCamera" compact />
                 {/* Title row */}
                 <View style={S.drawerTitleRow}>
                   <View style={{ flex: 1 }}>
@@ -1183,9 +1183,9 @@ const AIScanScreen: React.FC = () => {
               /* No results / offline state — custom dark theme */
               <View style={S.drawerContent}>
                 {resultNotice?.title === 'AI tạm offline' ? (
-                  <MoChiInlineNotice mochiEvent="scan_error" compact />
+                  <MoChiInlineNotice mochiEvent="scan_error" routeName="AiCamera" compact />
                 ) : (
-                  <MoChiInlineNotice mochiEvent="scan_empty" compact />
+                  <MoChiInlineNotice mochiEvent="scan_empty" routeName="AiCamera" compact />
                 )}
                 <View style={S.noResultsWrap}>
                   <ThemedText style={S.noResultsTitle}>

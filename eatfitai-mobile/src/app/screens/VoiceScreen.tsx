@@ -23,7 +23,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../utils/showAppToast';
 
 import { ThemedText } from '../../components/ThemedText';
 import { trackEvent } from '../../services/analytics';
@@ -141,7 +141,7 @@ const VoiceScreen = (): React.ReactElement => {
 
   const notifyVoiceUnavailable = useCallback(
     (inputMode: 'microphone' | 'text' | 'quick_command' | 'auto_start') => {
-      Toast.show({
+      showAppToast({
         type: 'info',
         text1:
           isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title,
@@ -321,7 +321,7 @@ const VoiceScreen = (): React.ReactElement => {
     } = useVoiceStore.getState();
 
     if (newStatus === 'success') {
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: 'Thành công',
         text2: lastExecutedAction || 'Đã thực hiện lệnh.',
@@ -355,7 +355,7 @@ const VoiceScreen = (): React.ReactElement => {
           message: execError,
         },
       });
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Lỗi',
         text2: execError,
@@ -383,7 +383,7 @@ const VoiceScreen = (): React.ReactElement => {
     } = useVoiceStore.getState();
 
     if (newStatus === 'success') {
-      Toast.show({
+      showAppToast({
         type: 'success',
         text1: 'Thành công',
         text2: lastExecutedAction || 'Đã lưu bản nháp.',
@@ -417,7 +417,7 @@ const VoiceScreen = (): React.ReactElement => {
           message: commitError,
         },
       });
-      Toast.show({
+      showAppToast({
         type: 'error',
         text1: 'Chưa lưu được',
         text2: commitError,

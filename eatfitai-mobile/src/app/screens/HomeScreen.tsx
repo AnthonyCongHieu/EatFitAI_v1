@@ -17,7 +17,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Toast from 'react-native-toast-message';
+import { showAppToast } from '../../utils/showAppToast';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import type { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -326,7 +326,7 @@ const HomeScreen = (): React.ReactElement => {
     try {
       await waterService.addWater(new Date());
       if (options.showConfirmationToast) {
-        Toast.show({
+        showAppToast({
           type: 'success',
           text1: 'Đã ghi nước',
           text2: 'MoChi đã cộng thêm 200 ml vào hôm nay.',
@@ -337,7 +337,7 @@ const HomeScreen = (): React.ReactElement => {
       if (prevData) {
         queryClient.setQueryData(['water-intake-today'], prevData);
       }
-      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+      showAppToast({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
       return false;
     }
   }, [queryClient]);
@@ -371,7 +371,7 @@ const HomeScreen = (): React.ReactElement => {
       if (prevData) {
         queryClient.setQueryData(['water-intake-today'], prevData);
       }
-      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+      showAppToast({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
     }
   }, [queryClient]);
   const { currentStreak, checkStreak, fetchWeeklyLogs } = useGamificationStore();
@@ -469,7 +469,7 @@ const HomeScreen = (): React.ReactElement => {
           onPress: () => {
             deleteEntry(entryId)
               .then(() => {
-                Toast.show({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
+                showAppToast({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
                 queryClient.invalidateQueries({ queryKey: ['home-summary'] });
                 queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
               })
@@ -851,7 +851,9 @@ const HomeScreen = (): React.ReactElement => {
             ) : (
               /* Empty state */
               <View style={styles.emptyState}>
-                {isToday(selectedDate) && <MoChiInlineNotice mochiEvent="diary_empty_today" compact />}
+                {isToday(selectedDate) && (
+                  <MoChiInlineNotice mochiEvent="diary_empty_today" routeName="HomeTab" compact />
+                )}
                 <ThemedText style={[styles.emptyTitle, { color: C.onSurface }]}>
                   {isToday(selectedDate) ? 'Chưa có món nào hôm nay' : 'Không có dữ liệu'}
                 </ThemedText>
@@ -919,6 +921,7 @@ const HomeScreen = (): React.ReactElement => {
             >
               <MoChiInlineNotice
                 mochiEvent="water_reminder"
+                routeName="HomeTab"
                 title="Nhắc uống nước"
                 message="Ghi thêm một ly nước nếu bạn vừa uống xong."
                 ctaLabel="Ghi nước"
