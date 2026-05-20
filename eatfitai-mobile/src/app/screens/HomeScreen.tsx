@@ -55,7 +55,6 @@ import {
 import { useMoChiVisibleTargetsStore } from '../../features/mochi/mochiVisibleTargets';
 import { formatBusinessDate } from '../../utils/businessDate';
 import { useEN } from '../../theme/emeraldNebula';
-import { dailyLoopService, type DailyNutritionLoop } from '../../services/dailyLoopService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const WATER_TARGET_VISIBLE_BOTTOM_CLEARANCE = 260;
@@ -125,32 +124,6 @@ const isSameDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const formatShortDate = (d: Date): string => `${d.getDate()}/${d.getMonth() + 1}`;
-
-const getLoopStatusLabel = (status?: string): string => {
-  switch (status) {
-    case 'complete':
-      return 'Đủ tin';
-    case 'rough':
-      return 'Ước tính';
-    case 'low_confidence':
-      return 'Cần xác nhận';
-    case 'skipped':
-      return 'Có bữa bỏ qua';
-    case 'partial':
-      return 'Còn thiếu bữa';
-    case 'no_log':
-      return 'Chưa có dữ liệu';
-    default:
-      return 'Đang theo dõi';
-  }
-};
-
-const getConfidenceTone = (score?: number): string => {
-  if (typeof score !== 'number') return C_STATIC.textMuted;
-  if (score >= 75) return C_STATIC.primary;
-  if (score >= 50) return C_STATIC.amber;
-  return C_STATIC.danger;
-};
 
 const getWeekDays = (): Date[] => {
   const today = new Date();
@@ -299,7 +272,6 @@ const HomeScreen = (): React.ReactElement => {
   });
   const [serverDown, setServerDown] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const selectedDateKey = useMemo(() => formatBusinessDate(selectedDate), [selectedDate]);
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
   const [scrollY, setScrollY] = useState(0);
   const notificationInboxItems = useMoChiNotificationInboxStore((state) => state.items);
@@ -325,16 +297,6 @@ const HomeScreen = (): React.ReactElement => {
   }, [notificationInboxItems]);
   const waterTargetInlineReady = waterCardY != null
     && scrollY + SCREEN_HEIGHT - WATER_TARGET_VISIBLE_BOTTOM_CLEARANCE >= waterCardY;
-  const {
-    data: dailyLoop,
-    isFetching: isFetchingDailyLoop,
-    refetch: refetchDailyLoop,
-  } = useQuery<DailyNutritionLoop>({
-    queryKey: ['daily-loop', selectedDateKey],
-    queryFn: () => dailyLoopService.getDailyLoop(selectedDateKey),
-    staleTime: 60 * 1000,
-  });
-
   useEffect(() => {
     setMoChiVisibleTarget('HomeTab', 'water_reminder', waterTargetInlineReady);
     return () => setMoChiVisibleTarget('HomeTab', 'water_reminder', false);
@@ -496,10 +458,10 @@ const HomeScreen = (): React.ReactElement => {
   );
 
   const handleRefresh = useCallback(() => {
-    Promise.all([refetch(), refetchDailyLoop()]).catch((err: any) => {
+    refetch().catch((err: any) => {
       showCommonErrors(err, { text1: t('home.reloadFailed'), text2: t('home.pullToRetry') });
     });
-  }, [refetch, refetchDailyLoop, showCommonErrors]);
+  }, [refetch, showCommonErrors]);
 
   const handleDelete = useCallback(
     (entryId: string, foodName: string) => {
@@ -572,14 +534,6 @@ const HomeScreen = (): React.ReactElement => {
   const targetCarbs = Number(summary?.targetCarbs ?? 280);
   const targetFat = Number(summary?.targetFat ?? 60);
   const targetCalories = typeof summary?.targetCalories === 'number' ? summary.targetCalories : 2200;
-  const hasDayConfidence = typeof dailyLoop?.dayState.confidenceScore === 'number';
-  const dayConfidence = Math.round(dailyLoop?.dayState.confidenceScore ?? 0);
-  const confidenceColor = hasDayConfidence ? getConfidenceTone(dayConfidence) : C.textMuted;
-  const dailyLoopMessage = dailyLoop?.recoverySuggestion?.message
-    || dailyLoop?.nutritionStatus.message
-    || dailyLoop?.weeklyBalanceNote
-    || 'Log bữa tiếp theo để app hiểu hôm nay cần điều chỉnh gì.';
-
   // CalorieRing SVG values
   const ringSize = 140;
   const strokeWidth = 10;
@@ -647,44 +601,6 @@ const HomeScreen = (): React.ReactElement => {
         )}
 
         {/* ══════════ DASHBOARD CARD (3D Tilt) ══════════ */}
-        <Animated.View entering={FadeInUp.duration(500).springify()}>
-          <Pressable
-            style={[styles.dailyLoopCard, { backgroundColor: C.surfaceHigh, borderColor: C.outline }]}
-            onPress={() => navigation.navigate('MealDiary', { selectedDate: selectedDateKey })}
-          >
-            <View style={styles.dailyLoopTopRow}>
-              <View style={styles.dailyLoopTitleWrap}>
-                <Ionicons name="compass-outline" size={18} color={C.primary} />
-                <ThemedText style={[styles.dailyLoopEyebrow, { color: C.textMuted }]}>
-                  Việc hôm nay
-                </ThemedText>
-              </View>
-              <View style={[styles.confidenceBadge, { borderColor: confidenceColor }]}>
-                <ThemedText style={[styles.confidenceText, { color: confidenceColor }]}>
-                  {isFetchingDailyLoop ? 'Đang cập nhật' : hasDayConfidence ? `${dayConfidence}% tin cậy` : 'Chưa có dữ liệu'}
-                </ThemedText>
-              </View>
-            </View>
-
-            <ThemedText style={[styles.dailyLoopAction, { color: C.onSurface }]} numberOfLines={2}>
-              {dailyLoop?.oneJobToday.label || 'Log bữa tiếp theo'}
-            </ThemedText>
-            <ThemedText style={[styles.dailyLoopMessage, { color: C.textMuted }]} numberOfLines={3}>
-              {dailyLoopMessage}
-            </ThemedText>
-
-            <View style={styles.dailyLoopFooter}>
-              <ThemedText style={[styles.dailyLoopStatus, { color: C.primary }]}>
-                {getLoopStatusLabel(dailyLoop?.dayState.status)}
-              </ThemedText>
-              <View style={styles.dailyLoopFooterAction}>
-                <ThemedText style={[styles.dailyLoopOpenText, { color: C.primary }]}>Mở nhật ký</ThemedText>
-                <Ionicons name="arrow-forward" size={16} color={C.primary} />
-              </View>
-            </View>
-          </Pressable>
-        </Animated.View>
-
         <Animated.View entering={FadeInUp.duration(600).springify()}>
           <Tilt3DCard
             maxTilt={6}
@@ -1043,74 +959,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(255,107,107,0.12)',
     gap: 4,
-  },
-
-  /* ─── Dashboard Card ─── */
-  dailyLoopCard: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
-    overflow: 'hidden',
-  },
-  dailyLoopTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  dailyLoopTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minWidth: 0,
-  },
-  dailyLoopEyebrow: {
-    fontSize: 11,
-    fontFamily: 'BeVietnamPro_700Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  confidenceBadge: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    flexShrink: 0,
-  },
-  confidenceText: {
-    fontSize: 11,
-    fontFamily: 'BeVietnamPro_700Bold',
-  },
-  dailyLoopAction: {
-    fontSize: 19,
-    lineHeight: 27,
-    fontFamily: 'BeVietnamPro_700Bold',
-  },
-  dailyLoopMessage: {
-    fontSize: 13,
-    lineHeight: 20,
-    fontFamily: 'BeVietnamPro_500Medium',
-  },
-  dailyLoopFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 2,
-  },
-  dailyLoopStatus: {
-    fontSize: 12,
-    fontFamily: 'BeVietnamPro_700Bold',
-  },
-  dailyLoopFooterAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dailyLoopOpenText: {
-    fontSize: 12,
-    fontFamily: 'BeVietnamPro_700Bold',
   },
 
   dashboardCard: {

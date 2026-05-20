@@ -76,7 +76,6 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
-  const [devResetCode, setDevResetCode] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
 
@@ -138,13 +137,13 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   });
 
   useEffect(() => {
-    if (step !== 'verify' || devResetCode) {
+    if (step !== 'verify') {
       return;
     }
 
     const timer = setTimeout(() => inputRefs.current[0]?.focus(), 450);
     return () => clearTimeout(timer);
-  }, [devResetCode, step]);
+  }, [step]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -160,24 +159,15 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
         setLoading(true);
         setCode(Array(CODE_LENGTH).fill(''));
         setResetCode('');
-        setDevResetCode('');
 
-        const returnedResetCode = (await forgotPassword(values.email))?.trim() ?? '';
-        const nextCode = returnedResetCode.replace(/\D/g, '').slice(0, CODE_LENGTH);
+        await forgotPassword(values.email);
 
         setEmail(values.email);
         Toast.show({
           type: 'success',
           text1: 'Đã gửi mã xác minh',
-          text2: nextCode
-            ? `Chế độ dev: dùng mã ${nextCode} để tiếp tục`
-            : 'Kiểm tra email của bạn để tiếp tục',
+          text2: 'Kiểm tra email của bạn để tiếp tục',
         });
-
-        if (nextCode) {
-          setDevResetCode(nextCode);
-          setCode(Array.from({ length: CODE_LENGTH }, (_, index) => nextCode[index] ?? ''));
-        }
 
         setStep('verify');
         setCountdown(45);
@@ -628,42 +618,6 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         );
                       })}
                     </View>
-
-                    {devResetCode ? (
-                      <View
-                        style={{
-                          marginBottom: 20,
-                          borderRadius: 18,
-                          borderWidth: 1,
-                          borderColor: 'rgba(75, 226, 119, 0.28)',
-                          backgroundColor: 'rgba(75, 226, 119, 0.08)',
-                          paddingHorizontal: 16,
-                          paddingVertical: 14,
-                        }}
-                      >
-                        <ThemedText
-                          variant="caption"
-                          weight="700"
-                          style={{ color: C.primary, marginBottom: 6 }}
-                        >
-                          MÃ DEV
-                        </ThemedText>
-                        <ThemedText
-                          variant="body"
-                          weight="700"
-                          style={{ color: C.onSurface, fontSize: 20, letterSpacing: 3 }}
-                        >
-                          {devResetCode}
-                        </ThemedText>
-                        <ThemedText
-                          variant="bodySmall"
-                          style={{ color: C.onSurfaceVariant, marginTop: 6, lineHeight: 20 }}
-                        >
-                          Backend đang chạy ở chế độ dev nên app đã tự điền mã để bạn tiếp tục
-                          test reset mật khẩu mà không cần chờ email.
-                        </ThemedText>
-                      </View>
-                    ) : null}
 
                     {/* CTA */}
                     <Pressable

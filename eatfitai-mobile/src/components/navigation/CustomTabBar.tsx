@@ -198,11 +198,20 @@ const CommandButton = ({
         >
           <View style={styles.primaryDockCore}>
             <View style={styles.primaryDockMascotPlate}>
-              <MoChiSprite
-                poseKey={isMoChiBusy && !isHubOpen ? 'boxIdle' : dockPose}
-                size={54}
-                animated={false}
-              />
+              {isMoChiBusy && !isHubOpen ? (
+                <Ionicons
+                  name="sparkles"
+                  size={26}
+                  color={colors.onPrimary}
+                  testID="mochi-dock-quiet-icon"
+                />
+              ) : (
+                <MoChiSprite
+                  poseKey={dockPose}
+                  size={54}
+                  animated={false}
+                />
+              )}
             </View>
           </View>
         </View>

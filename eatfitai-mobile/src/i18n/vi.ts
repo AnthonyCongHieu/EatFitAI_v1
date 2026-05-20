@@ -161,7 +161,6 @@ export const vi = {
     resetCode: 'Mã reset',
     resetCodeRequired: 'Cần mã reset',
     resetCodeReceived: 'Đã tạo mã reset',
-    resetCodeAutofill: 'Mã reset đã điền sẵn (demo)',
     resetCodeSent: 'Mã reset đã gửi',
     resetCheckEmail: 'Kiểm tra hộp thư và nhập mã reset',
     resetPasswordAction: 'Đặt lại mật khẩu',

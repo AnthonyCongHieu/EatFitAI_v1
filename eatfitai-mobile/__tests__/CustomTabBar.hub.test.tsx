@@ -3,6 +3,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 
 import CustomTabBar from '../src/components/navigation/CustomTabBar';
 import { TEST_IDS } from '../src/testing/testIds';
+import { useMoChiSurfaceCoordinator } from '../src/features/mochi/mochiSurfaceCoordinator';
 
 const mockNavigateRoot = jest.fn();
 const mockNavigate = jest.fn();
@@ -52,10 +53,10 @@ jest.mock('react-native-reanimated', () => {
 });
 
 jest.mock('@expo/vector-icons', () => ({
-  Ionicons: ({ name }: { name: string }) => {
+  Ionicons: ({ name, ...props }: { name: string }) => {
     const React = require('react');
     const { Text } = require('react-native');
-    return React.createElement(Text, null, name);
+    return React.createElement(Text, props, name);
   },
 }));
 
@@ -122,6 +123,7 @@ describe('CustomTabBar MoChi hub layout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockNavigateRoot.mockReturnValue(true);
+    useMoChiSurfaceCoordinator.setState({ active: {} });
   });
 
   it('shows home, diary, MoChi hub, stats, and profile as the five bottom slots', () => {
@@ -141,6 +143,20 @@ describe('CustomTabBar MoChi hub layout', () => {
     const screen = renderTabBar();
 
     expect(screen.getByText('mochi-boxIdle-54-auto')).toBeTruthy();
+  });
+
+  it('hides the dock MoChi sprite while another MoChi surface is active', () => {
+    useMoChiSurfaceCoordinator.getState().registerSurface({
+      id: 'toast:daily-loop',
+      surface: 'toast',
+      routeName: 'HomeTab',
+      priority: 80,
+    });
+
+    const screen = renderTabBar();
+
+    expect(screen.queryByText('mochi-boxIdle-54-auto')).toBeNull();
+    expect(screen.getByTestId('mochi-dock-quiet-icon')).toBeTruthy();
   });
 
   it('opens the hub sheet from the center button instead of navigating directly to scan', () => {

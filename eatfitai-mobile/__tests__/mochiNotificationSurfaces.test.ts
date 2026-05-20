@@ -36,6 +36,9 @@ describe('MoChi notification surfaces', () => {
 
     expect(toastConfigSource).toContain('blockMoChiTopOverlay');
     expect(toastConfigSource).toContain("blockMoChiTopOverlay('toast', 4500)");
+    expect(toastConfigSource).toContain('useMoChiSurfacePresence');
+    expect(toastConfigSource).toContain("surface: 'toast'");
+    expect(toastConfigSource).toContain('ttlMs: 4500');
     expect(toastConfigSource).toContain('size={56}');
     expect(toastConfigSource).toContain('width: 62');
     expect(showAppToastSource).toContain('registerSurface({');

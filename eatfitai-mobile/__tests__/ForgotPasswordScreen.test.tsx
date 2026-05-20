@@ -166,4 +166,41 @@ describe('ForgotPasswordScreen', () => {
       );
     });
   }, 15000);
+
+  it('does not expose or autofill a reset code returned by demo/dev backends', async () => {
+    mockAuthState.forgotPassword.mockResolvedValue('123456');
+
+    const screen = render(
+      <ForgotPasswordScreen navigation={navigation as never} route={{ key: 'ForgotPassword', name: 'ForgotPassword' } as never} />,
+    );
+
+    fireEvent.changeText(
+      screen.getByTestId(TEST_IDS.auth.forgotPasswordEmailInput),
+      'demo@example.com',
+    );
+    fireEvent.press(screen.getByTestId(TEST_IDS.auth.forgotPasswordSendCodeButton));
+
+    await waitFor(() => {
+      expect(mockAuthState.forgotPassword).toHaveBeenCalledWith('demo@example.com');
+      expect(screen.getByTestId(TEST_IDS.auth.forgotPasswordVerifyButton)).toBeTruthy();
+    });
+
+    expect(screen.queryByText('123456')).toBeNull();
+    expect(screen.queryByText(/dev/i)).toBeNull();
+
+    for (let index = 0; index < 6; index += 1) {
+      expect(
+        screen.getByTestId(`${TEST_IDS.auth.forgotPasswordVerifyCodeInputPrefix}-${index}`)
+          .props.value,
+      ).toBe('');
+    }
+
+    expect(Toast.show).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'success',
+        text1: 'Đã gửi mã xác minh',
+        text2: 'Kiểm tra email của bạn để tiếp tục',
+      }),
+    );
+  }, 15000);
 });

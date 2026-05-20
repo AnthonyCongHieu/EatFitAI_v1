@@ -56,6 +56,7 @@
     "device:visual-ui-audit:android": "node scripts/real-device-adb-flow.js visual-ui-audit --flow all --record",
     "device:visual-ui-audit:bottom-nav:android": "node scripts/real-device-adb-flow.js visual-ui-audit --flow bottom-nav --record",
     "device:visual-ui-audit:onboarding-rulers:android": "node scripts/real-device-adb-flow.js visual-ui-audit --flow onboarding-rulers --record",
+    "device:expo-go-flow-audit:android": "node scripts/expo-go-flow-audit.js",
     "device:rc-proof:android": "node scripts/real-device-rc-proof.js",
     "automation:doctor": "node scripts/automation-doctor.js",
     "smoke:preflight": "node scripts/production-smoke-preflight.js",

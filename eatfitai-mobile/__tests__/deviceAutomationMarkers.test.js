@@ -59,4 +59,32 @@ describe('real-device automation markers', () => {
     expect(quickActionsSource).toContain('nativeID={action.testID}');
     expect(quickActionsSource).toContain('accessibilityLabel={action.testID}');
   });
+
+  it('provides an Expo Go video audit harness for current managed UI changes', () => {
+    const packageJson = JSON.parse(readSource('package.json'));
+    const scriptSource = readSource('scripts/expo-go-flow-audit.js');
+    const qaGuide = fs.readFileSync(
+      path.resolve(mobileRoot, '..', 'docs', 'qa', 'expo-go-production-flow-test.md'),
+      'utf8',
+    );
+
+    expect(packageJson.scripts['device:expo-go-flow-audit:android']).toBe(
+      'node scripts/expo-go-flow-audit.js',
+    );
+    expect(scriptSource).toContain('screenrecord');
+    expect(scriptSource).toContain('01-home-initial');
+    expect(scriptSource).toContain('05-mochi-hub');
+    expect(scriptSource).toContain('assertCurrentUi');
+    expect(scriptSource).toContain('assertExpoForeground');
+    expect(scriptSource).toContain('Interaction Trace');
+    expect(scriptSource).toContain("pidof', '-s', EXPO_GO_PACKAGE");
+    expect(scriptSource).toContain('EXPO_GO_AUDIT_DEEP');
+    expect(scriptSource).toContain('09c-food-add-readback');
+    expect(scriptSource).toContain('buildAsciiKeyEventArgs');
+    expect(scriptSource).toContain('report.failures');
+    expect(scriptSource).toContain('Strict Review Checklist');
+    expect(qaGuide).toContain('Production test cases');
+    expect(qaGuide).toContain('MoChi review checklist');
+    expect(qaGuide).toContain('Click strategy chuẩn');
+  });
 });

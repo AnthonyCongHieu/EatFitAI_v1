@@ -99,4 +99,44 @@ describe('MoChi surface coordinator', () => {
 
     expect(isMoChiBusy(active)).toBe(false);
   });
+
+  it('treats toast, overlay, and inline MoChi as a busy speaking surface', () => {
+    expect(
+      isMoChiBusy({
+        'toast:meal': makeSurface({
+          id: 'toast:meal',
+          surface: 'toast',
+          priority: 80,
+        }),
+      }),
+    ).toBe(true);
+
+    expect(
+      isMoChiBusy({
+        'overlay:daily-loop': makeSurface({
+          id: 'overlay:daily-loop',
+          surface: 'topOverlay',
+          routeName: 'HomeTab',
+          eventType: 'diary_review',
+          priority: 70,
+        }),
+      }),
+    ).toBe(true);
+
+    expect(
+      isMoChiBusy(
+        {
+          'inline:home': makeSurface({
+            id: 'inline:home',
+            surface: 'inlineNotice',
+            routeName: 'HomeTab',
+            eventType: 'diary_empty_today',
+            priority: 60,
+          }),
+        },
+        Date.now(),
+        'HomeTab',
+      ),
+    ).toBe(true);
+  });
 });

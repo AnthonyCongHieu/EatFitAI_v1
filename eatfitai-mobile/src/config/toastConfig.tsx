@@ -6,6 +6,7 @@ import { ThemedText } from '../components/ThemedText';
 import MoChiSprite from '../features/mochi/MoChiSprite';
 import type { MoChiPoseKey } from '../assets/mascot/mochi/mochiAssets';
 import { blockMoChiTopOverlay } from '../features/mochi/mochiTransientGate';
+import { useMoChiSurfacePresence } from '../features/mochi/useMoChiSurfacePresence';
 
 const C = {
   primary: '#4be277',
@@ -67,6 +68,14 @@ const CustomToast = ({
 }) => {
   const meta = TONE_META[tone];
   const poseKey = props?.mochiPose ?? meta.poseKey;
+
+  useMoChiSurfacePresence({
+    id: `toast:${tone}`,
+    surface: 'toast',
+    priority: 80,
+    blocks: ['topOverlay'],
+    ttlMs: 4500,
+  });
 
   useEffect(() => blockMoChiTopOverlay('toast', 4500), []);
 

@@ -22,7 +22,8 @@ describe('Unified MoChi shell and loading states', () => {
     expect(tabBarSource).toContain('primaryDock');
     expect(tabBarSource).toContain('primaryDockCore');
     expect(tabBarSource).toContain('primaryDockHalo');
-    expect(tabBarSource).toContain("poseKey={isMoChiBusy && !isHubOpen ? 'boxIdle' : dockPose}");
+    expect(tabBarSource).toContain('mochi-dock-quiet-icon');
+    expect(tabBarSource).toContain('isMoChiBusy && !isHubOpen');
     expect(tabBarSource).toContain("return 'boxIdle'");
     expect(tabBarSource).toContain("return 'weeklyReportNotice'");
     expect(tabBarSource).toContain("return 'secureAccountFull'");

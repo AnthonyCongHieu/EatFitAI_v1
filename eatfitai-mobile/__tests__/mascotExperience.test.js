@@ -186,7 +186,9 @@ describe('MoChi virtual pet experience', () => {
     expect(nudgeContextSource).toContain('Thêm bữa gần nhất để nhật ký hôm nay liền mạch hơn.');
     expect(nudgeContextSource).toContain('Ghi bữa');
     expect(nudgeContextSource).toContain("preferredSurface: 'inline'");
-    expect(nudgeContextSource).not.toContain("preferredSurface: 'overlay'");
+    expect(nudgeContextSource).toContain('buildDailyLoopMoChiCandidate');
+    expect(nudgeContextSource).toContain("preferredSurface: 'overlay'");
+    expect(nudgeContextSource).toContain("HOME_ROUTE_NAMES.has(currentRouteName)");
     expect(surfaceDecisionSource).not.toContain('isCollisionSafe: true');
     expect(appNavigatorSource).toContain('MoChiTutorialProvider');
     expect(appNavigatorSource).toContain('MoChiTutorialHost');
