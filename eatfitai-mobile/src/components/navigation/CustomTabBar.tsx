@@ -208,7 +208,7 @@ const CommandButton = ({
               ) : (
                 <MoChiSprite
                   poseKey={dockPose}
-                  size={54}
+                  size={62}
                   animated={false}
                 />
               )}
@@ -232,21 +232,19 @@ const CommandButton = ({
           ]}
         />
       )}
-      <Text
-        style={[
-          styles.commandLabel,
-          {
-            color: command.isPrimary
-              ? colors.onPrimary
-              : isFocused
-                ? colors.primary
-                : colors.textMuted,
-          },
-        ]}
-        numberOfLines={1}
-      >
-        {command.label}
-      </Text>
+      {!command.isPrimary && (
+        <Text
+          style={[
+            styles.commandLabel,
+            {
+              color: isFocused ? colors.primary : colors.textMuted,
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {command.label}
+        </Text>
+      )}
     </Animated.View>
   );
 
@@ -302,7 +300,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
     borderTop: isDark ? 'rgba(226,232,240,0.08)' : 'rgba(0,0,0,0.06)',
   };
 
-  const safeBottom = resolveBottomTabSafePadding(Platform.OS, insets.bottom);
+  const safeBottom = 0; // Centered since outerWrapper is raised above home indicator
   const current = state.routes[state.index]?.name ?? '';
   const isMoChiBusy = useMoChiSurfaceCoordinator((store) => store.isBusy(current));
   const mochiDockPose = resolveMoChiDockPose(current);
@@ -372,9 +370,9 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
   }, [activeSheetTarget, isHubVisible]);
 
   return (
-    <View style={styles.outerWrapper} pointerEvents="box-none">
-      <View style={[styles.bar, { backgroundColor: colors.bg, borderTopColor: colors.borderTop }]}>
-        <View style={[styles.row, { paddingBottom: safeBottom }]}>
+    <View style={[styles.outerWrapper, { bottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 12) : 16 }]} pointerEvents="box-none">
+      <View style={[styles.bar, { backgroundColor: isDark ? 'rgba(9, 14, 28, 0.92)' : 'rgba(255, 255, 255, 0.95)', borderColor: isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(0, 0, 0, 0.06)' }]}>
+        <View style={styles.row}>
           {COMMAND_ITEMS.map((command) => (
             <CommandButton
               key={command.target}
@@ -401,28 +399,29 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
 const styles = StyleSheet.create({
   outerWrapper: {
     position: 'absolute',
-    bottom: 4,
-    left: 0,
-    right: 0,
+    left: 16,
+    right: 16,
   },
   bar: {
+    borderRadius: 32,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 20,
-    borderTopWidth: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: TAB_BAR_HEIGHT,
+    height: 64,
+    paddingHorizontal: 16,
   },
   commandButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: TAB_BAR_HEIGHT,
+    height: 64,
   },
   commandInner: {
     position: 'relative',
@@ -430,19 +429,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 3,
     minWidth: 54,
-    minHeight: 50,
+    minHeight: 52,
   },
   primaryDock: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    marginTop: -24,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    marginTop: -30,
     backgroundColor: 'transparent',
   },
   primaryDockHalo: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(16, 185, 129, 0.08)',
@@ -453,9 +452,9 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   primaryDockCore: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(18, 26, 44, 0.96)',
@@ -468,9 +467,9 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   primaryDockMascotPlate: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(23, 32, 51, 0.74)',
@@ -487,7 +486,7 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: -1,
+    bottom: 4,
     width: 34,
     height: 3,
     borderRadius: 2,

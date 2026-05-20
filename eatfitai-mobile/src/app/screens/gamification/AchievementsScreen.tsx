@@ -16,6 +16,7 @@ import type { RootStackParamList } from '../../types';
 import { formatBusinessDate } from '../../../utils/businessDate';
 import { useEN } from '../../../theme/emeraldNebula';
 import MoChiSprite from '../../../features/mochi/MoChiSprite';
+import MeshBackground from '../../../components/ui/MeshBackground';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -145,6 +146,7 @@ const AchievementsScreen = (): React.ReactElement => {
 
   return (
     <View style={[S.container, { backgroundColor: P.bg }]}>
+      <MeshBackground />
       <View style={[S.header, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, width: 44 }}>
           <Ionicons name="arrow-back" size={26} color={P.primary} />
@@ -165,7 +167,7 @@ const AchievementsScreen = (): React.ReactElement => {
             <ThemedText style={[S.streakNumber, { color: getStreakColor(currentStreak) }]}>{currentStreak}</ThemedText>
             <View style={S.streakCopy}>
               <ThemedText style={S.streakText}>Ngày liên tiếp</ThemedText>
-              <ThemedText style={S.streakSubtext}>Giữ nhịp hôm nay để MoChi ăn mừng cùng bạn</ThemedText>
+              <ThemedText style={S.streakSubtext}>Duy trì phong độ hôm nay để Mochi ăn mừng cùng bạn nhé!</ThemedText>
             </View>
             <View style={S.heroMochi}>
               <MoChiSprite poseKey={currentStreak > 0 ? 'celebrate' : 'faceDetermined'} size={62} animated={false} />
@@ -314,7 +316,7 @@ const S = StyleSheet.create({
   streakFlame: { fontSize: 24, lineHeight: 28 },
   heroMochi: { width: 64, height: 64, borderRadius: 22, backgroundColor: 'rgba(75,226,119,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   statsRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(9,14,28,0.42)', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 4 },
-  statItem: { flex: 1 },
+  statItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   statValue: { fontSize: 24, fontFamily: 'BeVietnamPro_700Bold', color: '#fff' },
   statLabel: { fontSize: 11, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurfaceVariant, letterSpacing: 1.5, marginTop: 3 },
   statDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.08)', marginHorizontal: 12 },

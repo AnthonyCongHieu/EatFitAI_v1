@@ -889,11 +889,11 @@ const HomeScreen = (): React.ReactElement => {
               ]}
             >
               <View style={styles.waterLeft}>
-                <Ionicons name="water" size={28} color={C.primary} />
+                <Ionicons name="water" size={28} color="#3b82f6" />
                 <View style={styles.waterLabelWrap}>
-                  <ThemedText style={[styles.waterTitle, { color: C.onSurface }]}>Ghi nước</ThemedText>
+                  <ThemedText style={[styles.waterTitle, { color: C.onSurface }]}>Uống nước</ThemedText>
                   <ThemedText style={[styles.waterValue, { color: C.onSurface }]}>
-                    {waterAmount} ml hôm nay
+                    {waterAmount} ml
                   </ThemedText>
                 </View>
               </View>

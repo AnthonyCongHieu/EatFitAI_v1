@@ -702,7 +702,7 @@ namespace EatFitAI.API.Controllers
         {
             var reviewDate = command.Entities.Date
                 ?? (await _businessDateService.GetTodayAsync(userId)).ToDateTime(TimeOnly.MinValue);
-            var mealType = command.Entities.MealType ?? MealType.Lunch;
+            var mealType = command.Entities.MealType ?? await InferMealTypeByTimeAsync(userId);
             var draft = CreateBaseReviewDraft(command);
             draft.MealType = mealType;
             draft.Date = reviewDate;
@@ -1313,7 +1313,8 @@ namespace EatFitAI.API.Controllers
         {
             try
             {
-                var mealTypeId = ParseMealTypeEnum(command.Entities.MealType);
+                var mealType = command.Entities.MealType ?? await InferMealTypeByTimeAsync(userId);
+                var mealTypeId = ParseMealTypeEnum(mealType);
                 var eatenDate = command.Entities.Date
                     ?? (await _businessDateService.GetTodayAsync(userId)).ToDateTime(TimeOnly.MinValue);
                 var addedFoods = new List<string>();
@@ -1456,6 +1457,22 @@ namespace EatFitAI.API.Controllers
                 MealType.Snack => 4,
                 _ => 2 // Default lunch
             };
+        }
+
+        private async Task<MealType> InferMealTypeByTimeAsync(Guid userId)
+        {
+            var timeZoneId = await _businessDateService.GetUserTimeZoneIdAsync(userId);
+            if (!API.Services.BusinessTimeZone.TryResolve(timeZoneId, out var timeZone))
+            {
+                timeZone = API.Services.BusinessTimeZone.DefaultTimeZone;
+            }
+            var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
+            var h = localTime.Hour;
+            
+            if (h >= 5 && h < 11) return MealType.Breakfast;
+            if (h >= 11 && h < 14) return MealType.Lunch;
+            if (h >= 14 && h < 18) return MealType.Snack;
+            return MealType.Dinner;
         }
 
         private static string GetMealLabel(MealType? mealType)

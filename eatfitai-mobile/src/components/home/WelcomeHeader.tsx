@@ -38,6 +38,13 @@ const getTimeIcon = (): { name: keyof typeof Ionicons.glyphMap; color: string } 
   return { name: 'moon-outline', color: '#818cf8' };
 };
 
+const getGreetingText = (): string => {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'CHÀO BUỔI SÁNG';
+  if (h >= 12 && h < 18) return 'CHÀO BUỔI CHIỀU';
+  return 'CHÀO BUỔI TỐI';
+};
+
 const getStreakColor = (streak: number) => {
   if (streak >= 100) return '#c084fc';
   if (streak >= 50) return '#f43f5e';
@@ -88,15 +95,12 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
           )}
         </Pressable>
         <View style={styles.texts}>
-          <Text style={[styles.greeting, { color: palette.textMuted }]}>Chào</Text>
-          <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: palette.onSurface }]} numberOfLines={1}>
-              {userName || 'Bạn'}
-            </Text>
-            <Ionicons name={timeIcon.name} size={15} color={timeIcon.color} style={styles.timeIcon} />
+          <View style={styles.greetingRow}>
+            <Text style={[styles.greeting, { color: palette.primary }]}>{getGreetingText()}</Text>
+            <Ionicons name={timeIcon.name} size={16} color={timeIcon.color} style={styles.timeIcon} />
           </View>
-          <Text style={[styles.mochiStatus, { color: palette.textMuted }]} numberOfLines={1}>
-            MoChi · Sẵn sàng hỗ trợ
+          <Text style={[styles.name, { color: palette.onSurface }]} numberOfLines={1}>
+            {userName || 'Bạn'}
           </Text>
         </View>
       </View>
@@ -149,20 +153,26 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     marginRight: 10,
+    borderRadius: 22,
+    shadowColor: C_STATIC.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 3,
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 2,
+    borderColor: C_STATIC.primary,
   },
   avatarPlaceholder: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 2,
+    borderColor: C_STATIC.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -173,31 +183,28 @@ const styles = StyleSheet.create({
   texts: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'center',
+  },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 0,
   },
   greeting: {
     fontSize: 12,
-    fontFamily: 'BeVietnamPro_600SemiBold',
-    letterSpacing: 0.2,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 1,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 0.5,
   },
   name: {
     flexShrink: 1,
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'BeVietnamPro_700Bold',
-    color: C.onSurface,
-    letterSpacing: -0.1,
+    color: C_STATIC.onSurface,
+    letterSpacing: -0.2,
   },
   timeIcon: {
     marginLeft: 6,
-  },
-  mochiStatus: {
-    marginTop: 1,
-    fontSize: 11,
-    fontFamily: 'BeVietnamPro_600SemiBold',
+    marginTop: -2,
   },
   right: {
     flexDirection: 'row',

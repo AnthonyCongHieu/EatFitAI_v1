@@ -17,7 +17,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { CustomCalendarPicker } from '../../../components/ui/CustomCalendarPicker';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -641,19 +641,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                             {MEAL_ADD_LABELS[group.mealType]}
                           </ThemedText>
                         </Pressable>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.skipMealButton,
-                            { borderColor: C.outline },
-                            pressed && { opacity: 0.82 },
-                          ]}
-                          onPress={() => handleMarkSkipped(group.mealType)}
-                        >
-                          <Ionicons name="remove-circle-outline" size={17} color={C.textMuted} />
-                          <ThemedText style={[styles.skipMealButtonText, { color: C.textMuted }]}>
-                            Bỏ bữa này
-                          </ThemedText>
-                        </Pressable>
+
                       </View>
                     )}
                   </View>
@@ -682,29 +670,16 @@ const MealDiaryScreen = (): React.ReactElement => {
 
       {/* ══════════ DATE PICKER MODAL ══════════ */}
       {showDatePicker && (
-        <View style={styles.datePickerOverlay}>
-          <View style={styles.datePickerContainer}>
-            {Platform.OS === 'ios' && (
-              <Pressable
-                onPress={() => setShowDatePicker(false)}
-                style={styles.datePickerDone}
-              >
-                <ThemedText style={{ color: C.primary, fontWeight: '700' }}>Xong</ThemedText>
-              </Pressable>
-            )}
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              maximumDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
-              minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
-              onChange={(event: any, date?: Date) => {
-                if (Platform.OS !== 'ios') setShowDatePicker(false);
-                if (date) setSelectedDate(date);
-              }}
-            />
-          </View>
-        </View>
+        <CustomCalendarPicker
+          selectedDate={selectedDate}
+          minDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
+          maxDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+          onSelectDate={(date) => {
+            setSelectedDate(date);
+            setShowDatePicker(false);
+          }}
+          onClose={() => setShowDatePicker(false)}
+        />
       )}
 
 
@@ -1163,7 +1138,7 @@ const styles = StyleSheet.create({
   /* ─── Back to Today ─── */
   backToToday: {
     position: 'absolute',
-    bottom: 84,
+    bottom: 130,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
