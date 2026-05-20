@@ -76,6 +76,7 @@ function Start-MetroIfNeeded {
     Remove-Item -LiteralPath $outLog, $errLog -ErrorAction SilentlyContinue
 
     Write-Step 'Starting Metro with cloud backend env'
+    $usbDevScriptPath = Join-Path $repoRoot 'start-mobile-usb-dev.ps1'
     $startProcessArgs = @{
         FilePath = 'powershell.exe'
         ArgumentList = @(
@@ -83,7 +84,7 @@ function Start-MetroIfNeeded {
             '-ExecutionPolicy',
             'Bypass',
             '-File',
-            (Join-Path $repoRoot 'start-mobile-usb-dev.ps1')
+            "`"$usbDevScriptPath`""
         )
         WorkingDirectory = $repoRoot
         WindowStyle = 'Hidden'
