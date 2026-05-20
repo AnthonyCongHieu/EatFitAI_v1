@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  type ViewStyle,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,12 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
-import RecipeVisual from '../../../components/recipe/RecipeVisual';
-import {
-  getRecipeIngredientSummary,
-  getRecipeMatchBadgeLabel,
-} from '../../../components/recipe/recipeVisuals';
+import AppImage from '../../../components/ui/AppImage';
 import { aiService, buildRecipeSuggestionRequest } from '../../../services/aiService';
+import { sanitizeFoodImageUrl } from '../../../utils/imageHelpers';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 import { useEN } from '../../../theme/emeraldNebula';
@@ -54,17 +52,52 @@ const SORT_OPTIONS: { key: SortMode; label: string }[] = [
   { key: 'missing', label: 'Ít thiếu' },
 ];
 
+const selectRecipeImageUrl = (
+  recipe: RecipeSuggestion,
+  size: 'thumb' | 'medium' = 'medium',
+): string | null => {
+  const raw =
+    size === 'medium'
+      ? recipe.imageVariants?.mediumUrl ?? recipe.imageUrl
+      : recipe.imageVariants?.thumbUrl ?? recipe.imageUrl;
+  return sanitizeFoodImageUrl(raw, size);
+};
+
 const getRecipeTimeLabel = (recipe: RecipeSuggestion): string =>
   recipe.cookTimeMinutes ? `${recipe.cookTimeMinutes} phút` : 'Chưa rõ';
 
 const getPrimaryReason = (recipe: RecipeSuggestion): string => {
-  const ingredientSummary = getRecipeIngredientSummary(recipe);
-  if (ingredientSummary.missing) return ingredientSummary.missing;
-  if (ingredientSummary.available) return ingredientSummary.available;
+  if (recipe.scoreReasons?.length) return recipe.scoreReasons[0]!;
   if (recipe.matchedIngredientsCount > 0) {
     return `Khớp ${recipe.matchedIngredientsCount}/${recipe.totalIngredientsCount} nguyên liệu`;
   }
   return 'Dựa trên nguyên liệu đã chọn';
+};
+
+const RecipeImage = ({
+  recipe,
+  style,
+}: {
+  recipe: RecipeSuggestion;
+  style: ViewStyle;
+}): React.ReactElement => {
+  const imageUrl = selectRecipeImageUrl(recipe, 'medium');
+  if (!imageUrl) {
+    return (
+      <View style={[style, S.imageFallback]}>
+        <Ionicons name="restaurant-outline" size={34} color={P_STATIC.onSurfaceVariant} />
+      </View>
+    );
+  }
+
+  return (
+    <AppImage
+      source={{ uri: imageUrl }}
+      style={style}
+      fallbackEmoji="🍽️"
+      showPlaceholder
+    />
+  );
 };
 
 const RecipeSuggestionsScreen = (): React.ReactElement => {
@@ -72,6 +105,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
   const EN = useEN();
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const P = {
     ...P_STATIC,
     primary: EN.primary,
@@ -220,10 +254,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
 
   const renderRecipeGrid = (items: RecipeSuggestion[]) => (
     <View style={S.gridContainer}>
-      {items.map((item, idx) => {
-        const ingredientSummary = getRecipeIngredientSummary(item);
-
-        return (
+      {items.map((item, idx) => (
         <Animated.View
           key={item.recipeId}
           entering={FadeInDown.delay((idx + 1) * 100).springify()}
@@ -235,21 +266,16 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             onPress={() => openRecipeDetail(item)}
           >
             <View style={S.gridImageFrame}>
-              <RecipeVisual recipe={item} style={S.gridImageWrap} size="medium" />
+              <RecipeImage recipe={item} style={S.gridImageWrap} />
               <View style={S.glassOverlayTag}>
                 <ThemedText style={S.tagTextSmall}>
-                  {getRecipeMatchBadgeLabel(item)}
+                  {item.canCookNow ? 'Nấu ngay' : `${Math.round(item.matchScore || item.matchPercentage)} điểm`}
                 </ThemedText>
               </View>
             </View>
             <View style={S.gridCardBody}>
               <ThemedText style={[S.gridTitle, { color: P.onSurface }]} numberOfLines={2}>{item.recipeName}</ThemedText>
               <ThemedText style={[S.gridReason, { color: P.onSurfaceVariant }]} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
-              {!!ingredientSummary.available && (
-                <ThemedText style={[S.gridReasonMuted, { color: P.onSurfaceVariant }]} numberOfLines={1}>
-                  {ingredientSummary.available}
-                </ThemedText>
-              )}
               <View style={S.gridMetrics}>
                 <View style={S.metric}>
                   <Ionicons name="time-outline" size={12} color={P.onSurfaceVariant} />
@@ -263,8 +289,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             </View>
           </TouchableOpacity>
         </Animated.View>
-        );
-      })}
+      ))}
     </View>
   );
 
@@ -359,23 +384,17 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             renderSkeleton()
           ) : error ? (
             <View style={S.center}>
-              <MoChiInlineNotice mochiEvent="recipe_error" routeName="RecipeSuggestions" compact />
+              <MoChiInlineNotice mochiEvent="recipe_error" compact />
               <Ionicons name="alert-circle" size={48} color={P.danger} />
               <ThemedText style={S.errorText}>{error}</ThemedText>
             </View>
           ) : recipes.length === 0 ? (
             <View style={S.centerEmpty}>
-              <MoChiInlineNotice mochiEvent="recipe_empty" routeName="RecipeSuggestions" compact />
-              <Ionicons name="restaurant-outline" size={64} color={P.onSurfaceVariant} />
-              <ThemedText style={S.emptyText}>
-                {isDailyRecommendation
-                  ? 'Chạm vào nút phía trên để xem món phù hợp cho hôm nay.'
-                  : <>Nhập nguyên liệu nếu có, hoặc chạm nút phía trên để{'\n'}khám phá công thức phù hợp.</>}
-              </ThemedText>
+              <MoChiInlineNotice mochiEvent="recipe_empty" compact />
             </View>
           ) : (
             <>
-              <MoChiInlineNotice mochiEvent="recipe_success" routeName="RecipeSuggestions" compact />
+              <MoChiInlineNotice mochiEvent="recipe_success" compact />
               <View style={S.disclaimerCard}>
                 <Ionicons name="information-circle-outline" size={18} color={P.onSurfaceVariant} />
                 <ThemedText style={S.disclaimerText}>
@@ -522,6 +541,12 @@ const S = StyleSheet.create({
     color: P_STATIC.onSurfaceVariant,
     lineHeight: 18,
   },
+  imageFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: P_STATIC.surfaceContainerLow,
+  },
+
   /* Featured Card */
   featuredCard: {
     backgroundColor: P_STATIC.surfaceContainerHigh,
@@ -600,7 +625,6 @@ const S = StyleSheet.create({
   gridCardBody: { padding: 12, gap: 8 },
   gridTitle: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onSurface, lineHeight: 20 },
   gridReason: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant, lineHeight: 16 },
-  gridReasonMuted: { fontSize: 10, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant, lineHeight: 14, opacity: 0.86 },
   gridMetrics: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   metricTextSmall: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant },
 

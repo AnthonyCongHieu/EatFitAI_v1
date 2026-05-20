@@ -17,7 +17,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { showAppToast } from '../../utils/showAppToast';
+import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import type { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -40,6 +40,7 @@ import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import { useGamificationStore } from '../../store/useGamificationStore';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
+import { useProfileStore } from '../../store/useProfileStore';
 import Tilt3DCard from '../../components/ui/Tilt3DCard';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
@@ -250,6 +251,11 @@ const HomeScreen = (): React.ReactElement => {
     outline: EN.outline,
     danger: EN.danger,
   };
+
+  const { profile } = useProfileStore();
+  const userName = profile?.fullName || profile?.email?.split('@')[0] || '';
+  const avatarUrl = profile?.avatarUrl;
+
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<AppTabsParamList, 'HomeTab'>>();
   const screenScrollRef = useRef<ScrollView>(null);
@@ -326,7 +332,7 @@ const HomeScreen = (): React.ReactElement => {
     try {
       await waterService.addWater(new Date());
       if (options.showConfirmationToast) {
-        showAppToast({
+        Toast.show({
           type: 'success',
           text1: 'Đã ghi nước',
           text2: 'MoChi đã cộng thêm 200 ml vào hôm nay.',
@@ -337,7 +343,7 @@ const HomeScreen = (): React.ReactElement => {
       if (prevData) {
         queryClient.setQueryData(['water-intake-today'], prevData);
       }
-      showAppToast({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
       return false;
     }
   }, [queryClient]);
@@ -371,7 +377,7 @@ const HomeScreen = (): React.ReactElement => {
       if (prevData) {
         queryClient.setQueryData(['water-intake-today'], prevData);
       }
-      showAppToast({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
     }
   }, [queryClient]);
   const { currentStreak, checkStreak, fetchWeeklyLogs } = useGamificationStore();
@@ -469,7 +475,7 @@ const HomeScreen = (): React.ReactElement => {
           onPress: () => {
             deleteEntry(entryId)
               .then(() => {
-                showAppToast({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
+                Toast.show({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
                 queryClient.invalidateQueries({ queryKey: ['home-summary'] });
                 queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
               })
@@ -574,8 +580,11 @@ const HomeScreen = (): React.ReactElement => {
       >
         {/* ══════════ HEADER ══════════ */}
         <WelcomeHeader
+          userName={userName}
+          avatarUrl={avatarUrl}
           streakCount={currentStreak}
           unreadNotificationCount={unreadNotificationCount}
+          onAvatarPress={() => navigation.navigate('ProfileTab')}
           onSettingsPress={() => navigation.navigate('ProfileTab')}
           onNotificationPress={() => navigation.navigate('NotificationCenter')}
           onStreakPress={() => navigation.navigate('Achievements')}
@@ -851,17 +860,18 @@ const HomeScreen = (): React.ReactElement => {
             ) : (
               /* Empty state */
               <View style={styles.emptyState}>
-                {isToday(selectedDate) && (
-                  <MoChiInlineNotice mochiEvent="diary_empty_today" routeName="HomeTab" compact />
+                {isToday(selectedDate) ? (
+                  <MoChiInlineNotice mochiEvent="diary_empty_today" compact />
+                ) : (
+                  <>
+                    <ThemedText style={[styles.emptyTitle, { color: C.onSurface }]}>
+                      Không có dữ liệu
+                    </ThemedText>
+                    <ThemedText style={[styles.emptySubtitle, { color: C.textMuted }]}>
+                      {`Chưa có nhật ký cho ngày ${formatShortDate(selectedDate)}`}
+                    </ThemedText>
+                  </>
                 )}
-                <ThemedText style={[styles.emptyTitle, { color: C.onSurface }]}>
-                  {isToday(selectedDate) ? 'Chưa có món nào hôm nay' : 'Không có dữ liệu'}
-                </ThemedText>
-                <ThemedText style={[styles.emptySubtitle, { color: C.textMuted }]}>
-                  {isToday(selectedDate)
-                    ? 'Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!'
-                    : `Chưa có nhật ký cho ngày ${formatShortDate(selectedDate)}`}
-                </ThemedText>
               </View>
             )}
           </View>
@@ -921,7 +931,6 @@ const HomeScreen = (): React.ReactElement => {
             >
               <MoChiInlineNotice
                 mochiEvent="water_reminder"
-                routeName="HomeTab"
                 title="Nhắc uống nước"
                 message="Ghi thêm một ly nước nếu bạn vừa uống xong."
                 ctaLabel="Ghi nước"

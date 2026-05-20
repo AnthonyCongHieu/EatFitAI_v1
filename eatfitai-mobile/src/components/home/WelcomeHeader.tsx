@@ -2,7 +2,7 @@
  * WelcomeHeader – Compact Emerald Nebula header bar
  */
 import React from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { View, StyleSheet, Pressable, Text, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { TEST_IDS } from '../../testing/testIds';
@@ -19,6 +19,8 @@ const C_STATIC = {
 const C = C_STATIC;
 
 interface WelcomeHeaderProps {
+  userName?: string;
+  avatarUrl?: string | null;
   streakCount?: number;
   unreadNotificationCount?: number;
   onNotificationPress?: () => void;
@@ -48,9 +50,12 @@ const getStreakColor = (streak: number) => {
 };
 
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
+  userName = '',
+  avatarUrl = null,
   streakCount = 0,
   unreadNotificationCount = 0,
   onNotificationPress,
+  onAvatarPress,
   onSettingsPress,
   onStreakPress,
 }) => {
@@ -67,7 +72,6 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   };
 
   const timeIcon = getTimeIcon();
-  const companionStatus = streakCount > 0 ? `${streakCount} ngày liên tiếp` : 'Sẵn sàng hỗ trợ';
 
   return (
     <Animated.View
@@ -75,14 +79,25 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
       style={styles.container}
     >
       <View style={styles.left}>
+        <Pressable onPress={onAvatarPress} style={styles.avatarContainer}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, { backgroundColor: C.surfaceHigh }]}>
+              <Text style={[styles.avatarText, { color: C.primary }]}>
+                {(userName || 'U').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+        </Pressable>
         <View style={styles.texts}>
-          <View style={styles.greetingRow}>
-            <Text style={[styles.greeting, { color: C.primary }]}>MoChi</Text>
-            <Ionicons name={timeIcon.name} size={13} color={timeIcon.color} style={{ marginLeft: 4 }} />
+          <Text style={[styles.greeting, { color: C.textMuted }]}>Chào</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 1 }}>
+            <Text style={[styles.name, { color: C.onSurface, flexShrink: 1 }]} numberOfLines={1}>
+              {userName || 'Bạn'}
+            </Text>
+            <Ionicons name={timeIcon.name} size={15} color={timeIcon.color} style={{ marginLeft: 6 }} />
           </View>
-          <Text style={[styles.name, { color: C.onSurface }]} numberOfLines={1}>
-            {companionStatus}
-          </Text>
         </View>
       </View>
 
@@ -125,7 +140,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,   // ← was 8, reduced for compact header
+    paddingVertical: 8,
   },
 
   left: {
@@ -133,7 +148,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-
+  avatarContainer: {
+    marginRight: 10,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  avatarPlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 16,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
   texts: { flex: 1 },
   greetingRow: {
     flexDirection: 'row',
@@ -141,13 +178,12 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   greeting: {
-    fontSize: 12,
-    fontFamily: 'BeVietnamPro_700Bold',
-    color: C.primary,
+    fontSize: 14,
+    fontFamily: 'BeVietnamPro_600SemiBold',
     letterSpacing: 0.2,
   },
   name: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'BeVietnamPro_700Bold',
     color: C.onSurface,
     letterSpacing: -0.1,
