@@ -65,7 +65,7 @@ describe('MoChi notification surfaces', () => {
 
     expect(notificationCenterSource).toContain('useMoChiNotificationInboxStore');
     expect(notificationCenterSource).toContain('selectUnreadMoChiNotificationCount');
-    expect(notificationCenterSource).toContain('markActed');
+    expect(notificationCenterSource).toContain('removeItem');
     expect(notificationCenterSource).toContain('MoChiInlineNotice');
     expect(welcomeHeaderSource).toContain('unreadNotificationCount');
     expect(welcomeHeaderSource).toContain('unreadNotificationCount > 0');
