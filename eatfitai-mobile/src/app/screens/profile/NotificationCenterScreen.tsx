@@ -110,15 +110,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
           <ThemedText style={S.headerTitle}>Thông báo</ThemedText>
           <ThemedText style={S.headerSubtitle}>Những việc cần bạn xem</ThemedText>
         </View>
-        <Pressable
-          style={S.headerButton}
-          onPress={() => navigation.navigate('NotificationsSettings')}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Cài đặt thông báo"
-        >
-          <Ionicons name="settings-outline" size={21} color={palette.onSurface} />
-        </Pressable>
+        <View style={S.headerButton} />
       </View>
 
       <ScrollView
