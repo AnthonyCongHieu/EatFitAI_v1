@@ -73,7 +73,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
   const markRead = useMoChiNotificationInboxStore((state) => state.markRead);
   const removeRead = useMoChiNotificationInboxStore((state) => state.removeRead);
   const unreadCount = useMemo(() => selectUnreadMoChiNotificationCount(items), [items]);
-  const hasRead = useMemo(() => items.some((item) => item.readAt && !item.resolvedAt), [items]);
+  const hasRead = useMemo(() => items.some((item) => item.readAt || item.resolvedAt), [items]);
 
   const handleOpenItem = (item: MoChiNotificationItem) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -88,7 +88,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
     } else {
       // Fallback in case Metro bundler has cached the old store actions
       useMoChiNotificationInboxStore.setState((state) => ({
-        items: state.items.filter((item) => !(item.readAt && !item.resolvedAt)),
+        items: state.items.filter((item) => !item.readAt && !item.resolvedAt),
       }));
     }
   };

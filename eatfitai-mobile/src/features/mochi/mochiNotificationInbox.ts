@@ -295,7 +295,7 @@ export const useMoChiNotificationInboxStore = create<MoChiNotificationInboxState
         })),
       removeRead: () =>
         set((state) => ({
-          items: state.items.filter((item) => !(item.readAt && !item.resolvedAt)),
+          items: state.items.filter((item) => !item.readAt && !item.resolvedAt),
         })),
       resolveMatching: (predicate, now = new Date()) =>
         set((state) => ({
