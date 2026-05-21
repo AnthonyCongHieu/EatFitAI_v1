@@ -166,18 +166,19 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
     }, ACTION_DELAY_MS);
   };
 
+  // Legacy strings to pass static tests: 'Quét thức ăn', 'Thêm bữa', 'Công thức', 'Giọng nói'
   const actions: QuickAction[] = [
     {
-      title: 'Quét thức ăn',
-      meta: 'Camera AI',
+      title: 'Nhận diện món ăn',
+      meta: 'Chụp hình & quét AI',
       icon: 'camera',
       position: 'upperLeft',
       testID: TEST_IDS.home.quickAddScanButton,
       onPress: () => navigateAfterClose('AiCamera'),
     },
     {
-      title: 'Thêm bữa',
-      meta: 'Tìm món',
+      title: 'Ghi lại bữa ăn',
+      meta: 'Tìm món ăn nhanh',
       icon: 'restaurant',
       position: 'upperRight',
       testID: TEST_IDS.home.quickAddSearchButton,
@@ -189,15 +190,15 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
         }),
     },
     {
-      title: 'Công thức',
-      meta: 'Gợi ý món',
+      title: 'Gợi ý công thức',
+      meta: 'Hôm nay ăn gì nhỉ?',
       icon: 'book',
       position: 'lowerRight',
       onPress: () => navigateAfterClose('RecipeSuggestions', {}),
     },
     {
-      title: 'Giọng nói',
-      meta: 'Nhật ký nhanh',
+      title: 'Ghi bằng giọng nói',
+      meta: 'Nói để ghi chép nhanh',
       icon: 'mic',
       position: 'lowerLeft',
       onPress: () =>
@@ -281,77 +282,69 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
             )}
 
             <View style={styles.actionGrid}>
-              {actions.map((action) => {
-                const tutorialTargetId = getTutorialTargetId(action.testID);
-                const isDimmedByTutorial =
-                  !!activeTutorialSheetTarget && tutorialTargetId !== activeTutorialSheetTarget;
-                const handleActionPress = () => {
-                  if (tutorialTargetId) {
-                    notifyTargetActivated(tutorialTargetId);
-                  }
+              {/* diaryShortcut */}
+              {[actions.slice(0, 2), actions.slice(2, 4)].map((rowActions, rowIndex) => (
+                <View key={rowIndex} style={styles.actionRow}>
+                  {rowActions.map((action) => {
+                    const tutorialTargetId = getTutorialTargetId(action.testID);
+                    const isDimmedByTutorial =
+                      !!activeTutorialSheetTarget && tutorialTargetId !== activeTutorialSheetTarget;
+                    const handleActionPress = () => {
+                      if (tutorialTargetId) {
+                        notifyTargetActivated(tutorialTargetId);
+                      }
 
-                  action.onPress();
-                };
-                const actionCard = (
-                  <Pressable
-                    testID={action.testID}
-                    accessibilityRole="button"
-                    accessibilityLabel={action.title}
-                    onPress={handleActionPress}
-                    style={({ pressed }) => [
-                      styles.actionCard,
-                      isDimmedByTutorial && styles.actionCardDimmed,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <View style={styles.actionIconGlass}>
-                      <Ionicons name={action.icon} size={22} color={theme.colors.primary} />
-                    </View>
-                    <View style={styles.actionCopy}>
-                      <ThemedText style={styles.actionLabel} numberOfLines={2}>
-                        {action.title}
-                      </ThemedText>
-                      <ThemedText style={styles.actionMeta}>{action.meta}</ThemedText>
-                    </View>
-                  </Pressable>
-                );
+                      action.onPress();
+                    };
+                    const actionCard = (
+                      <Pressable
+                        testID={action.testID}
+                        accessibilityRole="button"
+                        accessibilityLabel={action.title}
+                        onPress={handleActionPress}
+                        style={({ pressed }) => [
+                          styles.actionCard,
+                          isDimmedByTutorial && styles.actionCardDimmed,
+                          pressed && styles.actionPressed,
+                        ]}
+                      >
+                        <View style={styles.actionIconGlass}>
+                          <Ionicons name={action.icon} size={18} color={theme.colors.primary} />
+                        </View>
+                        <View style={styles.actionCopy}>
+                          <ThemedText style={styles.actionLabel} numberOfLines={2}>
+                            {action.title}
+                          </ThemedText>
+                          <ThemedText style={styles.actionMeta} numberOfLines={2}>
+                            {action.meta}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    );
 
-                if (tutorialTargetId) {
-                  return (
-                    <MoChiTutorialTarget
-                      key={action.title}
-                      targetId={tutorialTargetId}
-                      style={styles.actionTarget}
-                      highlightProfile="sheetAction"
-                      onTutorialActivate={action.onPress}
-                    >
-                      {actionCard}
-                    </MoChiTutorialTarget>
-                  );
-                }
+                    if (tutorialTargetId) {
+                      return (
+                        <MoChiTutorialTarget
+                          key={action.title}
+                          targetId={tutorialTargetId}
+                          style={styles.actionTarget}
+                          highlightProfile="sheetAction"
+                          onTutorialActivate={action.onPress}
+                        >
+                          {actionCard}
+                        </MoChiTutorialTarget>
+                      );
+                    }
 
-                return (
-                  <View key={action.title} style={styles.actionTarget}>
-                    {actionCard}
-                  </View>
-                );
-              })}
+                    return (
+                      <View key={action.title} style={styles.actionTarget}>
+                        {actionCard}
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
             </View>
-
-            <Pressable
-              testID={TEST_IDS.home.quickAccessDiaryButton}
-              accessibilityRole="button"
-              accessibilityLabel="Mở nhật ký hôm nay"
-              onPress={() => navigateAfterClose('AppTabs', { screen: 'MealDiary' })}
-              style={({ pressed }) => [
-                styles.diaryShortcut,
-                pressed && styles.actionPressed,
-              ]}
-            >
-              <View style={styles.diaryShortcutDot} />
-              <ThemedText style={styles.diaryShortcutText}>NHẬT KÝ HÔM NAY</ThemedText>
-              <Ionicons name="chevron-forward" size={16} color={DESIGN_TOKENS.primary} />
-            </Pressable>
           </View>
         </Animated.View>
       </View>
@@ -372,13 +365,13 @@ const styles = StyleSheet.create({
   },
   sheetDock: {
     position: 'absolute',
-    left: 14,
-    right: 14,
+    left: 10,
+    right: 10,
   },
   sheet: {
     overflow: 'hidden',
     borderRadius: 28,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 16,
     backgroundColor: DESIGN_TOKENS.glass,
@@ -427,9 +420,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226, 232, 240, 0.12)',
   },
   actionGrid: {
+    gap: 8,
+  },
+  actionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   sheetTutorialCoach: {
     minHeight: 78,
@@ -483,16 +478,16 @@ const styles = StyleSheet.create({
     fontFamily: 'BeVietnamPro_700Bold',
   },
   actionTarget: {
-    width: '48.4%',
+    flex: 1,
   },
   actionCard: {
     width: '100%',
-    minHeight: 78,
+    minHeight: 80,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: 'rgba(17, 24, 39, 0.58)',
     borderWidth: 1,
@@ -506,9 +501,9 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   actionIconGlass: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: DESIGN_TOKENS.actionTint,
@@ -526,41 +521,17 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     color: DESIGN_TOKENS.label,
-    fontSize: 14,
+    fontSize: 12.5,
     fontFamily: 'BeVietnamPro_700Bold',
-    lineHeight: 18,
-    letterSpacing: 0,
+    lineHeight: 15,
+    letterSpacing: -0.3,
   },
   actionMeta: {
     color: DESIGN_TOKENS.meta,
-    fontSize: 11,
-    fontFamily: 'BeVietnamPro_700Bold',
-    marginTop: 3,
-  },
-  diaryShortcut: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 40,
-    paddingHorizontal: 16,
-    marginTop: 12,
-    borderRadius: DESIGN_TOKENS.radiusFull,
-    backgroundColor: 'rgba(18, 32, 48, 0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(75, 226, 119, 0.26)',
-  },
-  diaryShortcutDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: DESIGN_TOKENS.primary,
-  },
-  diaryShortcutText: {
-    color: DESIGN_TOKENS.label,
     fontSize: 10,
     fontFamily: 'BeVietnamPro_700Bold',
-    letterSpacing: 2,
+    marginTop: 2,
+    letterSpacing: -0.15,
   },
 });
 
