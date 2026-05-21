@@ -189,6 +189,29 @@ class NutritionLlmTests(unittest.TestCase):
         snack = try_parse_add_food_regex("ghi 1 tao vao bua phu")
         self.assertEqual(snack["entities"]["mealType"], "Snack")
 
+    def test_add_food_regex_keeps_weight_and_meal_out_of_food_name(self) -> None:
+        command = try_parse_add_food_regex("them 150g thit heo bua trua")
+
+        self.assertIsNotNone(command)
+        self.assertEqual(command["intent"], "ADD_FOOD")
+        self.assertEqual(command["entities"]["foodName"], "thit heo")
+        self.assertEqual(command["entities"]["weight"], 150)
+        self.assertEqual(command["entities"]["mealType"], "Lunch")
+
+    def test_add_food_regex_splits_multi_food_phrase(self) -> None:
+        command = try_parse_add_food_regex("an 1 bat pho va 1 ly tra da")
+
+        self.assertIsNotNone(command)
+        self.assertEqual(command["intent"], "ADD_FOOD")
+        foods = command["entities"]["foods"]
+        self.assertEqual(len(foods), 2)
+        self.assertEqual(foods[0]["foodName"], "pho")
+        self.assertEqual(foods[0]["quantity"], 1.0)
+        self.assertEqual(foods[0]["unit"], "bat")
+        self.assertEqual(foods[1]["foodName"], "tra da")
+        self.assertEqual(foods[1]["quantity"], 1.0)
+        self.assertEqual(foods[1]["unit"], "ly")
+
 
 if __name__ == "__main__":
     unittest.main()

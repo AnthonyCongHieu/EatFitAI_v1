@@ -24,6 +24,7 @@ namespace EatFitAI.API.Services
             "search",
             "photo",
             "voice",
+            "voice_repeat",
             "barcode",
             "quick",
             "manual",
@@ -175,12 +176,15 @@ namespace EatFitAI.API.Services
 
             var markerType = request.MarkerType.Trim().ToLowerInvariant();
             if (markerType != MealDayMarkerType.SkippedMeal &&
-                markerType != MealDayMarkerType.SkippedDay)
+                markerType != MealDayMarkerType.SkippedDay &&
+                markerType != MealDayMarkerType.MealNote &&
+                markerType != MealDayMarkerType.DayNote)
             {
                 throw new ArgumentException("Marker type is invalid");
             }
 
-            var mealTypeId = markerType == MealDayMarkerType.SkippedMeal
+            var mealTypeId = markerType == MealDayMarkerType.SkippedMeal ||
+                markerType == MealDayMarkerType.MealNote
                 ? await ResolveMealTypeIdAsync(request.MealTypeId ?? 0)
                 : (int?)null;
             var localDate = DateOnly.FromDateTime(request.LocalDate.Date);

@@ -38,4 +38,13 @@ describe('recipe suggestion flow source contract', () => {
     expect(source).toContain('Phù hợp ${matchValue}%');
     expect(source).not.toContain('} điểm');
   });
+
+  it('keeps the ingredient field tappable on device and registers recipe MoChi surfaces', () => {
+    const source = readSource('src/app/screens/ai/RecipeSuggestionsScreen.tsx');
+
+    expect(source).toContain('ingredientInputRef.current?.focus()');
+    expect(source).toContain('keyboardShouldPersistTaps="always"');
+    expect(source).toContain('testID="recipe-ingredient-input"');
+    expect(source).toContain('routeName="RecipeSuggestions"');
+  });
 });

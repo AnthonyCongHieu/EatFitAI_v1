@@ -21,6 +21,10 @@ interface ExecutedData {
   totalCalories?: number;
   targetCalories?: number;
   remaining?: number;
+  entryCount?: number;
+  value?: number;
+  nutrient?: string;
+  noteText?: string;
 }
 
 interface VoiceResultCardProps {
@@ -35,11 +39,14 @@ interface VoiceResultCardProps {
 }
 
 const INTENT_CONFIG: Record<VoiceIntent, { label: string; color: string }> = {
-  ADD_FOOD: { label: 'Thêm món ăn', color: '#10B981' },
-  LOG_WEIGHT: { label: 'Ghi cân nặng', color: '#22C55E' },
-  ASK_CALORIES: { label: 'Xem calo', color: '#f7c052' },
-  ASK_NUTRITION: { label: 'Xem dinh dưỡng', color: '#8B5CF6' },
-  UNKNOWN: { label: 'Không hiểu lệnh', color: '#728099' },
+  ADD_FOOD: { label: 'Thêm vào nhật ký', color: '#10B981' },
+  LOG_WEIGHT: { label: 'Cập nhật cân nặng', color: '#22C55E' },
+  ASK_CALORIES: { label: 'Calo hôm nay', color: '#f7c052' },
+  ASK_NUTRITION: { label: 'Dinh dưỡng', color: '#8B5CF6' },
+  QUERY_MEAL: { label: 'Tra cứu bữa ăn', color: '#38BDF8' },
+  REPEAT_MEAL: { label: 'Thêm lại bữa ăn', color: '#10B981' },
+  ADD_NOTE: { label: 'Ghi chú', color: '#F59E0B' },
+  UNKNOWN: { label: 'Chưa hiểu yêu cầu', color: '#728099' },
 };
 
 const MEAL_OPTIONS = [
@@ -63,17 +70,6 @@ const P = {
 
 const normalizeMeal = (value?: string | null): string =>
   String(value || '').trim().toLowerCase();
-
-const formatSource = (source?: string | null): string => {
-  if (!source) return 'Chưa rõ nguồn';
-  if (source === 'backend-rule-fallback' || source === 'backend-rule-parser') {
-    return 'Parser dự phòng';
-  }
-  if (source === 'ai-provider-proxy' || source === 'AI provider') {
-    return 'AI provider';
-  }
-  return source;
-};
 
 const candidateMacro = (
   candidate: VoiceFoodCandidate | null | undefined,
@@ -108,8 +104,9 @@ const calculateTotals = (items: VoiceReviewItem[]) =>
   );
 
 const normalizeDraftSaveState = (draft: VoiceReviewDraft): VoiceReviewDraft => {
-  const isFoodDraft = draft.intent === 'ADD_FOOD';
+  const isFoodDraft = draft.intent === 'ADD_FOOD' || draft.intent === 'REPEAT_MEAL';
   const isWeightDraft = draft.intent === 'LOG_WEIGHT';
+  const isNoteDraft = draft.intent === 'ADD_NOTE';
   const foodBlocked =
     isFoodDraft &&
     (draft.items.length === 0 ||
@@ -123,18 +120,20 @@ const normalizeDraftSaveState = (draft: VoiceReviewDraft): VoiceReviewDraft => {
   const weight = Number(draft.weight?.newWeight);
   const weightBlocked =
     isWeightDraft && (!Number.isFinite(weight) || weight < 20 || weight > 300);
+  const noteBlocked = isNoteDraft && !draft.note?.noteText?.trim();
   const blockingReason =
     draft.blockingReason ||
     draft.warnings[0] ||
     draft.items.flatMap((item) => item.warnings)[0] ||
     (foodBlocked ? 'Cần chọn món và khẩu phần hợp lệ trước khi lưu.' : undefined) ||
-    (weightBlocked ? 'Cân nặng phải từ 20kg đến 300kg.' : undefined);
+    (weightBlocked ? 'Cân nặng phải từ 20kg đến 300kg.' : undefined) ||
+    (noteBlocked ? 'Ghi chú đang trống.' : undefined);
 
   return {
     ...draft,
     totals: calculateTotals(draft.items),
-    canSave: !foodBlocked && !weightBlocked,
-    blockingReason: !foodBlocked && !weightBlocked ? null : blockingReason,
+    canSave: !foodBlocked && !weightBlocked && !noteBlocked,
+    blockingReason: !foodBlocked && !weightBlocked && !noteBlocked ? null : blockingReason,
   };
 };
 
@@ -150,6 +149,10 @@ export const VoiceResultCard = ({
 }: VoiceResultCardProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const config = INTENT_CONFIG[command.intent] || INTENT_CONFIG.UNKNOWN;
+  const headerCaption = reviewDraft
+    ? 'Kiểm tra thông tin trước khi lưu'
+    : 'Kết quả từ nhật ký';
+  const headerBadge = reviewDraft ? 'Kiểm tra' : 'Kết quả';
 
   const styles = StyleSheet.create({
     card: {
@@ -336,6 +339,18 @@ export const VoiceResultCard = ({
     });
   };
 
+  const updateNote = (value: string) => {
+    if (!reviewDraft) return;
+    updateDraft({
+      ...reviewDraft,
+      note: {
+        targetKind: reviewDraft.note?.targetKind || 'meal',
+        existingNote: reviewDraft.note?.existingNote,
+        noteText: value,
+      },
+    });
+  };
+
   const renderHeader = () => (
     <>
       <View style={styles.header}>
@@ -344,17 +359,17 @@ export const VoiceResultCard = ({
             {config.label}
           </ThemedText>
           <ThemedText variant="caption" color="textSecondary">
-            {formatSource(reviewDraft?.source ?? command.source)} · Tin cậy {Math.round(command.confidence * 100)}%
+            {headerCaption}
           </ThemedText>
         </View>
         <View style={styles.confidence}>
           <ThemedText variant="caption" color="textSecondary">
-            Review
+            {headerBadge}
           </ThemedText>
         </View>
       </View>
       <ThemedText variant="bodySmall" style={styles.rawText}>
-        "{reviewDraft?.rawText ?? command.rawText}"
+        Bạn nói: "{reviewDraft?.rawText ?? command.rawText}"
       </ThemedText>
     </>
   );
@@ -431,7 +446,7 @@ export const VoiceResultCard = ({
                     >
                       <ThemedText style={styles.candidateName}>{candidate.name}</ThemedText>
                       <ThemedText style={styles.candidateMeta}>
-                        {Math.round(candidate.caloriesPer100 || 0)} kcal/100g · {formatSource(candidate.source)}
+                        {Math.round(candidate.caloriesPer100 || 0)} kcal/100g
                       </ThemedText>
                     </Pressable>
                   );
@@ -486,6 +501,32 @@ export const VoiceResultCard = ({
     </>
   );
 
+  const renderNoteDraft = (draft: VoiceReviewDraft) => (
+    <>
+      <View style={styles.reviewBanner}>
+        <ThemedText variant="bodySmall" weight="600">
+          Kiểm tra ghi chú trước khi lưu
+        </ThemedText>
+        <ThemedText variant="caption" color="textSecondary">
+          Ghi chú sẽ được gắn vào ngày hoặc bữa ăn bạn chọn.
+        </ThemedText>
+      </View>
+      <View style={styles.section}>
+        <ThemedText style={styles.fieldLabel}>Ghi chú</ThemedText>
+        <TextInput
+          testID="voice-review-note-input"
+          value={draft.note?.noteText || ''}
+          onChangeText={updateNote}
+          style={[styles.field, { minHeight: 76, textAlignVertical: 'top' }]}
+          multiline
+          placeholderTextColor={P.muted}
+        />
+      </View>
+      {renderBlocking(draft)}
+      {renderCommitButton(draft, 'Lưu ghi chú')}
+    </>
+  );
+
   const renderTotals = (draft: VoiceReviewDraft) => {
     const totals = draft.totals || {};
     return (
@@ -530,7 +571,20 @@ export const VoiceResultCard = ({
 
   const renderReadOnlyResult = () => (
     <>
-      {command.intent === 'ASK_CALORIES' && executedData?.totalCalories !== undefined ? (
+      {executedData?.details && command.intent !== 'ASK_CALORIES' ? (
+        <>
+          <View style={styles.reviewBanner}>
+            <ThemedText variant="bodySmall" weight="600">
+              {executedData.details}
+            </ThemedText>
+            {executedData.totalCalories !== undefined && (
+              <ThemedText variant="caption" color="textSecondary">
+                {Math.round(executedData.totalCalories)} kcal
+              </ThemedText>
+            )}
+          </View>
+        </>
+      ) : command.intent === 'ASK_CALORIES' && executedData?.totalCalories !== undefined ? (
         <>
           <View style={styles.totalPanel}>
             <View style={styles.totalItem}>
@@ -555,13 +609,13 @@ export const VoiceResultCard = ({
             </View>
           </View>
           <ThemedText variant="caption" color="success" style={{ textAlign: 'center' }}>
-            Đã lấy thông tin thành công.
+            Đã lấy thông tin mới nhất.
           </ThemedText>
         </>
       ) : (
         onExecute && (
           <Button
-            title={isExecuting ? 'Đang xử lý...' : 'Xác nhận thực hiện'}
+            title={isExecuting ? 'Đang xử lý...' : 'Xem kết quả'}
             variant="primary"
             onPress={onExecute}
             loading={isExecuting}
@@ -579,8 +633,9 @@ export const VoiceResultCard = ({
     <Animated.View entering={FadeInUp.springify()}>
       <AppCard style={styles.card} testID={TEST_IDS.voice.resultCard}>
         {renderHeader()}
-        {reviewDraft?.intent === 'ADD_FOOD' && renderAddFoodDraft(reviewDraft)}
+        {(reviewDraft?.intent === 'ADD_FOOD' || reviewDraft?.intent === 'REPEAT_MEAL') && renderAddFoodDraft(reviewDraft)}
         {reviewDraft?.intent === 'LOG_WEIGHT' && renderWeightDraft(reviewDraft)}
+        {reviewDraft?.intent === 'ADD_NOTE' && renderNoteDraft(reviewDraft)}
         {!reviewDraft && renderReadOnlyResult()}
       </AppCard>
     </Animated.View>

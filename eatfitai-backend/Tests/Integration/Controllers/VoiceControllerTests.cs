@@ -159,9 +159,9 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
         Assert.NotNull(body);
         Assert.Equal(VoiceIntent.ADD_FOOD, body.Intent);
         Assert.Equal("banana", body.Entities.FoodName);
-        Assert.Equal("backend-rule-fallback", body.Source);
+        Assert.Equal("backend-rule-parser", body.Source);
         Assert.True(body.ReviewRequired);
-        Assert.Contains("parser dự phòng", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("kiểm tra", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -174,13 +174,13 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
                 {
                   "intent": "ADD_FOOD",
                   "confidence": 0.96,
-                  "rawText": "ghi 1 chuoi vao bua sang",
+                  "rawText": "toi vua dung salad dac biet",
                   "source": "gemini-live",
-                  "suggestedAction": "Thêm 1 chuối vào bữa sáng",
+                  "suggestedAction": "Them salad dac biet",
                   "entities": {
-                    "foodName": "chuối",
+                    "foodName": "salad dac biet",
                     "quantity": 1,
-                    "mealType": "Breakfast"
+                    "mealType": "Lunch"
                   }
                 }
                 """,
@@ -191,7 +191,7 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
 
         var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
         {
-            Text = "ghi 1 chuoi vao bua sang",
+            Text = "toi vua dung salad dac biet",
             Language = "vi",
         });
 
@@ -202,8 +202,8 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
         Assert.Equal(VoiceIntent.ADD_FOOD, body.Intent);
         Assert.Equal("gemini-live", body.Source);
         Assert.True(body.ReviewRequired);
-        Assert.Contains("Voice Beta", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("chuối", body.Entities.FoodName);
+        Assert.Contains("kiểm tra", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("salad dac biet", body.Entities.FoodName);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
 
         var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
         {
-            Text = "ghi 1 banana vao bua sang",
+            Text = "toi vua dung salad dac biet",
             Language = "vi",
         });
 
@@ -245,7 +245,7 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
 
         var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
         {
-            Text = "ghi 1 banana vao bua sang",
+            Text = "toi vua dung salad dac biet",
             Language = "vi",
         });
 
@@ -270,7 +270,7 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
 
         var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
         {
-            Text = "ghi 1 banana vao bua sang",
+            Text = "toi vua dung salad dac biet",
             Language = "vi",
         });
 
@@ -278,10 +278,176 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
 
         var body = await response.Content.ReadFromJsonAsync<ParsedVoiceCommand>();
         Assert.NotNull(body);
-        Assert.Equal(VoiceIntent.ADD_FOOD, body.Intent);
+        Assert.Equal(VoiceIntent.UNKNOWN, body.Intent);
         Assert.Equal("backend-rule-fallback", body.Source);
-        Assert.True(body.ReviewRequired);
-        Assert.Contains("AI provider lỗi 502", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
+        Assert.False(body.ReviewRequired);
+    }
+
+    [Fact]
+    public async Task ParseWithProvider_UsesRuleParserBeforeProvider_ForWeightedMealCommand()
+    {
+        var httpClientFactory = new FakeHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"intent":"UNKNOWN","confidence":0.1}""", Encoding.UTF8, "application/json"),
+        });
+        using var factory = CreateFactoryWithHttpClient(httpClientFactory);
+        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
+
+        var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
+        {
+            Text = "them 150g thit heo bua trua",
+            Language = "vi",
+        });
+
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var entities = body.GetProperty("entities");
+
+        Assert.Equal(0, httpClientFactory.CallCount);
+        Assert.Equal("ADD_FOOD", body.GetProperty("intent").GetString());
+        Assert.Equal("backend-rule-parser", body.GetProperty("source").GetString());
+        Assert.Equal("thit heo", entities.GetProperty("foodName").GetString());
+        Assert.Equal(150m, entities.GetProperty("weight").GetDecimal());
+        Assert.Equal("Lunch", entities.GetProperty("mealType").GetString());
+        Assert.True(body.GetProperty("reviewRequired").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Execute_QueryMeal_ReturnsMealEntriesWithoutSaving()
+    {
+        var userId = Guid.NewGuid();
+        using var client = CreateAuthorizedClient(_factory, userId);
+        await IntegrationTestHost.EnsureAppUserAsync(
+            _factory.Services,
+            userId,
+            $"voice_query_{userId:N}@example.com",
+            "Voice Query User");
+        var foodId = await SeedCatalogFoodAsync("Voice rice query", 200m, 5m, 40m, 2m);
+        var queryDate = DateTime.Today.Date.AddDays(-1);
+        await CreateDiaryEntryAsync(client, foodId, queryDate, mealTypeId: 2, grams: 150);
+
+        var response = await client.PostAsJsonAsync("/api/voice/execute", new
+        {
+            intent = "QUERY_MEAL",
+            rawText = "bua trua hom qua an gi",
+            confidence = 0.9,
+            entities = new
+            {
+                mealType = "Lunch",
+                date = queryDate.ToString("yyyy-MM-dd")
+            }
+        });
+
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var action = body.GetProperty("executedAction");
+        var data = action.GetProperty("data");
+
+        Assert.True(body.GetProperty("success").GetBoolean());
+        Assert.Equal("QUERY_MEAL", action.GetProperty("type").GetString());
+        Assert.Equal(1, data.GetProperty("entryCount").GetInt32());
+        Assert.Equal(300m, data.GetProperty("totalCalories").GetDecimal());
+        Assert.Contains("Voice rice query", action.GetProperty("details").GetString());
+
+        var readback = await client.GetFromJsonAsync<List<MealDiaryDto>>($"/api/meal-diary?date={DateTime.Today:yyyy-MM-dd}");
+        Assert.Empty(readback!);
+    }
+
+    [Fact]
+    public async Task ReviewAndCommit_RepeatMeal_CopiesSourceMealOnlyAfterConfirmation()
+    {
+        var userId = Guid.NewGuid();
+        using var client = CreateAuthorizedClient(_factory, userId);
+        await IntegrationTestHost.EnsureAppUserAsync(
+            _factory.Services,
+            userId,
+            $"voice_repeat_{userId:N}@example.com",
+            "Voice Repeat User");
+        var foodId = await SeedCatalogFoodAsync("Voice repeat chicken", 180m, 20m, 5m, 4m);
+        var sourceDate = DateTime.Today.Date.AddDays(-1);
+        var targetDate = DateTime.Today.Date;
+        await CreateDiaryEntryAsync(client, foodId, sourceDate, mealTypeId: 2, grams: 120);
+
+        var reviewResponse = await client.PostAsJsonAsync("/api/voice/review", new
+        {
+            intent = "REPEAT_MEAL",
+            rawText = "them lai bua trua hom qua vao hom nay",
+            confidence = 0.92,
+            reviewRequired = true,
+            entities = new
+            {
+                mealType = "Lunch",
+                sourceDate = sourceDate.ToString("yyyy-MM-dd"),
+                targetDate = targetDate.ToString("yyyy-MM-dd")
+            }
+        });
+
+        reviewResponse.EnsureSuccessStatusCode();
+        var review = await reviewResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("REPEAT_MEAL", review.GetProperty("intent").GetString());
+        Assert.True(review.GetProperty("canSave").GetBoolean());
+        Assert.Single(review.GetProperty("items").EnumerateArray());
+
+        var beforeCommit = await client.GetFromJsonAsync<List<MealDiaryDto>>($"/api/meal-diary?date={targetDate:yyyy-MM-dd}");
+        Assert.Empty(beforeCommit!);
+
+        var commitResponse = await client.PostAsJsonAsync("/api/voice/commit", review);
+        commitResponse.EnsureSuccessStatusCode();
+        var commit = await commitResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(commit.GetProperty("success").GetBoolean());
+        Assert.Equal("REPEAT_MEAL", commit.GetProperty("executedAction").GetProperty("type").GetString());
+
+        var readback = await client.GetFromJsonAsync<List<MealDiaryDto>>($"/api/meal-diary?date={targetDate:yyyy-MM-dd}");
+        var entry = Assert.Single(readback!);
+        Assert.Equal(foodId, entry.FoodItemId);
+        Assert.Equal(120m, entry.Grams);
+        Assert.Equal("voice_repeat", entry.SourceMethod);
+    }
+
+    [Fact]
+    public async Task ReviewAndCommit_AddMealNote_UsesMealDayMarker()
+    {
+        var userId = Guid.NewGuid();
+        using var client = CreateAuthorizedClient(_factory, userId);
+        await IntegrationTestHost.EnsureAppUserAsync(
+            _factory.Services,
+            userId,
+            $"voice_note_{userId:N}@example.com",
+            "Voice Note User");
+        var noteDate = DateTime.Today.Date;
+
+        var reviewResponse = await client.PostAsJsonAsync("/api/voice/review", new
+        {
+            intent = "ADD_NOTE",
+            rawText = "ghi chu bua trua hoi nhieu dau",
+            confidence = 0.9,
+            reviewRequired = true,
+            entities = new
+            {
+                mealType = "Lunch",
+                date = noteDate.ToString("yyyy-MM-dd"),
+                noteText = "hoi nhieu dau"
+            }
+        });
+
+        reviewResponse.EnsureSuccessStatusCode();
+        var review = await reviewResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ADD_NOTE", review.GetProperty("intent").GetString());
+        Assert.True(review.GetProperty("canSave").GetBoolean());
+        Assert.Equal("hoi nhieu dau", review.GetProperty("note").GetProperty("noteText").GetString());
+
+        var commitResponse = await client.PostAsJsonAsync("/api/voice/commit", review);
+        commitResponse.EnsureSuccessStatusCode();
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var marker = await context.MealDayMarkers.SingleAsync(item =>
+            item.UserId == userId &&
+            item.LocalDate == DateOnly.FromDateTime(noteDate) &&
+            item.MealTypeId == 2 &&
+            item.MarkerType == "meal_note" &&
+            !item.IsDeleted);
+        Assert.Equal("hoi nhieu dau", marker.Reason);
     }
 
     [Fact]
@@ -531,6 +697,29 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
         await context.FoodItems.AddAsync(food);
         await context.SaveChangesAsync();
         return food.FoodItemId;
+    }
+
+    private static async Task CreateDiaryEntryAsync(
+        HttpClient client,
+        int foodId,
+        DateTime date,
+        int mealTypeId,
+        decimal grams)
+    {
+        var response = await client.PostAsJsonAsync("/api/meal-diary", new
+        {
+            eatenDate = date.ToString("yyyy-MM-dd"),
+            mealTypeId,
+            foodItemId = foodId,
+            grams,
+            calories = 0,
+            protein = 0,
+            carb = 0,
+            fat = 0,
+            sourceMethod = "manual"
+        });
+
+        response.EnsureSuccessStatusCode();
     }
 
     private sealed class FakeHttpClientFactory : IHttpClientFactory

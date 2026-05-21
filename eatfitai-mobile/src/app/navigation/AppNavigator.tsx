@@ -102,6 +102,9 @@ const getEditProfileScreen = lazyScreen(() =>
 const getBodyMetricsScreen = lazyScreen(() =>
   require('../screens/profile/BodyMetricsScreen'),
 );
+const getAIQuotaScreen = lazyScreen(() =>
+  require('../screens/profile/AIQuotaScreen'),
+);
 const getGoalSettingsScreen = lazyScreen(() =>
   require('../screens/profile/GoalSettingsScreen'),
 );
@@ -360,6 +363,11 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="BodyMetrics"
                 getComponent={getBodyMetricsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="AIQuota"
+                getComponent={getAIQuotaScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen

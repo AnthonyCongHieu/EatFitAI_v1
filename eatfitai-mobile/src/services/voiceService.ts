@@ -16,6 +16,28 @@ const getApiBaseUrl = (): string => {
   return assertBackendApiBaseUrl(baseUrl, 'Voice API base URL');
 };
 
+const FRIENDLY_ERROR_BY_CODE: Record<string, string> = {
+  ai_quota_exceeded: 'Bạn đã dùng hết lượt xử lý giọng nói hôm nay. Vui lòng thử lại sau.',
+  invalid_audio_reference: 'File ghi âm không hợp lệ. Vui lòng ghi âm lại.',
+  media_storage_not_configured: 'Tính năng ghi âm đang tạm ngưng. Vui lòng thử lại sau.',
+  voice_provider_auth_error: 'Tính năng giọng nói đang được bảo trì. Vui lòng thử lại sau.',
+  voice_provider_timeout: 'Tính năng giọng nói phản hồi hơi chậm. Vui lòng thử lại.',
+  voice_provider_unavailable: 'Tính năng giọng nói đang tạm thời gián đoạn. Vui lòng thử lại sau.',
+  voice_provider_error: 'Tính năng giọng nói chưa xử lý được yêu cầu này. Vui lòng thử lại.',
+};
+
+const TECHNICAL_ERROR_PATTERN =
+  /\b(api|backend|provider|parser|proxy|axios|network error|status code|timeout|undefined|null|exception|stack|500|503|404)\b/i;
+
+const toFriendlyVoiceError = (message: string | undefined, fallback: string): string => {
+  const trimmed = message?.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
+  return TECHNICAL_ERROR_PATTERN.test(trimmed) ? fallback : trimmed;
+};
+
 const getApiErrorMessage = (error: unknown, fallback: string): string => {
   const axiosError = error as AxiosError<{
     message?: string;
@@ -24,21 +46,17 @@ const getApiErrorMessage = (error: unknown, fallback: string): string => {
   }>;
   const data = axiosError?.response?.data;
 
-  if (typeof data?.message === 'string' && data.message.trim()) {
-    return data.message;
+  if (typeof data?.error === 'string' && data.error.trim()) {
+    const code = data.error.trim();
+    if (FRIENDLY_ERROR_BY_CODE[code]) {
+      return FRIENDLY_ERROR_BY_CODE[code];
+    }
+
+    return toFriendlyVoiceError(code, fallback);
   }
 
-  if (typeof data?.error === 'string' && data.error.trim()) {
-    switch (data.error) {
-      case 'voice_provider_timeout':
-        return 'AI giọng nói phản hồi quá chậm. Vui lòng thử lại.';
-      case 'voice_provider_unavailable':
-        return 'AI giọng nói hiện không khả dụng. Vui lòng thử lại.';
-      case 'voice_provider_error':
-        return 'AI giọng nói gặp lỗi khi xử lý yêu cầu.';
-      default:
-        return data.error;
-    }
+  if (typeof data?.message === 'string' && data.message.trim()) {
+    return toFriendlyVoiceError(data.message, fallback);
   }
 
   if (typeof axiosError?.message === 'string' && axiosError.message.trim()) {
@@ -48,10 +66,10 @@ const getApiErrorMessage = (error: unknown, fallback: string): string => {
       message === 'Network request failed' ||
       message === 'Failed to fetch'
     ) {
-      return `${fallback} Kiểm tra kết nối tới backend và thử lại.`;
+      return `${fallback} Kiểm tra kết nối mạng và thử lại.`;
     }
 
-    return message;
+    return toFriendlyVoiceError(message, fallback);
   }
 
   return fallback;
@@ -62,6 +80,9 @@ export type VoiceIntent =
   | 'LOG_WEIGHT'
   | 'ASK_CALORIES'
   | 'ASK_NUTRITION'
+  | 'QUERY_MEAL'
+  | 'REPEAT_MEAL'
+  | 'ADD_NOTE'
   | 'UNKNOWN';
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -81,6 +102,15 @@ export interface ParsedVoiceCommand {
     unit?: string;
     mealType?: MealType;
     date?: string;
+    sourceDate?: string;
+    targetDate?: string;
+    dateOffsetDays?: number;
+    sourceDateOffsetDays?: number;
+    targetDateOffsetDays?: number;
+    queryScope?: string;
+    queryType?: string;
+    nutrient?: string;
+    noteText?: string;
     weight?: number;
     foods?: FoodItemEntity[];
   };
@@ -107,6 +137,10 @@ export interface VoiceProcessResponse {
       newWeight?: number;
       requireConfirm?: boolean;
       savedWeight?: number;
+      entryCount?: number;
+      value?: number;
+      nutrient?: string;
+      noteText?: string;
     };
   };
 }
@@ -146,6 +180,13 @@ export interface VoiceNutritionTotals {
 export interface VoiceWeightReview {
   currentWeight?: number | null;
   newWeight: number;
+  noteText?: string | null;
+}
+
+export interface VoiceNoteReview {
+  targetKind: 'meal' | 'day' | string;
+  noteText: string;
+  existingNote?: string | null;
 }
 
 export interface VoiceReviewDraft {
@@ -157,8 +198,11 @@ export interface VoiceReviewDraft {
   reviewReason?: string | null;
   mealType?: MealType | string | null;
   date?: string | null;
+  sourceDate?: string | null;
+  targetDate?: string | null;
   items: VoiceReviewItem[];
   weight?: VoiceWeightReview | null;
+  note?: VoiceNoteReview | null;
   totals: VoiceNutritionTotals;
   warnings: string[];
   canSave: boolean;
@@ -221,7 +265,7 @@ export const voiceService = {
         success: false,
         error: getApiErrorMessage(
           error,
-          'Không thể chuyển giọng nói thành văn bản. Hãy nhập lệnh bằng text.',
+          'Chưa nhận diện được giọng nói. Bạn có thể nhập yêu cầu bằng bàn phím.',
         ),
       };
     }
@@ -256,9 +300,9 @@ export const voiceService = {
         confidence: 0,
         rawText: text,
         source: 'error',
-        suggestedAction: 'Không thể kết nối AI giọng nói. Vui lòng thử lại.',
+        suggestedAction: 'Chưa kết nối được tính năng giọng nói. Vui lòng thử lại.',
         reviewRequired: false,
-        reviewReason: getApiErrorMessage(error, 'Không thể phân tích lệnh giọng nói.'),
+        reviewReason: getApiErrorMessage(error, 'Chưa hiểu được yêu cầu giọng nói.'),
       };
     }
   },
@@ -299,7 +343,7 @@ export const voiceService = {
       });
       return {
         success: false,
-        error: getApiErrorMessage(error, 'Không thể thực hiện lệnh giọng nói.'),
+        error: getApiErrorMessage(error, 'Chưa thực hiện được yêu cầu này.'),
       };
     }
   },
@@ -322,7 +366,8 @@ export const voiceService = {
       command,
       error:
         command.intent === 'UNKNOWN'
-          ? command.reviewReason || 'Không hiểu lệnh. Hãy thử lại.'
+          ? command.reviewReason ||
+            'Chưa hiểu yêu cầu. Hãy thử nói rõ món, khẩu phần, bữa ăn hoặc điều muốn tra cứu.'
           : undefined,
     };
   },
@@ -342,7 +387,7 @@ export const voiceService = {
       });
       return {
         success: false,
-        error: getApiErrorMessage(error, 'Không thể lưu cân nặng.'),
+        error: getApiErrorMessage(error, 'Chưa lưu được cân nặng.'),
       };
     }
   },

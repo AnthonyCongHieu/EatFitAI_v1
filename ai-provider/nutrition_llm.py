@@ -1296,7 +1296,71 @@ def preprocess_vietnamese_numbers(text: str) -> str:
 
 def _fold_vietnamese_text(text: str) -> str:
     folded = unicodedata.normalize("NFD", text.lower())
-    return "".join(ch for ch in folded if unicodedata.category(ch) != "Mn").replace("đ", "d")
+    folded = "".join(ch for ch in folded if unicodedata.category(ch) != "Mn")
+    return folded.replace("đ", "d").replace("Ä‘", "d")
+
+
+def _voice_meal_type(meal_text: str | None) -> str | None:
+    normalized = (meal_text or "").strip()
+    if normalized in {"sang", "bua sang"}:
+        return "Breakfast"
+    if normalized in {"trua", "bua trua"}:
+        return "Lunch"
+    if normalized in {"toi", "bua toi"}:
+        return "Dinner"
+    if normalized in {"phu", "bua phu", "snack"}:
+        return "Snack"
+    return None
+
+
+def _strip_voice_meal_suffix(value: str) -> tuple[str, str | None]:
+    match = re.search(
+        r"(?:\s+(?:vao|cho|trong))?\s+((?:bua\s+)?(?:sang|trua|toi|phu)|snack)$",
+        value,
+        re.IGNORECASE,
+    )
+    if not match:
+        return value.strip(), None
+    return value[: match.start()].strip(), match.group(1).strip()
+
+
+def _parse_voice_food_part(part: str) -> Dict[str, Any] | None:
+    part = part.strip()
+    if not part:
+        return None
+
+    weight_match = re.match(
+        r"^(\d+(?:[\.,]\d+)?)\s*(g|gram|grams)\s+(.+)$",
+        part,
+        re.IGNORECASE,
+    )
+    if weight_match:
+        return {
+            "foodName": weight_match.group(3).strip(),
+            "weight": float(weight_match.group(1).replace(",", ".")),
+        }
+
+    quantity_match = re.match(r"^(\d+(?:[\.,]\d+)?)\s+(.+)$", part, re.IGNORECASE)
+    if quantity_match:
+        quantity = float(quantity_match.group(1).replace(",", "."))
+        remainder = quantity_match.group(2).strip()
+        tokens = remainder.split(None, 1)
+        unit_words = {"bat", "chen", "dia", "ly", "coc", "hop", "mieng", "phan", "suat", "trai", "qua"}
+        if len(tokens) == 2 and tokens[0] in unit_words:
+            return {
+                "foodName": tokens[1].strip(),
+                "quantity": quantity,
+                "unit": tokens[0],
+            }
+        return {
+            "foodName": remainder,
+            "quantity": quantity,
+        }
+
+    return {
+        "foodName": part,
+        "quantity": 1.0,
+    }
 
 
 def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
@@ -1359,43 +1423,27 @@ def try_parse_add_food_regex(text: str) -> Dict[str, Any] | None:
     """Regex cho lệnh ADD_FOOD ngắn, bao gồm câu không dấu trong smoke."""
     lower = _fold_vietnamese_text(text).strip()
 
-    pattern = (
-        r"^(?:ghi|them|an|log)\s+"
-        r"(?:(\d+(?:[\.,]\d+)?)\s+)?"
-        r"(.+?)"
-        r"(?:\s+(?:vao|cho|trong)\s+((?:bua\s+)?(?:sang|trua|toi|phu)|snack))?$"
-    )
+    pattern = r"^(?:ghi|them|an|log)\s+(.+)$"
     match = re.search(pattern, lower, re.IGNORECASE)
     if not match:
         return None
 
-    quantity_text, food_name, meal_text = match.groups()
-    food_name = (food_name or "").strip()
-    if not food_name:
+    food_text, meal_text = _strip_voice_meal_suffix(match.group(1).strip())
+    if not food_text:
         return None
 
-    meal_type = None
-    normalized_meal = (meal_text or "").strip()
-    if normalized_meal in {"sang", "bua sang"}:
-        meal_type = "Breakfast"
-    elif normalized_meal in {"trua", "bua trua"}:
-        meal_type = "Lunch"
-    elif normalized_meal in {"toi", "bua toi"}:
-        meal_type = "Dinner"
-    elif normalized_meal in {"phu", "bua phu", "snack"}:
-        meal_type = "Snack"
+    meal_type = _voice_meal_type(meal_text)
+    food_parts = re.split(r"\s+va\s+", food_text)
+    parsed_foods = [
+        food for food in (_parse_voice_food_part(part) for part in food_parts) if food
+    ]
+    if not parsed_foods:
+        return None
 
-    quantity = 1.0
-    if quantity_text:
-        try:
-            quantity = float(quantity_text.replace(",", "."))
-        except ValueError:
-            quantity = 1.0
-
-    entities: Dict[str, Any] = {
-        "foodName": food_name,
-        "quantity": quantity,
-    }
+    if len(parsed_foods) > 1:
+        entities: Dict[str, Any] = {"foods": parsed_foods}
+    else:
+        entities = parsed_foods[0]
     if meal_type:
         entities["mealType"] = meal_type
 

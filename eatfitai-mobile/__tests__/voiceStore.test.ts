@@ -138,6 +138,46 @@ describe('useVoiceStore', () => {
     expect(mockedVoiceService.executeCommand).not.toHaveBeenCalled();
   });
 
+  it('executes meal query commands immediately instead of opening an empty review', async () => {
+    mockedVoiceService.processVoiceText.mockResolvedValue({
+      success: true,
+      command: {
+        intent: 'QUERY_MEAL',
+        entities: {
+          mealType: 'lunch',
+          date: '2026-05-20',
+        },
+        confidence: 0.9,
+        rawText: 'bua trua hom qua an gi',
+        source: 'backend-rule-parser',
+        reviewRequired: false,
+      },
+    });
+    mockedVoiceService.executeCommand.mockResolvedValue({
+      success: true,
+      executedAction: {
+        type: 'QUERY_MEAL',
+        details: 'Bua trua co 1 mon: Voice rice query',
+        data: {
+          totalCalories: 300,
+        },
+      },
+    });
+
+    await act(async () => {
+      await useVoiceStore.getState().processText('bua trua hom qua an gi');
+    });
+
+    const state = useVoiceStore.getState();
+    expect(state.status).toBe('success');
+    expect(state.reviewDraft).toBeNull();
+    expect(state.executedData?.type).toBe('QUERY_MEAL');
+    expect(mockedVoiceService.reviewCommand).not.toHaveBeenCalled();
+    expect(mockedVoiceService.executeCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ intent: 'QUERY_MEAL' }),
+    );
+  });
+
   it('commits review drafts and keeps draft available when commit fails', async () => {
     const draft = {
       intent: 'ADD_FOOD' as const,

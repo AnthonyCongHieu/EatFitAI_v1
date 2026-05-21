@@ -3,327 +3,1206 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Tải EatFitAI APK cho Android - Ứng dụng theo dõi dinh dưỡng thông minh bằng AI dành cho món Việt. Chụp ảnh quét món ăn tức thì, ghi nhật ký bằng giọng nói, gợi ý công thức nấu ăn AI và bảo mật offline-first." />
-    <meta name="theme-color" content="#0E1322" />
-    <title>Tải EatFitAI APK cho Android — Ứng dụng dinh dưỡng Việt</title>
-    <link rel="icon" type="image/png" href="./assets/icon.png" />
+    <meta name="description" content="EatFitAI - Ứng dụng theo dõi dinh dưỡng chuyên biệt cho món ăn Việt. Nhận diện AR tức thì, tính toán calories và kiểm soát thể trạng thông minh, đồng bộ đám mây bảo mật và an toàn dữ liệu tuyệt đối." />
+    <meta name="theme-color" content="#0B0C0E" />
+    <title>EatFitAI — Theo dõi dinh dưỡng chuyên biệt cho món Việt</title>
+    <link rel="icon" type="image/png" href="./assets/favicon-eatfitai-heartleaf.png?v=20260521" />
+    <link rel="shortcut icon" type="image/png" href="./favicon.png?v=20260521" />
+    <link rel="apple-touch-icon" href="./assets/favicon-eatfitai-heartleaf.png?v=20260521" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css" />
-    <script defer src="./script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css?v=1.0.10" />
+    <script defer src="./script.js?v=1.0.10"></script>
   </head>
   <body>
-    <div class="ambient-bg" aria-hidden="true"><div class="ambient-glow glow-1"></div><div class="ambient-glow glow-2"></div></div>
+    <!-- Background Decorators -->
+    <div class="bg-grid-pattern" aria-hidden="true"></div>
+    <div class="bg-glow-wrapper" aria-hidden="true">
+      <div class="bg-glow-sphere glow-green-1"></div>
+      <div class="bg-glow-sphere glow-cyan-1"></div>
+      <div class="bg-glow-sphere glow-violet-1"></div>
+      <div class="bg-glow-sphere glow-green-2"></div>
+      <div class="bg-glow-sphere glow-cyan-2"></div>
+    </div>
+
+    <!-- Top Progress Scrollbar (Removed) -->
+
+    <!-- Floating Navbar -->
+    <header class="site-header" id="siteHeader">
+      <div class="header-inner">
+        <a class="brand" href="#top">
+          <img src="./assets/icon.png" alt="EatFitAI" width="36" height="36" class="brand-icon" />
+          <div class="brand-text">
+            <strong>EatFitAI</strong>
+            <span>Dinh dưỡng Việt</span>
+          </div>
+        </a>
+        <nav class="nav-links">
+          <a href="#top">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Trang chủ
+          </a>
+          <a href="#features">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707-.707M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>
+            </svg>
+            Tính năng
+          </a>
+          <a href="#simulator">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            Trình mô phỏng
+          </a>
+          <a href="#tdee">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+              <line x1="9" y1="22" x2="9" y2="16"/>
+              <line x1="8" y1="6" x2="16" y2="6"/>
+              <line x1="16" y1="22" x2="16" y2="16"/>
+              <line x1="9" y1="16" x2="16" y2="16"/>
+              <circle cx="9" cy="11" r="1"/>
+              <circle cx="15" cy="11" r="1"/>
+            </svg>
+            Tính TDEE
+          </a>
+          <a href="#showcase">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9"/>
+              <rect x="14" y="3" width="7" height="5"/>
+              <rect x="14" y="12" width="7" height="9"/>
+              <rect x="3" y="16" width="7" height="5"/>
+            </svg>
+            Thư viện
+          </a>
+          <a href="#faq">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Hỏi đáp
+          </a>
+          <a href="#download" class="mobile-only-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Tải APK
+          </a>
+        </nav>
+        <div class="nav-actions">
+          <a class="btn-nav" href="#download">Tải APK</a>
+        </div>
+        <button class="menu-toggle" id="menuToggle" aria-label="Mở menu">
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </button>
+      </div>
+    </header>
 
     <div class="page-wrapper" id="top">
-      <!-- HEADER -->
-      <header class="site-header">
-        <div class="header-inner">
-          <a class="brand" href="#top">
-            <img src="./assets/icon.png" alt="EatFitAI" width="38" height="38" class="brand-icon" />
-            <div class="brand-text"><strong>EatFitAI</strong><span>Dinh dưỡng thông minh</span></div>
-          </a>
-          <nav class="nav-pills">
-            <a href="#features">Tính năng</a>
-            <a href="#how">Cách dùng</a>
-            <a href="#download">Tải về</a>
-          </nav>
-        </div>
-      </header>
-
-      <main id="main">
-        <!-- HERO -->
-        <section class="hero">
-          <div class="hero-content">
-            <div class="hero-badge"><span class="badge-dot"></span> Phiên bản <strong data-version>1.0.0</strong> · Miễn phí</div>
-            <h1>Chụp ảnh. Nhận diện.<br/><span class="gradient-text">Theo dõi dinh dưỡng.</span></h1>
-            <p class="hero-desc">EatFitAI giúp bạn chụp ảnh bất kỳ món ăn nào — từ phở, bún bò đến salad — và tự động phân tích calories, protein, carbs & fat trong vài giây. Hoàn toàn miễn phí.</p>
-            <div class="hero-cta">
-              <a class="btn btn-primary" data-download-link href="#" id="hero-download-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Tải APK miễn phí
-              </a>
-              <a class="btn btn-ghost" data-release-link href="#" target="_blank" rel="noopener" id="hero-github-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-                Xem trên GitHub
-              </a>
-            </div>
-            <div class="hero-trust">
-              <div class="trust-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Offline-first</div>
-              <div class="trust-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> An toàn & Minh bạch</div>
-              <div class="trust-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg> Android 7.0+</div>
-            </div>
+      <!-- HERO -->
+      <section class="hero spa-section">
+        <div class="hero-content">
+          <div class="hero-mochi-badge">
+            <img src="./assets/mochi/mochi-success.png" alt="MoChi Welcome" class="hero-mochi-avatar" />
+            <span class="hero-mochi-msg">Trợ lý MoChi đồng hành cùng sức khỏe Việt! ✨</span>
           </div>
-          <div class="hero-visual">
-            <img src="./assets/hero-showcase.png" alt="EatFitAI trên điện thoại" class="hero-showcase-img" />
-          </div>
-        </section>
+          <h1>Ăn lành sống khỏe,<br/><span class="accent-text">Cá nhân hóa dinh dưỡng.</span><br/>Theo dõi nhẹ nhàng.</h1>
+          <p class="hero-desc">Ứng dụng tiên phong tối ưu riêng cho ẩm thực Việt. Nhận diện tức thì các món ăn truyền thống như Phở, Cơm Tấm, Bún Bò qua camera AR thông minh, phân tích calo chuẩn xác và đồng hành cùng mục tiêu thể trạng của bạn mà hoàn toàn không có quảng cáo.</p>
 
-        <!-- STATS BAR -->
-        <section class="stats-bar">
-          <div class="stat-item"><span class="stat-num">450+</span><span class="stat-label">Lớp món ăn Việt</span></div>
-          <div class="stat-divider"></div>
-          <div class="stat-item"><span class="stat-num">YOLO11m</span><span class="stat-label">Mô hình AI</span></div>
-          <div class="stat-divider"></div>
-          <div class="stat-item"><span class="stat-num">3s</span><span class="stat-label">Nhận diện camera</span></div>
-          <div class="stat-divider"></div>
-          <div class="stat-item"><span class="stat-num">Ngoại tuyến</span><span class="stat-label">Mifflin-St Jeor</span></div>
-        </section>
-
-        <!-- FEATURES BENTO GRID -->
-        <section class="section" id="features">
-          <div class="section-header">
-            <span class="label">Tính năng nổi bật</span>
-            <h2>Mọi thứ bạn cần để kiểm soát dinh dưỡng</h2>
-            <p class="section-sub">Trải nghiệm bộ công cụ sức khỏe AI toàn diện dành riêng cho lối sống Việt.</p>
-          </div>
-
-          <div class="bento-grid">
-            <!-- Card 1: AI Quét Món Ăn (Wide) -->
-            <div class="bento-card card-wide bg-gradient-forest" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">AI Nhận Diện Tức Thì</span>
-                <h3>Quét món ăn bằng camera AI</h3>
-                <p>Nhận dạng món ăn Việt Nam chuẩn xác chỉ trong 3 giây. Mô hình AI chuyên biệt YOLO11m được huấn luyện trên hàng chục nghìn hình ảnh món Việt, hoạt động hoàn toàn miễn phí và không giới hạn số lần quét mỗi ngày.</p>
-              </div>
-              <div class="bento-mochi-speech speech-scan-success">Đưa camera đây, tớ quét cho! 📸</div>
-              <img class="bento-mascot-img mascot-scan-success" src="./assets/mochi/mochi-scan-success.png" alt="MoChi Scan Success" />
-            </div>
-
-            <!-- Card 2: Adaptive Goals (Standard) -->
-            <div class="bento-card" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">Tự Động Điều Chỉnh</span>
-                <h3>Mục tiêu năng lượng thích ứng</h3>
-                <p>Tự động điều chỉnh calo mục tiêu và tỷ lệ chất dinh dưỡng đa lượng (Macros) mỗi tuần dựa theo biến động cân nặng thực tế và mức vận động của bạn.</p>
-              </div>
-              <div class="bento-mochi-speech speech-scale">Điều chỉnh mục tiêu tự động! ⚖️</div>
-              <img class="bento-mascot-img mascot-scale" src="./assets/mochi/mochi-scale.png" alt="MoChi Scale" />
-            </div>
-
-            <!-- Card 3: AI Voice Logging (Tall) -->
-            <div class="bento-card card-tall" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">Rảnh tay tiện ích</span>
-                <h3>Ghi nhật ký bằng giọng nói AI</h3>
-                <p>Chỉ cần nói một cách tự nhiên: "Sáng nay ăn 1 tô bún bò Huế và uống 1 ly nước mía". AI sẽ tự động phân tách món ăn, tính toán calo và ghi nhật ký tức thì. Hạn ngạch sử dụng 20 lượt/ngày cực kỳ thoải mái cho các nhu cầu theo dõi sức khỏe thường nhật.</p>
-              </div>
-              <div class="bento-mochi-speech speech-thinking">Tớ đang lắng nghe bạn nói nè! 🎙️</div>
-              <img class="bento-mascot-img mascot-thinking" src="./assets/mochi/mochi-thinking.png" alt="MoChi Voice" />
-            </div>
-
-            <!-- Card 4: Macro Rings (Wide) -->
-            <div class="bento-card card-wide" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">Dinh Dưỡng Cân Bằng</span>
-                <h3>Vòng tròn Macros tương tác</h3>
-                <p>Kiểm soát tỷ lệ Carbs, Protein và Fat thông qua các vòng tròn đồng tâm chuyển động sinh động. Nhấp chọn từng nhóm chất trên ứng dụng để MoChi gợi ý thực phẩm Việt lành mạnh tốt nhất.</p>
-              </div>
-              
-              <!-- Mini Rings Animation Mockup -->
-              <div class="bento-mini-rings">
-                <svg class="mini-ring-svg" width="100" height="100" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" class="ring-bg"></circle>
-                  <circle cx="50" cy="50" r="40" class="ring-fg-p" stroke-dasharray="251.2" stroke-dashoffset="62.8"></circle>
-                  
-                  <circle cx="50" cy="50" r="30" class="ring-bg"></circle>
-                  <circle cx="50" cy="50" r="30" class="ring-fg-c" stroke-dasharray="188.4" stroke-dashoffset="75.36"></circle>
-
-                  <circle cx="50" cy="50" r="20" class="ring-bg"></circle>
-                  <circle cx="50" cy="50" r="20" class="ring-fg-f" stroke-dasharray="125.6" stroke-dashoffset="37.68"></circle>
-                </svg>
-              </div>
-            </div>
-
-            <!-- Card 5: Smart Water Tracker (Standard) -->
-            <div class="bento-card" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">Hydration</span>
-                <h3>Trợ lý nước thông minh</h3>
-                <p>Mục tiêu nước được tự động tính toán theo công thức khoa học (cân nặng * 30ml). Ghi nhận và theo dõi lịch sử uống nước chỉ với 1 chạm nhanh chóng.</p>
-              </div>
-              <div class="bento-mochi-speech speech-idle">Đến giờ uống nước rồi đó! 💧</div>
-              <img class="bento-mascot-img mascot-idle" src="./assets/mochi/mochi-idle.png" alt="MoChi Idle" />
-            </div>
-
-            <!-- Card 6: Streak & Achievements (Standard) -->
-            <div class="bento-card" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">Động Lực Mỗi Ngày</span>
-                <h3>Streak &amp; Huy Hiệu</h3>
-                <p>Tích lũy XP khi ghi chép dinh dưỡng để thăng cấp và mở khóa 19+ huy hiệu độc đáo. Hỗ trợ tối đa 3 lần cứu chuỗi Streak mỗi tháng phòng khi bận rộn.</p>
-              </div>
-              <div class="bento-mochi-speech speech-celebrate">Giữ streak cùng tớ nha! 🔥</div>
-              <img class="bento-mascot-img mascot-celebrate" src="./assets/mochi/mochi-celebrate.png" alt="MoChi Celebrate" />
-            </div>
-
-            <!-- Card 7: AI Recipes (Wide) -->
-            <div class="bento-card card-wide bg-gradient-amber" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">Tối Ưu Thực Đơn</span>
-                <h3>Gợi ý công thức &amp; Nấu ăn AI</h3>
-                <p>Chỉ cần nhập các nguyên liệu còn dư trong tủ lạnh, AI sẽ thiết kế các món ăn Việt giàu dinh dưỡng kèm hướng dẫn nấu chi tiết. Hạn ngạch 20 lượt/ngày thoải mái sáng tạo các bữa ăn ngon.</p>
-              </div>
-              <div class="bento-mochi-speech speech-meal">Hôm nay ăn món gì nhỉ? 🍳</div>
-              <img class="bento-mascot-img mascot-meal" src="./assets/mochi/mochi-meal.png" alt="MoChi Meal" />
-            </div>
-
-            <!-- Card 8: Supabase Sync & Auth (Standard) -->
-            <div class="bento-card" data-glow-card>
-              <div class="bento-card-glow"></div>
-              <div class="bento-content-wrap">
-                <span class="bento-badge">Đồng Bộ An Toàn</span>
-                <h3>Đồng bộ Google &amp; Supabase</h3>
-                <p>Bảo mật dữ liệu tuyệt đối nhờ cơ chế lưu trữ cục bộ (offline-first). Hỗ trợ đồng bộ hóa đám mây mã hóa an toàn qua Google Sign-in và Supabase.</p>
-              </div>
-              <div class="bento-mochi-speech speech-secure">Mã hóa an toàn offline-first! 🛡️</div>
-              <img class="bento-mascot-img mascot-secure" src="./assets/mochi/mochi-secure.png" alt="MoChi Secure" />
-            </div>
-          </div>
-
-        <!-- HOW IT WORKS -->
-        <section class="section" id="how">
-          <div class="section-header">
-            <span class="label">Cách sử dụng</span>
-            <h2>Đơn giản chỉ với 3 bước</h2>
-            <p class="section-sub">Không cần đăng ký phức tạp. Tải về, mở app và bắt đầu theo dõi dinh dưỡng ngay.</p>
-          </div>
-          <div class="how-steps">
-            <div class="how-card">
-              <div class="how-num">01</div>
-              <div class="how-body">
-                <h3>Chụp ảnh món ăn</h3>
-                <p>Mở camera trong app và chụp ảnh bất kỳ món ăn nào bạn đang ăn. AI sẽ tự động nhận diện.</p>
-              </div>
-            </div>
-            <div class="how-arrow">→</div>
-            <div class="how-card">
-              <div class="how-num">02</div>
-              <div class="how-body">
-                <h3>Xác nhận kết quả</h3>
-                <p>Xem thông tin dinh dưỡng được phân tích: tên món, calories, protein, carbs, fat. Điều chỉnh nếu cần.</p>
-              </div>
-            </div>
-            <div class="how-arrow">→</div>
-            <div class="how-card">
-              <div class="how-num">03</div>
-              <div class="how-body">
-                <h3>Theo dõi mỗi ngày</h3>
-                <p>Xem dashboard tổng quan, biểu đồ xu hướng và đạt mục tiêu dinh dưỡng cá nhân của bạn.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- DOWNLOAD -->
-        <section class="section" id="download">
-          <div class="download-panel">
-            <div class="download-info">
-              <span class="label">Tải về ngay</span>
-              <h2>Sẵn sàng cho Android</h2>
-              <p>Ứng dụng miễn phí, tải xuống trực tiếp và an toàn từ máy chủ chính thức.</p>
-              <div class="download-meta">
-                <div class="meta-row"><span class="meta-label">Phiên bản</span><span class="meta-value" data-version>1.0.0</span></div>
-                <div class="meta-row"><span class="meta-label">Dung lượng</span><span class="meta-value" data-file-size>~125 MB</span></div>
-                <div class="meta-row"><span class="meta-label">Package</span><span class="meta-value mono" data-package-name>com.eatfitai.app</span></div>
-                <div class="meta-row"><span class="meta-label">Yêu cầu</span><span class="meta-value">Android 7.0+</span></div>
-              </div>
-              <div class="download-actions">
-                <a class="btn btn-primary btn-lg" data-download-link href="#" id="section-download-btn">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Tải APK cho Android
-                </a>
-                <a class="btn btn-ghost" data-release-link href="#" target="_blank" rel="noopener" id="section-release-btn">Xem Release Notes</a>
-              </div>
-            </div>
-            <div class="download-qr">
-              <div class="qr-card">
-                <img src="./assets/icon.png" alt="EatFitAI" width="48" height="48" class="qr-app-icon" />
-                <figure class="qr-figure">
-                  <img data-qr-image alt="QR tải EatFitAI" width="140" height="140" class="qr-img" />
-                  <figcaption>Quét mã QR để tải trên điện thoại</figcaption>
-                </figure>
-                <div class="qr-status"><span class="status-indicator"></span><span data-release-status>Đang kiểm tra</span></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- INSTALL GUIDE -->
-        <section class="section" id="install">
-          <div class="section-header">
-            <span class="label">Hướng dẫn cài đặt</span>
-            <h2>Cài APK trên Android chỉ trong 3 bước</h2>
-          </div>
-          <ol class="steps">
-            <li class="step-card"><div class="step-num">1</div><div class="step-body"><h3>Tải file APK</h3><p>Nhấn nút "Tải APK" phía trên hoặc quét mã QR trên điện thoại Android.</p></div></li>
-            <li class="step-card"><div class="step-num">2</div><div class="step-body"><h3>Cho phép cài đặt</h3><p>Khi Android hỏi, hãy cho phép trình duyệt cài đặt từ nguồn này. Vào Cài đặt > Bảo mật > bật "Nguồn không xác định".</p></div></li>
-            <li class="step-card"><div class="step-num">3</div><div class="step-body"><h3>Mở & sử dụng</h3><p>Mở EatFitAI, tạo tài khoản và bắt đầu chụp ảnh món ăn đầu tiên!</p></div></li>
-          </ol>
-        </section>
-
-        <!-- FAQ -->
-        <section class="section" id="faq">
-          <div class="section-header">
-            <span class="label">Câu hỏi thường gặp</span>
-            <h2>Bạn cần biết gì?</h2>
-          </div>
-          <div class="faq-list">
-            <details class="faq-item"><summary>EatFitAI có miễn phí không?</summary><p>Hoàn toàn miễn phí và không chèn quảng cáo! Để đảm bảo phục vụ cộng đồng lâu dài và tối ưu tài nguyên máy chủ, tính năng Quét món ăn bằng camera AI được cung cấp hoàn toàn <strong>không giới hạn</strong>, trong khi các tính năng AI nâng cao khác (như nhận diện giọng nói AI, gợi ý công thức AI) đi kèm hạn ngạch vô cùng rộng rãi là <strong>20 lượt dùng/ngày</strong> cho mỗi tính năng. Bạn có thể sử dụng thoải mái cho mọi nhu cầu dinh dưỡng hàng ngày.</p></details>
-            <details class="faq-item"><summary>Ứng dụng nhận diện được bao nhiêu món?</summary><p>Mô hình AI YOLO11m được huấn luyện chuyên sâu với hơn <strong>450 lớp món ăn Việt Nam phổ biến</strong> và hàng nghìn món ăn quốc tế khác. Hệ thống liên tục được nâng cấp để nâng cao độ chính xác.</p></details>
-            <details class="faq-item"><summary>Tại sao tải APK thay vì từ Google Play?</summary><p>EatFitAI hiện đang được phân phối trực tiếp dưới dạng tệp cài đặt APK chính thức thông qua trang đích này để cung cấp nhanh nhất các phiên bản thử nghiệm và tính năng mới đến người dùng. Chúng tôi cam kết tệp APK an toàn tuyệt đối và sẽ sớm có mặt trên Google Play Store.</p></details>
-            <details class="faq-item"><summary>Dữ liệu của tôi có an toàn không?</summary><p>Dữ liệu của bạn cực kỳ an toàn! Ứng dụng được thiết kế theo cơ chế <strong>offline-first</strong> (lưu trữ dữ liệu cục bộ trên thiết bị của bạn). Khi bạn chọn đồng bộ hóa đám mây, dữ liệu sẽ được sao lưu và mã hóa an toàn qua <strong>Google Sign-in</strong> và dịch vụ đám mây <strong>Supabase</strong>, cam kết bảo mật quyền riêng tư tuyệt đối.</p></details>
-            <details class="faq-item"><summary>Ứng dụng có hoạt động offline không?</summary><p>Có! Ứng dụng hỗ trợ hoạt động offline mạnh mẽ với các tính năng cơ bản như tính toán TDEE dự phòng qua công thức khoa học Mifflin-St Jeor, ghi chép nước uống và xem lịch sử. Riêng các tính năng AI thông minh như Quét món ăn camera AI, Nhận dạng giọng nói và Gợi ý công thức AI sẽ cần kết nối mạng để kết nối với máy chủ xử lý.</p></details>
-          </div>
-        </section>
-
-        <!-- SAFETY -->
-        <section class="section" id="safety">
-          <div class="safety-banner">
-            <div class="safety-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-            <div class="safety-content">
-              <h2>Lưu ý an toàn</h2>
-              <ul class="safety-list">
-                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Chỉ tải APK trực tiếp từ trang web chính thức này</li>
-                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Không cài file APK từ tin nhắn chat, link rút gọn hoặc các nguồn không rõ ràng</li>
-                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Luôn kiểm tra tên miền trang web chính thức trước khi tải xuống</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <!-- CTA BOTTOM -->
-        <section class="section cta-bottom">
-          <div class="cta-card">
-            <h2>Bắt đầu theo dõi dinh dưỡng ngay hôm nay</h2>
-            <p>Tải EatFitAI miễn phí và kiểm soát chế độ ăn uống của bạn chỉ bằng một bức ảnh.</p>
-            <a class="btn btn-primary btn-lg" data-download-link href="#" id="cta-download-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Tải APK miễn phí
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#download">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Tải APK Miễn Phí
             </a>
           </div>
-        </section>
-      </main>
 
-      <!-- FOOTER -->
-      <footer class="site-footer">
-        <div class="footer-left">
-          <img src="./assets/icon.png" alt="" width="20" height="20" class="footer-icon" />
-          <span>EatFitAI &copy; 2025 · Phát triển bởi Anthony Cong Hieu</span>
+          <div class="hero-trust">
+            <span class="trust-item">
+              <svg class="check-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Android 7.0+
+            </span>
+            <span class="trust-item">
+              <svg class="check-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Không quảng cáo
+            </span>
+            <span class="trust-item">
+              <svg class="check-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Đám mây bảo mật Supabase
+            </span>
+          </div>
         </div>
-        <a data-repo-link href="https://github.com/anthonyconghieu/EatFitAI_v1" target="_blank" rel="noopener" class="footer-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          GitHub
-        </a>
-      </footer>
+        <div class="hero-visual">
+          <div class="device-showcase-container">
+            <img src="./assets/hero-showcase.png" alt="EatFitAI Mockup" class="hero-image" />
+          </div>
+        </div>
+      </section>
+
+      <!-- STATS BAR -->
+      <section class="stats-bar spa-section">
+        <div class="stat-item">
+          <span class="stat-num">450+</span>
+          <span class="stat-label">Lớp Món Ăn Việt</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-num">YOLO11m</span>
+          <span class="stat-label">Mô hình AI Chuyên Biệt</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-num">3 Giây</span>
+          <span class="stat-label">Thời gian Nhận diện AR</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-num">Cloud-Sync</span>
+          <span class="stat-label">Đồng Bộ Thời Gian Thực</span>
+        </div>
+      </section>
+
+      <!-- SIMULATOR SECTION (THE SMART PART) -->
+      <section class="section spa-section hidden-page" id="simulator">
+        <div class="section-header">
+          <span class="section-tag">Trải Nghiệm Trực Quan</span>
+          <h2>Trình Mô Phỏng AR Nhận Diện Dinh Dưỡng</h2>
+          <p class="section-sub">Hãy thử nghiệm cách ứng dụng phân tích món ăn Việt chỉ bằng hình ảnh trực tiếp ngay tại đây.</p>
+        </div>
+
+        <div class="simulator-container">
+          <!-- Food Selector Panel -->
+          <div class="sim-selector">
+            <h3>1. Chọn một món ăn mẫu</h3>
+            <div class="food-grid">
+              <button class="food-btn active" data-food="pho">
+                <svg class="food-btn-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12h18"/>
+                  <path d="M3 12a9 9 0 0 0 18 0"/>
+                  <path d="M7 8c.5-1.5 1.5-3 3-3"/>
+                  <path d="M11 8c.5-1.5 1.5-3 3-3"/>
+                  <path d="M15 8c.5-1.5 1.5-3 3-3"/>
+                </svg>
+                <span class="food-btn-name">Phở Bò</span>
+              </button>
+              <button class="food-btn" data-food="bunbo">
+                <svg class="food-btn-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v3"/>
+                  <path d="M8 5h8"/>
+                  <path d="M3 11h18"/>
+                  <path d="M3 11a9 9 0 0 0 18 0"/>
+                  <path d="M7 11V7a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v4"/>
+                </svg>
+                <span class="food-btn-name">Bún Bò Huế</span>
+              </button>
+              <button class="food-btn" data-food="comtam">
+                <svg class="food-btn-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 16h20"/>
+                  <path d="M6 16c0-3 3-5 6-5s6 2 6 5"/>
+                  <path d="M12 7V3"/>
+                  <path d="M9 10h6"/>
+                </svg>
+                <span class="food-btn-name">Cơm Tấm</span>
+              </button>
+              <button class="food-btn" data-food="banhmi">
+                <svg class="food-btn-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 6L6 18"/>
+                  <path d="M14 4c1-1 3-1 4 0s1 3 0 4l-9 9c-1 1-3 1-4 0s-1-3 0-4l9-9z"/>
+                  <path d="M8 8l2 2"/>
+                  <path d="M11 11l2 2"/>
+                  <path d="M14 14l2 2"/>
+                </svg>
+                <span class="food-btn-name">Bánh Mì</span>
+              </button>
+            </div>
+
+            <div class="upload-divider">
+              <span>Hoặc thử với ảnh của bạn</span>
+            </div>
+
+            <div class="sim-upload-box">
+              <input type="file" id="simUploadInput" accept="image/*" class="sim-file-input" />
+              <label for="simUploadInput" class="sim-upload-label">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Tải ảnh món ăn của bạn lên</span>
+                <span class="upload-sub">Hỗ trợ JPG, PNG</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Phone Camera View Mockup -->
+          <div class="sim-phone">
+            <div class="phone-mockup-frame">
+              <div class="phone-notch"></div>
+              <div class="phone-screen-container">
+                <div class="ar-camera-view">
+                  <!-- Active Food Photo -->
+                  <img id="simFoodPhoto" src="./assets/pho-bowl.jpg" alt="Món ăn mô phỏng" class="ar-image" />
+
+                  <!-- AR Viewfinder Brackets -->
+                  <div class="ar-bracket bracket-tl"></div>
+                  <div class="ar-bracket bracket-tr"></div>
+                  <div class="ar-bracket bracket-bl"></div>
+                  <div class="ar-bracket bracket-br"></div>
+
+                  <!-- Scanning Line -->
+                  <div class="ar-scan-bar" id="simScanBar"></div>
+
+                  <!-- Dynamic Bounding Boxes -->
+                  <div id="arBoundingBoxes" class="ar-boxes-layer">
+                    <!-- Boxes will be injected by script.js -->
+                  </div>
+
+                  <!-- Scanning Indicator Overlay -->
+                  <div class="ar-status-toast" id="simStatusToast">AR Scanner Active</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nutrition Analysis Card -->
+          <div class="sim-analysis">
+            <div class="analysis-card-inner">
+              <div class="analysis-header">
+                <h3>2. Phân Tích Dinh Dưỡng</h3>
+                <span class="confidence-pill" id="simConfidence">94% Khớp</span>
+              </div>
+
+              <div class="dish-title-wrap">
+                <h4 id="simDishName">Phở Bò Hà Nội</h4>
+                <p class="dish-weight" id="simDishWeight">Phần tiêu chuẩn (~530g)</p>
+              </div>
+
+              <!-- Calories Ring View -->
+              <div class="calories-ring-container">
+                <svg class="radial-svg" width="120" height="120" viewBox="0 0 120 120">
+                  <circle class="radial-bg" cx="60" cy="60" r="50"></circle>
+                  <circle class="radial-progress" cx="60" cy="60" r="50" id="simCalorieCircle" stroke-dasharray="314.16" stroke-dashoffset="314.16"></circle>
+                </svg>
+                <div class="calories-value-box">
+                  <span class="cal-number" id="simCalorieNumber">0</span>
+                  <span class="cal-unit">kcal</span>
+                </div>
+              </div>
+
+              <!-- Macros Breakdown -->
+              <div class="macros-grid">
+                <div class="macro-bar-item">
+                  <div class="macro-bar-label">
+                    <span>Protein</span>
+                    <strong id="simProteinVal">0g</strong>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill fill-protein" id="simProteinBar" style="width: 0%"></div>
+                  </div>
+                </div>
+
+                <div class="macro-bar-item">
+                  <div class="macro-bar-label">
+                    <span>Carbs</span>
+                    <strong id="simCarbsVal">0g</strong>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill fill-carbs" id="simCarbsBar" style="width: 0%"></div>
+                  </div>
+                </div>
+
+                <div class="macro-bar-item">
+                  <div class="macro-bar-label">
+                    <span>Fat</span>
+                    <strong id="simFatVal">0g</strong>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill fill-fat" id="simFatBar" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Health Advice Box -->
+              <div class="advice-box">
+                <div class="advice-title">
+                  <img id="adviceMochiAvatar" class="advice-mochi-avatar" src="./assets/mochi/mochi-success.png" alt="MoChi" />
+                  <span>Trợ lý dinh dưỡng MoChi khuyên</span>
+                </div>
+                <p id="simAdviceText">Đang phân tích dữ liệu dinh dưỡng của món ăn...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PERSONAL TDEE CALCULATOR (THE SMART HEALTH-TECH PART) -->
+      <section class="section spa-section hidden-page" id="tdee">
+        <div class="section-header">
+          <span class="section-tag">Khoa Học & Cá Nhân</span>
+          <h2>Tính Toán Chỉ Số Năng Lượng TDEE</h2>
+          <p class="section-sub">Định lượng mức năng lượng và tỷ lệ dinh dưỡng (Macros) tối ưu dành riêng cho cơ thể bạn.</p>
+        </div>
+
+        <div class="tdee-calculator-wrapper">
+          <div class="tdee-form-box">
+            <h3>Chỉ số cơ thể</h3>
+            <form id="tdeeForm" onsubmit="return false;">
+              <!-- Gender selector -->
+              <div class="form-group">
+                <label>Giới tính</label>
+                <div class="gender-selector">
+                  <input type="radio" name="gender" id="genderMale" value="male" checked />
+                  <label for="genderMale" class="gender-btn">Nam</label>
+
+                  <input type="radio" name="gender" id="genderFemale" value="female" />
+                  <label for="genderFemale" class="gender-btn">Nữ</label>
+                </div>
+              </div>
+
+              <!-- Age, Height, Weight row -->
+              <div class="form-row-three">
+                <div class="form-group">
+                  <label for="calcAge">Tuổi</label>
+                  <input type="number" id="calcAge" min="15" max="80" value="25" required />
+                </div>
+                <div class="form-group">
+                  <label for="calcHeight">Chiều cao (cm)</label>
+                  <input type="number" id="calcHeight" min="100" max="220" value="170" required />
+                </div>
+                <div class="form-group">
+                  <label for="calcWeight">Cân nặng (kg)</label>
+                  <input type="number" id="calcWeight" min="30" max="150" value="65" required />
+                </div>
+              </div>
+
+              <!-- Activity Level -->
+              <div class="form-group">
+                <label for="calcActivity">Mức độ vận động hàng tuần</label>
+                <select id="calcActivity">
+                  <option value="1.2">Ít vận động (Nhân viên văn phòng, chỉ ngồi)</option>
+                  <option value="1.375" selected>Vận động nhẹ (Tập thể dục nhẹ 1-3 ngày/tuần)</option>
+                  <option value="1.55">Vận động vừa (Chơi thể thao cường độ vừa 3-5 ngày/tuần)</option>
+                  <option value="1.725">Vận động nhiều (Tập thể thao nặng 6-7 ngày/tuần)</option>
+                </select>
+              </div>
+
+              <!-- Fitness Goal -->
+              <div class="form-group">
+                <label for="calcGoal">Mục tiêu cân nặng</label>
+                <select id="calcGoal">
+                  <option value="lose">Giảm cân nhẹ nhàng (Calorie Deficit)</option>
+                  <option value="maintain" selected>Giữ cân hiện tại (Tâm điểm sức khỏe)</option>
+                  <option value="gain">Tăng cơ / Tăng cân lành mạnh (Calorie Surplus)</option>
+                </select>
+              </div>
+
+              <button class="btn btn-primary btn-full" id="calcSubmitBtn">Tính Toán Chỉ Số Ngay</button>
+            </form>
+          </div>
+
+          <!-- TDEE Results Panel -->
+          <div class="tdee-results-box" id="tdeeResults">
+            <div class="results-placeholder" id="resultsPlaceholder">
+              <img src="./assets/mochi/mochi-analyzing.png" alt="MoChi Analyzing" class="tdee-placeholder-mascot" />
+              <p>Hãy nhập chỉ số và nhấn nút bên cạnh để xem kết quả phân tích calorie khoa học.</p>
+            </div>
+
+            <div class="results-content hidden" id="resultsContent">
+              <h3>Mục Tiêu Dinh Dưỡng Khuyên Dùng</h3>
+
+              <div class="tdee-output-card">
+                <span class="tdee-label">Năng lượng mục tiêu mỗi ngày:</span>
+                <div class="tdee-value">
+                  <strong id="resultTdeeVal">0</strong>
+                  <span class="tdee-unit">kcal/ngày</span>
+                </div>
+                <p class="tdee-explanation" id="resultExplanation">Mức calorie này giúp bạn duy trì cân nặng ổn định dựa trên thông số cơ thể.</p>
+              </div>
+
+              <h4>Phân bổ Macros tối ưu (Được đề xuất - Nhấp chọn để xem gợi ý món):</h4>
+              <div class="results-macros">
+                <div class="macro-result-card" data-macro="protein">
+                  <div class="macro-result-header">
+                    <span class="macro-color-indicator dot-protein"></span>
+                    <span>Đạm (Protein)</span>
+                  </div>
+                  <div class="macro-result-num">
+                    <strong id="resProteinGrams">0</strong>g
+                  </div>
+                  <span class="macro-result-kcal" id="resProteinKcal">0 kcal</span>
+                </div>
+
+                <div class="macro-result-card" data-macro="carbs">
+                  <div class="macro-result-header">
+                    <span class="macro-color-indicator dot-carbs"></span>
+                    <span>Đường bột (Carbs)</span>
+                  </div>
+                  <div class="macro-result-num">
+                    <strong id="resCarbsGrams">0</strong>g
+                  </div>
+                  <span class="macro-result-kcal" id="resCarbsKcal">0 kcal</span>
+                </div>
+
+                <div class="macro-result-card" data-macro="fat">
+                  <div class="macro-result-header">
+                    <span class="macro-color-indicator dot-fat"></span>
+                    <span>Chất béo (Fat)</span>
+                  </div>
+                  <div class="macro-result-num">
+                    <strong id="resFatGrams">0</strong>g
+                  </div>
+                  <span class="macro-result-kcal" id="resFatKcal">0 kcal</span>
+                </div>
+              </div>
+
+              <!-- MoChi advice box in TDEE results -->
+              <div class="tdee-advice-box" id="tdeeAdviceBox">
+                <div class="advice-title">
+                  <img id="tdeeMochiAvatar" class="advice-mochi-avatar" src="./assets/mochi/mochi-idle.png" alt="MoChi Advice" />
+                  <span>Trợ lý dinh dưỡng MoChi khuyên:</span>
+                </div>
+                <p id="tdeeAdviceText">Hãy nhập chỉ số và nhấn tính toán để nhận lời khuyên thể trạng cá nhân hóa.</p>
+              </div>
+
+              <!-- Interactive Macro suggestions box -->
+              <div class="tdee-macro-food-suggestions hidden" id="tdeeFoodSuggestions">
+                <h5 id="macroSuggestionsTitle">💡 Gợi ý thực phẩm Việt Nam tốt</h5>
+                <p id="macroSuggestionsContent">Nhấp chọn các thẻ Protein, Carbs hoặc Fat ở trên để xem các gợi ý thực phẩm lành mạnh giàu nhóm chất tương ứng từ MoChi nhé!</p>
+              </div>
+
+              <!-- Recommendation CTA -->
+              <div class="tdee-cta">
+                <p>
+                  <svg class="inline-advice-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: text-bottom; margin-right: 4px; color: var(--accent-amber);">
+                    <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .5 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+                    <path d="M9 18h6"/>
+                  </svg>
+                  <strong>EatFitAI</strong> giúp bạn dễ dàng theo dõi thực tế xem bữa ăn hàng ngày có chạm đúng các hạn mức này không mà không cần ghi chép phức tạp.
+                </p>
+                <a href="#download" class="btn btn-secondary btn-sm">Tải app để áp dụng mục tiêu này</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FEATURES BENTO GRID (THE UNIQUE STYLISH PART) -->
+      <section class="section spa-section hidden-page" id="features">
+        <div class="section-header">
+          <span class="section-tag">Thành Bản Sắc Riêng</span>
+          <h2>Tại sao nên chọn EatFitAI?</h2>
+          <p class="section-sub">Được xây dựng như một công cụ chuyên biệt và tinh tế phục vụ người dùng Việt Nam.</p>
+        </div>
+
+        <div class="bento-grid">
+          <!-- Card 1: AI Camera Scan YOLO11m (Wide) -->
+          <div class="bento-card card-wide bg-gradient-forest" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Camera AI Thông Minh</span>
+              <h3>Quét món ăn tức thì bằng YOLO11m</h3>
+              <p>Chỉ cần đưa camera lên chụp, mô hình AI tiên tiến YOLO11m được huấn luyện chuyên sâu trên 450+ lớp món ăn Việt sẽ nhận diện món ăn trong 3 giây, tự động phân tích calo và ước tính khối lượng khẩu phần trực quan.</p>
+            </div>
+            <!-- Phone mockup scanning preview -->
+            <div class="bento-phone-mockup phone-foodscan">
+              <img class="bento-mockup-img" src="./assets/mockup_foodscan.png" alt="YOLO11m Food Scan Mockup" />
+              <div class="scan-laser-line"></div>
+            </div>
+            <div class="bento-mochi-speech bubble-pos-card1">Phở, Cơm Tấm, Bún Bò tớ biết tuốt! 🍜</div>
+            <img class="bento-mascot-img mascot-meal" src="./assets/mochi/mochi-meal.png" alt="MoChi Meal" />
+          </div>
+
+          <!-- Card 2: 100% Free & AI Quotas (Standard) -->
+          <div class="bento-card" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Cam Kết Cộng Đồng</span>
+              <h3>100% Miễn Phí Trọn Đời</h3>
+              <p>EatFitAI hoàn toàn không quảng cáo hay thu phí. Tính năng <strong>AI Quét Món Ăn</strong> được sử dụng <strong>không giới hạn</strong>. Các trợ lý AI nâng cao khác có hạn ngạch rộng rãi là <strong>20 lượt/ngày</strong> cho từng tính năng, quá đủ cho nhu cầu thường nhật.</p>
+            </div>
+            <!-- Quota visual representation widget -->
+            <div class="bento-quota-visual">
+              <div class="quota-item q-unlimited">
+                <div class="quota-header">
+                  <span class="quota-title">
+                    <svg class="quota-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Camera Quét AI
+                  </span>
+                  <span class="quota-val">Vô Hạn</span>
+                </div>
+                <div class="quota-bar-container">
+                  <div class="quota-bar pulse-green"></div>
+                </div>
+              </div>
+              <div class="quota-item q-limited">
+                <div class="quota-header">
+                  <span class="quota-title">
+                    <svg class="quota-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    Trợ lý AI khác
+                  </span>
+                  <span class="quota-val">20 lượt/ngày</span>
+                </div>
+                <div class="quota-bar-container">
+                  <div class="quota-bar pulse-amber"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Premium Guarantees to fill desktop empty space -->
+            <div class="quota-guarantees">
+              <div class="guarantee-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Không chèn quảng cáo gây phiền</span>
+              </div>
+              <div class="guarantee-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Nhận diện camera vô hạn lượt</span>
+              </div>
+              <div class="guarantee-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Đồng bộ Supabase & Google bảo mật</span>
+              </div>
+            </div>
+            <div class="bento-mochi-speech bubble-pos-card2">Cân bằng dinh dưỡng cùng tớ nhé! ⚖️</div>
+            <img class="bento-mascot-img mascot-scale" src="./assets/mochi/mochi-scale.png" alt="MoChi Scale" />
+          </div>
+
+          <!-- Card 3: AI Voice Command (Tall) -->
+          <div class="bento-card card-tall" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Tiện Ích Cao Cấp</span>
+              <h3>Ghi chép bằng Giọng nói AI</h3>
+              <p>Không còn phải nhập liệu thủ công. Chỉ cần nói tự nhiên bằng tiếng Việt: <em>"Sáng ăn một bát phở bò, trưa ăn đĩa cơm tấm sườn và nặng 65kg"</em>, Trợ lý AI sẽ tự động phân tích và ghi nhận món ăn cùng chỉ số cơ thể vào nhật ký.</p>
+            </div>
+            <!-- Voice assistant chat transcript UI -->
+            <div class="bento-voice-chat">
+              <div class="chat-bubble bubble-user">
+                <span>
+                  <svg class="chat-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  Sáng ăn 1 bát phở bò...
+                </span>
+              </div>
+              <div class="chat-bubble bubble-ai">
+                <span>
+                  <svg class="chat-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="8" rx="2"/><path d="M12 2v6"/><path d="M8 8v1M16 8v1"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg>
+                  Nhận diện: Phở Bò (+550 kcal)
+                </span>
+              </div>
+              <div class="chat-bubble bubble-user">
+                <span>
+                  <svg class="chat-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  ...trưa ăn đĩa cơm tấm sườn và nặng 65kg
+                </span>
+              </div>
+              <div class="chat-bubble bubble-ai">
+                <span>
+                  <svg class="chat-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="8" rx="2"/><path d="M12 2v6"/><path d="M8 8v1M16 8v1"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg>
+                  Ghi nhận: Cơm Tấm Sườn (+520 kcal) &amp; Cân nặng: 65 kg
+                </span>
+              </div>
+            </div>
+            <!-- Audio Waveform Visualizer -->
+            <div class="bento-audio-visualizer">
+              <div class="audio-bar bar-1"></div>
+              <div class="audio-bar bar-2"></div>
+              <div class="audio-bar bar-3"></div>
+              <div class="audio-bar bar-4"></div>
+              <div class="audio-bar bar-5"></div>
+              <div class="audio-bar bar-6"></div>
+              <span class="audio-wave-label">Đang nói...</span>
+            </div>
+            <div class="bento-mochi-speech bubble-pos-card3">Nói với tớ, tớ tự ghi nhật ký nhé! 🗣️</div>
+            <img class="bento-mascot-img mascot-thinking" src="./assets/mochi/mochi-thinking.png" alt="MoChi Thinking" />
+          </div>
+
+          <!-- Card 4: Macros Rings & Adaptive Targets (Wide) -->
+          <div class="bento-card card-wide" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Kiểm Soát Mục Tiêu</span>
+              <h3>Macros Sinh Động & Calo Thích Ứng</h3>
+              <p>Kiểm soát calo cùng 3 chất thiết yếu (Đạm - Carbs - Chất béo) trực quan qua hệ thống vòng tròn đồng tâm. Hệ thống tự động tính toán lại mức TDEE và hiệu chỉnh calo mục tiêu hàng tuần dựa theo biến động cân nặng thực tế.</p>
+            </div>
+            <div class="bento-macros-layout">
+              <div class="bento-mini-rings">
+                <svg class="mini-ring-svg" width="160" height="160" viewBox="0 0 160 160">
+                  <circle cx="80" cy="80" r="68" class="ring-bg"></circle>
+                  <circle cx="80" cy="80" r="68" class="ring-fg-p" stroke-dasharray="427.26" stroke-dashoffset="106"></circle>
+
+                  <circle cx="80" cy="80" r="52" class="ring-bg"></circle>
+                  <circle cx="80" cy="80" r="52" class="ring-fg-c" stroke-dasharray="326.73" stroke-dashoffset="130"></circle>
+
+                  <circle cx="80" cy="80" r="36" class="ring-bg"></circle>
+                  <circle cx="80" cy="80" r="36" class="ring-fg-f" stroke-dasharray="226.19" stroke-dashoffset="68"></circle>
+                </svg>
+                <div class="rings-label">
+                  <span class="ring-lbl-p">P</span>
+                  <span class="ring-lbl-c">C</span>
+                  <span class="ring-lbl-f">F</span>
+                </div>
+              </div>
+              <div class="macros-legend">
+                <div class="legend-item leg-protein">
+                  <span class="leg-color"></span>
+                  <span class="leg-text">Đạm (Protein)</span>
+                  <span class="leg-val">120g / 150g</span>
+                </div>
+                <div class="legend-item leg-carbs">
+                  <span class="leg-color"></span>
+                  <span class="leg-text">Tinh bột (Carbs)</span>
+                  <span class="leg-val">180g / 220g</span>
+                </div>
+                <div class="legend-item leg-fat">
+                  <span class="leg-color"></span>
+                  <span class="leg-text">Chất béo (Fat)</span>
+                  <span class="leg-val">45g / 60g</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5: Smart Water Tracker (Standard) -->
+          <div class="bento-card" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Sức Khỏe Toàn Diện</span>
+              <h3>Trợ lý Nước uống Thông minh</h3>
+              <p>Mục tiêu lượng nước tự động tính theo công thức <code>cân nặng * 30ml</code>. Ghi chép nhanh với nút 1 chạm tiện dụng để đảm bảo bạn uống đủ nước và thanh lọc cơ thể mỗi ngày.</p>
+            </div>
+            <!-- Water Cup Widget with Click Interaction -->
+            <div class="bento-water-visual">
+              <div class="water-glass-container">
+                <div class="water-glass">
+                  <div class="water-wave" id="water-cup-wave"></div>
+                  <div class="water-bubbles">
+                    <span class="bubble"></span>
+                    <span class="bubble"></span>
+                    <span class="bubble"></span>
+                  </div>
+                  <div class="water-percentage" id="water-percent-text">75%</div>
+                </div>
+              </div>
+              <div class="water-info-group">
+                <div class="water-badge-label" id="water-lbl">
+                  <svg class="water-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7z"/></svg>
+                  <span id="water-text-val">1500 / 2000 ml</span>
+                </div>
+                <button class="btn-add-water" id="btn-add-water">+ 250ml</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6: Gamification Streak/XP (Standard) -->
+          <div class="bento-card" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Tạo Thói Quen</span>
+              <h3>Streak &amp; Thành tựu</h3>
+              <p>Duy trì kỷ luật với hệ thống Huy hiệu (19+ danh hiệu), điểm kinh nghiệm XP tăng cấp, và tính năng Cứu Chuỗi Streak (3 lượt/tháng) giúp phục hồi lịch sử những ngày lỡ quên ghi chép trong vòng 2 ngày.</p>
+            </div>
+            <!-- Gamified details: Progress bar & badge grid -->
+            <div class="streak-gamified-details">
+              <div class="bento-streak-visual">
+                <div class="streak-badge-container">
+                  <div class="streak-flame-circle">
+                    <span class="flame-icon">🔥</span>
+                  </div>
+                  <div class="streak-count-label">Chuỗi 7 ngày</div>
+                </div>
+                <div class="streak-level-badge">Cấp 12</div>
+              </div>
+              <div class="streak-xp-progress">
+                <div class="xp-text">Tiến trình cấp: 1,200 / 1,500 XP</div>
+                <div class="xp-bar-container">
+                  <div class="xp-bar" style="width: 80%;"></div>
+                </div>
+              </div>
+              <div class="bento-badges-row">
+                <span class="badge-item active" title="Chuỗi 7 ngày">
+                  <svg class="badge-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                    <path d="M4 22h16"/>
+                    <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34"/>
+                    <path d="M12 2a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/>
+                  </svg>
+                </span>
+                <span class="badge-item active" title="Uống đủ nước">
+                  <svg class="badge-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7z"/>
+                  </svg>
+                </span>
+                <span class="badge-item active" title="Ăn uống lành mạnh">
+                  <svg class="badge-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1 8a7 7 0 0 1-9 10z"/>
+                    <path d="M9 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                    <path d="M14 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                  </svg>
+                </span>
+                <span class="badge-item locked" title="Chuỗi 30 ngày (Khóa)">
+                  <svg class="badge-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 7: AI Recipes (Wide) -->
+          <div class="bento-card card-wide bg-gradient-amber" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Trợ Lý Ẩm Thực</span>
+              <h3>Gợi ý công thức &amp; Nấu ăn AI</h3>
+              <p>Chỉ cần nhập những nguyên liệu sẵn có trong tủ lạnh của bạn, trợ lý AI sẽ tự động đề xuất các công thức món ăn Việt Nam lành mạnh, giàu dinh dưỡng và hướng dẫn từng bước nấu ăn chi tiết.</p>
+            </div>
+            <!-- Mockup Recipe recommendation card -->
+            <div class="bento-recipe-mockup">
+              <div class="recipe-card-mini">
+                <div class="recipe-img-placeholder" style="background-image: url('./assets/comtam-dish.png');">
+                  <span class="recipe-tag">Gợi ý AI ✨</span>
+                </div>
+                <div class="recipe-info">
+                  <h4>
+                    <svg class="recipe-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><path d="M12 2v2M12 20v2M2 12h202M20 12h2"/></svg>
+                    Cơm Tấm Sườn Lành Mạnh
+                  </h4>
+                  <div class="recipe-meta">
+                    <svg class="recipe-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    25 phút
+                    &bull;
+                    <svg class="recipe-icon-svg flame-color" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                    520 kcal
+                  </div>
+                  <div class="recipe-ingredients">
+                    <label class="ing-check"><input type="checkbox" checked disabled /> <span>Gạo lứt tấm (120g)</span></label>
+                    <label class="ing-check"><input type="checkbox" checked disabled /> <span>Sườn heo nạc (100g)</span></label>
+                    <label class="ing-check"><input type="checkbox" disabled /> <span>Dưa góp chua ngọt</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bento-mochi-speech bubble-pos-card7">Gợi ý món ăn ngon từ tủ lạnh nhà bạn! 🍳</div>
+            <img class="bento-mascot-img mascot-celebrate" src="./assets/mochi/mochi-celebrate.png" alt="MoChi Celebrate" />
+          </div>
+
+          <!-- Card 8: Google Auth & Supabase Sync (Standard) -->
+          <div class="bento-card" data-glow-card>
+            <div class="bento-card-glow"></div>
+            <div class="bento-content-wrap">
+              <span class="bento-badge">Đồng Bộ An Toàn</span>
+              <h3>Đăng nhập Google &amp; Supabase</h3>
+              <p>Bảo mật tối đa với cơ chế đồng bộ trực tiếp lên đám mây Supabase bảo mật. Đăng nhập Google 1 chạm tiện dụng giúp dữ liệu nhật ký ăn uống luôn được bảo lưu trọn đời.</p>
+            </div>
+            <!-- Secure Sync Visual flow diagram -->
+            <div class="bento-auth-sync-widget">
+              <!-- Google Auth Button Mockup -->
+              <div class="google-btn-mockup">
+                <svg class="google-logo-svg" viewBox="0 0 24 24" width="14" height="14">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Tiếp tục với Google</span>
+              </div>
+
+              <!-- Supabase Sync Badge Mockup -->
+              <div class="supabase-sync-badge">
+                <div class="db-icon-wrap">
+                  <svg class="db-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    <path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"></path>
+                  </svg>
+                </div>
+                <div class="db-sync-info">
+                  <span class="db-name">Supabase Cloud</span>
+                  <span class="db-status">
+                    <span class="status-dot"></span>
+                    Đồng bộ 1-chạm
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="bento-mochi-speech bubble-pos-card8">Dữ liệu của bạn an toàn tuyệt đối! 🛡️</div>
+            <img class="bento-mascot-img mascot-secure" src="./assets/mochi/mochi-secure.png" alt="MoChi Secure" />
+          </div>
+        </div>
+
+        <!-- Bento Footer Note -->
+        <div class="bento-footer-note">
+          <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span><strong>* Lưu ý về hạn ngạch (Quota) AI:</strong> Để duy trì vận hành máy chủ phi lợi nhuận ổn định và tránh lạm dụng tài nguyên, tính năng <strong>AI Quét Món Ăn</strong> bằng camera được cung cấp <strong>hoàn toàn không giới hạn</strong>. Các tính năng trợ lý AI nâng cao khác (như Phân tích giọng nói, Gợi ý công thức nấu ăn, Trợ lý dinh dưỡng cá nhân) sẽ có hạn ngạch miễn phí rộng rãi là <strong>20 lượt sử dụng mỗi ngày cho từng tính năng</strong> đối với tài khoản free, đáp ứng trọn vẹn mọi nhu cầu theo dõi sức khỏe thường nhật.</span>
+        </div>
+      </section>
+
+      <!-- INTERACTIVE APP SHOWCASE SLIDER -->
+      <section class="section spa-section hidden-page" id="showcase">
+        <div class="section-header">
+          <span class="section-tag">Thư Viện Ảnh Chụp</span>
+          <h2>Giao Diện Ứng Dụng Thực Tế</h2>
+          <p class="section-sub">Một thiết kế phẳng hiện đại, sạch sẽ và tối giản theo phong cách tối giản của iOS/Android.</p>
+        </div>
+
+        <div class="showcase-slider-wrapper">
+          <!-- Slider Tabs Controller -->
+          <div class="showcase-controls">
+            <button class="showcase-tab active" data-slide="0">
+              <span class="tab-index">01</span>
+              <div class="tab-label-group">
+                <h4>Quét Món Ăn Bằng AI</h4>
+                <p>Chỉ cần đưa máy ảnh lên chụp, AI nhận diện tức thì trong 3 giây.</p>
+              </div>
+            </button>
+            <button class="showcase-tab" data-slide="1">
+              <span class="tab-index">02</span>
+              <div class="tab-label-group">
+                <h4>Bảng Điều Khiển</h4>
+                <p>Tổng quan calories và phân bố macros một cách sinh động, dễ hiểu.</p>
+              </div>
+            </button>
+            <button class="showcase-tab" data-slide="2">
+              <span class="tab-index">03</span>
+              <div class="tab-label-group">
+                <h4>Lịch Sử & Nhật Ký</h4>
+                <p>Lưu lại lịch sử bữa ăn mỗi ngày kèm theo timeline dòng thời gian.</p>
+              </div>
+            </button>
+          </div>
+
+          <!-- Device Container Mockup showing slides -->
+          <div class="showcase-device-frame">
+            <div class="device-notch"></div>
+            <div class="showcase-screen-wrap">
+              <!-- Slide 1: Food scan -->
+              <div class="showcase-slide active" id="slide-img-0">
+                <img src="./assets/screen-foodscan.png" alt="Màn hình quét món ăn" class="showcase-img" />
+                <div class="hotspot hotspot-1" data-tip="Camera quét AR tự động đóng khung món ăn Việt"></div>
+                <div class="hotspot hotspot-2" data-tip="Nút chọn nhanh kích thước khẩu phần chén/tô/phần"></div>
+              </div>
+
+              <!-- Slide 2: Dashboard -->
+              <div class="showcase-slide" id="slide-img-1">
+                <img src="./assets/screen-dashboard.png" alt="Màn hình bảng điều khiển" class="showcase-img" />
+                <div class="hotspot hotspot-3" data-tip="Theo dõi dải calorie mục tiêu thay vì con số tĩnh"></div>
+                <div class="hotspot hotspot-4" data-tip="Các vòng tròn biểu thị đạm, béo, đường bột"></div>
+              </div>
+
+              <!-- Slide 3: History -->
+              <div class="showcase-slide" id="slide-img-2">
+                <img src="./assets/screen-history.png" alt="Màn hình nhật ký lịch sử" class="showcase-img" />
+                <div class="hotspot hotspot-5" data-tip="Timeline phân chia sáng, trưa, tối rõ ràng"></div>
+                <div class="hotspot hotspot-6" data-tip="Sao chép nhanh bữa ăn cũ giúp tiết kiệm thời gian"></div>
+              </div>
+            </div>
+            <!-- Interactive Floating Tooltip -->
+            <div class="showcase-tooltip" id="showcaseTooltip">Di chuột qua các điểm nhấp nháy để khám phá</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="section spa-section hidden-page" id="how">
+        <div class="section-header">
+          <span class="section-tag">Đơn Giản & Trực Tiếp</span>
+          <h2>Chỉ 3 bước để kiểm soát thể trạng</h2>
+          <p class="section-sub">Không cần đăng ký rườm rà. Chỉ cần đăng nhập bằng tài khoản Google sẵn có và bắt đầu theo dõi sức khỏe ngay cùng MoChi.</p>
+        </div>
+
+        <div class="how-steps-grid">
+          <div class="how-step-card">
+            <div class="step-badge">01</div>
+            <img src="./assets/mochi/mochi-thinking.png" alt="MoChi Tìm Kiếm" class="step-mochi-img" />
+            <h3>Chụp ảnh bữa ăn</h3>
+            <p>Bật tính năng quét AR trong ứng dụng và chụp ảnh món ăn Việt bạn đang dùng. Mô hình AI của chúng tôi sẽ tự động xử lý hình ảnh.</p>
+          </div>
+          <div class="how-step-card">
+            <div class="step-badge">02</div>
+            <img src="./assets/mochi/mochi-scale.png" alt="MoChi Cân Đo" class="step-mochi-img" />
+            <h3>Xác nhận định lượng</h3>
+            <p>Xem thông tin dinh dưỡng được phân tích nhanh chóng. Điều chỉnh kích thước khẩu phần (Ví dụ: 1 chén, 1 tô) để tăng độ chính xác nếu cần.</p>
+          </div>
+          <div class="how-step-card">
+            <div class="step-badge">03</div>
+            <img src="./assets/mochi/mochi-celebrate.png" alt="MoChi Đồng Hành" class="step-mochi-img" />
+            <h3>Đồng hành mỗi ngày</h3>
+            <p>Quan sát bảng điều khiển để duy trì mức thâm hụt hoặc thặng dư calorie lành mạnh, tiến dần đến mục tiêu hình thể mong muốn.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOWNLOAD & BUILD SECURITY INFO -->
+      <section class="section spa-section hidden-page" id="download">
+        <div class="download-panel">
+          <div class="download-left">
+            <span class="section-tag">Phiên bản ổn định</span>
+            <h2>Sẵn sàng tải xuống</h2>
+            <p>Ứng dụng được biên dịch và đóng gói hoàn toàn sạch sẽ, đảm bảo tính an toàn và bảo mật tối đa cho tệp tin cài đặt APK.</p>
+
+            <div class="build-specs-table">
+              <div class="spec-row">
+                <span class="spec-label">Phiên bản:</span>
+                <strong class="spec-value" data-version>1.0.0</strong>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Tên Package:</span>
+                <strong class="spec-value code-font" data-package-name>com.eatfitai.app</strong>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Dung lượng file:</span>
+                <strong class="spec-value" data-file-size>~125 MB</strong>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Đã tải xuống:</span>
+                <strong class="spec-value" data-download-count>Đang tính...</strong>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Yêu cầu hệ thống:</span>
+                <strong class="spec-value">Android 7.0+ (Nougat trở lên)</strong>
+              </div>
+            </div>
+
+            <div class="download-btn-group">
+              <a class="btn btn-primary btn-lg" data-download-link href="#" id="mainDownloadBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Tải APK Android
+              </a>
+            </div>
+          </div>
+
+          <div class="download-right">
+            <div class="qr-download-card">
+              <img src="./assets/icon.png" alt="EatFitAI" class="qr-app-logo" />
+
+              <div class="qr-image-wrapper">
+                <img data-qr-image alt="QR tải xuống" class="qr-img-tag" />
+                <div class="qr-loading-spinner" id="qrSpinner"></div>
+              </div>
+
+              <p class="qr-caption">Quét mã QR bằng điện thoại Android để tải xuống trực tiếp file cài đặt APK</p>
+
+              <div class="release-status-pill">
+                <span class="status-dot"></span>
+                <span data-release-status>Đang kết nối máy chủ...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checksum Verification Card -->
+        <div class="checksum-card">
+          <div class="checksum-header">
+            <svg class="shield-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <div>
+              <h3>Xác minh chữ ký số SHA-256</h3>
+              <p>Hãy đối chiếu mã băm sau khi tải về để đảm bảo tệp tin APK nguyên bản và không bị can thiệp.</p>
+            </div>
+          </div>
+          <div class="checksum-body">
+            <code class="checksum-code" id="checksumString" data-sha256>Đang tải mã băm...</code>
+            <button class="btn-copy" data-copy="sha256" title="Sao chép SHA-256">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="copy-icon"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Sao chép mã</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAFE INSTALLATION GUIDE -->
+      <section class="section spa-section hidden-page" id="install">
+        <div class="section-header">
+          <span class="section-tag">Hướng Dẫn Nhanh</span>
+          <h2>3 bước cài đặt APK an toàn</h2>
+        </div>
+
+        <div class="install-steps-wrapper">
+          <div class="install-step-item">
+            <div class="install-step-num">1</div>
+            <div class="install-step-content">
+              <h3>Tải tệp tin</h3>
+              <p>Nhấp vào nút "Tải APK" trên máy tính và chép sang điện thoại, hoặc dùng điện thoại quét mã QR để tải trực tiếp.</p>
+            </div>
+          </div>
+
+          <div class="install-step-item">
+            <div class="install-step-num">2</div>
+            <div class="install-step-content">
+              <h3>Cho phép nguồn này</h3>
+              <p>Khi mở tệp cài đặt, nếu hệ thống Android hỏi, hãy bật tùy chọn <strong>"Cho phép từ nguồn này"</strong> (Allow from this source) hoặc vào Cài đặt > Bảo mật > bật "Ứng dụng không rõ nguồn gốc".</p>
+            </div>
+          </div>
+
+          <div class="install-step-item">
+            <div class="install-step-num">3</div>
+            <div class="install-step-content">
+              <h3>Mở & Cấu hình mục tiêu</h3>
+              <p>Nhấn "Cài đặt", đợi vài giây và mở EatFitAI lên. Đăng nhập bằng tài khoản Google để bắt đầu đồng bộ và ghi nhật ký dinh dưỡng ngay!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="safety-banner">
+          <img src="./assets/mochi/mochi-secure.png" alt="MoChi Bảo Mật" class="safety-mochi-img" />
+          <div class="safety-banner-content">
+            <h4>Lưu ý bảo mật từ MoChi</h4>
+            <p>Ứng dụng EatFitAI chỉ phát hành tệp APK chính thức và an toàn ngay tại trang tải xuống này. Để phòng ngừa các nguy cơ nhiễm mã độc hoặc phiên bản giả mạo, tuyệt đối không cài đặt từ các liên kết chia sẻ không chính thức khác trên mạng xã hội.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQS ACCORDION -->
+      <section class="section spa-section hidden-page" id="faq">
+        <div class="section-header">
+          <span class="section-tag">Giải Đáp Thắc Mắc</span>
+          <h2>Câu hỏi thường gặp</h2>
+        </div>
+
+        <div class="faq-grid">
+          <div class="faq-accordion-container">
+            <!-- Accordion Item 1 -->
+            <div class="faq-accordion-item">
+              <button class="faq-accordion-trigger">
+                <span>EatFitAI có thực sự miễn phí hoàn toàn không?</span>
+                <span class="accordion-arrow"></span>
+              </button>
+              <div class="faq-accordion-content">
+                <div class="faq-accordion-content-inner">
+                  <p>Hoàn toàn miễn phí 100%! Dự án được xây dựng với mục tiêu học thuật và đóng góp cho cộng đồng dinh dưỡng Việt Nam. Chúng tôi cam kết không chèn quảng cáo gây phiền, không khóa bất kỳ tính năng nào sau bức tường Premium và không yêu cầu cung cấp thẻ tín dụng.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion Item 2 -->
+            <div class="faq-accordion-item">
+              <button class="faq-accordion-trigger">
+                <span>Khả năng nhận diện của ứng dụng chính xác đến mức nào?</span>
+                <span class="accordion-arrow"></span>
+              </button>
+              <div class="faq-accordion-content">
+                <div class="faq-accordion-content-inner">
+                  <p>Mô hình AI YOLO11m của chúng tôi được huấn luyện chuyên biệt trên cơ sở dữ liệu hàng chục nghìn hình ảnh món ăn Việt Nam phổ biến (phở, bún bò, cơm tấm, bánh mì, gỏi cuốn...). Độ chính xác nhận diện phân lớp đạt trên 90% trong điều kiện ánh sáng tốt và hình ảnh chụp rõ nét món ăn.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion Item 3 -->
+            <div class="faq-accordion-item">
+              <button class="faq-accordion-trigger">
+                <span>Tại sao ứng dụng lại phát hành qua file APK thay vì Google Play Store?</span>
+                <span class="accordion-arrow"></span>
+              </button>
+              <div class="faq-accordion-content">
+                <div class="faq-accordion-content-inner">
+                  <p>EatFitAI đang ở giai đoạn thử nghiệm sớm (Alpha/Beta). Việc cung cấp qua tệp APK giúp nhóm phát triển phát hành nhanh các bản sửa lỗi trực tiếp tới người dùng thử nghiệm mà không cần chờ đợi quy trình kiểm duyệt dài ngày từ Google. Chúng tôi có kế hoạch đưa ứng dụng lên Google Play Store khi đạt độ ổn định cao hơn.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion Item 4 -->
+            <div class="faq-accordion-item">
+              <button class="faq-accordion-trigger">
+                <span>Dữ liệu nhật ký ăn uống của tôi được bảo mật ra sao?</span>
+                <span class="accordion-arrow"></span>
+              </button>
+              <div class="faq-accordion-content">
+                <div class="faq-accordion-content-inner">
+                  <p>Quyền riêng tư của bạn là ưu tiên tuyệt đối. EatFitAI hoạt động theo cơ chế đồng bộ đám mây bảo mật (cloud-sync), lưu trữ dữ liệu nhật ký ăn uống trực tiếp trên cơ sở dữ liệu Supabase được mã hóa và liên kết an toàn qua tài khoản Google của riêng bạn. Chúng tôi cam kết không lưu giữ thông tin nhạy cảm và hoàn toàn không chia sẻ dữ liệu của bạn cho bất kỳ bên thứ ba nào.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion Item 5 -->
+            <div class="faq-accordion-item">
+              <button class="faq-accordion-trigger">
+                <span>EatFitAI có yêu cầu kết nối mạng Internet để hoạt động không?</span>
+                <span class="accordion-arrow"></span>
+              </button>
+              <div class="faq-accordion-content">
+                <div class="faq-accordion-content-inner">
+                  <p>Có, EatFitAI được xây dựng như một ứng dụng đám mây (cloud-sync) để đảm bảo dữ liệu nhật ký của bạn luôn được đồng bộ thời gian thực và không bao giờ bị thất lạc. Kết nối Internet giúp bạn sử dụng toàn bộ tính năng bao gồm Quét AI món ăn bằng camera YOLO11m, Phân tích ghi chép bằng Giọng nói AI và Nhận gợi ý công thức món ăn tức thì.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-mochi-helper">
+            <div class="faq-mochi-bubble">Bạn có thắc mắc gì ư? MoChi giải đáp ngay nè! Cứ nhấp vào các câu hỏi bên cạnh nhé! 💬</div>
+            <img src="./assets/mochi/mochi-thinking.png" alt="MoChi Hỏi Đáp" class="faq-mochi-img" />
+          </div>
+        </div>
+      </section>
+
+      <!-- BOTTOM BRAND CTA -->
+      <section class="section bottom-cta-section spa-section">
+        <div class="bottom-cta-card">
+          <div class="bottom-cta-content">
+            <h2>Bắt đầu hành trình sống khỏe cùng MoChi ngay hôm nay!</h2>
+            <p>Tải xuống ứng dụng EatFitAI hoàn toàn miễn phí, an toàn sạch sẽ để thiết lập thói quen kiểm soát calo và dinh dưỡng tối ưu nhất.</p>
+            <a class="btn btn-primary btn-lg" href="#download">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Tải APK Android miễn phí
+            </a>
+          </div>
+          <img src="./assets/mochi/mochi-celebrate.png" alt="MoChi Ăn Mừng" class="bottom-cta-mochi" />
+        </div>
+      </section>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="footer-container">
+        <div class="footer-brand-wrap">
+          <img src="./assets/icon.png" alt="EatFitAI" width="24" height="24" class="footer-logo" />
+          <span><strong>EatFitAI</strong> &copy; 2026</span>
+        </div>
+        <div class="footer-credits">
+          <span>Phát triển bởi <strong>Anthony Cong Hieu</strong></span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Floating MoChi Assistant Widget -->
+    <div class="mochi-assistant-widget" id="mochiWidget">
+      <div class="mochi-widget-bubble" id="mochiWidgetBubble">
+        <button class="mochi-bubble-close" id="mochiBubbleClose" aria-label="Đóng lời khuyên">&times;</button>
+        <p id="mochiWidgetText">Chào bạn! Rất vui được đồng hành cùng bạn trên con đường sống khỏe. Click vào tớ để xem lời khuyên nhé! 💚</p>
+      </div>
+      <div class="mochi-avatar-wrapper">
+        <img src="./assets/mochi/mochi-idle.png" alt="MoChi Assistant" id="mochiWidgetImg" class="mochi-widget-img" />
+        <span class="mochi-widget-badge">Tip!</span>
+      </div>
+    </div>
+
+    <!-- Toast Notification Box -->
+    <div class="toast-notification" id="toastBox" aria-live="polite">Đã sao chép!</div>
+
+    <!-- Page Transition Curtain -->
+    <div class="page-transition-curtain" id="pageTransitionCurtain" aria-hidden="true">
+      <div class="curtain-content">
+        <div class="curtain-mochi-wrapper">
+          <img src="./assets/mochi/mochi-thinking.png" alt="MoChi Loading..." class="curtain-mochi" />
+          <div class="curtain-loading-ring"></div>
+        </div>
+        <span class="curtain-loading-text">Đang chuyển trang...</span>
+      </div>
     </div>
   </body>
 </html>

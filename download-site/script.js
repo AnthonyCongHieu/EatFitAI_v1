@@ -18,6 +18,7 @@
 
   const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
   const isChecksumReady = SHA256_PATTERN.test(RELEASE.sha256);
+  let isMochiTipDismissed = localStorage.getItem("mochiTipDismissed") === "true";
 
   // Helper selectors
   function setText(selector, value) {
@@ -30,6 +31,11 @@
     document.querySelectorAll(selector).forEach((element) => {
       element.setAttribute("href", value);
     });
+  }
+
+  function formatMochiText(text) {
+    if (!text) return "";
+    return text.replace(/(\S+)\s+(\S+)$/, '<span class="mochi-emoji-wrap">$1&nbsp;$2</span>');
   }
 
   // 1. Floating Header
@@ -114,7 +120,7 @@
 
     // Get currently active sections
     const activeSections = Array.from(document.querySelectorAll(".spa-section.active-page"));
-    
+
     // Get target sections to display
     const targetSelectors = pageMap[pageId];
     const targetSections = [];
@@ -213,7 +219,7 @@
   function updateActiveNavLinks(pageId) {
     const navLinksList = document.querySelectorAll(".nav-links a");
     navLinksList.forEach(link => link.classList.remove("active"));
-    
+
     const navActionsBtn = document.querySelector(".nav-actions .btn-nav");
     if (navActionsBtn) navActionsBtn.classList.remove("active");
 
@@ -246,6 +252,8 @@
     const widgetImg = document.getElementById("mochiWidgetImg");
 
     if (widgetBubble && widgetText && widgetImg) {
+      const dismissed = localStorage.getItem("mochiTipDismissed") === "true";
+
       // Define page-specific messages and icons
       const pageWidgetConfig = {
         top: {
@@ -279,14 +287,25 @@
       };
 
       const config = pageWidgetConfig[pageId] || pageWidgetConfig.top;
-      
+
       widgetImg.setAttribute("data-current-img", config.img);
       widgetImg.src = config.img;
-      widgetText.textContent = config.text;
-      
+
+      if (dismissed) {
+        widgetBubble.classList.remove("active");
+        return;
+      }
+
+      widgetText.innerHTML = formatMochiText(config.text);
+
       // Auto-open widget bubble with a nice delay so it transitions smoothly after page renders
       setTimeout(() => {
-        widgetBubble.classList.add("active");
+        const isCurrentlyDismissed = localStorage.getItem("mochiTipDismissed") === "true";
+        if (!isCurrentlyDismissed) {
+          widgetBubble.classList.add("active");
+        } else {
+          widgetBubble.classList.remove("active");
+        }
       }, 500);
     }
   }
@@ -484,7 +503,7 @@
       if (simStatusToast) {
         simStatusToast.textContent = "Quét AR hoàn tất!";
         simStatusToast.style.background = "rgba(15, 159, 104, 0.9)";
-        
+
         const toastTimeout = setTimeout(() => {
           simStatusToast.textContent = "AR Camera Active";
           simStatusToast.style.background = "rgba(0, 0, 0, 0.6)";
@@ -715,7 +734,7 @@
       // Reset macro suggestions box and remove active state from result cards
       const macroCards = document.querySelectorAll(".macro-result-card");
       macroCards.forEach((c) => c.classList.remove("active"));
-      
+
       const tdeeFoodSuggestions = document.getElementById("tdeeFoodSuggestions");
       if (tdeeFoodSuggestions) {
         tdeeFoodSuggestions.innerHTML = `
@@ -897,16 +916,16 @@
     const cacheKey = "eatfitai_download_count";
     const cacheTimeKey = "eatfitai_download_count_time";
     const cacheDuration = 5 * 60 * 1000; // 5 minutes cache
-    
+
     const now = Date.now();
     const cachedCount = localStorage.getItem(cacheKey);
     const cachedTime = localStorage.getItem(cacheTimeKey);
-    
+
     if (cachedCount && cachedTime && (now - Number(cachedTime) < cacheDuration)) {
       setText("[data-download-count]", `${cachedCount} lượt`);
       return;
     }
-    
+
     try {
       const response = await fetch(
         "https://api.github.com/repos/anthonyconghieu/EatFitAI_v1/releases/tags/android-v1.0.0"
@@ -914,17 +933,17 @@
       if (!response.ok) {
         throw new Error(`GitHub API HTTP error: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const apkAsset = data.assets && data.assets.find(
         (asset) => asset.name === RELEASE.fileName
       );
-      
+
       if (apkAsset && typeof apkAsset.download_count === "number") {
         const count = apkAsset.download_count;
         const formattedCount = new Intl.NumberFormat("vi-VN").format(count);
         setText("[data-download-count]", `${formattedCount} lượt`);
-        
+
         localStorage.setItem(cacheKey, formattedCount);
         localStorage.setItem(cacheTimeKey, now.toString());
       } else {
@@ -987,23 +1006,59 @@
 
           const macroType = card.dataset.macro;
           const suggestion = MACRO_FOOD_SUGGESTIONS[macroType];
-          
+
           if (suggestion) {
             tdeeFoodSuggestions.classList.remove("hidden");
-            
+
             let listHtml = `<h5>${suggestion.title}</h5>`;
             listHtml += `<ul>`;
             suggestion.items.forEach(item => {
               listHtml += `<li>${item}</li>`;
             });
             listHtml += `</ul>`;
-            
+
             tdeeFoodSuggestions.innerHTML = listHtml;
             tdeeFoodSuggestions.style.display = "block"; // Ensure visible
-            
+
             tdeeFoodSuggestions.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }
         });
+      });
+    }
+
+    // 1b. Water tracking interactivity
+    const btnAddWater = document.getElementById("btn-add-water");
+    const waterCupWave = document.getElementById("water-cup-wave");
+    const waterPercentText = document.getElementById("water-percent-text");
+    const waterLbl = document.getElementById("water-lbl");
+    let currentWater = 1500;
+    const targetWater = 2000;
+
+    if (btnAddWater && waterCupWave && waterPercentText && waterLbl) {
+      btnAddWater.addEventListener("click", () => {
+        if (currentWater >= targetWater) {
+          showToast("Bạn đã đạt mục tiêu 2000ml nước ngày hôm nay rồi! 💧🌟");
+          return;
+        }
+        currentWater += 250;
+        const percentage = Math.min((currentWater / targetWater) * 100, 100);
+
+        // Update UI
+        waterCupWave.style.height = `${percentage}%`;
+        waterPercentText.textContent = `${Math.round(percentage)}%`;
+
+        const waterTextVal = document.getElementById("water-text-val");
+        if (waterTextVal) {
+          waterTextVal.textContent = `${currentWater} / ${targetWater} ml`;
+        } else {
+          waterLbl.innerHTML = `<svg class="water-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7z"/></svg> <span id="water-text-val">${currentWater} / ${targetWater} ml</span>`;
+        }
+
+        if (currentWater >= targetWater) {
+          showToast("Chúc mừng! Bạn đã hoàn thành mục tiêu 2000ml nước! 🎉💧");
+        } else {
+          showToast(`Đã uống thêm 250ml nước! Tổng cộng: ${currentWater}ml 💧`);
+        }
       });
     }
 
@@ -1046,14 +1101,14 @@
 
         avatarWrapper.addEventListener("click", (e) => {
           e.stopPropagation();
-          
+
           mochiWidgetBubble.classList.add("active");
-          
+
           const randomTip = MOCHI_TIPS[Math.floor(Math.random() * MOCHI_TIPS.length)];
-          mochiWidgetText.textContent = randomTip;
-          
+          mochiWidgetText.innerHTML = formatMochiText(randomTip);
+
           mochiWidgetImg.src = "./assets/mochi/mochi-success.png";
-          
+
           if (widgetResetTimeout) clearTimeout(widgetResetTimeout);
           widgetResetTimeout = setTimeout(() => {
             widgetResetTimeout = null;
@@ -1067,6 +1122,7 @@
         mochiBubbleClose.addEventListener("click", (e) => {
           e.stopPropagation();
           mochiWidgetBubble.classList.remove("active");
+          localStorage.setItem("mochiTipDismissed", "true"); // Dismissed permanently
         });
       }
     }
@@ -1075,31 +1131,21 @@
   // Hydrate static details on loading
   function hydratePage() {
     document.title = `Tải ${RELEASE.appName} cho Android — Ứng dụng dinh dưỡng Việt`;
-    
+
     setText("[data-version]", RELEASE.version);
     setText("[data-package-name]", RELEASE.packageName);
-    setText("[data-release-tag]", RELEASE.releaseTag);
-    setText("[data-file-name]", RELEASE.fileName);
+    // Hidden to protect repository privacy
+    // setText("[data-release-tag]", RELEASE.releaseTag);
+    // setText("[data-file-name]", RELEASE.fileName);
     setText("[data-file-size]", RELEASE.fileSize);
-    setText("[data-download-url]", RELEASE.downloadUrl);
+    // setText("[data-download-url]", RELEASE.downloadUrl);
     setText("[data-sha256]", RELEASE.sha256);
-    
+
     setHref("[data-download-link]", RELEASE.downloadUrl);
-    if (RELEASE.releaseUrl) {
-      setHref("[data-release-link]", RELEASE.releaseUrl);
-    } else {
-      document.querySelectorAll("[data-release-link]").forEach((el) => {
-        el.style.display = "none";
-      });
-    }
-    if (RELEASE.repositoryUrl) {
-      setHref("[data-repo-link]", RELEASE.repositoryUrl);
-    } else {
-      document.querySelectorAll("[data-repo-link]").forEach((el) => {
-        el.style.display = "none";
-      });
-    }
-    
+    // Hidden to protect repository privacy
+    // setHref("[data-release-link]", RELEASE.releaseUrl);
+    // setHref("[data-repo-link]", RELEASE.repositoryUrl);
+
     setQrImage();
     updateReleaseState();
     fetchDownloadCount();
@@ -1107,7 +1153,7 @@
 
     // Setup interactive MoChi elements
     setupMochiInteractivity();
-    
+
   }
 
   // Init

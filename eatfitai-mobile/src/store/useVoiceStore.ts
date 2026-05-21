@@ -34,6 +34,10 @@ interface VoiceState {
     currentWeight?: number;
     newWeight?: number;
     requireConfirm?: boolean;
+    entryCount?: number;
+    value?: number;
+    nutrient?: string;
+    noteText?: string;
   } | null;
   setStatus: (status: VoiceStatus) => void;
   openSheet: () => void;
@@ -64,6 +68,18 @@ const refreshProfileAfterWeightUpdate = () => {
   const profileStore = useProfileStore.getState();
   profileStore.invalidateProfile();
   void profileStore.fetchProfile({ force: true }).catch(() => undefined);
+};
+
+const TECHNICAL_ERROR_PATTERN =
+  /\b(api|backend|provider|parser|proxy|axios|network error|status code|timeout|undefined|null|exception|stack|500|503|404)\b/i;
+
+const toVoiceUserError = (message: string | undefined | null, fallback: string): string => {
+  const trimmed = message?.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
+  return TECHNICAL_ERROR_PATTERN.test(trimmed) ? fallback : trimmed;
 };
 
 export const useVoiceStore = create<VoiceState>((set, get) => ({
@@ -99,7 +115,11 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
           return;
         }
 
-        if (command.intent === 'ASK_CALORIES') {
+        if (
+          command.intent === 'ASK_CALORIES' ||
+          command.intent === 'ASK_NUTRITION' ||
+          command.intent === 'QUERY_MEAL'
+        ) {
           set({ status: 'executing', parsedCommand: command, error: null });
 
           try {
@@ -118,16 +138,24 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
             } else {
               set({
                 status: 'error',
-                error: execResponse.error || 'Không thể lấy thông tin dinh dưỡng.',
+                error: toVoiceUserError(
+                  execResponse.error,
+                  'Chưa lấy được thông tin. Vui lòng thử lại.',
+                ),
               });
             }
           } catch {
-            set({ status: 'error', error: 'Không thể lấy thông tin calo.' });
+            set({ status: 'error', error: 'Chưa lấy được thông tin. Vui lòng thử lại.' });
           }
           return;
         }
 
-        if (command.intent === 'ADD_FOOD' || command.intent === 'LOG_WEIGHT') {
+        if (
+          command.intent === 'ADD_FOOD' ||
+          command.intent === 'LOG_WEIGHT' ||
+          command.intent === 'REPEAT_MEAL' ||
+          command.intent === 'ADD_NOTE'
+        ) {
           try {
             const reviewDraft = await voiceService.reviewCommand(command);
             if (requestId !== voiceRequestSequence) {
@@ -149,9 +177,10 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
               status: 'error',
               parsedCommand: command,
               reviewDraft: null,
-              error:
-                error?.message ||
-                'Không thể chuẩn bị bản nháp giọng nói. Vui lòng thử lại.',
+              error: toVoiceUserError(
+                error?.message,
+                'Chưa chuẩn bị được thông tin để lưu. Vui lòng thử lại.',
+              ),
             });
           }
           return;
@@ -165,7 +194,10 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
           executedData: null,
           error:
             command.intent === 'UNKNOWN'
-              ? response.error || 'Không hiểu lệnh. Hãy thử lại.'
+              ? toVoiceUserError(
+                response.error,
+                'Chưa hiểu yêu cầu. Hãy thử nói rõ món, khẩu phần, bữa ăn hoặc điều muốn tra cứu.',
+              )
               : null,
         });
         return;
@@ -175,7 +207,10 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         status: 'idle',
         parsedCommand: null,
         reviewDraft: null,
-        error: response.error || 'Không hiểu lệnh. Hãy thử lại.',
+        error: toVoiceUserError(
+          response.error,
+          'Chưa hiểu yêu cầu. Hãy thử nói rõ món, khẩu phần, bữa ăn hoặc điều muốn tra cứu.',
+        ),
       });
     } catch (error: any) {
       console.error('[VoiceStore] Parse error:', error);
@@ -183,7 +218,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         status: 'error',
         parsedCommand: null,
         reviewDraft: null,
-        error: 'Không thể kết nối AI giọng nói. Vui lòng thử lại.',
+        error: 'Tính năng giọng nói đang tạm gián đoạn. Vui lòng thử lại.',
       });
     }
   },
@@ -194,7 +229,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       set({
         error:
           reviewDraft?.blockingReason ||
-          'Bản nháp chưa đủ thông tin để lưu.',
+          'Thông tin chưa đủ để lưu.',
       });
       return;
     }
@@ -223,12 +258,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
       set({
         status: 'error',
-        error: response.error || 'Không thể lưu bản nháp giọng nói.',
+        error: toVoiceUserError(response.error, 'Chưa lưu được thông tin. Vui lòng thử lại.'),
       });
     } catch (error: any) {
       set({
         status: 'error',
-        error: error?.message || 'Không thể lưu bản nháp giọng nói.',
+        error: toVoiceUserError(error?.message, 'Chưa lưu được thông tin. Vui lòng thử lại.'),
       });
     }
   },
@@ -236,7 +271,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
   async executeCommand() {
     const { parsedCommand } = get();
     if (!parsedCommand || parsedCommand.intent === 'UNKNOWN') {
-      set({ error: 'Không có lệnh hợp lệ để thực hiện.' });
+      set({ error: 'Chưa có yêu cầu rõ ràng để thực hiện.' });
       return;
     }
 
@@ -260,12 +295,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
       set({
         status: 'error',
-        error: response.error || 'Không thể thực hiện lệnh.',
+        error: toVoiceUserError(response.error, 'Chưa thực hiện được yêu cầu này.'),
       });
     } catch (error: any) {
       set({
         status: 'error',
-        error: error?.message || 'Không thể thực hiện lệnh.',
+        error: toVoiceUserError(error?.message, 'Chưa thực hiện được yêu cầu này.'),
       });
     }
   },
@@ -293,12 +328,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
       set({
         status: 'error',
-        error: response.error || 'Không thể lưu cân nặng.',
+        error: toVoiceUserError(response.error, 'Chưa lưu được cân nặng.'),
       });
     } catch (error: any) {
       set({
         status: 'error',
-        error: error?.message || 'Không thể lưu cân nặng.',
+        error: toVoiceUserError(error?.message, 'Chưa lưu được cân nặng.'),
       });
     }
   },

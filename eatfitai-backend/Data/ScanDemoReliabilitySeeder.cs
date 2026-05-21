@@ -159,7 +159,7 @@ public static class ScanDemoReliabilitySeeder
         user.TargetWeightKg = 68m;
         user.CurrentStreak = 7;
         user.LongestStreak = Math.Max(user.LongestStreak, 14);
-        user.LastLogDate = today.ToDateTime(TimeOnly.MinValue);
+        user.LastLogDate = DateTime.SpecifyKind(today.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
 
         await db.SaveChangesAsync(cancellationToken);
 

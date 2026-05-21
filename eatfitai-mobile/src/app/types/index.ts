@@ -62,6 +62,7 @@ export type RootStackParamList = {
   AllAchievements: undefined;
   EditProfile: undefined;
   BodyMetrics: undefined;
+  AIQuota: undefined;
   GoalSettings: undefined;
   WeightHistory: undefined;
   WeightStats: undefined;

@@ -197,7 +197,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
     },
     {
       title: 'Giọng nói',
-      meta: 'Trợ lý AI',
+      meta: 'Nhật ký nhanh',
       icon: 'mic',
       position: 'lowerLeft',
       onPress: () =>

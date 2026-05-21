@@ -304,6 +304,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
 
   const safeBottom = 0; // Centered since outerWrapper is raised above home indicator
   const current = state.routes[state.index]?.name ?? '';
+  const shouldHideForVoice = !isOverlay && current === 'VoiceTab';
   const isMoChiBusy = useMoChiSurfaceCoordinator((store) => store.isBusy(current));
   const mochiDockPose = resolveMoChiDockPose(current);
   const navigateTab = navigation.navigate as unknown as (name: string, params?: unknown) => void;
@@ -313,6 +314,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
     surface: 'bottomDock',
     routeName: current,
     priority: 10,
+    enabled: !shouldHideForVoice,
   });
 
   useMoChiSurfacePresence({
@@ -370,6 +372,16 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
       setIsHubVisible(false);
     }
   }, [activeSheetTarget, isHubVisible]);
+
+  React.useEffect(() => {
+    if (shouldHideForVoice && isHubVisible) {
+      setIsHubVisible(false);
+    }
+  }, [isHubVisible, shouldHideForVoice]);
+
+  if (shouldHideForVoice) {
+    return null;
+  }
 
   return (
     <View style={[styles.outerWrapper, { bottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 12) : 16 }]} pointerEvents="box-none">

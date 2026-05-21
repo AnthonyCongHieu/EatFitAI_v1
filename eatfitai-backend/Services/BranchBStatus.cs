@@ -30,4 +30,6 @@ public static class MealDayMarkerType
 {
     public const string SkippedMeal = "skipped_meal";
     public const string SkippedDay = "skipped_day";
+    public const string MealNote = "meal_note";
+    public const string DayNote = "day_note";
 }

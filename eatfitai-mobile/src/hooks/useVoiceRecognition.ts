@@ -66,7 +66,7 @@ export const useVoiceRecognition = (
       // Request permissions
       const permissionResult = await Audio.requestPermissionsAsync();
       if (!permissionResult.granted) {
-        setError('Cần quyền truy cập microphone');
+        setError('Cần quyền dùng micro để ghi âm.');
         return;
       }
 
@@ -116,7 +116,7 @@ export const useVoiceRecognition = (
       }, 100);
     } catch (err: any) {
       console.error('[VoiceRecognition] Start error:', err);
-      setError('Không thể bắt đầu ghi âm');
+      setError('Chưa bắt đầu ghi âm được. Vui lòng thử lại.');
       setIsRecording(false);
     }
   }, [maxDuration, setStatus]);
@@ -160,16 +160,15 @@ export const useVoiceRecognition = (
       if (uri) {
         console.log('[VoiceRecognition] Recording saved:', uri);
 
-        // Transcribe using Whisper (via AI Provider)
+        // Send the recording for transcription.
         setStatus('processing');
         const transcription = await voiceService.transcribeAudio(uri);
 
         if (transcription.success && transcription.text) {
           console.log('[VoiceRecognition] Whisper transcribed:', transcription.text);
-          // Parse with Ollama
           await processText(transcription.text);
         } else {
-          setError(transcription.error || 'Không thể nhận diện giọng nói');
+          setError(transcription.error || 'Chưa nhận diện được giọng nói. Vui lòng thử lại.');
           setStatus('error');
         }
 
@@ -179,7 +178,7 @@ export const useVoiceRecognition = (
       return null;
     } catch (err: any) {
       console.error('[VoiceRecognition] Stop error:', err);
-      setError('Lỗi khi xử lý ghi âm');
+      setError('Chưa xử lý được bản ghi âm. Vui lòng thử lại.');
       return null;
     }
   }, [setStatus, processText]);

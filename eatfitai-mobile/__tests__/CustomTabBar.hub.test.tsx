@@ -95,23 +95,25 @@ jest.mock('../src/components/ui/SmartAddSheet', () => ({
   },
 }));
 
-const renderTabBar = () =>
+const tabRoutes = [
+  { key: 'HomeTab-key', name: 'HomeTab' },
+  { key: 'MealDiary-key', name: 'MealDiary' },
+  { key: 'VoiceTab-key', name: 'VoiceTab' },
+  { key: 'StatsTab-key', name: 'StatsTab' },
+  { key: 'ProfileTab-key', name: 'ProfileTab' },
+] as const;
+
+const renderTabBar = (index = 0) =>
   render(
     <CustomTabBar
       state={{
         stale: false,
         type: 'tab',
         key: 'tab-state',
-        index: 0,
-        history: [{ type: 'route', key: 'HomeTab-key' }],
+        index,
+        history: [{ type: 'route', key: tabRoutes[index]?.key ?? 'HomeTab-key' }],
         routeNames: ['HomeTab', 'MealDiary', 'VoiceTab', 'StatsTab', 'ProfileTab'],
-        routes: [
-          { key: 'HomeTab-key', name: 'HomeTab' },
-          { key: 'MealDiary-key', name: 'MealDiary' },
-          { key: 'VoiceTab-key', name: 'VoiceTab' },
-          { key: 'StatsTab-key', name: 'StatsTab' },
-          { key: 'ProfileTab-key', name: 'ProfileTab' },
-        ],
+        routes: tabRoutes as any,
       }}
       descriptors={{} as any}
       navigation={{ emit: mockEmit, navigate: mockNavigate } as any}
@@ -143,6 +145,12 @@ describe('CustomTabBar MoChi hub layout', () => {
     const screen = renderTabBar();
 
     expect(screen.getByText('mochi-boxIdle-62-auto')).toBeTruthy();
+  });
+
+  it('does not render the command bar on the dedicated voice screen', () => {
+    const screen = renderTabBar(2);
+
+    expect(screen.toJSON()).toBeNull();
   });
 
   it('hides the dock MoChi sprite while another MoChi surface is active', () => {

@@ -1,5 +1,13 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+  type NativeSyntheticEvent,
+  type TextInputContentSizeChangeEventData,
+} from 'react-native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import {
   RouteProp,
@@ -63,6 +71,8 @@ const P_STATIC = {
   glow: 'rgba(75, 226, 119, 0.15)',
 };
 const P = P_STATIC;
+const COMMAND_INPUT_MIN_HEIGHT = 48;
+const COMMAND_INPUT_MAX_HEIGHT = 112;
 
 /* ═══════════════════════════════════════════════
    Quick Command Chips
@@ -72,9 +82,10 @@ const QUICK_COMMANDS: {
   label: string;
   text: string;
 }[] = [
-  { icon: 'restaurant-outline', label: 'Thêm món', text: 'Thêm 1 bát phở bữa trưa' },
-  { icon: 'flame-outline', label: 'Calo', text: 'Hôm nay ăn bao nhiêu calo?' },
-  { icon: 'scale-outline', label: 'Cân nặng', text: 'Cân nặng 65 kg' },
+  { icon: 'flame-outline', label: 'Calo', text: 'hôm nay còn bao nhiêu calo' },
+  { icon: 'reader-outline', label: 'Bữa', text: 'bữa trưa hôm qua ăn gì' },
+  { icon: 'repeat-outline', label: 'Lặp', text: 'thêm lại bữa trưa hôm qua vào hôm nay' },
+  { icon: 'create-outline', label: 'Ghi', text: 'ghi chú bữa trưa hơi nhiều dầu' },
 ];
 
 /* ═══════════════════════════════════════════════
@@ -111,6 +122,7 @@ const VoiceScreen = (): React.ReactElement => {
   const route = useRoute<VoiceRouteProp>();
   const chatScrollRef = useRef<ScrollView>(null);
   const lastReviewSignatureRef = useRef('');
+  const [commandInputHeight, setCommandInputHeight] = useState(COMMAND_INPUT_MIN_HEIGHT);
 
   const {
     status,
@@ -144,10 +156,10 @@ const VoiceScreen = (): React.ReactElement => {
       showAppToast({
         type: 'info',
         text1:
-          isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title,
+          isAiStatusLoading && !aiStatus ? 'Đang kiểm tra giọng nói' : voiceAvailability.title,
         text2:
           voiceAvailability.message ??
-          'Bạn vẫn có thể nhập nhật ký thủ công trong lúc chờ AI sẵn sàng.',
+          'Bạn vẫn có thể nhập bằng bàn phím trong lúc tính năng giọng nói sẵn sàng.',
       });
       trackEvent('voice_ai_blocked', {
         flow: 'voice',
@@ -323,8 +335,8 @@ const VoiceScreen = (): React.ReactElement => {
     if (newStatus === 'success') {
       showAppToast({
         type: 'success',
-        text1: 'Xong rồi nè! ✨',
-        text2: lastExecutedAction || 'Tớ đã ghi lại giúp bạn rồi.',
+        text1: 'Đã cập nhật nhật ký',
+        text2: lastExecutedAction || 'Thông tin đã được lưu.',
         visibilityTime: 3000,
       });
       trackEvent('voice_execute_success', {
@@ -357,7 +369,7 @@ const VoiceScreen = (): React.ReactElement => {
       });
       showAppToast({
         type: 'error',
-        text1: 'Lỗi',
+        text1: 'Chưa thực hiện được',
         text2: execError,
       });
     }
@@ -385,8 +397,8 @@ const VoiceScreen = (): React.ReactElement => {
     if (newStatus === 'success') {
       showAppToast({
         type: 'success',
-        text1: 'Xong rồi nè! ✨',
-        text2: lastExecutedAction || 'Tớ đã lưu lại giúp bạn rồi.',
+        text1: 'Đã lưu vào nhật ký',
+        text2: lastExecutedAction || 'Thông tin đã được lưu.',
         visibilityTime: 3000,
       });
       trackEvent('voice_execute_success', {
@@ -426,10 +438,6 @@ const VoiceScreen = (): React.ReactElement => {
   };
 
   const handleQuickCommand = (text: string) => {
-    if (!guardVoiceAiReady('quick_command')) {
-      return;
-    }
-
     trackEvent('voice_parse_start', {
       flow: 'voice',
       step: 'parse',
@@ -465,6 +473,17 @@ const VoiceScreen = (): React.ReactElement => {
     }
   };
 
+  const handleCommandInputSizeChange = useCallback(
+    (event: NativeSyntheticEvent<TextInputContentSizeChangeEventData>) => {
+      const nextHeight = Math.min(
+        COMMAND_INPUT_MAX_HEIGHT,
+        Math.max(COMMAND_INPUT_MIN_HEIGHT, event.nativeEvent.contentSize.height),
+      );
+      setCommandInputHeight(nextHeight);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (status !== 'review' || !parsedCommand) {
       return;
@@ -499,20 +518,20 @@ const VoiceScreen = (): React.ReactElement => {
       case 'listening':
         return 'Đang nghe';
       case 'processing':
-        return 'Đang xử lý';
+        return 'Đang nhận diện';
       case 'parsing':
-        return 'Đang phân tích';
+        return 'Đang hiểu yêu cầu';
       case 'review':
         return 'Cần xác nhận';
       case 'executing':
       case 'committing':
-        return 'Đang lưu';
+        return 'Đang cập nhật';
       case 'success':
-        return 'Đã lưu';
+        return 'Đã cập nhật';
       case 'error':
-        return 'Lỗi';
+        return 'Chưa hoàn tất';
       default:
-        return 'Chạm để nói';
+        return 'Sẵn sàng';
     }
   };
 
@@ -525,7 +544,7 @@ const VoiceScreen = (): React.ReactElement => {
     chatMessages.push({ id: 'ai-1', type: 'ai', text: executedData.details });
   }
   if (error) {
-    chatMessages.push({ id: 'ai-error', type: 'ai', text: `⚠️ ${error}` });
+    chatMessages.push({ id: 'ai-error', type: 'ai', text: `Chưa thực hiện được. ${error}` });
   }
 
   /* ═══════════════════════════════════════════════
@@ -540,15 +559,15 @@ const VoiceScreen = (): React.ReactElement => {
   const micTitle = isRecording
     ? 'Đang nghe'
     : isVoiceAiBlocked
-      ? 'Tạm dừng'
+      ? 'Tạm thời chưa dùng được'
       : isBusy
         ? getStatusLabel()
-        : 'Sẵn sàng';
+        : 'Sẵn sàng ghi nhanh';
   const micHint = isRecording
     ? 'Chạm để dừng'
     : isVoiceAiBlocked
-      ? 'AI chưa khả dụng'
-      : 'Nói món, cân nặng hoặc câu hỏi calo';
+      ? 'Bạn vẫn có thể nhập yêu cầu bằng bàn phím.'
+      : 'Nói món ăn, cân nặng, ghi chú hoặc câu hỏi calo';
 
   return (
     <View
@@ -568,11 +587,11 @@ const VoiceScreen = (): React.ReactElement => {
           >
             <Ionicons name="arrow-back" size={24} color={P.onSurface} />
           </Pressable>
-          <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Trợ lý AI</ThemedText>
+          <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Nhật ký giọng nói</ThemedText>
           <View style={S.rightPlaceholder}>
             <View style={[S.headerState, { backgroundColor: P.primary + '18', borderColor: P.primary + '35' }]}>
               <View style={S.headerStateDot} />
-              <ThemedText style={S.headerStateText}>AI</ThemedText>
+              <ThemedText style={S.headerStateText} numberOfLines={1}>Sẵn sàng</ThemedText>
             </View>
           </View>
         </View>
@@ -594,12 +613,12 @@ const VoiceScreen = (): React.ReactElement => {
             <View style={{ flex: 1 }}>
               <ThemedText style={S.availabilityTitle}>
                 {isAiStatusLoading && !aiStatus
-                  ? 'AI đang kiểm tra'
+                  ? 'Đang kiểm tra giọng nói'
                   : voiceAvailability.title}
               </ThemedText>
               <ThemedText style={S.availabilityText}>
                 {voiceAvailability.message ??
-                  'Bạn vẫn có thể nhập nhật ký thủ công trong lúc chờ AI sẵn sàng.'}
+                  'Bạn vẫn có thể nhập bằng bàn phím trong lúc tính năng giọng nói sẵn sàng.'}
               </ThemedText>
             </View>
           </Animated.View>
@@ -629,7 +648,7 @@ const VoiceScreen = (): React.ReactElement => {
                 <ThemedText
                   style={[S.voiceStateText, isRecording && S.voiceStateTextActive]}
                 >
-                  {isRecording ? 'Ghi âm' : 'Sẵn sàng'}
+                  {isRecording ? 'Đang ghi' : 'Sẵn sàng'}
                 </ThemedText>
               </View>
             </View>
@@ -699,15 +718,16 @@ const VoiceScreen = (): React.ReactElement => {
         {!isRecording && (
           <Animated.View entering={FadeInUp.delay(140)} style={[S.commandDock, { backgroundColor: P.glassBg, borderColor: P.glassBorder }]}>
             <View style={[S.commandBar, { backgroundColor: P.surfaceContainer, borderColor: P.primary + '25' }]}>
-              <Ionicons name="sparkles" size={18} color={P.primary} />
+              <Ionicons name="sparkles" size={18} color={P.primary} style={S.commandIcon} />
               <TextInput
-                style={[S.textInput, { color: P.onSurface }]}
-                placeholder="Nhập lệnh..."
+                style={[S.textInput, { color: P.onSurface, height: commandInputHeight }]}
+                placeholder="Ghi món hoặc hỏi nhật ký..."
                 placeholderTextColor={P.onSurfaceVariant + '70'}
                 value={recognizedText}
                 onChangeText={setRecognizedText}
+                onContentSizeChange={handleCommandInputSizeChange}
                 multiline
-                numberOfLines={1}
+                scrollEnabled={commandInputHeight >= COMMAND_INPUT_MAX_HEIGHT}
                 testID={TEST_IDS.voice.textInput}
               />
               <Pressable
@@ -735,7 +755,13 @@ const VoiceScreen = (): React.ReactElement => {
                   onPress={() => handleQuickCommand(cmd.text)}
                 >
                   <Ionicons name={cmd.icon} size={15} color={P.primary} />
-                  <ThemedText style={[S.quickCommandText, { color: P.onSurface }]}>{cmd.label}</ThemedText>
+                  <ThemedText
+                    style={[S.quickCommandText, { color: P.onSurface }]}
+                    numberOfLines={1}
+                    allowFontScaling={false}
+                  >
+                    {cmd.label}
+                  </ThemedText>
                 </Pressable>
               ))}
             </View>
@@ -777,7 +803,7 @@ const VoiceScreen = (): React.ReactElement => {
               >
                 <Ionicons name="sparkles" size={17} color="#003915" />
                 <ThemedText style={S.analyzeBtnText}>
-                  {status === 'parsing' ? 'Đang phân tích' : 'Phân tích'}
+                  {status === 'parsing' ? 'Đang hiểu' : 'Xử lý yêu cầu'}
                 </ThemedText>
               </LinearGradient>
             </Pressable>
@@ -873,7 +899,7 @@ const S = StyleSheet.create({
     textAlign: 'center',
   },
   rightPlaceholder: {
-    width: 44,
+    width: 76,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
@@ -1011,24 +1037,29 @@ const S = StyleSheet.create({
   commandBar: {
     minHeight: 52,
     borderRadius: 18,
+    paddingVertical: 5,
     paddingLeft: 14,
     paddingRight: 6,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 10,
     backgroundColor: 'rgba(7, 11, 20, 0.48)',
     borderWidth: 1,
     borderColor: 'rgba(75, 226, 119, 0.12)',
   },
+  commandIcon: {
+    marginBottom: 12,
+  },
   textInput: {
     flex: 1,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 10,
     fontSize: 15,
     fontFamily: 'BeVietnamPro_500Medium',
     color: P.onSurface,
-    minHeight: 42,
-    maxHeight: 76,
-    textAlignVertical: 'center',
+    minHeight: COMMAND_INPUT_MIN_HEIGHT,
+    maxHeight: COMMAND_INPUT_MAX_HEIGHT,
+    textAlignVertical: 'top',
   },
   sendBtn: {
     width: 42,
@@ -1048,7 +1079,7 @@ const S = StyleSheet.create({
   },
   quickCommand: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 46,
     borderRadius: 14,
     paddingHorizontal: 8,
     flexDirection: 'row',
@@ -1060,10 +1091,11 @@ const S = StyleSheet.create({
     borderColor: 'rgba(226,232,240,0.12)',
   },
   quickCommandText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurface,
     lineHeight: 15,
+    flexShrink: 1,
   },
   transcriptWrap: {
     marginTop: 10,
@@ -1237,8 +1269,7 @@ const S = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'BeVietnamPro_700Bold',
     color: P.onSurfaceVariant,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    letterSpacing: 0.2,
   },
   listeningLabelActive: {
     color: '#fecaca',

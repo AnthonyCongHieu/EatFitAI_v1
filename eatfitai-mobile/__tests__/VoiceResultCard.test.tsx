@@ -141,4 +141,30 @@ describe('VoiceResultCard review draft form', () => {
     fireEvent.press(screen.getByTestId('voice-review-commit-button'));
     expect(onCommit).not.toHaveBeenCalled();
   });
+
+  it('shows query results as read-only information after execution', () => {
+    const onExecute = jest.fn();
+    const queryCommand: ParsedVoiceCommand = {
+      intent: 'QUERY_MEAL',
+      rawText: 'bua trua hom qua an gi',
+      confidence: 0.9,
+      reviewRequired: false,
+      entities: { mealType: 'lunch', date: '2026-05-20' },
+    };
+
+    const screen = render(
+      <VoiceResultCard
+        command={queryCommand}
+        onExecute={onExecute}
+        executedData={{
+          type: 'QUERY_MEAL',
+          details: 'Bua trua co 1 mon: Voice rice query',
+          totalCalories: 300,
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Bua trua co 1 mon: Voice rice query')).toBeTruthy();
+    expect(screen.queryByTestId('voice-execute-button')).toBeNull();
+  });
 });

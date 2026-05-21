@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -113,6 +113,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
+  const ingredientInputRef = useRef<TextInput>(null);
   const EN = useEN();
   const P = {
     ...P_STATIC,
@@ -317,7 +318,10 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   return (
     <View style={[S.container, { backgroundColor: P.surface }]}>
       {/* ═══ Header ═══ */}
-      <View style={[S.header, { paddingTop: insets.top + 4, backgroundColor: P.surface, borderBottomWidth: 1, borderBottomColor: P.glassBorder }]}>
+      <View
+        pointerEvents="box-none"
+        style={[S.header, { paddingTop: insets.top + 4, backgroundColor: P.surface, borderBottomWidth: 1, borderBottomColor: P.glassBorder }]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </TouchableOpacity>
@@ -330,26 +334,33 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       <ScrollView
         contentContainerStyle={[S.scrollContent, { paddingTop: insets.top + 80 }]}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
       >
         {/* ═══ Search Section ═══ */}
         <View style={S.searchSection}>
-          <View style={[S.searchBox, { backgroundColor: P.surfaceContainerLowest, borderColor: P.glassBorder }]}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => ingredientInputRef.current?.focus()}
+            style={[S.searchBox, { backgroundColor: P.surfaceContainerLowest, borderColor: P.glassBorder }]}
+          >
             <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={S.searchIcon} />
             <TextInput
+              ref={ingredientInputRef}
               style={[S.searchInput, { color: P.onSurface }]}
               placeholder="Nhập nguyên liệu (VD: Thịt gà)..."
               placeholderTextColor={P.onSurfaceVariant}
               value={newIngredient}
               onChangeText={setNewIngredient}
               onSubmitEditing={() => addIngredient()}
+              returnKeyType="done"
+              testID="recipe-ingredient-input"
             />
             {newIngredient.length > 0 && (
               <TouchableOpacity onPress={() => addIngredient()} style={S.addBtnInside}>
                 <Ionicons name="add-circle" size={24} color={P.primary} />
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
 
 
@@ -392,15 +403,15 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             renderSkeleton()
           ) : error ? (
             <View style={S.center}>
-              <MoChiInlineNotice mochiEvent="recipe_error" compact />
+              <MoChiInlineNotice mochiEvent="recipe_error" routeName="RecipeSuggestions" compact />
             </View>
           ) : recipes.length === 0 ? (
             <View style={S.centerEmpty}>
-              <MoChiInlineNotice mochiEvent="recipe_empty" compact />
+              <MoChiInlineNotice mochiEvent="recipe_empty" routeName="RecipeSuggestions" compact />
             </View>
           ) : (
             <>
-              <MoChiInlineNotice mochiEvent="recipe_success" compact />
+              <MoChiInlineNotice mochiEvent="recipe_success" routeName="RecipeSuggestions" compact />
               <View style={S.sortChipsSection}>
                 {SORT_OPTIONS.map((option) => {
                   const active = sortMode === option.key;

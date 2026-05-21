@@ -31,7 +31,10 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 import { subscriptionService } from '../../services/subscriptionService';
-import { aiQuotaService } from '../../services/aiQuotaService';
+import {
+  aiQuotaService,
+  type AiUsageQuotaFeature,
+} from '../../services/aiQuotaService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
@@ -64,22 +67,34 @@ const P_STATIC = {
   errorContainer: 'rgba(147, 0, 10, 0.3)',
 };
 
-const AI_QUOTA_LABELS: Record<string, string> = {
-  vision_scan: 'Quét món bằng AI',
-  recipe_suggestion: 'Gợi ý công thức',
-  cooking_guide: 'Hướng dẫn nấu',
-  nutrition_target: 'Tính mục tiêu AI',
-  nutrition_insight: 'Phân tích dinh dưỡng',
-  adaptive_target: 'Mục tiêu thích ứng',
-  weekly_review: 'Weekly review AI',
-  voice_parse: 'Hiểu lệnh giọng nói',
-  voice_transcribe: 'Chuyển giọng nói',
-};
-
 type NavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<AppTabsParamList, 'ProfileTab'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
+
+const summarizeLimitedQuota = (features: AiUsageQuotaFeature[]) => {
+  const limitedFeatures = features.filter(
+    (feature) => feature.key !== 'vision_scan' && feature.isLimited && feature.limit != null,
+  );
+
+  if (limitedFeatures.length === 0) {
+    return {
+      label: 'Không giới hạn',
+      isEmpty: false,
+    };
+  }
+
+  const remaining = limitedFeatures.reduce((sum, feature) => {
+    const limit = feature.limit ?? 0;
+    return sum + Math.max(0, feature.remaining ?? limit - feature.used);
+  }, 0);
+  const limit = limitedFeatures.reduce((sum, feature) => sum + (feature.limit ?? 0), 0);
+
+  return {
+    label: `Còn ${remaining}/${limit} lượt`,
+    isEmpty: remaining <= 0,
+  };
+};
 
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette — resolved dynamically via useEN()
@@ -327,7 +342,11 @@ const ProfileScreen = (): React.ReactElement => {
   const hasProfileGaps = hasProfileCompletionGaps(profile);
   const aiQuotaFeatures = aiQuota?.features ?? [];
   const scanQuota = aiQuotaFeatures.find((feature) => feature.key === 'vision_scan');
-  const limitedAiQuotaFeatures = aiQuotaFeatures.filter((feature) => feature.key !== 'vision_scan');
+  const scanQuotaLabel =
+    scanQuota?.isLimited && scanQuota.limit != null
+      ? `Còn ${Math.max(0, scanQuota.remaining ?? scanQuota.limit - scanQuota.used)}/${scanQuota.limit}`
+      : 'Không giới hạn';
+  const limitedQuotaSummary = summarizeLimitedQuota(aiQuotaFeatures);
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
@@ -461,55 +480,57 @@ const ProfileScreen = (): React.ReactElement => {
         )}
 
         {/* ═══ MENU GROUP 1 — Main actions ═══ */}
-        <Animated.View entering={FadeInUp.delay(280).duration(400)} style={[S.quotaCard, { backgroundColor: P.glassBg, borderTopColor: P.glassBorder }]}>
-          <View style={S.quotaHeader}>
-            <View style={[S.quotaIconWrap, { backgroundColor: P.primary + '18' }]}>
-              <Ionicons name="sparkles-outline" size={18} color={P.primary} />
-            </View>
-            <View style={S.quotaTitleWrap}>
-              <ThemedText style={[S.quotaTitle, { color: P.onSurface }]}>Lượt AI hôm nay</ThemedText>
-              <ThemedText style={[S.quotaSubtitle, { color: P.onSurfaceVariant }]}>
-                Mỗi tính năng AI có quota riêng; quét món không giới hạn.
-              </ThemedText>
-            </View>
-          </View>
-
-          {isAiQuotaLoading && !aiQuota ? (
-            <View style={S.quotaLoading}>
-              <ActivityIndicator size="small" color={P.primary} />
-            </View>
-          ) : (
-            <View style={S.quotaRows}>
-              <View style={S.quotaRow}>
-                <ThemedText style={[S.quotaFeatureName, { color: P.onSurface }]}>
-                  {AI_QUOTA_LABELS.vision_scan}
-                </ThemedText>
-                <ThemedText style={[S.quotaFeatureValue, { color: P.primary }]}>
-                  {scanQuota?.isLimited ? `${scanQuota.remaining ?? 0}/${scanQuota.limit ?? 0}` : 'Không giới hạn'}
+        <Pressable
+          onPress={() => navigation.navigate('AIQuota' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Xem lượt AI hôm nay"
+        >
+          <Animated.View entering={FadeInUp.delay(280).duration(400)} style={[S.quotaCard, { backgroundColor: P.glassBg, borderTopColor: P.glassBorder }]}>
+            <View style={S.quotaHeader}>
+              <View style={[S.quotaIconWrap, { backgroundColor: P.primary + '18' }]}>
+                <Ionicons name="sparkles-outline" size={18} color={P.primary} />
+              </View>
+              <View style={S.quotaTitleWrap}>
+                <ThemedText style={[S.quotaTitle, { color: P.onSurface }]}>Lượt AI hôm nay</ThemedText>
+                <ThemedText style={[S.quotaSubtitle, { color: P.onSurfaceVariant }]}>
+                  Xem 2 nhóm quota chính trong ngày.
                 </ThemedText>
               </View>
-
-              {limitedAiQuotaFeatures.map((feature) => {
-                const label = AI_QUOTA_LABELS[feature.key] ?? feature.label;
-                const value = feature.isLimited
-                  ? `${feature.remaining ?? 0}/${feature.limit ?? 0}`
-                  : 'Không giới hạn';
-                const isEmpty = feature.isLimited && (feature.remaining ?? 0) <= 0;
-
-                return (
-                  <View key={feature.key} style={S.quotaRow}>
-                    <ThemedText style={[S.quotaFeatureName, { color: P.onSurface }]} numberOfLines={1}>
-                      {label}
-                    </ThemedText>
-                    <ThemedText style={[S.quotaFeatureValue, { color: isEmpty ? P.error : P.onSurfaceVariant }]}>
-                      {value}
-                    </ThemedText>
-                  </View>
-                );
-              })}
+              <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
             </View>
-          )}
-        </Animated.View>
+
+            {isAiQuotaLoading && !aiQuota ? (
+              <View style={S.quotaLoading}>
+                <ActivityIndicator size="small" color={P.primary} />
+              </View>
+            ) : (
+              <View style={S.quotaSummaryRow}>
+                <View style={S.quotaSummaryItem}>
+                  <ThemedText style={[S.quotaSummaryLabel, { color: P.onSurfaceVariant }]}>
+                    Quét món
+                  </ThemedText>
+                  <ThemedText style={[S.quotaSummaryValue, { color: P.primary }]}>
+                    {scanQuotaLabel}
+                  </ThemedText>
+                </View>
+                <View style={[S.quotaDivider, { backgroundColor: P.glassBorder }]} />
+                <View style={S.quotaSummaryItem}>
+                  <ThemedText style={[S.quotaSummaryLabel, { color: P.onSurfaceVariant }]}>
+                    Ghi chú & truy vấn
+                  </ThemedText>
+                  <ThemedText
+                    style={[
+                      S.quotaSummaryValue,
+                      { color: limitedQuotaSummary.isEmpty ? P.error : P.onSurface },
+                    ]}
+                  >
+                    {limitedQuotaSummary.label}
+                  </ThemedText>
+                </View>
+              </View>
+            )}
+          </Animated.View>
+        </Pressable>
 
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={[S.menuGroup, { backgroundColor: P.surfaceLow }]}>
           <MenuRow
@@ -1076,6 +1097,31 @@ const S = StyleSheet.create({
   },
   quotaRows: {
     gap: 8,
+  },
+  quotaSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quotaSummaryItem: {
+    flex: 1,
+    gap: 3,
+  },
+  quotaSummaryLabel: {
+    fontSize: 11,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    color: P_STATIC.onSurfaceVariant,
+  },
+  quotaSummaryValue: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.onSurface,
+  },
+  quotaDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: P_STATIC.glassBorder,
   },
   quotaRow: {
     minHeight: 32,

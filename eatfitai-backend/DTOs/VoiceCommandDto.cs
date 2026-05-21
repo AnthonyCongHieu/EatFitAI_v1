@@ -26,6 +26,9 @@ namespace EatFitAI.DTOs
         LOG_WEIGHT,     // Ghi cân nặng
         ASK_CALORIES,   // Hỏi calories
         ASK_NUTRITION,  // Hỏi dinh dưỡng
+        QUERY_MEAL,     // Truy van bua an da ghi
+        REPEAT_MEAL,    // Them lai bua an da ghi
+        ADD_NOTE,       // Ghi chu vao du lieu hien co
         UNKNOWN         // Không hiểu
     }
 
@@ -62,6 +65,15 @@ namespace EatFitAI.DTOs
         public string? Unit { get; set; }
         public MealType? MealType { get; set; }
         public DateTime? Date { get; set; }
+        public DateTime? SourceDate { get; set; }
+        public DateTime? TargetDate { get; set; }
+        public int? DateOffsetDays { get; set; }
+        public int? SourceDateOffsetDays { get; set; }
+        public int? TargetDateOffsetDays { get; set; }
+        public string? QueryScope { get; set; }
+        public string? QueryType { get; set; }
+        public string? Nutrient { get; set; }
+        public string? NoteText { get; set; }
         public decimal? Weight { get; set; }
         
         /// <summary>
@@ -154,6 +166,14 @@ namespace EatFitAI.DTOs
     {
         public decimal? CurrentWeight { get; set; }
         public decimal NewWeight { get; set; }
+        public string? NoteText { get; set; }
+    }
+
+    public class VoiceNoteReview
+    {
+        public string TargetKind { get; set; } = "meal";
+        public string NoteText { get; set; } = string.Empty;
+        public string? ExistingNote { get; set; }
     }
 
     public class VoiceReviewDraft
@@ -166,8 +186,11 @@ namespace EatFitAI.DTOs
         public string? ReviewReason { get; set; }
         public MealType? MealType { get; set; }
         public DateTime? Date { get; set; }
+        public DateTime? SourceDate { get; set; }
+        public DateTime? TargetDate { get; set; }
         public List<VoiceReviewItem> Items { get; set; } = new();
         public VoiceWeightReview? Weight { get; set; }
+        public VoiceNoteReview? Note { get; set; }
         public VoiceNutritionTotals Totals { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
         public bool CanSave { get; set; }
