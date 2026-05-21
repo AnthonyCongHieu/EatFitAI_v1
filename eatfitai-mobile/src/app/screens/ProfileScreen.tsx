@@ -25,6 +25,7 @@ import MeshBackground from '../../components/ui/MeshBackground';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { showAppToast } from '../../utils/showAppToast';
+import { resolveServerUrl } from '../../utils/imageHelpers';
 
 import { ThemedText } from '../../components/ThemedText';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -230,40 +231,39 @@ const ProfileScreen = (): React.ReactElement => {
   /* ═══ Avatar picker ═══ */
   const pickAvatar = useCallback(async (source: 'library' | 'camera') => {
     try {
-      setIsAvatarUploading(true);
       let result: ImagePicker.ImagePickerResult;
       if (source === 'camera') {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập camera');
+          Alert.alert(
+            'Quyền truy cập',
+            'Vui lòng cấp quyền truy cập camera trong cài đặt ứng dụng.',
+          );
           return;
         }
         result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [1, 1],
           quality: 0.8,
         });
       } else {
-        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!perm.granted) {
-          Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh');
-          return;
-        }
+        // On Android 13+, the system photo picker manages its own permissions —
+        // skip requestMediaLibraryPermissionsAsync() to avoid false denial.
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [1, 1],
           quality: 0.8,
         });
       }
       if (!result.canceled && result.assets[0]?.uri) {
+        setIsAvatarUploading(true);
         const url = await profileService.uploadAvatar(result.assets[0].uri);
         await useProfileStore.getState().updateProfile({ avatarUrl: url });
         await fetchProfile({ force: true });
         showAppToast({ type: 'success', text1: 'Avatar mới đẹp lắm! 📸' });
       }
     } catch (e: any) {
+      console.warn('[ProfileScreen] pickAvatar error:', e);
       showAppToast({ type: 'error', text1: 'Lỗi', text2: e?.message || 'Không thể cập nhật avatar' });
     } finally {
       setIsAvatarUploading(false);
@@ -274,9 +274,13 @@ const ProfileScreen = (): React.ReactElement => {
     setAvatarMenuOpen(true);
   }, []);
 
-  const handlePickAvatarSource = useCallback((source: 'library' | 'camera') => {
+  const handlePickAvatarSource = useCallback(async (source: 'library' | 'camera') => {
+    // Launch the native picker while the action sheet modal is still open.
+    // The native picker presents on top of everything (including RN Modal).
+    // We close the modal only AFTER the picker finishes to avoid native
+    // view-controller presentation conflicts on Android/iOS.
+    await pickAvatar(source);
     setAvatarMenuOpen(false);
-    void pickAvatar(source);
   }, [pickAvatar]);
 
   const handleProPress = useCallback(() => {
@@ -368,7 +372,7 @@ const ProfileScreen = (): React.ReactElement => {
               style={S.avatarGradientRing}
             >
               {profile?.avatarUrl ? (
-                <Image source={{ uri: profile.avatarUrl }} style={S.avatarImage} />
+                <Image source={{ uri: resolveServerUrl(profile.avatarUrl) || undefined }} style={S.avatarImage} />
               ) : (
                 <View style={S.avatarPlaceholder}>
                   <Ionicons name="person" size={44} color={P.primary} />
@@ -610,7 +614,7 @@ const ProfileScreen = (): React.ReactElement => {
             <View style={S.sheetHeader}>
               <View style={S.sheetAvatar}>
                 {profile?.avatarUrl ? (
-                  <Image source={{ uri: profile.avatarUrl }} style={S.sheetAvatarImage} />
+                  <Image source={{ uri: resolveServerUrl(profile.avatarUrl) || undefined }} style={S.sheetAvatarImage} />
                 ) : (
                   <Ionicons name="person" size={22} color={P.primary} />
                 )}

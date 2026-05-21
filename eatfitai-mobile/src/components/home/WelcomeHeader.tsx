@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { TEST_IDS } from '../../testing/testIds';
 import { useEN } from '../../theme/emeraldNebula';
+import { resolveServerUrl } from '../../utils/imageHelpers';
 
 const C_STATIC = {
   bg: '#05070d',
@@ -76,6 +77,8 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   };
 
   const timeIcon = getTimeIcon();
+  const displayStreak = streakCount ?? 0;
+  const resolvedAvatarUrl = resolveServerUrl(avatarUrl);
 
   return (
     <Animated.View
@@ -84,8 +87,8 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
     >
       <View style={styles.left}>
         <Pressable onPress={onAvatarPress} style={styles.avatarContainer}>
-          {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          {resolvedAvatarUrl ? (
+            <Image source={{ uri: resolvedAvatarUrl }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatarPlaceholder, { backgroundColor: palette.surfaceHigh }]}>
               <Text style={[styles.avatarText, { color: palette.primary }]}>
@@ -106,10 +109,10 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
       </View>
 
       <View style={styles.right}>
-        {streakCount > 0 && (
+        {displayStreak >= 0 && (
           <Pressable style={[styles.streak, { backgroundColor: palette.surfaceHigh }]} onPress={onStreakPress} hitSlop={8}>
-            <Ionicons name="flame" size={16} color="#ff8c8c" />
-            <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
+            <Ionicons name="flame" size={16} color={displayStreak > 0 ? "#ff8c8c" : palette.textMuted} />
+            <Text style={[styles.streakText, { color: displayStreak > 0 ? getStreakColor(displayStreak) : palette.textMuted }]}>{displayStreak}</Text>
           </Pressable>
         )}
         <Pressable
