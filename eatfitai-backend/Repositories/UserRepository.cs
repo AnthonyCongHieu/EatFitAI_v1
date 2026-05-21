@@ -12,12 +12,31 @@ namespace EatFitAI.API.Repositories
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await FirstOrDefaultAsync(u => u.Email == email);
+            var normalizedEmail = NormalizeEmail(email);
+            if (normalizedEmail.Length == 0)
+            {
+                return null;
+            }
+
+            return await FirstOrDefaultAsync(u => u.Email.Trim().ToLower() == normalizedEmail);
         }
 
         public async Task<bool> EmailExistsAsync(string email)
         {
-            return await AnyAsync(u => u.Email == email);
+            var normalizedEmail = NormalizeEmail(email);
+            if (normalizedEmail.Length == 0)
+            {
+                return false;
+            }
+
+            return await AnyAsync(u => u.Email.Trim().ToLower() == normalizedEmail);
+        }
+
+        private static string NormalizeEmail(string email)
+        {
+            return string.IsNullOrWhiteSpace(email)
+                ? string.Empty
+                : email.Trim().ToLowerInvariant();
         }
     }
 }
