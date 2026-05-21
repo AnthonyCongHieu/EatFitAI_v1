@@ -270,6 +270,7 @@ const MoChiTutorialHost = ({
     continueFromTransition,
     skipTutorial,
     measureTarget,
+    activateCurrentTarget,
   } = useMoChiTutorial();
   const [targetFrame, setTargetFrame] = useState<MoChiTutorialFrame | null>(null);
 
@@ -337,8 +338,9 @@ const MoChiTutorialHost = ({
       screenHeight: height,
       topInset: insets.top,
       bottomInset: insets.bottom,
+      highlightProfile: currentStep?.highlightProfile,
     });
-  }, [height, insets.bottom, insets.top, targetFrame, width]);
+  }, [currentStep?.highlightProfile, height, insets.bottom, insets.top, targetFrame, width]);
 
   if (!isTutorialVisible) {
     return null;
@@ -411,6 +413,23 @@ const MoChiTutorialHost = ({
           screenWidth={width}
           screenHeight={height}
           color="rgba(4, 8, 18, 0.68)"
+        />
+      )}
+      {spotlightLayout && !needsContinue && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Chạm vào ${currentStep?.title || 'mục tiêu'}`}
+          onPress={activateCurrentTarget}
+          style={{
+            position: 'absolute',
+            left: spotlightLayout.ring.left,
+            top: spotlightLayout.ring.top,
+            width: spotlightLayout.ring.width,
+            height: spotlightLayout.ring.height,
+            borderRadius: spotlightLayout.ring.borderRadius,
+            backgroundColor: 'rgba(0, 0, 0, 0.01)',
+            zIndex: 42,
+          }}
         />
       )}
       <SkipButton onPress={skipTutorial} top={insets.top + 12} />

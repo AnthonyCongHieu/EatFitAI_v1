@@ -127,7 +127,7 @@ describe('MoChi virtual pet experience', () => {
     expect(homeSource).not.toContain('HomeFirstLoginTutorial');
     expect(homeSource).toContain('mochiEvent="water_reminder"');
     expect(homeSource).toContain('<MoChiTutorialTarget targetId="home_water" highlightProfile="homeWater">');
-    expect(homeSource).toContain('Ghi nước');
+    expect(homeSource).toContain('Uống nước');
     expect(homeSource).toContain('handleAddWater({ showConfirmationToast: true })');
     expect(homeSource).toContain("text1: 'Uống nước giỏi lắm! 💧'");
     expect(scanSource).toContain('ScanProgressCard');
@@ -209,8 +209,8 @@ describe('MoChi virtual pet experience', () => {
     expect(tabBarSource).toContain("return 'weeklyReportNotice'");
     expect(tabBarSource).not.toContain('variant="face"');
     expect(tabBarSource).toContain('const TAB_BAR_HEIGHT = 58');
-    expect(tabBarSource).toContain('size={54}');
-    expect(tabBarSource).toContain('marginTop: -24');
+    expect(tabBarSource).toContain('size={62}');
+    expect(tabBarSource).toContain('marginTop: -30');
     expect(tabBarSource).not.toContain("backgroundColor: '#3fd56f'");
     expect(mochiDesignSource).toContain('name: EatFitAI MoChi Companion');
     expect(mochiDesignSource).toContain('MealDiary missing-meal nudges are inline by default');

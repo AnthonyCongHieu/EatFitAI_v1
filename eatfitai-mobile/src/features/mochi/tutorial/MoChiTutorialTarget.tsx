@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   StyleSheet,
@@ -31,7 +31,7 @@ const PROFILE_DEFAULTS: Record<
   }
 > = {
   dock: {
-    radius: 40,
+    radius: 47,
     insets: { top: 4, right: 4, bottom: 4, left: 4 },
   },
   tab: {
@@ -70,6 +70,15 @@ export const MoChiTutorialTarget = ({
     left: highlightInsets?.left ?? profile.insets.left,
   };
   const resolvedRadius = highlightRadius ?? profile.radius;
+
+  const [layoutSize, setLayoutSize] = useState<{ width: number; height: number } | null>(null);
+
+  const handleLayout = (e: any) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width > 0 && height > 0) {
+      setLayoutSize({ width, height });
+    }
+  };
 
   useEffect(() => {
     const scheduleMeasure = (callback: () => void) => {
@@ -125,30 +134,37 @@ export const MoChiTutorialTarget = ({
     return () => animation.stop();
   }, [focus, isActiveTarget]);
 
-  const highlightStyle = useMemo(() => ({
-    top: -resolvedInsets.top,
-    right: -resolvedInsets.right,
-    bottom: -resolvedInsets.bottom,
-    left: -resolvedInsets.left,
-    borderRadius: resolvedRadius,
-    opacity: focus.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.82, 1],
-    }),
-    transform: [
-      {
-        scale: focus.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.94, 1],
-        }),
-      },
-    ],
-  }), [
+  const highlightStyle = useMemo(() => {
+    const haloWidth = layoutSize ? layoutSize.width + resolvedInsets.left + resolvedInsets.right : undefined;
+    const haloHeight = layoutSize ? layoutSize.height + resolvedInsets.top + resolvedInsets.bottom : undefined;
+
+    return {
+      top: -resolvedInsets.top,
+      left: -resolvedInsets.left,
+      ...(layoutSize
+        ? { width: haloWidth, height: haloHeight }
+        : { right: -resolvedInsets.right, bottom: -resolvedInsets.bottom }),
+      borderRadius: resolvedRadius,
+      opacity: focus.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.82, 1],
+      }),
+      transform: [
+        {
+          scale: focus.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.94, 1],
+          }),
+        },
+      ],
+    };
+  }, [
     focus,
-    resolvedInsets.bottom,
+    layoutSize,
     resolvedInsets.left,
     resolvedInsets.right,
     resolvedInsets.top,
+    resolvedInsets.bottom,
     resolvedRadius,
   ]);
 
@@ -156,6 +172,7 @@ export const MoChiTutorialTarget = ({
     <View
       ref={ref}
       collapsable={false}
+      onLayout={handleLayout}
       nativeID={`mochi-tutorial-${targetId}`}
       style={[styles.targetRoot, isActiveTarget && styles.activeTarget, style]}
     >

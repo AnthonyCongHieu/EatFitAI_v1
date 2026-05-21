@@ -142,7 +142,7 @@ describe('CustomTabBar MoChi hub layout', () => {
   it('renders the center dock with a calm non-face MoChi sprite', () => {
     const screen = renderTabBar();
 
-    expect(screen.getByText('mochi-boxIdle-54-auto')).toBeTruthy();
+    expect(screen.getByText('mochi-boxIdle-62-auto')).toBeTruthy();
   });
 
   it('hides the dock MoChi sprite while another MoChi surface is active', () => {
@@ -155,7 +155,7 @@ describe('CustomTabBar MoChi hub layout', () => {
 
     const screen = renderTabBar();
 
-    expect(screen.queryByText('mochi-boxIdle-54-auto')).toBeNull();
+    expect(screen.queryByText('mochi-boxIdle-62-auto')).toBeNull();
     expect(screen.getByTestId('mochi-dock-quiet-icon')).toBeTruthy();
   });
 
@@ -165,7 +165,7 @@ describe('CustomTabBar MoChi hub layout', () => {
     fireEvent.press(screen.getByTestId(TEST_IDS.navigation.mochiHubButton));
 
     expect(screen.getByTestId(TEST_IDS.navigation.mochiHubSheet)).toBeTruthy();
-    expect(screen.getByText('mochi-nutritionCoachNotice-54-auto')).toBeTruthy();
+    expect(screen.getByText('mochi-nutritionCoachNotice-62-auto')).toBeTruthy();
     expect(mockNavigateRoot).not.toHaveBeenCalledWith('AiCamera');
   });
 

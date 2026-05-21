@@ -41,8 +41,8 @@ export const handleApiError = (error: any): ApiError => {
   if (isNetworkError) {
     showAppToast({
       type: 'error',
-      text1: 'Không có kết nối mạng',
-      text2: 'Kiểm tra kết nối và thử lại',
+      text1: 'Ồ, mất kết nối mạng rồi! 🔌',
+      text2: 'Bạn kiểm tra lại Wifi/4G để tụi mình tiếp tục nha!',
     });
     return { type: 'network_error', status: 0, message: error?.message };
   }
@@ -52,32 +52,32 @@ export const handleApiError = (error: any): ApiError => {
     case 401:
       showAppToast({
         type: 'error',
-        text1: 'Phiên đăng nhập đã hết hạn',
-        text2: 'Vui lòng đăng nhập lại',
+        text1: 'Hết phiên làm việc rồi!',
+        text2: 'Bạn đăng nhập lại giúp mình nha! 🔑',
       });
       return { type: 'unauthorized', status, message: serverMessage };
 
     case 403:
       showAppToast({
         type: 'error',
-        text1: 'Không có quyền',
-        text2: 'Bạn không có quyền thực hiện thao tác này',
+        text1: 'Không được rồi nha! 🙅‍♂️',
+        text2: 'Bạn chưa có quyền thực hiện thao tác này.',
       });
       return { type: 'forbidden', status, message: serverMessage };
 
     case 404:
       showAppToast({
         type: 'error',
-        text1: 'Không tìm thấy',
-        text2: 'Dữ liệu không tồn tại hoặc đã bị xóa',
+        text1: 'Không tìm thấy rồi! 🔍',
+        text2: 'Dữ liệu không tồn tại hoặc đã bị xóa đi mất rồi.',
       });
       return { type: 'not_found', status, message: serverMessage };
 
     case 422:
       showAppToast({
         type: 'error',
-        text1: 'Dữ liệu không hợp lệ',
-        text2: 'Vui lòng kiểm tra lại thông tin',
+        text1: 'Thông tin chưa đúng rồi! 🧐',
+        text2: 'Bạn kiểm tra lại các thông tin đã nhập nha!',
       });
       return { type: 'validation', status, message: serverMessage };
 
@@ -87,16 +87,16 @@ export const handleApiError = (error: any): ApiError => {
     case 504:
       showAppToast({
         type: 'error',
-        text1: 'Lỗi máy chủ',
-        text2: 'Vui lòng thử lại sau',
+        text1: 'Máy chủ đang bận tí xíu! 🤖',
+        text2: 'Bạn đợi một chút rồi thử lại cùng mình nha!',
       });
       return { type: 'server_error', status, message: serverMessage };
 
     default:
       showAppToast({
         type: 'error',
-        text1: 'Có lỗi xảy ra',
-        text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ',
+        text1: 'Có lỗi nhỏ xảy ra rồi! 😢',
+        text2: 'Bạn thử lại hoặc nhắn tin hỗ trợ giúp tụi mình nha!',
       });
       return { type: 'unknown', status, message: serverMessage };
   }
@@ -193,20 +193,20 @@ export type SuccessType =
   | 'custom';
 
 const successMessages: Record<SuccessType, { text1: string; text2?: string }> = {
-  meal_added: { text1: 'Đã thêm vào nhật ký', text2: 'Bữa ăn đã được ghi nhận' },
-  meal_updated: { text1: 'Đã cập nhật', text2: 'Thay đổi đã được lưu' },
-  meal_deleted: { text1: '🗑️ Đã xóa', text2: 'Món ăn đã được xóa khỏi nhật ký' },
-  food_added: { text1: 'Đã thêm món ăn', text2: 'Món ăn mới đã được tạo' },
-  settings_saved: { text1: 'Đã lưu cài đặt' },
-  profile_updated: { text1: 'Đã cập nhật hồ sơ' },
+  meal_added: { text1: 'Ngon miệng nha! 🍽️', text2: 'Bữa ăn của bạn đã được lưu vào nhật ký rồi!' },
+  meal_updated: { text1: 'Đã cập nhật xong rồi! ✨', text2: 'Thay đổi của bạn đã được ghi lại thành công.' },
+  meal_deleted: { text1: 'Đã xóa món ăn! 🗑️', text2: 'Món ăn đã được bỏ khỏi nhật ký rồi.' },
+  food_added: { text1: 'Thêm món mới thành công! 🥦', text2: 'Món ăn đã được lưu vào thực đơn của bạn.' },
+  settings_saved: { text1: 'Đã lưu cài đặt! ⚙️', text2: 'Mọi thứ đã sẵn sàng cho bạn rồi.' },
+  profile_updated: { text1: 'Cập nhật hồ sơ xong rồi! 🎉', text2: 'Thông tin của bạn đã được lưu lại.' },
   target_updated: {
-    text1: '🎯 Đã cập nhật mục tiêu',
-    text2: 'Mục tiêu dinh dưỡng mới đã được áp dụng',
+    text1: 'Đặt mục tiêu mới thành công! 🎯',
+    text2: 'Cùng nhau cố gắng hoàn thành mục tiêu mới nha!',
   },
-  favorite_added: { text1: '❤️ Đã thêm yêu thích' },
-  favorite_removed: { text1: '💔 Đã bỏ yêu thích' },
-  password_changed: { text1: '🔐 Đã đổi mật khẩu', text2: 'Mật khẩu mới đã được lưu' },
-  custom: { text1: 'Thành công' },
+  favorite_added: { text1: 'Đã thêm vào yêu thích! ❤️', text2: 'Món ăn đã được lưu để bạn dễ tìm sau này.' },
+  favorite_removed: { text1: 'Đã bỏ yêu thích! 💔', text2: 'Món ăn đã được xóa khỏi danh sách yêu thích.' },
+  password_changed: { text1: 'Đổi mật khẩu thành công! 🔐', text2: 'Mật khẩu mới đã được áp dụng, bảo mật an toàn rồi nha!' },
+  custom: { text1: 'Thành công rồi nha! 🎉' },
 };
 
 /**

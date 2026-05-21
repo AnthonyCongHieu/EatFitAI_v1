@@ -50,6 +50,7 @@ import WeightUpdateModal from '../../components/home/WeightUpdateModal';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
 import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
+import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
 import {
   selectUnreadMoChiNotificationCount,
   useMoChiNotificationInboxStore,
@@ -281,6 +282,7 @@ const HomeScreen = (): React.ReactElement => {
   const markMoChiNotificationActed = useMoChiNotificationInboxStore((state) => state.markActed);
   const setMoChiVisibleTarget = useMoChiVisibleTargetsStore((state) => state.setVisibleTarget);
   const unreadNotificationCount = selectUnreadMoChiNotificationCount(notificationInboxItems);
+  const { currentStep } = useMoChiTutorial();
   const homeWaterReminder = useMemo(() => {
     const now = Date.now();
 
@@ -417,6 +419,15 @@ const HomeScreen = (): React.ReactElement => {
 
     return () => timers.forEach(clearTimeout);
   }, [route.params?.focusWaterRequestId, waterCardY]);
+
+  useEffect(() => {
+    if (currentStep?.targetId === 'home_water' && waterCardY != null) {
+      const timer = setTimeout(() => {
+        screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep?.targetId, waterCardY]);
 
   const showCommonErrors = useCallback(
     (error: any, fallback: { text1: string; text2: string }) => {

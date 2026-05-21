@@ -165,17 +165,17 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
         setEmail(values.email);
         Toast.show({
           type: 'success',
-          text1: 'Đã gửi mã xác minh',
-          text2: 'Kiểm tra email của bạn để tiếp tục',
+          text1: 'Mã xác minh đang tới rồi! ✉️',
+          text2: 'Bạn hãy kiểm tra email để tiếp tục nha.',
         });
 
         setStep('verify');
         setCountdown(45);
       } catch (e: any) {
-        const msg = e?.response?.data?.message || e?.message || 'Không thể gửi mã';
+        const msg = e?.response?.data?.message || e?.message || 'Bạn kiểm tra lại kết nối mạng hoặc thử lại sau nha!';
         Toast.show({
           type: 'error',
-          text1: 'Gửi mã thất bại',
+          text1: 'Gửi mã gặp chút sự cố rồi 😢',
           text2: msg,
         });
       } finally {
@@ -208,7 +208,11 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const onVerifyCode = useCallback(async () => {
     const fullCode = code.join('');
     if (fullCode.length !== CODE_LENGTH) {
-      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Vui lòng nhập đủ 6 số' });
+      Toast.show({
+        type: 'error',
+        text1: 'Mã OTP chưa đủ số nè ✍️',
+        text2: 'Bạn vui lòng nhập đầy đủ cả 6 chữ số nhé!',
+      });
       return;
     }
     try {
@@ -218,15 +222,15 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
       setStep('newPassword');
       Toast.show({
         type: 'info',
-        text1: 'Mã hợp lệ',
-        text2: 'Tiếp tục tạo mật khẩu mới',
+        text1: 'Mã xác minh chính xác rồi! 🎉',
+        text2: 'Cùng đặt mật khẩu mới cho tài khoản nhé.',
       });
     } catch (e: any) {
       const msg =
-        e?.response?.data?.message || e?.message || 'Mã xác minh không hợp lệ';
+        e?.response?.data?.message || e?.message || 'Bạn kiểm tra kỹ lại xem đã nhập đúng mã chưa nha.';
       Toast.show({
         type: 'error',
-        text1: 'Xác minh thất bại',
+        text1: 'Mã xác minh chưa chính xác 🔍',
         text2: msg,
       });
     } finally {
@@ -242,15 +246,15 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
         setStep('success');
         Toast.show({
           type: 'success',
-          text1: 'Đổi mật khẩu thành công',
-          text2: 'Bạn có thể đăng nhập với mật khẩu mới',
+          text1: 'Đổi mật khẩu thành công rồi! 🎉',
+          text2: 'Chào mừng bạn trở lại, đăng nhập ngay thôi nào!',
         });
       } catch (e: any) {
         const msg =
-          e?.response?.data?.message || e?.message || 'Không thể đổi mật khẩu';
+          e?.response?.data?.message || e?.message || 'Bạn kiểm tra lại kết nối hoặc thử lại sau nha!';
         Toast.show({
           type: 'error',
-          text1: 'Đổi mật khẩu thất bại',
+          text1: 'Đặt lại mật khẩu gặp sự cố rồi 😢',
           text2: msg,
         });
       } finally {

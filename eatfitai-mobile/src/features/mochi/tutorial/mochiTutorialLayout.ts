@@ -1,4 +1,5 @@
 import type { MoChiTutorialFrame } from './MoChiTutorialContext';
+import type { MoChiTutorialHighlightProfile } from './mochiTutorialCatalog';
 
 export type MoChiTutorialSpotlightLayout = {
   ring: {
@@ -85,32 +86,81 @@ export const getMoChiTutorialScrimRects = ({
   ];
 };
 
+const SPOTLIGHT_PROFILES: Record<
+  MoChiTutorialHighlightProfile,
+  {
+    radius: number;
+    insets: Record<'top' | 'right' | 'bottom' | 'left', number>;
+  }
+> = {
+  dock: {
+    radius: 47,
+    insets: { top: 4, right: 4, bottom: 4, left: 4 },
+  },
+  tab: {
+    radius: 18,
+    insets: { top: 5, right: 7, bottom: 5, left: 7 },
+  },
+  sheetAction: {
+    radius: 24,
+    insets: { top: 4, right: 4, bottom: 4, left: 4 },
+  },
+  homeWater: {
+    radius: 22,
+    insets: { top: 5, right: 5, bottom: 5, left: 5 },
+  },
+};
+
 export const getMoChiTutorialSpotlightLayout = ({
   frame,
   screenWidth,
   screenHeight,
   topInset,
   bottomInset,
+  highlightProfile,
 }: {
   frame: MoChiTutorialFrame;
   screenWidth: number;
   screenHeight: number;
   topInset: number;
   bottomInset: number;
+  highlightProfile?: MoChiTutorialHighlightProfile;
 }): MoChiTutorialSpotlightLayout => {
   const horizontalSafePadding = 12;
   const bubbleWidth = clamp(screenWidth - 56, 236, 336);
-  const ringPadding = 8;
-  const maxRingLeft = Math.max(horizontalSafePadding, screenWidth - 56);
-  const ringLeft = clamp(frame.x - ringPadding, horizontalSafePadding, maxRingLeft);
-  const availableRingWidth = Math.max(44, screenWidth - ringLeft - horizontalSafePadding);
-  const ringWidth = clamp(frame.width + ringPadding * 2, 44, availableRingWidth);
-  const minRingTop = topInset + 6;
-  const maxRingTop = Math.max(minRingTop, screenHeight - bottomInset - 56);
-  const ringTop = clamp(frame.y - ringPadding, minRingTop, maxRingTop);
-  const availableRingHeight = Math.max(44, screenHeight - ringTop - bottomInset - 10);
-  const ringHeight = clamp(frame.height + ringPadding * 2, 44, availableRingHeight);
+  const profile = highlightProfile ? SPOTLIGHT_PROFILES[highlightProfile] : null;
+  
+  const insetLeft = profile ? profile.insets.left : 8;
+  const insetRight = profile ? profile.insets.right : 8;
+  const insetTop = profile ? profile.insets.top : 8;
+  const insetBottom = profile ? profile.insets.bottom : 8;
+
+  const idealWidth = frame.width + insetLeft + insetRight;
+  const idealHeight = frame.height + insetTop + insetBottom;
+
   const targetCenterX = frame.x + frame.width / 2;
+  const targetCenterY = frame.y + frame.height / 2;
+
+  const minRingTop = topInset + 6;
+  const maxRingWidth = screenWidth - 2 * horizontalSafePadding;
+  const maxRingHeight = screenHeight - minRingTop - bottomInset - 10;
+
+  const ringWidth = clamp(idealWidth, 44, Math.max(44, maxRingWidth));
+  const ringHeight = clamp(idealHeight, 44, Math.max(44, maxRingHeight));
+
+  let ringLeft = targetCenterX - ringWidth / 2;
+  let ringTop = targetCenterY - ringHeight / 2;
+
+  const minRingLeft = horizontalSafePadding;
+  const maxRingLeft = Math.max(minRingLeft, screenWidth - horizontalSafePadding - ringWidth);
+  ringLeft = clamp(ringLeft, minRingLeft, maxRingLeft);
+
+  const minRingTopVal = minRingTop;
+  const maxRingTopVal = Math.max(minRingTopVal, screenHeight - bottomInset - 10 - ringHeight);
+  ringTop = clamp(ringTop, minRingTopVal, maxRingTopVal);
+
+  const ringBorderRadius = profile ? profile.radius : Math.min(28, Math.max(18, ringHeight / 2));
+  
   const cardLeft = clamp(
     targetCenterX - bubbleWidth / 2,
     16,
@@ -141,7 +191,7 @@ export const getMoChiTutorialSpotlightLayout = ({
       top: ringTop,
       width: ringWidth,
       height: ringHeight,
-      borderRadius: Math.min(28, Math.max(18, ringHeight / 2)),
+      borderRadius: ringBorderRadius,
     },
     card: {
       left: cardLeft,

@@ -161,7 +161,7 @@ describe('ForgotPasswordScreen', () => {
       expect(Toast.show).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'error',
-          text1: 'Xác minh thất bại',
+          text1: 'Mã xác minh chưa chính xác 🔍',
         }),
       );
     });
@@ -198,8 +198,8 @@ describe('ForgotPasswordScreen', () => {
     expect(Toast.show).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'success',
-        text1: 'Đã gửi mã xác minh',
-        text2: 'Kiểm tra email của bạn để tiếp tục',
+        text1: 'Mã xác minh đang tới rồi! ✉️',
+        text2: 'Bạn hãy kiểm tra email để tiếp tục nha.',
       }),
     );
   }, 15000);
