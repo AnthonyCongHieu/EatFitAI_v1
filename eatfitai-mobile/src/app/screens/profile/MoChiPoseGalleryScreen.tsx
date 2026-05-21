@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Image, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 
 import { ThemedText } from '../../../components/ThemedText';
 import MeshBackground from '../../../components/ui/MeshBackground';
@@ -33,44 +34,51 @@ type PoseFilter = 'all' | MoChiSpriteVariant;
 const FILTERS: { key: PoseFilter; label: string }[] = [
   { key: 'all', label: 'Tất cả' },
   { key: 'full', label: 'Toàn thân' },
-  { key: 'notice', label: 'Thông báo' },
   { key: 'face', label: 'Đầu' },
+  { key: 'notice', label: 'Thông báo' },
 ];
 
 const MOOD_LABEL: Record<MoChiPetMood, string> = {
-  idle: 'Nghỉ',
-  happy: 'Vui',
-  hungry: 'Bữa ăn',
-  thirsty: 'Nước',
-  thinking: 'Suy nghĩ',
-  confused: 'Cần kiểm tra',
-  concerned: 'Cẩn trọng',
-  error: 'Lỗi',
+  idle: 'Nghỉ ngơi',
+  happy: 'Vui vẻ',
+  hungry: 'Nhắc ăn',
+  thirsty: 'Nhắc nước',
+  thinking: 'Đang nghĩ',
+  confused: 'Băn khoăn',
+  concerned: 'Nhắc nhở',
+  error: 'Sự cố',
   celebrating: 'Ăn mừng',
   reporting: 'Báo cáo',
 };
 
+const VARIANT_LABEL: Record<MoChiSpriteVariant, string> = {
+  full: 'Toàn thân',
+  notice: 'Thông báo',
+  face: 'Gương mặt',
+};
+
 const POSE_EXPLANATION_BY_MOOD: Record<MoChiPetMood, string> = {
-  idle: 'Dùng khi app ở trạng thái bình tĩnh, không có việc gấp.',
-  happy: 'Dùng để khen hoặc xác nhận thao tác đã ổn.',
-  hungry: 'Dùng cho ghi bữa, chọn món hoặc nhắc nhật ký ăn uống.',
-  thirsty: 'Dùng cho nhắc nước và các mục tiêu uống nước.',
-  thinking: 'Dùng khi MoChi đang phân tích, cân nhắc hoặc cần người dùng xác nhận.',
-  confused: 'Dùng khi kết quả chưa chắc và cần hỏi lại nhẹ nhàng.',
-  concerned: 'Dùng cho cảnh báo mềm, tránh gây áp lực.',
-  error: 'Dùng khi có lỗi hoặc cần xin lỗi người dùng.',
-  celebrating: 'Dùng cho streak, huy hiệu và khoảnh khắc ăn mừng.',
-  reporting: 'Dùng cho báo cáo, thống kê và tổng kết tiến độ.',
+  idle: 'MoChi đang thư thả nghỉ ngơi và sẵn sàng đồng hành cùng bạn bất cứ lúc nào.',
+  happy: 'MoChi siêu vui và phấn khích khi bạn hoàn thành xuất sắc mục tiêu trong ngày!',
+  hungry: 'Đến giờ ăn rồi nè, chúng mình cùng ghi nhận nhật ký ăn uống thôi bạn ơi.',
+  thirsty: 'MoChi nhắc bạn nhớ uống đủ nước để cơ thể luôn tràn đầy năng lượng nha!',
+  thinking: 'MoChi đang chăm chú suy nghĩ để đưa ra những gợi ý sức khỏe tốt nhất cho bạn.',
+  confused: 'Hình như có gì đó chưa rõ, bạn giúp MoChi kiểm tra và làm rõ lại một xíu nhé.',
+  concerned: 'MoChi hơi lo lắng một chút, bạn nhớ chú ý giữ gìn và chăm sóc sức khỏe nha!',
+  error: 'Ui da, đã xảy ra sự cố rồi! MoChi vô cùng xin lỗi vì sự bất tiện này.',
+  celebrating: 'Tuyệt vời quá đi! Hãy cùng MoChi ăn mừng thói quen tốt và thành tích mới nào!',
+  reporting: 'Để MoChi tổng hợp lại và báo cáo tiến trình thay đổi tích cực của bạn nhé!',
 };
 
 const getPoseExplanation = (pose: MoChiSpriteMeta): string =>
-  POSE_EXPLANATION_BY_MOOD[pose.mood] ?? 'Dùng để MoChi phản hồi theo ngữ cảnh hiện tại.';
+  POSE_EXPLANATION_BY_MOOD[pose.mood] ?? 'MoChi luôn bên cạnh để hỗ trợ và chia sẻ cùng bạn.';
 
 
 const MoChiPoseGalleryScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<PoseFilter>('all');
+  const [selectedPose, setSelectedPose] = useState<MoChiSpriteMeta | null>(null);
 
   const poses = useMemo(
     () =>
@@ -80,38 +88,29 @@ const MoChiPoseGalleryScreen = (): React.ReactElement => {
     [filter],
   );
 
-  const counts = useMemo(
-    () => ({
-      all: MOCHI_SPRITE_ORDER.length,
-      full: MOCHI_SPRITE_ORDER.filter((key) => MOCHI_SPRITE_CATALOG[key].variant === 'full')
-        .length,
-      notice: MOCHI_SPRITE_ORDER.filter((key) => MOCHI_SPRITE_CATALOG[key].variant === 'notice')
-        .length,
-      face: MOCHI_SPRITE_ORDER.filter((key) => MOCHI_SPRITE_CATALOG[key].variant === 'face')
-        .length,
-    }),
-    [],
-  );
+  const totalCount = useMemo(() => MOCHI_SPRITE_ORDER.length, []);
 
   const renderPose = ({ item: pose }: { item: MoChiSpriteMeta }) => (
-    <View style={S.poseCard}>
+    <Pressable
+      style={({ pressed }) => [S.poseCard, pressed && S.pressed]}
+      onPress={() => setSelectedPose(pose)}
+      accessibilityRole="button"
+      accessibilityLabel={`Xem chi tiết biểu cảm ${pose.labelVi}`}
+    >
       <View style={S.spriteStage}>
         <Image source={MOCHI_SPRITES[pose.key]} resizeMode="contain" style={S.spriteImage} />
       </View>
       <ThemedText style={S.poseLabel} numberOfLines={1}>
         {pose.labelVi}
       </ThemedText>
-      <ThemedText style={S.poseKey} numberOfLines={1}>
-        {pose.key}
-      </ThemedText>
       <ThemedText style={S.poseExplanation} numberOfLines={2}>
         {getPoseExplanation(pose)}
       </ThemedText>
       <View style={S.metaRow}>
-        <ThemedText style={S.metaText}>{pose.variant}</ThemedText>
+        <ThemedText style={S.metaText}>{VARIANT_LABEL[pose.variant]}</ThemedText>
         <ThemedText style={S.metaText}>{MOOD_LABEL[pose.mood]}</ThemedText>
       </View>
-    </View>
+    </Pressable>
   );
 
   const renderFilters = () => (
@@ -138,6 +137,65 @@ const MoChiPoseGalleryScreen = (): React.ReactElement => {
     </View>
   );
 
+  const renderDetailModal = () => {
+    if (!selectedPose) return null;
+
+    return (
+      <Modal
+        visible={!!selectedPose}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedPose(null)}
+      >
+        <View style={S.modalOverlay}>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(5, 7, 13, 0.82)' }]} />
+          )}
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedPose(null)} />
+
+          <View style={S.modalContent}>
+            <View style={S.modalSpriteStage}>
+              <Image
+                source={MOCHI_SPRITES[selectedPose.key]}
+                resizeMode="contain"
+                style={S.modalSpriteImage}
+              />
+            </View>
+
+            <ThemedText style={S.modalPoseLabel}>{selectedPose.labelVi}</ThemedText>
+
+            <View style={S.modalMetaContainer}>
+              <View style={S.modalMetaItem}>
+                <ThemedText style={S.modalMetaLabel}>Phân loại</ThemedText>
+                <ThemedText style={S.modalMetaValue}>{VARIANT_LABEL[selectedPose.variant]}</ThemedText>
+              </View>
+              <View style={S.modalMetaItem}>
+                <ThemedText style={S.modalMetaLabel}>Trạng thái</ThemedText>
+                <ThemedText style={S.modalMetaValue}>{MOOD_LABEL[selectedPose.mood]}</ThemedText>
+              </View>
+            </View>
+
+            <View style={S.modalExplanationContainer}>
+              <ThemedText style={S.modalExplanationTitle}>Ý nghĩa biểu cảm</ThemedText>
+              <ThemedText style={S.modalExplanationText}>
+                {getPoseExplanation(selectedPose)}
+              </ThemedText>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [S.modalActionButton, pressed && S.pressed]}
+              onPress={() => setSelectedPose(null)}
+            >
+              <ThemedText style={S.modalActionButtonText}>Đóng</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <View style={[S.container, { paddingTop: insets.top }]}>
       <MeshBackground />
@@ -154,7 +212,7 @@ const MoChiPoseGalleryScreen = (): React.ReactElement => {
         <View style={S.headerTitleWrap}>
           <ThemedText style={S.headerTitle}>Phòng MoChi</ThemedText>
           <ThemedText style={S.headerSubtitle}>
-            {counts.all} pose · full {counts.full} · notice {counts.notice} · face {counts.face}
+            Bộ sưu tập {totalCount} biểu cảm đáng yêu của MoChi
           </ThemedText>
         </View>
         <View style={S.headerButton} />
@@ -175,6 +233,7 @@ const MoChiPoseGalleryScreen = (): React.ReactElement => {
         windowSize={5}
         removeClippedSubviews
       />
+      {renderDetailModal()}
     </View>
   );
 };
@@ -305,6 +364,113 @@ const S = StyleSheet.create({
   },
   pressed: {
     opacity: 0.72,
+  },
+  modalOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: P.card,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(75,226,119,0.18)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.44,
+    shadowRadius: 10.32,
+    elevation: 16,
+    position: 'relative',
+  },
+  modalSpriteStage: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: P.surfaceHigh,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: P.border,
+  },
+  modalSpriteImage: {
+    width: 120,
+    height: 120,
+  },
+  modalPoseLabel: {
+    fontSize: 20,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  modalMetaContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+    marginBottom: 20,
+  },
+  modalMetaItem: {
+    flex: 1,
+    backgroundColor: P.surfaceLow,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: P.border,
+  },
+  modalMetaLabel: {
+    fontSize: 11,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    color: P.muted,
+    marginBottom: 4,
+  },
+  modalMetaValue: {
+    fontSize: 13,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P.primary,
+  },
+  modalExplanationContainer: {
+    width: '100%',
+    backgroundColor: P.surfaceLow,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: P.border,
+  },
+  modalExplanationTitle: {
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P.text,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalExplanationText: {
+    fontSize: 13,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    color: P.muted,
+    lineHeight: 20,
+  },
+  modalActionButton: {
+    width: '100%',
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: P.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalActionButtonText: {
+    fontSize: 15,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P.surface,
   },
 });
 
