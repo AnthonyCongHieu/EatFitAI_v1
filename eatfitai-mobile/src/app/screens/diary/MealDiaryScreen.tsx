@@ -34,6 +34,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Swipeable from '../../../components/Swipeable';
 import { showAppToast } from '../../../utils/showAppToast';
 import * as Haptics from 'expo-haptics';
+import { resolveEntryPhotoUrl } from '../../../utils/imageHelpers';
 
 import { ThemedText } from '../../../components/ThemedText';
 import { diaryService, type DiaryEntry, type DaySummary, type DiaryMealGroup } from '../../../services/diaryService';
@@ -566,7 +567,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                               <View style={[styles.entryImageWrap, { width: 60, height: 60, borderRadius: 12 }]}>
                                 {entry.photoUrl ? (
                                   <Image
-                                    source={{ uri: entry.photoUrl }}
+                                    source={{ uri: resolveEntryPhotoUrl(entry.photoUrl) || undefined }}
                                     style={[styles.entryImage, { width: 60, height: 60, borderRadius: 12 }]}
                                     resizeMode="cover"
                                   />

@@ -37,6 +37,7 @@ import { healthService } from '../../services/healthService';
 import { t } from '../../i18n/vi';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import { useGamificationStore } from '../../store/useGamificationStore';
+import { resolveEntryPhotoUrl } from '../../utils/imageHelpers';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
 import { useProfileStore } from '../../store/useProfileStore';
@@ -828,7 +829,7 @@ const HomeScreen = (): React.ReactElement => {
                         <View style={styles.entryEmoji}>
                           {entry.photoUrl ? (
                             <Image
-                              source={{ uri: entry.photoUrl }}
+                              source={{ uri: resolveEntryPhotoUrl(entry.photoUrl) || undefined }}
                               style={styles.entryFoodImage}
                               resizeMode="cover"
                             />

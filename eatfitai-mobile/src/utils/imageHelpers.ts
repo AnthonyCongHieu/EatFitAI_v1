@@ -1,3 +1,6 @@
+import { getCurrentApiUrl } from '../services/apiClient';
+import { API_BASE_URL } from '../config/env';
+
 // Helper to get food image URLs with fallback.
 // Public food media must resolve through the configured media CDN/R2 base.
 
@@ -100,3 +103,63 @@ export const sanitizeFoodImageUrl = (
 
   return getFoodImageUrl(thumbnail, size);
 };
+
+export const resolveServerUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('file://')
+  ) {
+    return trimmed;
+  }
+  const baseUrl = (getCurrentApiUrl() || API_BASE_URL || '').replace(/\/+$/, '');
+  const relativePath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${baseUrl}${relativePath}`;
+};
+
+/**
+ * Smart resolver for diary entry photo URLs.
+ *
+ * `entry.photoUrl` can be:
+ *  - A full URL (http/https)        → pass through
+ *  - A CDN media key (food-images/, user-food/, recipe-images/, v2/) → resolve via R2 CDN
+ *  - A server-relative path (/uploads/...) → prepend API base URL
+ *  - A bare filename               → resolve via CDN as food thumbnail
+ */
+export const resolveEntryPhotoUrl = (
+  url: string | null | undefined,
+): string | null => {
+  if (!url) return null;
+  const trimmed = url.trim();
+
+  // Already an absolute URL — pass through
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('file://')
+  ) {
+    return trimmed;
+  }
+
+  // Check if it's a known CDN media key (food-images/..., user-food/..., recipe-images/..., v2/...)
+  const stripped = trimmed.replace(/^\/+/, '');
+  if (
+    MEDIA_BUCKET_PREFIXES.some((prefix) => stripped.startsWith(prefix)) ||
+    stripped.startsWith('v2/')
+  ) {
+    return getFoodImageUrl(stripped);
+  }
+
+  // Server-relative path (e.g. /uploads/food-photos/abc.jpg)
+  if (trimmed.startsWith('/')) {
+    return resolveServerUrl(trimmed);
+  }
+
+  // Bare filename or unknown pattern — try CDN as food thumbnail
+  return getFoodImageUrl(trimmed);
+};
+

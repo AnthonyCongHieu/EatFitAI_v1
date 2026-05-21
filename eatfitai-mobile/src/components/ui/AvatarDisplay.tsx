@@ -7,6 +7,7 @@ import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { resolveServerUrl } from '../../utils/imageHelpers';
 
 interface AvatarDisplayProps {
   // Tên để lấy initial letter
@@ -36,7 +37,7 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
     <View style={styles.container}>
       {imageUrl ? (
         <Image
-          source={{ uri: imageUrl }}
+          source={{ uri: resolveServerUrl(imageUrl) || undefined }}
           style={[
             styles.image,
             {
