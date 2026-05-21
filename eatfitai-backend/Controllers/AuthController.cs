@@ -30,6 +30,13 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.ForgotPasswordAsync(request);
                 return Ok(result);
             }
+            catch (UnauthorizedAccessException)
+            {
+                return NotFound(ErrorResponseHelper.SafeError(
+                    "email_not_registered",
+                    "Email này chưa được đăng ký tài khoản EatFitAI.",
+                    HttpContext));
+            }
             catch (InvalidOperationException ex)
             {
                 _logger.LogWarning(ex, "Forgot password email unavailable for {Email}", request.Email);

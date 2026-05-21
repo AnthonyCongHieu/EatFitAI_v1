@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.Tests.Integration;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -122,6 +123,27 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 HttpStatusCode.MethodNotAllowed
             });
             Assert.False(response.Headers.Contains("X-EatFitAI-Deprecated-Endpoint"));
+        }
+
+        [Fact]
+        public async Task ForgotPassword_UnregisteredEmail_ReturnsNotFound()
+        {
+            var client = _factory.CreateClient();
+            var request = new ForgotPasswordRequest
+            {
+                Email = $"missing_{Guid.NewGuid():N}@example.com",
+            };
+
+            var response = await client.PostAsJsonAsync("/api/auth/forgot-password", request);
+
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+            using var body = await response.Content.ReadFromJsonAsync<JsonDocument>();
+            Assert.NotNull(body);
+            Assert.Equal("email_not_registered", body.RootElement.GetProperty("code").GetString());
+            Assert.Equal(
+                "Email này chưa được đăng ký tài khoản EatFitAI.",
+                body.RootElement.GetProperty("message").GetString());
         }
 
         [Fact]

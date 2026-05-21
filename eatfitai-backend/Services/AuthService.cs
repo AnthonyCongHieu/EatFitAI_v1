@@ -570,14 +570,8 @@ namespace EatFitAI.API.Services
             
             if (user == null)
             {
-                _logger.LogDebug("ForgotPassword - Email không tồn tại: {Email}", MaskEmail(request.Email));
-                return new ForgotPasswordResponse
-                {
-                    Success = true,
-                    Message = "Nếu email tồn tại, mã đặt lại đã được tạo.",
-                    ExpiresAt = DateTime.UtcNow.Add(ResetCodeLifetime),
-                    ResetCode = string.Empty
-                };
+                _logger.LogWarning("ForgotPassword - Email chưa đăng ký: {Email}", MaskEmail(request.Email));
+                throw new UnauthorizedAccessException("Email này chưa được đăng ký tài khoản EatFitAI.");
             }
 
             _logger.LogDebug("ForgotPassword - Tìm thấy user {UserId}", user.UserId);

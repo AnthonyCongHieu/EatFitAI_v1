@@ -430,6 +430,21 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task ForgotPasswordAsync_UnregisteredEmail_ThrowsUnauthorizedAccessException_AndDoesNotSendEmail()
+        {
+            var request = new ForgotPasswordRequest { Email = "missing-reset@example.com" };
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync((User?)null);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                _authService.ForgotPasswordAsync(request));
+
+            _emailServiceMock.Verify(
+                s => s.SendResetCodeAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()),
+                Times.Never);
+            Assert.Empty(_adminContext.PasswordResetCodes);
+        }
+
+        [Fact]
         public async Task ForgotPasswordAsync_EmailSendFailsInProduction_DoesNotPersistResetCode()
         {
             var request = new ForgotPasswordRequest { Email = "reset@example.com" };
