@@ -64,6 +64,7 @@ export type RootStackParamList = {
   BodyMetrics: undefined;
   GoalSettings: undefined;
   WeightHistory: undefined;
+  WeightStats: undefined;
   ChangePassword: undefined;
   About: undefined;
   PrivacyPolicy: undefined;

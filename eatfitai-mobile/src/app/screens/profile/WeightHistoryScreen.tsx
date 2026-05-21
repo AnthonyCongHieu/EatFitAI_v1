@@ -47,7 +47,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
 
   // Fetch weight history from real API
   const { data: records, isLoading } = useQuery({
-    queryKey: ['weight-history'],
+    queryKey: ['weight-history', 'list', 30],
     queryFn: async () => {
       const data = await profileService.getBodyMetricsHistory(30);
       // Map backend data to WeightRecord format and sort by date ascending (oldest first)

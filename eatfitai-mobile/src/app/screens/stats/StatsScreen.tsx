@@ -69,6 +69,18 @@ import type { AppTabsParamList } from '../../navigation/AppTabs';
 import { useEN } from '../../../theme/emeraldNebula';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 
+const parseDateString = (dateStr: string): Date => {
+  const cleaned = dateStr.split('T')[0] || '';
+  const parts = cleaned.split('-');
+  if (parts.length === 3) {
+    const y = parseInt(parts[0]!, 10);
+    const m = parseInt(parts[1]!, 10) - 1;
+    const d = parseInt(parts[2]!, 10);
+    return new Date(y, m, d);
+  }
+  return new Date(dateStr);
+};
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /* ═══════════════════════════════════════════════
@@ -370,12 +382,28 @@ const StatsScreen = (): React.ReactElement => {
       // Weight change from body metrics history
       const history = await profileService.getBodyMetricsHistory(60);
       if (history.length >= 2) {
-        const sorted = [...history].sort((a, b) =>
-          (a.measuredDate || '').localeCompare(b.measuredDate || ''),
-        );
-        const first = sorted[0]?.weightKg;
-        const last = sorted[sorted.length - 1]?.weightKg;
-        if (first && last) setWeightChange(Number((last - first).toFixed(1)));
+        const mapped = history
+          .filter((m) => m.weightKg != null && m.measuredDate)
+          .map((m, idx) => ({
+            measuredDate: m.measuredDate!,
+            weightKg: m.weightKg!,
+            originalIndex: idx,
+          }));
+
+        // Sắp xếp tăng dần theo thời gian (cũ nhất đứng đầu, mới nhất đứng cuối)
+        mapped.sort((a, b) => {
+          const aDate = parseDateString(a.measuredDate);
+          const bDate = parseDateString(b.measuredDate);
+          const dateDiff = aDate.getTime() - bDate.getTime();
+          if (dateDiff !== 0) return dateDiff;
+          return b.originalIndex - a.originalIndex;
+        });
+
+        const first = mapped[0]?.weightKg;
+        const last = mapped[mapped.length - 1]?.weightKg;
+        if (first !== undefined && last !== undefined) {
+          setWeightChange(Number((last - first).toFixed(1)));
+        }
       }
     } catch (e) {
       logger.warn('[StatsScreen] fetchMonthExtras failed', e);

@@ -84,18 +84,26 @@ export const profileService = {
 
   // Cap nhat ho so (PUT /api/profile)
   async updateProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
+    // Lấy thông tin hồ sơ hiện tại để tránh việc làm mất các trường không truyền lên trong payload
+    let currentProfile: UserProfile | null = null;
+    try {
+      currentProfile = await profileService.getProfile();
+    } catch (e) {
+      // Bỏ qua nếu có lỗi
+    }
+
     const req: any = {
-      displayName: payload.fullName ?? null,
-      currentHeightCm: payload.heightCm ?? null,
-      currentWeightKg: payload.weightKg ?? null,
-      avatarUrl: payload.avatarUrl ?? null,
+      displayName: payload.fullName !== undefined ? payload.fullName : (currentProfile?.fullName ?? null),
+      currentHeightCm: payload.heightCm !== undefined ? payload.heightCm : (currentProfile?.heightCm ?? null),
+      currentWeightKg: payload.weightKg !== undefined ? payload.weightKg : (currentProfile?.weightKg ?? null),
+      avatarUrl: payload.avatarUrl !== undefined ? payload.avatarUrl : (currentProfile?.avatarUrl ?? null),
       // Profile fields for AI nutrition
-      gender: payload.gender ?? null,
-      dateOfBirth: payload.dateOfBirth ?? null,
-      activityLevelId: payload.activityLevelId ?? null,
-      goal: payload.goal ?? null,
+      gender: payload.gender !== undefined ? payload.gender : (currentProfile?.gender ?? null),
+      dateOfBirth: payload.dateOfBirth !== undefined ? payload.dateOfBirth : (currentProfile?.dateOfBirth ?? null),
+      activityLevelId: payload.activityLevelId !== undefined ? payload.activityLevelId : (currentProfile?.activityLevelId ?? null),
+      goal: payload.goal !== undefined ? payload.goal : (currentProfile?.goal ?? null),
       // Profile 2026 - Target weight
-      targetWeightKg: payload.targetWeightKg ?? null,
+      targetWeightKg: payload.targetWeightKg !== undefined ? payload.targetWeightKg : (currentProfile?.targetWeightKg ?? null),
     };
     const response = await apiClient.put('/api/profile', req);
     const profile = normalizeProfile(response.data);
@@ -129,9 +137,20 @@ export const profileService = {
 
   // Goi so do co the (POST /api/body-metrics)
   async createBodyMetrics(payload: BodyMetricsPayload): Promise<void> {
+    // Nếu payload không truyền lên heightCm, lấy chiều cao hiện tại từ profile để tránh bị ghi đè null/0 ở backend
+    let currentHeight: number | null = null;
+    if (payload.heightCm === undefined) {
+      try {
+        const profile = await profileService.getProfile();
+        currentHeight = profile.heightCm ?? null;
+      } catch (e) {
+        // Bỏ qua nếu có lỗi
+      }
+    }
+
     // Backend expects: heightCm?, weightKg?, measuredDate, note?
     const req: any = {
-      heightCm: payload.heightCm ?? null,
+      heightCm: payload.heightCm !== undefined ? payload.heightCm : currentHeight,
       weightKg: payload.weightKg ?? null,
       measuredDate: payload.measuredDate ?? formatBusinessDate(),
       note: payload.note ?? null,

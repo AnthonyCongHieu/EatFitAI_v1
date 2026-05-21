@@ -45,6 +45,8 @@ import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
 import { waterService, type WaterIntakeData } from '../../services/waterService';
 import type { AppTabsParamList } from '../navigation/AppTabs';
+import WeightCard from '../../components/home/WeightCard';
+import WeightUpdateModal from '../../components/home/WeightUpdateModal';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
 import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
@@ -274,6 +276,7 @@ const HomeScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [weightModalVisible, setWeightModalVisible] = useState(false);
   const notificationInboxItems = useMoChiNotificationInboxStore((state) => state.items);
   const markMoChiNotificationActed = useMoChiNotificationInboxStore((state) => state.markActed);
   const setMoChiVisibleTarget = useMoChiVisibleTargetsStore((state) => state.setVisibleTarget);
@@ -938,6 +941,18 @@ const HomeScreen = (): React.ReactElement => {
             </Pressable>
           )}
         </Animated.View>
+
+        {/* ══════════ WEIGHT TRACKING ══════════ */}
+        <WeightCard
+          onUpdatePress={() => setWeightModalVisible(true)}
+          onCardPress={() => navigation.navigate('WeightStats')}
+        />
+
+        {/* ══════════ Weight Update Modal ══════════ */}
+        <WeightUpdateModal
+          visible={weightModalVisible}
+          onClose={() => setWeightModalVisible(false)}
+        />
       </Screen>
     </View>
   );
