@@ -21,17 +21,20 @@ public class AIReviewController : ControllerBase
 {
     private readonly AIReviewService _reviewService;
     private readonly INutritionInsightService _nutritionInsightService;
+    private readonly IAiUsageQuotaService _aiUsageQuota;
     private readonly EatFitAIDbContext _db;
     private readonly ILogger<AIReviewController> _logger;
 
     public AIReviewController(
         AIReviewService reviewService,
         INutritionInsightService nutritionInsightService,
+        IAiUsageQuotaService aiUsageQuota,
         EatFitAIDbContext db,
         ILogger<AIReviewController> logger)
     {
         _reviewService = reviewService;
         _nutritionInsightService = nutritionInsightService;
+        _aiUsageQuota = aiUsageQuota;
         _db = db;
         _logger = logger;
     }
@@ -79,8 +82,39 @@ public class AIReviewController : ControllerBase
 
             _logger.LogInformation("[AIReview] Getting weekly review for user {UserId}", userId);
 
+            await _aiUsageQuota.EnsureCanUseAsync(
+                userId,
+                AiUsageQuotaFeatureKeys.WeeklyReview,
+                HttpContext.RequestAborted);
+
             var review = await _reviewService.AnalyzeWeeklyProgress(userId);
+            await _aiUsageQuota.RecordUsageAsync(
+                userId,
+                AiUsageQuotaFeatureKeys.WeeklyReview,
+                new { Endpoint = "weekly" },
+                new
+                {
+                    review.Status,
+                    review.Confidence,
+                    review.DataQuality,
+                },
+                cancellationToken: HttpContext.RequestAborted);
             return Ok(review);
+        }
+        catch (AiUsageQuotaExceededException ex)
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                error = "ai_quota_exceeded",
+                message = "Ban da dung het luot AI mien phi hom nay cho tinh nang nay.",
+                featureKey = ex.Feature.Key,
+                featureLabel = ex.Feature.Label,
+                limit = ex.Feature.Limit,
+                used = ex.Feature.Used,
+                remaining = ex.Feature.Remaining,
+                resetAtUtc = ex.Feature.ResetAtUtc,
+                requestId = HttpContext.TraceIdentifier,
+            });
         }
         catch (Exception ex)
         {

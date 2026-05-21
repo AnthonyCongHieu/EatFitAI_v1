@@ -38,6 +38,7 @@ namespace EatFitAI.API.Controllers
         private readonly IAiCorrectionService _aiCorrectionService;
         private readonly IAiHealthService _aiHealthService;
         private readonly IAiLogService _aiLog;
+        private readonly IAiUsageQuotaService _aiUsageQuota;
         private readonly IRecipeSuggestionService _recipeSuggestionService;
         private readonly IRecipeGuideService _recipeGuideService;
         private readonly INutritionInsightService _nutritionInsightService;
@@ -54,6 +55,7 @@ namespace EatFitAI.API.Controllers
             IAiCorrectionService aiCorrectionService,
             IAiHealthService aiHealthService,
             IAiLogService aiLog,
+            IAiUsageQuotaService aiUsageQuota,
             IRecipeSuggestionService recipeSuggestionService,
             IRecipeGuideService recipeGuideService,
             INutritionInsightService nutritionInsightService,
@@ -69,6 +71,7 @@ namespace EatFitAI.API.Controllers
             _aiCorrectionService = aiCorrectionService;
             _aiHealthService = aiHealthService;
             _aiLog = aiLog;
+            _aiUsageQuota = aiUsageQuota;
             _recipeSuggestionService = recipeSuggestionService;
             _recipeGuideService = recipeGuideService;
             _nutritionInsightService = nutritionInsightService;
@@ -275,6 +278,15 @@ namespace EatFitAI.API.Controllers
             return Ok(_aiHealthService.GetStatus());
         }
 
+        [HttpGet("quota")]
+        [ProducesResponseType(typeof(AiUsageQuotaStatusDto), StatusCodes.Status200OK)]
+        public async Task<ActionResult<AiUsageQuotaStatusDto>> GetAiQuota(CancellationToken cancellationToken)
+        {
+            var userId = GetUserIdFromToken();
+            var status = await _aiUsageQuota.GetStatusAsync(userId, cancellationToken);
+            return Ok(status);
+        }
+
         /// <summary>
         /// Get recipe suggestions based on available ingredients (database-only)
         /// </summary>
@@ -291,16 +303,26 @@ namespace EatFitAI.API.Controllers
                 _logger.LogInformation("User {UserId} requesting recipe suggestions with {Count} ingredients",
                     userId, request.AvailableIngredients?.Count ?? 0);
 
+                await _aiUsageQuota.EnsureCanUseAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.RecipeSuggestion,
+                    cancellationToken);
+
                 request.UserId = userId; // Gán UserId để service lấy sở thích
                 var recipes = await _recipeSuggestionService.SuggestRecipesAsync(request, cancellationToken);
 
-                await LogAiActivityBestEffortAsync(
+                await _aiUsageQuota.RecordUsageAsync(
                     userId,
-                    "RecipeSuggestion",
+                    AiUsageQuotaFeatureKeys.RecipeSuggestion,
                     request,
-                    new { RecipeCount = recipes.Count });
+                    new { RecipeCount = recipes.Count },
+                    cancellationToken: cancellationToken);
 
                 return Ok(recipes);
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return BuildQuotaExceededResponse(ex);
             }
             catch (Exception ex)
             {
@@ -346,13 +368,40 @@ namespace EatFitAI.API.Controllers
         {
             try
             {
-                var guide = await _recipeGuideService.GetCookingGuideAsync(recipeId, cancellationToken);
+                var userId = GetUserIdFromToken();
+                var providerGenerationAttempted = false;
+                var guide = await _recipeGuideService.GetCookingGuideAsync(
+                    recipeId,
+                    cancellationToken,
+                    async ct =>
+                    {
+                        await _aiUsageQuota.EnsureCanUseAsync(
+                            userId,
+                            AiUsageQuotaFeatureKeys.CookingGuide,
+                            ct);
+                        providerGenerationAttempted = true;
+                    });
                 if (guide == null)
                 {
                     return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy công thức", HttpContext));
                 }
 
+                if (providerGenerationAttempted
+                    && string.Equals(guide.GuideStatus, "generated", StringComparison.OrdinalIgnoreCase))
+                {
+                    await _aiUsageQuota.RecordUsageAsync(
+                        userId,
+                        AiUsageQuotaFeatureKeys.CookingGuide,
+                        new { RecipeId = recipeId },
+                        new { guide.GuideStatus, StepCount = guide.Steps.Count },
+                        cancellationToken: cancellationToken);
+                }
+
                 return Ok(guide);
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return BuildQuotaExceededResponse(ex);
             }
             catch (Exception ex)
             {
@@ -429,10 +478,23 @@ namespace EatFitAI.API.Controllers
             try
             {
                 // Gọi AI Provider để tính mục tiêu dinh dưỡng bằng provider AI hiện tại.
+                var userId = GetUserIdFromToken();
                 var aiStatus = _aiHealthService.GetStatus();
                 if (string.Equals(aiStatus.State, AiHealthState.Down.ToString().ToUpperInvariant(), StringComparison.Ordinal))
                 {
                     return BuildOfflineFallback("AI Provider đang DOWN, đã chuyển sang công thức offline.");
+                }
+
+                try
+                {
+                    await _aiUsageQuota.EnsureCanUseAsync(
+                        userId,
+                        AiUsageQuotaFeatureKeys.NutritionTarget,
+                        HttpContext.RequestAborted);
+                }
+                catch (AiUsageQuotaExceededException)
+                {
+                    return BuildOfflineFallback("Da het luot AI mien phi hom nay cho tinh nang tinh muc tieu. Da dung cong thuc offline.");
                 }
 
                 var aiProviderUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
@@ -543,7 +605,7 @@ namespace EatFitAI.API.Controllers
                         return BuildOfflineFallback("AI trả dữ liệu không hợp lệ, đã chuyển sang công thức offline.");
                     }
 
-                    return Ok(new
+                    var responsePayload = new
                     {
                         calories,
                         protein,
@@ -553,7 +615,19 @@ namespace EatFitAI.API.Controllers
                         offlineMode = offlineMode,
                         explanation = explanation,
                         message = message
-                    });
+                    };
+
+                    if (!offlineMode)
+                    {
+                        await _aiUsageQuota.RecordUsageAsync(
+                            userId,
+                            AiUsageQuotaFeatureKeys.NutritionTarget,
+                            payload,
+                            responsePayload,
+                            cancellationToken: HttpContext.RequestAborted);
+                    }
+
+                    return Ok(responsePayload);
                 }
                 else
                 {
@@ -590,16 +664,25 @@ namespace EatFitAI.API.Controllers
                 _logger.LogInformation("User {UserId} requesting nutrition insights for {Days} days", 
                     userId, request.AnalysisDays);
 
+                await _aiUsageQuota.EnsureCanUseAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.NutritionInsight,
+                    cancellationToken);
+
                 var insights = await _nutritionInsightService.GetPersonalizedInsightsAsync(
                     userId, request, cancellationToken);
 
-                await LogAiActivityBestEffortAsync(userId, "NutritionInsight", request, new
+                await _aiUsageQuota.RecordUsageAsync(userId, AiUsageQuotaFeatureKeys.NutritionInsight, request, new
                 {
                     AdherenceScore = insights.AdherenceScore,
                     RecommendationCount = insights.Recommendations.Count
-                });
+                }, cancellationToken: cancellationToken);
 
                 return Ok(insights);
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return BuildQuotaExceededResponse(ex);
             }
             catch (InvalidOperationException)
             {
@@ -628,16 +711,25 @@ namespace EatFitAI.API.Controllers
                 
                 _logger.LogInformation("User {UserId} requesting adaptive nutrition target", userId);
 
+                await _aiUsageQuota.EnsureCanUseAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.AdaptiveTarget,
+                    cancellationToken);
+
                 var adaptiveTarget = await _nutritionInsightService.GetAdaptiveTargetAsync(
                     userId, request, cancellationToken);
 
-                await LogAiActivityBestEffortAsync(userId, "AdaptiveTarget", request, new
+                await _aiUsageQuota.RecordUsageAsync(userId, AiUsageQuotaFeatureKeys.AdaptiveTarget, request, new
                 {
                     ConfidenceScore = adaptiveTarget.ConfidenceScore,
                     Applied = adaptiveTarget.Applied
-                });
+                }, cancellationToken: cancellationToken);
 
                 return Ok(adaptiveTarget);
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return BuildQuotaExceededResponse(ex);
             }
             catch (InvalidOperationException)
             {
@@ -908,6 +1000,27 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        private ObjectResult BuildQuotaExceededResponse(AiUsageQuotaExceededException ex)
+        {
+            Response.Headers["Retry-After"] = Math.Max(
+                    1,
+                    (int)Math.Ceiling((ex.Feature.ResetAtUtc - DateTime.UtcNow).TotalSeconds))
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                error = "ai_quota_exceeded",
+                message = "Ban da dung het luot AI mien phi hom nay cho tinh nang nay. Quota se tu dong phuc hoi vao ngay mai.",
+                featureKey = ex.Feature.Key,
+                featureLabel = ex.Feature.Label,
+                limit = ex.Feature.Limit,
+                used = ex.Feature.Used,
+                remaining = ex.Feature.Remaining,
+                resetAtUtc = ex.Feature.ResetAtUtc,
+                requestId = HttpContext.TraceIdentifier,
+            });
+        }
+
         /// <summary>
         /// Get AI-generated cooking instructions for a recipe
         /// Proxy to AI Provider (Ollama) with caching
@@ -931,6 +1044,11 @@ namespace EatFitAI.API.Controllers
                     _logger.LogInformation("Cache HIT for cooking instructions: {Recipe}", request.RecipeName);
                     return Ok(cachedResult);
                 }
+
+                await _aiUsageQuota.EnsureCanUseAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.CookingGuide,
+                    cancellationToken);
 
                 var aiProviderUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
                 
@@ -966,8 +1084,16 @@ namespace EatFitAI.API.Controllers
                         _cache.Set(cacheKey, result, TimeSpan.FromHours(1));
                         _logger.LogInformation("Cached cooking instructions for: {Recipe}", request.RecipeName);
                     }
-                    
-                    return Ok(result ?? new CookingInstructionsDto());
+
+                    var responsePayload = result ?? new CookingInstructionsDto();
+                    await _aiUsageQuota.RecordUsageAsync(
+                        userId,
+                        AiUsageQuotaFeatureKeys.CookingGuide,
+                        payload,
+                        responsePayload,
+                        cancellationToken: cancellationToken);
+
+                    return Ok(responsePayload);
                 }
                 else
                 {
@@ -976,6 +1102,10 @@ namespace EatFitAI.API.Controllers
                         response.StatusCode, errorContent);
                     return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Dịch vụ AI hiện không khả dụng", HttpContext));
                 }
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return BuildQuotaExceededResponse(ex);
             }
             catch (HttpRequestException ex)
             {

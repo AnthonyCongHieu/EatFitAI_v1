@@ -38,8 +38,8 @@ public partial class AddSubscriptionEntitlements : Migration
 
             INSERT INTO "SubscriptionPlan" ("PlanCode", "DisplayName", "IsPremium", "FeaturesJson", "LimitsJson", "IsActive", "SortOrder")
             VALUES
-                ('free', 'EatFitAI Free', false, '{"basicLogging":true,"aiScan":true,"mochiCoach":true}', '{"aiScansPerDay":10,"recipeSuggestionsPerDay":3}', true, 0),
-                ('premium', 'EatFitAI Premium', true, '{"basicLogging":true,"aiScan":true,"mochiCoach":true,"advancedInsights":true,"priorityAi":true}', '{"aiScansPerDay":100,"recipeSuggestionsPerDay":30}', true, 10)
+                ('free', 'EatFitAI Free', false, '{"basicLogging":true,"aiScan":true,"mochiCoach":true}', '{"aiScansPerDay":-1,"aiFeatureUsesPerDay":20,"recipeSuggestionsPerDay":20}', true, 0),
+                ('premium', 'EatFitAI Premium', true, '{"basicLogging":true,"aiScan":true,"mochiCoach":true,"advancedInsights":true,"priorityAi":true}', '{"aiScansPerDay":-1,"aiFeatureUsesPerDay":-1,"recipeSuggestionsPerDay":-1}', true, 10)
             ON CONFLICT ("PlanCode") DO UPDATE
             SET "DisplayName" = EXCLUDED."DisplayName",
                 "IsPremium" = EXCLUDED."IsPremium",

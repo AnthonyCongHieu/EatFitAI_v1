@@ -136,7 +136,7 @@ export const CustomCalendarPicker: React.FC<CustomCalendarPickerProps> = ({
               const disabled = isDateDisabled(item.date);
               const today = isSameDay(item.date, new Date());
               
-              let textColor = C.onSurface;
+              let textColor: string = C.onSurface;
               if (selected) textColor = '#000';
               else if (disabled) textColor = C.surfaceHighest;
               else if (!item.isCurrentMonth) textColor = C.textMuted;

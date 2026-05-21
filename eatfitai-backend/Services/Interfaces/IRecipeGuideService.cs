@@ -7,4 +7,9 @@ public interface IRecipeGuideService
     Task<RecipeCookingGuideDto?> GetCookingGuideAsync(
         int recipeId,
         CancellationToken cancellationToken = default);
+
+    Task<RecipeCookingGuideDto?> GetCookingGuideAsync(
+        int recipeId,
+        CancellationToken cancellationToken,
+        Func<CancellationToken, Task> beforeGenerateAsync);
 }

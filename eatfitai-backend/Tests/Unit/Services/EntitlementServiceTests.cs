@@ -34,7 +34,8 @@ public sealed class EntitlementServiceTests : IDisposable
         Assert.Equal("active", status.Status);
         Assert.False(status.IsPremium);
         Assert.True(status.Features["mochiCoach"]);
-        Assert.Equal(10, status.Limits["aiScansPerDay"]);
+        Assert.Equal(-1, status.Limits["aiScansPerDay"]);
+        Assert.Equal(20, status.Limits["aiFeatureUsesPerDay"]);
     }
 
     [Fact]
@@ -60,7 +61,8 @@ public sealed class EntitlementServiceTests : IDisposable
         Assert.Equal("premium", status.PlanCode);
         Assert.True(status.IsPremium);
         Assert.True(status.Features["advancedInsights"]);
-        Assert.Equal(100, status.Limits["aiScansPerDay"]);
+        Assert.Equal(-1, status.Limits["aiScansPerDay"]);
+        Assert.Equal(-1, status.Limits["aiFeatureUsesPerDay"]);
         Assert.NotNull(status.ExpiresAt);
     }
 
@@ -98,7 +100,7 @@ public sealed class EntitlementServiceTests : IDisposable
                 DisplayName = "EatFitAI Free",
                 IsPremium = false,
                 FeaturesJson = """{"basicLogging":true,"aiScan":true,"mochiCoach":true}""",
-                LimitsJson = """{"aiScansPerDay":10,"recipeSuggestionsPerDay":3}""",
+                LimitsJson = """{"aiScansPerDay":-1,"aiFeatureUsesPerDay":20,"recipeSuggestionsPerDay":20}""",
                 IsActive = true,
             },
             new SubscriptionPlan
@@ -107,7 +109,7 @@ public sealed class EntitlementServiceTests : IDisposable
                 DisplayName = "EatFitAI Premium",
                 IsPremium = true,
                 FeaturesJson = """{"basicLogging":true,"aiScan":true,"mochiCoach":true,"advancedInsights":true,"priorityAi":true}""",
-                LimitsJson = """{"aiScansPerDay":100,"recipeSuggestionsPerDay":30}""",
+                LimitsJson = """{"aiScansPerDay":-1,"aiFeatureUsesPerDay":-1,"recipeSuggestionsPerDay":-1}""",
                 IsActive = true,
                 SortOrder = 10,
             });

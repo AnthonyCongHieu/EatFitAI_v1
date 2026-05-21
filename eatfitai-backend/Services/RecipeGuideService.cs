@@ -44,6 +44,22 @@ public sealed class RecipeGuideService : IRecipeGuideService
         int recipeId,
         CancellationToken cancellationToken = default)
     {
+        return await GetCookingGuideCoreAsync(recipeId, cancellationToken, beforeGenerateAsync: null);
+    }
+
+    public async Task<RecipeCookingGuideDto?> GetCookingGuideAsync(
+        int recipeId,
+        CancellationToken cancellationToken,
+        Func<CancellationToken, Task> beforeGenerateAsync)
+    {
+        return await GetCookingGuideCoreAsync(recipeId, cancellationToken, beforeGenerateAsync);
+    }
+
+    private async Task<RecipeCookingGuideDto?> GetCookingGuideCoreAsync(
+        int recipeId,
+        CancellationToken cancellationToken,
+        Func<CancellationToken, Task>? beforeGenerateAsync)
+    {
         var recipe = await _db.Recipes
             .Include(item => item.RecipeIngredients)
             .ThenInclude(item => item.FoodItem)
@@ -65,6 +81,11 @@ public sealed class RecipeGuideService : IRecipeGuideService
             stored.GuideStatus = "stored";
             _cache.Set(cacheKey, stored, TimeSpan.FromHours(6));
             return stored;
+        }
+
+        if (beforeGenerateAsync != null)
+        {
+            await beforeGenerateAsync(cancellationToken);
         }
 
         var generated = await TryGenerateGuideAsync(recipe, cancellationToken);

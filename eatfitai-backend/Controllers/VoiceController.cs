@@ -37,6 +37,7 @@ namespace EatFitAI.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<VoiceController> _logger;
         private readonly IBusinessDateService _businessDateService;
+        private readonly IAiUsageQuotaService _aiUsageQuota;
         private const double VoiceReviewConfidenceThreshold = 0.75;
         private const decimal MinVoiceFoodGrams = 1m;
         private const decimal MaxVoiceFoodGrams = 5000m;
@@ -68,7 +69,8 @@ namespace EatFitAI.API.Controllers
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             ILogger<VoiceController> logger,
-            IBusinessDateService businessDateService)
+            IBusinessDateService businessDateService,
+            IAiUsageQuotaService aiUsageQuota)
         {
             _voiceService = voiceService;
             _foodService = foodService;
@@ -79,6 +81,7 @@ namespace EatFitAI.API.Controllers
             _configuration = configuration;
             _logger = logger;
             _businessDateService = businessDateService;
+            _aiUsageQuota = aiUsageQuota;
         }
 
         private Guid GetUserId()
@@ -90,6 +93,28 @@ namespace EatFitAI.API.Controllers
         private string GetVoiceProviderBaseUrl()
         {
             return AiProviderUrlResolver.GetVoiceBaseUrl(_configuration);
+        }
+
+        private ObjectResult BuildQuotaExceededResponse(AiUsageQuotaExceededException ex)
+        {
+            Response.Headers["Retry-After"] = Math.Max(
+                    1,
+                    (int)Math.Ceiling((ex.Feature.ResetAtUtc - DateTime.UtcNow).TotalSeconds))
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                success = false,
+                error = "ai_quota_exceeded",
+                message = "Ban da dung het luot AI mien phi hom nay cho tinh nang nay.",
+                featureKey = ex.Feature.Key,
+                featureLabel = ex.Feature.Label,
+                limit = ex.Feature.Limit,
+                used = ex.Feature.Used,
+                remaining = ex.Feature.Remaining,
+                resetAtUtc = ex.Feature.ResetAtUtc,
+                requestId = HttpContext.TraceIdentifier,
+            });
         }
 
         private bool TryResolveVoiceObjectKey(
@@ -228,6 +253,11 @@ namespace EatFitAI.API.Controllers
 
             try
             {
+                await _aiUsageQuota.EnsureCanUseAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.VoiceParse,
+                    cancellationToken);
+
                 var providerUrl = $"{GetVoiceProviderBaseUrl().TrimEnd('/')}/voice/parse";
 
                 using var client = _httpClientFactory.CreateClient();
@@ -267,7 +297,14 @@ namespace EatFitAI.API.Controllers
                     }
 
                     _logger.LogInformation("Voice parse proxy succeeded for user {UserId}", userId);
-                    return Ok(PrepareParsedCommand(providerCommand, request.Text, "ai-provider-proxy"));
+                    var parsedCommand = PrepareParsedCommand(providerCommand, request.Text, "ai-provider-proxy");
+                    await _aiUsageQuota.RecordUsageAsync(
+                        userId,
+                        AiUsageQuotaFeatureKeys.VoiceParse,
+                        new { TextLength = request.Text.Length, request.Language },
+                        new { parsedCommand.Intent, parsedCommand.Confidence, parsedCommand.Source },
+                        cancellationToken: cancellationToken);
+                    return Ok(parsedCommand);
                 }
 
                 _logger.LogWarning(
@@ -291,6 +328,10 @@ namespace EatFitAI.API.Controllers
                     "backend-rule-fallback",
                     $"AI provider lỗi {(int)response.StatusCode}. Đã dùng parser dự phòng, hãy kiểm tra trước khi lưu.");
                 return Ok(providerErrorFallback);
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return BuildQuotaExceededResponse(ex);
             }
             catch (HttpRequestException ex)
             {
@@ -486,6 +527,11 @@ namespace EatFitAI.API.Controllers
 
             try
             {
+                await _aiUsageQuota.EnsureCanUseAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.VoiceTranscribe,
+                    cancellationToken);
+
                 var providerUrl = $"{GetVoiceProviderBaseUrl().TrimEnd('/')}/voice/transcribe";
                 using var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(120);
@@ -534,9 +580,20 @@ namespace EatFitAI.API.Controllers
                     userId,
                     objectKey);
 
+                await _aiUsageQuota.RecordUsageAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.VoiceTranscribe,
+                    new { ObjectKey = objectKey, request.UploadId },
+                    new { ResponseBytes = responseBody.Length },
+                    cancellationToken: cancellationToken);
+
                 return Content(
                     responseBody,
                     response.Content.Headers.ContentType?.ToString() ?? "application/json");
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return BuildQuotaExceededResponse(ex);
             }
             catch (HttpRequestException ex)
             {

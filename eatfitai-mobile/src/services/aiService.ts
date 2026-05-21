@@ -28,6 +28,7 @@ import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 import logger from '../utils/logger';
 import storageService from './storageService';
 
+const SHOULD_LOG_AI_PERF = __DEV__ && process.env.NODE_ENV !== 'test';
 const CURRENT_NUTRITION_TARGET_CACHE_KEY = '@eatfit_cache:nutrition:current';
 const NUTRITION_INSIGHTS_CACHE_PREFIX = '@eatfit_cache:nutrition:insights:';
 const ADAPTIVE_TARGET_CACHE_PREFIX = '@eatfit_cache:nutrition:adaptive:';
@@ -718,18 +719,26 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     }
 
     // 1. Upload via Presigned URL
+    const uploadStartedAt = Date.now();
     const upload = await storageService.uploadMediaObject(
       imageUri,
       'photo.jpg',
       'image/jpeg',
       'vision',
     );
+    const uploadMs = Date.now() - uploadStartedAt;
 
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}/api/ai/vision/detect`;
 
     if (__DEV__) {
       logger.info('[aiService] detectFoodByImage calling:', url, 'with ObjectKey:', upload.objectKey);
+    }
+    if (SHOULD_LOG_AI_PERF) {
+      logger.info('[aiService] detectFoodByImage upload metrics:', {
+        uploadMs,
+        objectKey: upload.objectKey,
+      });
     }
 
     // 2. Call backend with JSON payload containing the scoped object key

@@ -1,4 +1,5 @@
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.DTOs.Analytics;
 
 namespace EatFitAI.API.Repositories.Interfaces
 {
@@ -10,5 +11,6 @@ namespace EatFitAI.API.Repositories.Interfaces
         Task<decimal> GetTotalFatAsync(Guid userId, DateTime startDate, DateTime endDate);
         Task<Dictionary<string, decimal>> GetCaloriesByMealTypeAsync(Guid userId, DateTime startDate, DateTime endDate);
         Task<Dictionary<DateTime, decimal>> GetDailyCaloriesAsync(Guid userId, DateTime startDate, DateTime endDate);
+        Task<NutritionSummaryDto> GetNutritionSummaryAsync(Guid userId, DateTime startDate, DateTime endDate);
     }
 }

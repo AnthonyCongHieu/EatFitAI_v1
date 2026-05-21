@@ -2,6 +2,7 @@ import apiClient from './apiClient';
 import { captureError } from './errorTracking';
 
 export type UploadPurpose = 'vision' | 'voice';
+const SHOULD_LOG_UPLOAD_PERF = __DEV__ && process.env.NODE_ENV !== 'test';
 
 export interface PresignedUrlResponse {
   presignedUrl: string;
@@ -46,9 +47,12 @@ export const storageService = {
   async uploadFileToR2(presignedUrl: string, fileUri: string, contentType: string): Promise<void> {
     try {
       // Fetch file as blob
+      const readStartedAt = Date.now();
       const fileBlob = await fetch(fileUri).then(r => r.blob());
+      const readMs = Date.now() - readStartedAt;
 
       // Upload to R2 via PUT request
+      const uploadStartedAt = Date.now();
       const response = await fetch(presignedUrl, {
         method: 'PUT',
         headers: {
@@ -56,9 +60,19 @@ export const storageService = {
         },
         body: fileBlob,
       });
+      const uploadMs = Date.now() - uploadStartedAt;
 
       if (!response.ok) {
         throw new Error(`Upload failed with status ${response.status}`);
+      }
+
+      if (SHOULD_LOG_UPLOAD_PERF) {
+        console.info('[storageService] uploadFileToR2 metrics', {
+          contentType,
+          bytes: fileBlob.size,
+          readMs,
+          uploadMs,
+        });
       }
     } catch (error) {
       captureError(error, 'storageService.uploadFileToR2');

@@ -17,7 +17,7 @@ public sealed class EntitlementService : IEntitlementService
         DisplayName = "EatFitAI Free",
         IsPremium = false,
         FeaturesJson = """{"basicLogging":true,"aiScan":true,"mochiCoach":true}""",
-        LimitsJson = """{"aiScansPerDay":10,"recipeSuggestionsPerDay":3}""",
+        LimitsJson = """{"aiScansPerDay":-1,"aiFeatureUsesPerDay":20,"recipeSuggestionsPerDay":20}""",
         IsActive = true,
         SortOrder = 0,
     };

@@ -31,6 +31,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 import { subscriptionService } from '../../services/subscriptionService';
+import { aiQuotaService } from '../../services/aiQuotaService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
@@ -61,6 +62,18 @@ const P_STATIC = {
   glassBorder: 'rgba(255,255,255,0.08)',
   error: '#ff8c8c',
   errorContainer: 'rgba(147, 0, 10, 0.3)',
+};
+
+const AI_QUOTA_LABELS: Record<string, string> = {
+  vision_scan: 'Quét món bằng AI',
+  recipe_suggestion: 'Gợi ý công thức',
+  cooking_guide: 'Hướng dẫn nấu',
+  nutrition_target: 'Tính mục tiêu AI',
+  nutrition_insight: 'Phân tích dinh dưỡng',
+  adaptive_target: 'Mục tiêu thích ứng',
+  weekly_review: 'Weekly review AI',
+  voice_parse: 'Hiểu lệnh giọng nói',
+  voice_transcribe: 'Chuyển giọng nói',
 };
 
 type NavigationProp = CompositeNavigationProp<
@@ -171,6 +184,16 @@ const ProfileScreen = (): React.ReactElement => {
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
+  const {
+    data: aiQuota,
+    isLoading: isAiQuotaLoading,
+    refetch: refetchAiQuota,
+  } = useQuery({
+    queryKey: ['ai-quota', 'me'],
+    queryFn: aiQuotaService.getStatus,
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
 
   useEffect(() => {
     fetchProfile().catch((error: any) => {
@@ -199,9 +222,10 @@ const ProfileScreen = (): React.ReactElement => {
     await Promise.all([
       fetchProfile({ force: true }),
       refetchSubscription(),
+      refetchAiQuota(),
     ]);
     setRefreshing(false);
-  }, [fetchProfile, refetchSubscription]);
+  }, [fetchProfile, refetchAiQuota, refetchSubscription]);
 
   /* ═══ Avatar picker ═══ */
   const pickAvatar = useCallback(async (source: 'library' | 'camera') => {
@@ -301,6 +325,9 @@ const ProfileScreen = (): React.ReactElement => {
   const memberLabel = isPremium ? 'Premium' : 'Free';
   const premiumRowLabel = isPremium ? 'EatFitAI Premium đang hoạt động' : 'Nâng cấp EatFitAI Premium';
   const hasProfileGaps = hasProfileCompletionGaps(profile);
+  const aiQuotaFeatures = aiQuota?.features ?? [];
+  const scanQuota = aiQuotaFeatures.find((feature) => feature.key === 'vision_scan');
+  const limitedAiQuotaFeatures = aiQuotaFeatures.filter((feature) => feature.key !== 'vision_scan');
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
@@ -434,6 +461,56 @@ const ProfileScreen = (): React.ReactElement => {
         )}
 
         {/* ═══ MENU GROUP 1 — Main actions ═══ */}
+        <Animated.View entering={FadeInUp.delay(280).duration(400)} style={[S.quotaCard, { backgroundColor: P.glassBg, borderTopColor: P.glassBorder }]}>
+          <View style={S.quotaHeader}>
+            <View style={[S.quotaIconWrap, { backgroundColor: P.primary + '18' }]}>
+              <Ionicons name="sparkles-outline" size={18} color={P.primary} />
+            </View>
+            <View style={S.quotaTitleWrap}>
+              <ThemedText style={[S.quotaTitle, { color: P.onSurface }]}>Lượt AI hôm nay</ThemedText>
+              <ThemedText style={[S.quotaSubtitle, { color: P.onSurfaceVariant }]}>
+                Mỗi tính năng AI có quota riêng; quét món không giới hạn.
+              </ThemedText>
+            </View>
+          </View>
+
+          {isAiQuotaLoading && !aiQuota ? (
+            <View style={S.quotaLoading}>
+              <ActivityIndicator size="small" color={P.primary} />
+            </View>
+          ) : (
+            <View style={S.quotaRows}>
+              <View style={S.quotaRow}>
+                <ThemedText style={[S.quotaFeatureName, { color: P.onSurface }]}>
+                  {AI_QUOTA_LABELS.vision_scan}
+                </ThemedText>
+                <ThemedText style={[S.quotaFeatureValue, { color: P.primary }]}>
+                  {scanQuota?.isLimited ? `${scanQuota.remaining ?? 0}/${scanQuota.limit ?? 0}` : 'Không giới hạn'}
+                </ThemedText>
+              </View>
+
+              {limitedAiQuotaFeatures.map((feature) => {
+                const label = AI_QUOTA_LABELS[feature.key] ?? feature.label;
+                const value = feature.isLimited
+                  ? `${feature.remaining ?? 0}/${feature.limit ?? 0}`
+                  : 'Không giới hạn';
+                const isEmpty = feature.isLimited && (feature.remaining ?? 0) <= 0;
+
+                return (
+                  <View key={feature.key} style={S.quotaRow}>
+                    <ThemedText style={[S.quotaFeatureName, { color: P.onSurface }]} numberOfLines={1}>
+                      {label}
+                    </ThemedText>
+                    <ThemedText style={[S.quotaFeatureValue, { color: isEmpty ? P.error : P.onSurfaceVariant }]}>
+                      {value}
+                    </ThemedText>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </Animated.View>
+
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={[S.menuGroup, { backgroundColor: P.surfaceLow }]}>
           <MenuRow
             icon="person-outline"
@@ -955,6 +1032,69 @@ const S = StyleSheet.create({
   profileNotice: {
     marginTop: -12,
     marginBottom: 24,
+  },
+  quotaCard: {
+    borderRadius: 16,
+    backgroundColor: P_STATIC.glassBg,
+    borderTopWidth: 1,
+    borderTopColor: P_STATIC.glassBorder,
+    padding: 14,
+    marginBottom: 24,
+    overflow: 'hidden',
+  },
+  quotaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  quotaIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quotaTitleWrap: {
+    flex: 1,
+  },
+  quotaTitle: {
+    fontSize: 15,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.onSurface,
+  },
+  quotaSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 17,
+    color: P_STATIC.onSurfaceVariant,
+  },
+  quotaLoading: {
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quotaRows: {
+    gap: 8,
+  },
+  quotaRow: {
+    minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quotaFeatureName: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'BeVietnamPro_500Medium',
+    color: P_STATIC.onSurface,
+  },
+  quotaFeatureValue: {
+    minWidth: 86,
+    textAlign: 'right',
+    fontSize: 13,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.onSurfaceVariant,
   },
   metricCol: {
     flex: 1,

@@ -8,6 +8,7 @@ using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Helpers;
 using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -25,6 +26,7 @@ namespace EatFitAI.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<NutritionController> _logger;
         private readonly IAiLogService _aiLog;
+        private readonly IAiUsageQuotaService _aiUsageQuota;
         private readonly EatFitAIDbContext _db;
         private readonly IBusinessDateService _businessDateService;
 
@@ -33,6 +35,7 @@ namespace EatFitAI.API.Controllers
             IConfiguration configuration,
             ILogger<NutritionController> logger,
             IAiLogService aiLog, 
+            IAiUsageQuotaService aiUsageQuota,
             EatFitAIDbContext db,
             IBusinessDateService businessDateService)
         {
@@ -40,6 +43,7 @@ namespace EatFitAI.API.Controllers
             _configuration = configuration;
             _logger = logger;
             _aiLog = aiLog;
+            _aiUsageQuota = aiUsageQuota;
             _db = db;
             _businessDateService = businessDateService;
         }
@@ -65,6 +69,12 @@ namespace EatFitAI.API.Controllers
             
             try
             {
+                var userId = GetUserIdFromToken();
+                await _aiUsageQuota.EnsureCanUseAsync(
+                    userId,
+                    AiUsageQuotaFeatureKeys.NutritionTarget,
+                    HttpContext.RequestAborted);
+
                 // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
                 var aiProviderUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
                 
@@ -143,7 +153,13 @@ namespace EatFitAI.API.Controllers
                     var res = new NutritionSuggestResponse(cal, p, c, f, explanation);
                     sw.Stop();
 
-                    try { await _aiLog.LogAsync(GetUserIdFromToken(), "NutritionSuggest", req, res, sw.ElapsedMilliseconds); } catch { }
+                    await _aiUsageQuota.RecordUsageAsync(
+                        userId,
+                        AiUsageQuotaFeatureKeys.NutritionTarget,
+                        req,
+                        res,
+                        sw.ElapsedMilliseconds,
+                        HttpContext.RequestAborted);
                     return Ok(res);
                 }
                 else
@@ -171,6 +187,21 @@ namespace EatFitAI.API.Controllers
                     "ai-provider_timeout",
                     "Dịch vụ AI phản hồi quá chậm",
                     HttpContext));
+            }
+            catch (AiUsageQuotaExceededException ex)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    error = "ai_quota_exceeded",
+                    message = "Ban da dung het luot AI mien phi hom nay cho tinh nang nay.",
+                    featureKey = ex.Feature.Key,
+                    featureLabel = ex.Feature.Label,
+                    limit = ex.Feature.Limit,
+                    used = ex.Feature.Used,
+                    remaining = ex.Feature.Remaining,
+                    resetAtUtc = ex.Feature.ResetAtUtc,
+                    requestId = HttpContext.TraceIdentifier,
+                });
             }
             catch (Exception ex)
             {

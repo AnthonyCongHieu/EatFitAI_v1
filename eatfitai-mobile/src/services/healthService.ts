@@ -14,6 +14,7 @@ type WarmUpOptions = {
 };
 
 const CLOUD_WARMUP_CACHE_MS = 60000;
+const LOCAL_WARMUP_CACHE_MS = 15000;
 
 let warmUpPromise: Promise<HealthStatus> | null = null;
 let lastWarmUpSuccessAt = 0;
@@ -114,18 +115,13 @@ export const healthService = {
 
   async warmUpBackend(options: WarmUpOptions = {}): Promise<HealthStatus> {
     const { force = false } = options;
-
-    if (!force && !isCloudBackendTarget()) {
-      return requestHealth(
-        ['/health/live', '/api/Health/live', '/health/ready', '/api/Health/ready'],
-        options.timeoutMs,
-      );
-    }
+    const isCloudTarget = isCloudBackendTarget();
+    const cacheMs = isCloudTarget ? CLOUD_WARMUP_CACHE_MS : LOCAL_WARMUP_CACHE_MS;
 
     if (
       !force &&
       lastWarmUpSuccessAt > 0 &&
-      Date.now() - lastWarmUpSuccessAt < CLOUD_WARMUP_CACHE_MS
+      Date.now() - lastWarmUpSuccessAt < cacheMs
     ) {
       return { ok: true };
     }
@@ -134,7 +130,20 @@ export const healthService = {
       return warmUpPromise;
     }
 
-    const run = warmUpInternal(options).finally(() => {
+    const run = (async () => {
+      if (!force && !isCloudTarget) {
+        const result = await requestHealth(
+          ['/health/live', '/api/Health/live', '/health/ready', '/api/Health/ready'],
+          options.timeoutMs,
+        );
+        if (result.ok) {
+          lastWarmUpSuccessAt = Date.now();
+        }
+        return result;
+      }
+
+      return warmUpInternal(options);
+    })().finally(() => {
       warmUpPromise = null;
     });
 

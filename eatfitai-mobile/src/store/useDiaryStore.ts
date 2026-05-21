@@ -5,6 +5,7 @@ import {
   type DaySummary,
   type DiaryMealGroup,
 } from '../services/diaryService';
+import { formatBusinessDate } from '../utils/businessDate';
 
 type DiaryState = {
   summary: DaySummary | null;
@@ -15,6 +16,13 @@ type DiaryState = {
   refreshSummary: () => Promise<void>;
   deleteEntry: (entryId: string) => Promise<void>;
 };
+
+const SUMMARY_FRESH_MS = 5000;
+const summaryFetchInFlight = new Map<string, Promise<void>>();
+const summaryLastFetchedAt = new Map<string, number>();
+
+const getSummaryKey = (date?: string) => date ?? formatBusinessDate();
+const getSummaryDateKey = (summary: DaySummary | null) => summary?.date?.slice(0, 10);
 
 const removeEntryFromMeals = (meals: DiaryMealGroup[], entryId: string) =>
   meals
@@ -55,22 +63,45 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   error: null,
 
   async fetchSummary(date?: string) {
+    const targetKey = getSummaryKey(date);
+    const inFlight = summaryFetchInFlight.get(targetKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const currentSummary = get().summary;
+    const lastFetchedAt = summaryLastFetchedAt.get(targetKey) ?? 0;
+    if (
+      currentSummary &&
+      getSummaryDateKey(currentSummary) === targetKey &&
+      Date.now() - lastFetchedAt < SUMMARY_FRESH_MS
+    ) {
+      return;
+    }
+
     if (get().isLoading) {
       return;
     }
 
-    set({ isLoading: true, error: null });
-    try {
-      const summary = date
-        ? await diaryService.getDayCombined(date)
-        : await diaryService.getTodayCombined();
-      set({ summary });
-    } catch (error: any) {
-      set({ error: error?.message ?? 'Không thể tải dữ liệu.' });
-      throw error;
-    } finally {
-      set({ isLoading: false });
-    }
+    const request = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const summary = date
+          ? await diaryService.getDayCombined(date)
+          : await diaryService.getTodayCombined();
+        summaryLastFetchedAt.set(targetKey, Date.now());
+        set({ summary });
+      } catch (error: any) {
+        set({ error: error?.message ?? 'Không thể tải dữ liệu.' });
+        throw error;
+      } finally {
+        summaryFetchInFlight.delete(targetKey);
+        set({ isLoading: false });
+      }
+    })();
+
+    summaryFetchInFlight.set(targetKey, request);
+    return request;
   },
 
   async refreshSummary() {
@@ -81,6 +112,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     set({ isRefreshing: true, error: null });
     try {
       const summary = await diaryService.getTodayCombined();
+      summaryLastFetchedAt.set(formatBusinessDate(), Date.now());
       set({ summary });
     } catch (error: any) {
       set({ error: error?.message ?? 'Không thể tải dữ liệu.' });

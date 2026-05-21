@@ -865,6 +865,7 @@ builder.Services.AddSingleton<VisionDetectConcurrencyGate>();
 builder.Services.AddHostedService<AiHealthBackgroundService>();
 builder.Services.AddScoped<IUserPreferenceService, UserPreferenceService>();
 builder.Services.AddScoped<IEntitlementService, EntitlementService>();
+builder.Services.AddScoped<IAiUsageQuotaService, AiUsageQuotaService>();
 builder.Services.AddScoped<IBusinessDateService, BusinessDateService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<IRecipeGuideService, RecipeGuideService>();

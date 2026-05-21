@@ -15,6 +15,7 @@ import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-ca
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -76,6 +77,20 @@ type ScanResultNotice = {
 
 const SCAN_IMAGE_UPLOAD_WIDTH = 1024;
 const SCAN_IMAGE_UPLOAD_QUALITY = 0.85;
+const SHOULD_LOG_SCAN_PERF = __DEV__ && process.env.NODE_ENV !== 'test';
+const getLocalFileSizeBytes = async (uri: string): Promise<number | null> => {
+  if (!SHOULD_LOG_SCAN_PERF) {
+    return null;
+  }
+
+  try {
+    const info = await FileSystem.getInfoAsync(uri);
+    return info.exists && typeof info.size === 'number' ? info.size : null;
+  } catch {
+    return null;
+  }
+};
+
 const AI_PROCESSING_MESSAGES = [
   'Đang nhận diện món ăn...',
   'Đang đối chiếu dữ liệu dinh dưỡng...',
@@ -261,7 +276,11 @@ const AIScanScreen: React.FC = () => {
       });
 
       let processedUri = uri;
+      const prepareStartedAt = Date.now();
+      const originalSizeBytes = await getLocalFileSizeBytes(uri);
+      let manipulateMs: number | null = null;
       try {
+        const manipulateStartedAt = Date.now();
         const manipulatedResult = await ImageManipulator.manipulateAsync(
           uri,
           [{ resize: { width: SCAN_IMAGE_UPLOAD_WIDTH } }],
@@ -270,11 +289,24 @@ const AIScanScreen: React.FC = () => {
             format: ImageManipulator.SaveFormat.JPEG,
           },
         );
+        manipulateMs = Date.now() - manipulateStartedAt;
         processedUri = manipulatedResult.uri;
         setCapturedUri(processedUri);
       } catch (compressError) {
         console.warn('Image compression failed, using original:', compressError);
         setCapturedUri(uri);
+      }
+      const processedSizeBytes = await getLocalFileSizeBytes(processedUri);
+      if (SHOULD_LOG_SCAN_PERF) {
+        console.info('[AIScan] image preparation metrics', {
+          source,
+          originalSizeBytes,
+          processedSizeBytes,
+          manipulateMs,
+          totalPrepareMs: Date.now() - prepareStartedAt,
+          targetWidth: SCAN_IMAGE_UPLOAD_WIDTH,
+          quality: SCAN_IMAGE_UPLOAD_QUALITY,
+        });
       }
 
       try {
