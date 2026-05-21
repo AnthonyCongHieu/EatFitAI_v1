@@ -2,7 +2,7 @@
   {
     "slug": "pho-bo",
     "recipeName": "Phở bò",
-    "description": "Công thức gợi ý cho Phở bò, dùng nguyên liệu chính: mì/phở, thịt bò.",
+    "description": "Món ăn truyền thống tiêu biểu của ẩm thực Việt Nam, nước dùng ngọt thơm từ xương bò hầm cùng các loại gia vị nướng ấm nồng như hoa hồi, thảo quả, quế. Bánh phở mềm kết hợp cùng thịt bò tái chín tái tạo nên hương vị đặc sắc khó quên.",
     "imageKey": "recipe-images/v1/thumb/pho-bo.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -22,22 +22,39 @@
         "grams": 150
       }
     ],
+    "prepItems": [
+      "Rửa sạch thịt bò, thái lát thật mỏng ngang thớ.",
+      "Hành tây, hành tím, gừng nướng cháy xém vỏ, rửa sạch và đập dập.",
+      "Bánh phở chần sơ qua nước sôi, để ráo nước.",
+      "Rau thơm (hành lá, ngò gai, húng quế) rửa sạch, cắt nhỏ."
+    ],
+    "seasonings": [
+      "3 bông hoa hồi, 1 thảo quả, 1 thanh quế nướng thơm",
+      "2 muỗng canh nước mắm truyền thống",
+      "1 muỗng cà phê muối",
+      "1/2 muỗng cà phê hạt tiêu",
+      "1 viên đường phèn nhỏ"
+    ],
+    "cookingMethod": "Nấu nước dùng (Hầm)",
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Phở bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
-      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Phở bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
-      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Phở bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Cho xương và hành tây, gừng nướng vào nồi hầm cùng túi gia vị hồi quế thảo quả trong khoảng 30-40 phút để lấy nước ngọt.",
+      "Nêm nước mắm, muối và đường phèn vào nước dùng cho vừa khẩu vị thanh ngọt.",
+      "Xếp bánh phở đã chần vào tô, đặt thịt bò thái mỏng lên trên cùng hành lá, ngò gai.",
+      "Múc nước dùng thật sôi chan đều lên tô phở cho thịt bò chín tái và dùng nóng kèm rau thơm, chanh ớt."
+    ],
+    "tips": [
+      "Nên nướng hồi, quế, thảo quả trước khi cho vào túi lọc để nước dùng thơm đậm đà hơn.",
+      "Hớt bọt thường xuyên trong lúc ninh xương để nước phở trong vắt."
     ],
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Ph%E1%BB%9F+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Ph%E1%BB%9F+b%C3%B2"
+    "videoUrl": "https://www.youtube.com/watch?v=s5UfL8Z-p-k"
   },
   {
     "slug": "pho-ga",
     "recipeName": "Phở gà",
-    "description": "Công thức gợi ý cho Phở gà, dùng nguyên liệu chính: mì/phở, thịt gà.",
+    "description": "Phiên bản thanh nhẹ tinh tế của phở truyền thống, nổi bật với nước dùng gà vàng óng, ngọt thanh tự nhiên từ xương và hương thơm nhẹ của lá chanh thái chỉ cùng thịt gà dai ngọt xé phay.",
     "imageKey": "recipe-images/v1/thumb/pho-ga.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -57,22 +74,41 @@
         "grams": 150
       }
     ],
+    "prepItems": [
+      "Rửa sạch thịt gà và xương gà bằng muối và gừng đập dập.",
+      "Hành tím, gừng, hạt mùi nướng thơm.",
+      "Bánh phở chần sơ qua nước sôi.",
+      "Lá chanh rửa sạch, thái sợi chỉ thật mỏng.",
+      "Hành lá, rau thơm rửa sạch và cắt khúc nhỏ."
+    ],
+    "seasonings": [
+      "1 muỗng canh hạt mùi nướng",
+      "2 muỗng canh nước mắm",
+      "1 muỗng cà phê hạt nêm",
+      "1 viên đường phèn nhỏ",
+      "Gừng và hành tím nướng"
+    ],
+    "cookingMethod": "Luộc và hầm",
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Phở gà; rửa sạch, để ráo và cắt miếng vừa ăn.",
-      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Phở gà ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
-      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Phở gà, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Luộc chín thịt gà cùng gừng và hành tím nướng ở lửa nhỏ để da gà không bị rách, vớt ra ngâm nước đá rồi xé sợi vừa ăn.",
+      "Tiếp tục ninh xương gà cùng hạt mùi nướng trong nồi để làm ngọt nước dùng.",
+      "Nêm nước mắm, hạt nêm và đường phèn vào nồi nước dùng cho vừa vị ngọt thanh.",
+      "Xếp bánh phở vào tô, đặt gà xé lên trên, rắc hành lá và lá chanh thái sợi chỉ.",
+      "Chan nước dùng nóng hổi lên tô phở gà và thưởng thức ngay khi còn nóng."
+    ],
+    "tips": [
+      "Ngâm gà vào nước đá sau khi luộc giúp phần da giòn và thịt gà săn chắc, không bị khô.",
+      "Lá chanh thái chỉ siêu mỏng sẽ làm dậy mùi phở gà mà không gây đắng."
     ],
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Ph%E1%BB%9F+g%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Ph%E1%BB%9F+g%C3%A0"
+    "videoUrl": "https://www.youtube.com/watch?v=Jm8j6K4wHn4"
   },
   {
     "slug": "bun-bo-hue",
     "recipeName": "Bún bò Huế",
-    "description": "Công thức gợi ý cho Bún bò Huế, dùng nguyên liệu chính: bún, thịt bò.",
+    "description": "Món ăn đặc sản của xứ Huế mộng mơ, nồng nàn vị sả, ớt sa tế cay nồng hòa quyện cùng hương vị mắm ruốc Huế đặc trưng, nước dùng đậm đà cuốn hút thực khách.",
     "imageKey": null,
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -92,17 +128,36 @@
         "grams": 150
       }
     ],
+    "prepItems": [
+      "Sơ chế bắp bò và gân bò, rửa sạch với nước muối gừng.",
+      "Sả đập dập, cắt khúc; hành tây thái lát mỏng.",
+      "Hòa mắm ruốc Huế với nước lạnh, lọc lấy nước trong.",
+      "Chần bún qua nước sôi, để ráo."
+    ],
+    "seasonings": [
+      "2 muỗng canh mắm ruốc Huế ngon",
+      "5 cây sả đập dập",
+      "1 muỗng canh ớt sa tế",
+      "1.5 muỗng canh nước mắm",
+      "1/2 muỗng canh đường phèn",
+      "1 muỗng cà phê muối"
+    ],
+    "cookingMethod": "Hầm nước dùng đậm vị",
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Bún bò Huế; rửa sạch, để ráo và cắt miếng vừa ăn.",
-      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Bún bò Huế ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
-      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Bún bò Huế, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Luộc sơ thịt bò và gân bò rồi vớt ra rửa sạch để loại bỏ tạp chất.",
+      "Hầm bắp bò và gân bò cùng sả đập dập trong khoảng 30 phút cho chín mềm rồi thái lát mỏng.",
+      "Đun sôi nước ruốc đã lọc trong rồi chế từ từ vào nồi nước dùng bắp bò.",
+      "Nêm thêm nước mắm, đường phèn, muối và ớt sa tế cho nồi nước dùng có vị cay tê ngọt đậm đà.",
+      "Xếp bún vào tô, bày thịt bò thái lát, hành tây và chan nước dùng sả ruốc đậm đà lên trên."
+    ],
+    "tips": [
+      "Mắm ruốc Huế phải hòa tan với nước lạnh rồi đợi lắng xuống, chỉ lấy phần nước trong để nước dùng không bị đục và nồng cặn.",
+      "Ăn kèm rau sống gồm bắp chuối bào, giá đỗ, rau muống chẻ và húng quế để làm giảm vị béo ngậy."
     ],
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+b%C3%B2+Hu%E1%BA%BF"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%BAn+b%C3%B2+Hu%E1%BA%BF"
+    "videoUrl": "https://www.youtube.com/watch?v=S7bW7U5cW7w"
   },
   {
     "slug": "bun-rieu",
@@ -2688,9 +2743,9 @@
   {
     "slug": "trung-chien-ca-chua",
     "recipeName": "Trứng chiên cà chua",
-    "description": "Công thức gợi ý cho Trứng chiên cà chua, dùng nguyên liệu chính: cá, trứng, cà chua.",
+    "description": "Món ăn quốc dân vô cùng nhanh gọn và đưa cơm. Trứng chiên xốp mềm kết hợp vị chua ngọt tự nhiên của cà chua chín, rắc thêm chút hành lá tạo nên một bữa ăn giản dị nhưng đầy đủ dinh dưỡng.",
     "imageKey": "recipe-images/v1/thumb/trung-chien-ca-chua.webp",
-    "cookTimeMinutes": 25,
+    "cookTimeMinutes": 15,
     "difficulty": "Dễ",
     "servingCount": 1,
     "credibilityScore": 74,
@@ -2720,17 +2775,32 @@
         "grams": 8
       }
     ],
+    "prepItems": [
+      "Rửa sạch cà chua, thái hạt lựu hoặc thái múi cau mỏng.",
+      "Hành lá rửa sạch, thái nhỏ.",
+      "Đập trứng vào tô, thêm một ít hành lá thái nhỏ."
+    ],
+    "seasonings": [
+      "1 muỗng cà phê nước mắm",
+      "1/2 muỗng cà phê hạt nêm",
+      "1/4 muỗng cà phê tiêu xay",
+      "1 muỗng canh dầu ăn"
+    ],
+    "cookingMethod": "Chiên / Xào",
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Trứng chiên cà chua; rửa sạch, để ráo và cắt miếng vừa ăn.",
-      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Trứng chiên cà chua ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
-      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Trứng chiên cà chua, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Đập trứng vào bát, nêm nước mắm và hạt nêm rồi đánh tan đều cùng hành lá.",
+      "Làm nóng chảo với dầu ăn, phi thơm hành tím băm rồi cho cà chua vào xào chín mềm đến khi ra nước.",
+      "Đổ bát trứng đã đánh tan vào chảo cà chua xào, dàn đều trứng.",
+      "Để lửa vừa cho trứng chín đông lại từ từ, lật nhẹ hoặc đảo đều để trứng cuộn lấy cà chua và tắt bếp, rắc tiêu xay lên trên."
+    ],
+    "tips": [
+      "Đánh trứng thật kỹ trước khi rán để trứng xốp mềm hơn.",
+      "Xào cà chua chín mềm trước khi đổ trứng vào giúp món ăn hòa quyện vị chua ngọt đặc trưng."
     ],
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Tr%E1%BB%A9ng+chi%C3%AAn+c%C3%A0+chua"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+Tr%E1%BB%A9ng+chi%C3%AAn+c%C3%A0+chua"
+    "videoUrl": "https://www.youtube.com/watch?v=wX-yPifvP5M"
   },
   {
     "slug": "rau-muong-xao-toi",
@@ -2823,9 +2893,9 @@
   {
     "slug": "bong-cai-xao-bo",
     "recipeName": "Bông cải xào bò",
-    "description": "Công thức gợi ý cho Bông cải xào bò, dùng nguyên liệu chính: thịt bò, bông cải xanh, sả.",
+    "description": "Sự kết hợp hoàn hảo giữa thịt bò mềm ngọt giàu sắt và bông cải xanh giòn ngọt giàu chất xơ, vitamin. Món xào nóng hổi, dậy mùi thơm của tỏi phi, cực kì phù hợp cho thực đơn ăn uống lành mạnh.",
     "imageKey": "recipe-images/v1/thumb/bong-cai-xao-bo.webp",
-    "cookTimeMinutes": 25,
+    "cookTimeMinutes": 20,
     "difficulty": "Dễ",
     "servingCount": 1,
     "credibilityScore": 74,
@@ -2855,17 +2925,34 @@
         "grams": 8
       }
     ],
+    "prepItems": [
+      "Thịt bò thái lát mỏng ngang thớ.",
+      "Bông cải xanh cắt miếng vừa ăn, ngâm nước muối loãng 5 phút rồi rửa sạch, để ráo.",
+      "Tỏi băm nhỏ, hành tây thái múi cau."
+    ],
+    "seasonings": [
+      "1 muỗng canh dầu hào",
+      "1 muỗng cà phê hạt nêm",
+      "1 muỗng cà phê nước mắm",
+      "1 muỗng cà phê tỏi băm",
+      "1 muỗng canh dầu ăn"
+    ],
+    "cookingMethod": "Xào",
     "instructions": [
-      "Sơ chế nguyên liệu chính cho món Bông cải xào bò; rửa sạch, để ráo và cắt miếng vừa ăn.",
-      "Chuẩn bị gia vị cơ bản gồm hành, tỏi, muối, tiêu và lượng dầu vừa đủ để kiểm soát năng lượng.",
-      "Nấu Bông cải xào bò ở lửa vừa, cho nguyên liệu lâu chín vào trước rồi thêm rau hoặc topping sau.",
-      "Nêm lại từng chút một, ưu tiên vị thanh và hạn chế thêm đường hoặc dầu nếu không cần thiết.",
-      "Hoàn thiện Bông cải xào bò, chia khẩu phần theo nhu cầu dinh dưỡng trước khi dùng."
+      "Ướp thịt bò với dầu hào, hạt nêm, nước mắm và một ít tỏi băm trong 15 phút.",
+      "Chần sơ bông cải xanh qua nước sôi có pha chút muối trong 1 phút, vớt ra ngâm nước lạnh để giữ độ giòn và màu xanh.",
+      "Làm nóng dầu ăn trên chảo, phi thơm tỏi băm còn lại rồi cho thịt bò vào xào nhanh tay ở lửa lớn đến khi chín tái thì trút ra đĩa.",
+      "Tiếp tục dùng chảo đó, cho bông cải xanh và hành tây vào xào nhanh, nêm chút hạt nêm cho vừa vị.",
+      "Trút đĩa thịt bò trở lại chảo xào chung với bông cải trong 1 phút, rắc tiêu xay lên rồi tắt bếp."
+    ],
+    "tips": [
+      "Xào thịt bò ở lửa thật lớn và nhanh tay để thịt bò mềm ngọt, không bị dai.",
+      "Chần bông cải xanh trước khi xào giúp bông cải xanh chín đều mà vẫn giữ được màu xanh mướt mát mắt."
     ],
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B4ng+c%E1%BA%A3i+x%C3%A0o+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/results?search_query=c%C3%A1ch+n%E1%BA%A5u+B%C3%B4ng+c%E1%BA%A3i+x%C3%A0o+b%C3%B2"
+    "videoUrl": "https://www.youtube.com/watch?v=kY31z46D4c8"
   },
   {
     "slug": "ca-tim-xao-toi",

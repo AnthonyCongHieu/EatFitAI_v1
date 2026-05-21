@@ -614,10 +614,21 @@ RECIPE_GUIDE_SCHEMA: Dict[str, Any] = {
         "cookingTimeMinutes": {"type": "integer"},
         "difficulty": {"type": "string"},
         "prepItems": {"type": "array", "items": {"type": "string"}},
+        "seasonings": {"type": "array", "items": {"type": "string"}},
+        "cookingMethod": {"type": "string"},
         "tips": {"type": "array", "items": {"type": "string"}},
         "sourceUrls": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["prepItems", "steps", "cookingTimeMinutes", "difficulty", "tips", "sourceUrls"],
+    "required": [
+        "prepItems",
+        "seasonings",
+        "cookingMethod",
+        "steps",
+        "cookingTimeMinutes",
+        "difficulty",
+        "tips",
+        "sourceUrls",
+    ],
 }
 
 DEFAULT_TRUSTED_RECIPE_DOMAINS = {
@@ -761,22 +772,23 @@ def _build_recipe_guide_prompt(recipe_name: str, ingredients: list[dict], descri
         for ing in ingredients[:12]
     )
     trusted_domains = ", ".join(sorted(_csv_env_set("TRUSTED_RECIPE_DOMAINS", DEFAULT_TRUSTED_RECIPE_DOMAINS))[:12])
-    return f"""Bạn là đầu bếp EatFitAI. Tạo hướng dẫn nấu an toàn, thực tế, ngắn gọn cho người Việt.
+    return f"""Bạn là đầu bếp EatFitAI. Tạo hướng dẫn nấu ăn lành mạnh, thực tế, chi tiết và ngắn gọn cho người Việt.
 
 MÓN: "{recipe_name}"
-NGUYÊN LIỆU DB: {ingredients_str}
-{f"MÔ TẢ DB: {description}" if description else ""}
+NGUYÊN LIỆU CHÍNH: {ingredients_str}
+{f"MÔ TẢ: {description}" if description else ""}
 
 YÊU CẦU:
-- Chỉ dùng các nguồn công thức/cooking đáng tin cậy; ưu tiên các domain: {trusted_domains}.
-- Không tự bịa URL. sourceUrls phải là URL https thật từ nguồn đã tham khảo.
-- Không thay đổi định lượng dinh dưỡng; backend đã quyết định macro.
-- Nêu định lượng gia vị và nêm nếm cụ thể theo khẩu phần; ví dụ muối, nước mắm, dầu, tiêu ở mức vừa phải và ghi rõ món nào có thể điều chỉnh theo khẩu vị.
-- Viết tiếng Việt tự nhiên, tránh quảng cáo và tránh lời khuyên y tế.
-- 3-7 bước, mỗi bước đủ rõ để nấu được trên bếp gia đình.
+- Chỉ dùng các nguồn công thức nấu ăn đáng tin cậy; ưu tiên các domain: {trusted_domains}.
+- Không tự bịa URL. sourceUrls phải là các URL https thật, chính xác từ nguồn đã tham khảo.
+- Cung cấp danh sách các bước chuẩn bị sơ chế chi tiết (`prepItems`).
+- Liệt kê các gia vị nêm nếm cụ thể, định lượng rõ ràng phù hợp với khẩu vị người Việt (`seasonings` - ví dụ: "1 thìa cà phê nước mắm", "1/2 thìa cà phê tiêu").
+- Xác định rõ phương pháp nấu ăn chính (`cookingMethod` - ví dụ: "Xào", "Nấu canh", "Luộc", "Hấp", "Nướng", "Kho", "Chiên áp chảo").
+- 3-7 bước nấu ăn cụ thể, trực quan, dễ thực hiện (`steps`).
+- Cung cấp 2-3 mẹo hữu ích khi chế biến hoặc thưởng thức (`tips`).
 
-CHỈ trả lời JSON hợp lệ:
-{{"prepItems":["Rửa sạch nguyên liệu","Cắt thái trước khi nấu"],"steps":["..."],"cookingTimeMinutes":25,"difficulty":"Dễ","tips":["..."],"sourceUrls":["https://..."]}}"""
+CHỈ trả lời dưới dạng JSON hợp lệ theo schema sau:
+{{"prepItems":["Sơ chế nguyên liệu..."],"seasonings":["Gia vị nêm nếm..."],"cookingMethod":"Phương pháp nấu","steps":["Các bước thực hiện cụ thể..."],"cookingTimeMinutes":25,"difficulty":"Dễ","tips":["Mẹo nhỏ..."],"sourceUrls":["https://..."]}}"""
 
 
 def _normalize_search_text(value: str) -> str:
@@ -1156,6 +1168,8 @@ def _build_generated_recipe_guide(
                     "cookingTimeMinutes": _coerce_positive_int(parsed.get("cookingTimeMinutes")) or 25,
                     "difficulty": str(parsed.get("difficulty") or "Dễ").strip(),
                     "prepItems": _coerce_string_list(parsed.get("prepItems"), max_items=6),
+                    "seasonings": _coerce_string_list(parsed.get("seasonings"), max_items=8),
+                    "cookingMethod": str(parsed.get("cookingMethod") or "Khác").strip(),
                     "tips": _coerce_string_list(parsed.get("tips"), max_items=5),
                     "sourceUrls": source_urls,
                     "youtubeVideo": youtube_video,
@@ -1182,6 +1196,9 @@ def get_cooking_instructions(
         "steps": guide.get("steps", []),
         "cookingTime": f"{minutes} phút",
         "difficulty": guide.get("difficulty", "Dễ"),
+        "prepItems": guide.get("prepItems", []),
+        "seasonings": guide.get("seasonings", []),
+        "cookingMethod": guide.get("cookingMethod", ""),
         "tips": guide.get("tips", []),
         "source": guide.get("source", guide.get("guideStatus", "fallback")),
         "sourceUrls": guide.get("sourceUrls", []),

@@ -40,6 +40,8 @@ type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
 
 type AiCookingInstructions = {
   prepItems?: string[];
+  seasonings?: string[];
+  cookingMethod?: string;
   steps: string[];
   cookingTimeMinutes?: number;
   difficulty?: string;
@@ -133,10 +135,12 @@ const RecipeDetailScreen = (): React.ReactElement => {
     if (!recipe) return;
 
     const fetchAiInstructions = async () => {
-        setAiInstructions((prev) => ({
-          ...prev,
-          prepItems: route.params.prepItems ?? prev.prepItems,
-          steps: recipe.instructions ?? prev.steps,
+      setAiInstructions((prev) => ({
+        ...prev,
+        prepItems: route.params.prepItems ?? prev.prepItems,
+        seasonings: recipe.seasonings ?? prev.seasonings,
+        cookingMethod: recipe.cookingMethod ?? prev.cookingMethod,
+        steps: recipe.instructions ?? prev.steps,
         sourceUrls: recipe.sourceUrls ?? prev.sourceUrls,
         youtubeVideo: recipe.youtubeVideo ?? prev.youtubeVideo,
         guideStatus: recipe.guideStatus ?? prev.guideStatus,
@@ -147,6 +151,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
         const result = await aiService.getRecipeCookingGuide(recipe.recipeId);
         setAiInstructions({
           prepItems: result.prepItems,
+          seasonings: result.seasonings,
+          cookingMethod: result.cookingMethod,
           steps: result.steps,
           cookingTimeMinutes: result.cookingTimeMinutes,
           difficulty: result.difficulty,
@@ -161,6 +167,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
           setAiInstructions((prev) => ({
             ...prev,
             steps: recipe.instructions ?? [],
+            seasonings: recipe.seasonings ?? [],
+            cookingMethod: recipe.cookingMethod,
             isLoading: false,
             error: undefined,
             guideStatus: recipe.guideStatus ?? 'stored',
@@ -176,6 +184,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
           );
           setAiInstructions({
             prepItems: result.prepItems,
+            seasonings: result.seasonings,
+            cookingMethod: result.cookingMethod,
             steps: result.steps,
             difficulty: result.difficulty,
             isLoading: false,
@@ -294,6 +304,10 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const prepItems = aiInstructions.prepItems?.length
     ? aiInstructions.prepItems
     : route.params.prepItems ?? [];
+  const seasonings = aiInstructions.seasonings?.length
+    ? aiInstructions.seasonings
+    : recipe.seasonings ?? [];
+  const cookingMethod = aiInstructions.cookingMethod || recipe.cookingMethod || undefined;
   const availableIngredients = route.params.availableIngredients ?? [];
   const missingIngredients = route.params.missingIngredients ?? [];
   const requiredIngredients = route.params.requiredIngredients?.length
@@ -368,18 +382,26 @@ const RecipeDetailScreen = (): React.ReactElement => {
             </View>
             <View style={S.heroTextWrap}>
               <ThemedText style={S.heroMainTitle} numberOfLines={3}>{recipe.recipeName}</ThemedText>
-              {cookingTimeLabel && (
-                <View style={S.badgeWrap}>
-                  <Ionicons name="time" size={14} color={P.primary} />
-                  <ThemedText style={S.badgeText}>{cookingTimeLabel}</ThemedText>
-                </View>
-              )}
-              {!!(aiInstructions.difficulty ?? recipe.difficulty) && (
-                <View style={S.badgeWrap}>
-                  <Ionicons name="speedometer-outline" size={14} color={P.primary} />
-                  <ThemedText style={S.badgeText}>{aiInstructions.difficulty ?? recipe.difficulty}</ThemedText>
-                </View>
-              )}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {cookingTimeLabel && (
+                  <View style={S.badgeWrap}>
+                    <Ionicons name="time" size={14} color={P.primary} />
+                    <ThemedText style={S.badgeText}>{cookingTimeLabel}</ThemedText>
+                  </View>
+                )}
+                {!!(aiInstructions.difficulty ?? recipe.difficulty) && (
+                  <View style={S.badgeWrap}>
+                    <Ionicons name="speedometer-outline" size={14} color={P.primary} />
+                    <ThemedText style={S.badgeText}>{aiInstructions.difficulty ?? recipe.difficulty}</ThemedText>
+                  </View>
+                )}
+                {!!cookingMethod && (
+                  <View style={S.badgeWrap}>
+                    <Ionicons name="restaurant-outline" size={14} color={P.primary} />
+                    <ThemedText style={S.badgeText}>{cookingMethod}</ThemedText>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         ) : (
@@ -396,6 +418,12 @@ const RecipeDetailScreen = (): React.ReactElement => {
                 <View style={S.badgeWrap}>
                   <Ionicons name="speedometer-outline" size={14} color={P.primary} />
                   <ThemedText style={S.badgeText}>{aiInstructions.difficulty ?? recipe.difficulty}</ThemedText>
+                </View>
+              )}
+              {!!cookingMethod && (
+                <View style={S.badgeWrap}>
+                  <Ionicons name="restaurant-outline" size={14} color={P.primary} />
+                  <ThemedText style={S.badgeText}>{cookingMethod}</ThemedText>
                 </View>
               )}
             </View>
@@ -464,16 +492,41 @@ const RecipeDetailScreen = (): React.ReactElement => {
             </Animated.View>
           )}
 
-          {prepItems.length > 0 && (
+          {(prepItems.length > 0 || seasonings.length > 0) && (
             <Animated.View entering={FadeInDown.delay(375)} style={S.glassCard}>
-              <ThemedText style={S.sectionTitle}>Chuẩn bị</ThemedText>
-              <View style={S.ingredientsWrap}>
-                {prepItems.map((item) => (
-                  <View key={item} style={S.ingredientRow}>
-                    <View style={S.ingDot} />
-                    <ThemedText style={S.bodyTextItem}>{item}</ThemedText>
+              <View style={S.sideBySideRow}>
+                {prepItems.length > 0 && (
+                  <View style={S.sideBySideCol}>
+                    <View style={S.sideBySideHeader}>
+                      <Ionicons name="cut-outline" size={16} color={P.primary} />
+                      <ThemedText style={S.sideBySideTitle}>Sơ chế</ThemedText>
+                    </View>
+                    <View style={S.sideListWrap}>
+                      {prepItems.map((item, index) => (
+                        <View key={index} style={S.sideRow}>
+                          <View style={S.ingDot} />
+                          <ThemedText style={S.sideText}>{item}</ThemedText>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                ))}
+                )}
+                {seasonings.length > 0 && (
+                  <View style={[S.sideBySideCol, prepItems.length > 0 && { borderLeftWidth: 1, borderLeftColor: P.glassBorder, paddingLeft: 16 }]}>
+                    <View style={S.sideBySideHeader}>
+                      <Ionicons name="flame-outline" size={16} color={P.macroC} />
+                      <ThemedText style={S.sideBySideTitle}>Gia vị</ThemedText>
+                    </View>
+                    <View style={S.sideListWrap}>
+                      {seasonings.map((item, index) => (
+                        <View key={index} style={S.sideRow}>
+                          <View style={[S.ingDot, { backgroundColor: P.macroC }]} />
+                          <ThemedText style={S.sideText}>{item}</ThemedText>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
             </Animated.View>
           )}
@@ -498,14 +551,20 @@ const RecipeDetailScreen = (): React.ReactElement => {
               <ThemedText style={{ color: P.danger, fontSize: 13 }}>{aiInstructions.error}</ThemedText>
             ) : (
               <View style={S.stepsWrap}>
-                {guideSteps.map((step: string, i: number) => (
-                  <View key={i} style={S.stepRow}>
-                    <View style={S.stepNumberWrap}>
-                      <ThemedText style={S.stepNumberText}>{i + 1}</ThemedText>
+                {guideSteps.map((step: string, i: number) => {
+                  const isLast = i === guideSteps.length - 1;
+                  return (
+                    <View key={i} style={S.stepRow}>
+                      <View style={S.stepTimelineLeft}>
+                        <View style={S.stepNumberWrap}>
+                          <ThemedText style={S.stepNumberText}>{i + 1}</ThemedText>
+                        </View>
+                        {!isLast && <View style={S.stepTimelineLine} />}
+                      </View>
+                      <ThemedText style={S.stepContentText}>{step}</ThemedText>
                     </View>
-                    <ThemedText style={S.stepContentText}>{step}</ThemedText>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             )}
             {!!aiInstructions.tips?.length && (
@@ -705,14 +764,30 @@ const S = StyleSheet.create({
   ingredientStatusText: { fontSize: 11, fontFamily: 'BeVietnamPro_700Bold' },
   bodyTextWeight: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
 
-  stepsWrap: { gap: 16 },
-  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  stepNumberWrap: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: P.primary + '20',
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: P.primary + '40',
-    marginTop: 2,
+  sideBySideRow: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
+  sideBySideCol: { flex: 1, gap: 10 },
+  sideBySideHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  sideBySideTitle: { fontSize: 15, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
+  sideListWrap: { gap: 8 },
+  sideRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  sideText: { flex: 1, fontSize: 13, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, lineHeight: 18 },
+
+  stepsWrap: { gap: 24, paddingVertical: 8 },
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
+  stepTimelineLeft: { alignItems: 'center', position: 'relative' },
+  stepTimelineLine: {
+    position: 'absolute',
+    top: 32,
+    bottom: -28,
+    width: 2,
+    backgroundColor: P.primary + '20',
   },
-  stepNumberText: { fontSize: 12, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
+  stepNumberWrap: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: P.primary + '15',
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: P.primary + '35',
+    zIndex: 10,
+  },
+  stepNumberText: { fontSize: 13, fontFamily: 'BeVietnamPro_700Bold', color: P.primary },
   stepContentText: { flex: 1, fontSize: 14, fontFamily: 'BeVietnamPro_500Medium', color: P.onSurfaceVariant, lineHeight: 22 },
   tipsWrap: { gap: 8, paddingTop: 4 },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },

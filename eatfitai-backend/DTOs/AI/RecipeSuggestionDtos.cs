@@ -109,6 +109,10 @@ namespace EatFitAI.API.DTOs.AI
         public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }
         public string? GuideStatus { get; set; }
         public List<string> SourceUrls { get; set; } = new();
+        public List<string> PrepItems { get; set; } = new();
+        public List<string> Seasonings { get; set; } = new();
+        public string? CookingMethod { get; set; }
+        public List<string> Tips { get; set; } = new();
         public string Disclaimer { get; set; } = string.Empty;
         public List<string> RequiredIngredients { get; set; } = new();
         
@@ -156,6 +160,9 @@ namespace EatFitAI.API.DTOs.AI
         public List<string> Steps { get; set; } = new();
         public string? CookingTime { get; set; }
         public string? Difficulty { get; set; }
+        public List<string> PrepItems { get; set; } = new();
+        public List<string> Seasonings { get; set; } = new();
+        public string? CookingMethod { get; set; }
     }
 
     public class RecipeYoutubeVideoDto
@@ -174,6 +181,8 @@ namespace EatFitAI.API.DTOs.AI
         public int? CookingTimeMinutes { get; set; }
         public string? Difficulty { get; set; }
         public List<string> PrepItems { get; set; } = new();
+        public List<string> Seasonings { get; set; } = new();
+        public string? CookingMethod { get; set; }
         public List<string> Tips { get; set; } = new();
         public List<string> SourceUrls { get; set; } = new();
         public RecipeYoutubeVideoDto? YoutubeVideo { get; set; }

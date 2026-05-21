@@ -53,6 +53,8 @@ export interface RecipeSuggestion {
   sourceUrls?: string[];
   youtubeVideo?: RecipeYoutubeVideo | null;
   prepItems?: string[];
+  seasonings?: string[];
+  cookingMethod?: string;
   disclaimer?: string;
   availableIngredients?: string[];
   matchedIngredients: string[];
@@ -77,6 +79,8 @@ export interface RecipeCookingGuide {
   recipeId?: number;
   recipeName?: string;
   prepItems?: string[];
+  seasonings?: string[];
+  cookingMethod?: string;
   steps: string[];
   cookingTimeMinutes?: number;
   difficulty?: string;

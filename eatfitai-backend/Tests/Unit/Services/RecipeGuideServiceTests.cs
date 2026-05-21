@@ -75,6 +75,62 @@ public class RecipeGuideServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetCookingGuideAsync_ParsesStructuredInstructionsJsonCorrectly()
+    {
+        var recipeId = await SeedRecipeAsync();
+        var recipe = await _context.Recipes.SingleAsync();
+        recipe.InstructionsJson = """
+            {
+              "steps": ["Băm tỏi", "Phi thơm tỏi", "Xào thịt bò chín tái"],
+              "prepItems": ["Tỏi băm nhỏ", "Thịt bò thái mỏng"],
+              "seasonings": ["1 thìa canh dầu hào", "1 thìa cà phê nước mắm"],
+              "cookingMethod": "Xào",
+              "tips": ["Xào lửa lớn để thịt bò không dai"]
+            }
+            """;
+        recipe.SourceUrlsJson = "[\"https://example.com/recipe\"]";
+        recipe.EnhancedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var factory = new StubHttpClientFactory(_ => throw new InvalidOperationException("provider should not be called"));
+        var service = CreateService(factory);
+
+        var result = await service.GetCookingGuideAsync(recipeId);
+
+        Assert.NotNull(result);
+        Assert.Equal("stored", result!.GuideStatus);
+        Assert.Equal(new[] { "Băm tỏi", "Phi thơm tỏi", "Xào thịt bò chín tái" }, result.Steps);
+        Assert.Equal(new[] { "Tỏi băm nhỏ", "Thịt bò thái mỏng" }, result.PrepItems);
+        Assert.Equal(new[] { "1 thìa canh dầu hào", "1 thìa cà phê nước mắm" }, result.Seasonings);
+        Assert.Equal("Xào", result.CookingMethod);
+        Assert.Equal(new[] { "Xào lửa lớn để thịt bò không dai" }, result.Tips);
+    }
+
+    [Fact]
+    public async Task GetCookingGuideAsync_ParsesLegacyInstructionsJsonCorrectly()
+    {
+        var recipeId = await SeedRecipeAsync();
+        var recipe = await _context.Recipes.SingleAsync();
+        recipe.InstructionsJson = "[\"Bước 1\", \"Bước 2\", \"Bước 3\"]";
+        recipe.SourceUrlsJson = "[\"https://example.com/recipe\"]";
+        recipe.EnhancedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var factory = new StubHttpClientFactory(_ => throw new InvalidOperationException("provider should not be called"));
+        var service = CreateService(factory);
+
+        var result = await service.GetCookingGuideAsync(recipeId);
+
+        Assert.NotNull(result);
+        Assert.Equal("stored", result!.GuideStatus);
+        Assert.Equal(new[] { "Bước 1", "Bước 2", "Bước 3" }, result.Steps);
+        Assert.Equal(new[] { "Bước 1", "Bước 2" }, result.PrepItems); // fallback should take first 2 steps
+        Assert.Empty(result.Seasonings);
+        Assert.Null(result.CookingMethod);
+        Assert.Empty(result.Tips);
+    }
+
+    [Fact]
     public async Task GetCookingGuideAsync_AcceptsSourceBackedGeneratedGuideWithoutYoutubeVideo()
     {
         var recipeId = await SeedRecipeAsync();
@@ -144,7 +200,7 @@ public class RecipeGuideServiceTests : IDisposable
         Assert.Equal("generated", result!.GuideStatus);
         Assert.Equal(20, result.CookingTimeMinutes);
         Assert.Equal("https://www.youtube.com/watch?v=abc", result.YoutubeVideo!.Url);
-        Assert.Equal("[\"Sơ chế\",\"Xào chín\",\"Hoàn thiện\"]", recipe.InstructionsJson);
+        Assert.Equal("{\"steps\":[\"Sơ chế\",\"Xào chín\",\"Hoàn thiện\"],\"prepItems\":[],\"seasonings\":[],\"cookingMethod\":\"Khác\",\"tips\":[\"Nấu lửa vừa\"]}", recipe.InstructionsJson);
         Assert.Equal("https://www.youtube.com/watch?v=abc", recipe.VideoUrl);
         Assert.NotNull(recipe.EnhancedAt);
     }

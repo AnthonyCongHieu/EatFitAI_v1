@@ -551,6 +551,10 @@ namespace EatFitAI.API.Services
                 YoutubeVideo = youtubeVideo,
                 GuideStatus = guide?.GuideStatus,
                 SourceUrls = sourceUrls,
+                PrepItems = guide?.PrepItems ?? (instructions != null ? instructions.Take(2).ToList() : new List<string>()),
+                Seasonings = guide?.Seasonings ?? new List<string>(),
+                CookingMethod = guide?.CookingMethod,
+                Tips = guide?.Tips ?? new List<string>(),
                 Ingredients = ingredientDetails,
                 RequiredIngredients = requiredIngredients,
                 Disclaimer = RecipeDisclaimer
@@ -1033,15 +1037,34 @@ namespace EatFitAI.API.Services
                 return null;
             }
 
+            var trimmed = instructionsJson.Trim();
             try
             {
-                var parsed = System.Text.Json.JsonSerializer.Deserialize<List<string>>(instructionsJson);
-                var steps = parsed?
+                if (trimmed.StartsWith('{'))
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(trimmed);
+                    if (doc.RootElement.TryGetProperty("steps", out var stepsEl) && stepsEl.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        var steps = new List<string>();
+                        foreach (var item in stepsEl.EnumerateArray())
+                        {
+                            var val = item.GetString()?.Trim();
+                            if (!string.IsNullOrWhiteSpace(val))
+                            {
+                                steps.Add(val);
+                            }
+                        }
+                        return steps.Count > 0 ? steps : null;
+                    }
+                }
+
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<List<string>>(trimmed);
+                var stepsList = parsed?
                     .Select(step => step?.Trim())
                     .Where(step => !string.IsNullOrWhiteSpace(step))
                     .Select(step => step!)
                     .ToList();
-                return steps is { Count: > 0 } ? steps : null;
+                return stepsList is { Count: > 0 } ? stepsList : null;
             }
             catch (System.Text.Json.JsonException)
             {
