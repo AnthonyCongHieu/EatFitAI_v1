@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +16,10 @@ import {
 import { performMoChiNotificationAction } from '../../../features/mochi/mochiNotificationActions';
 import type { RootStackParamList } from '../../types';
 import { useEN } from '../../../theme/emeraldNebula';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -67,17 +71,26 @@ const NotificationCenterScreen = (): React.ReactElement => {
   const palette = { ...P_STATIC, ...useEN() };
   const items = useMoChiNotificationInboxStore((state) => state.items);
   const markRead = useMoChiNotificationInboxStore((state) => state.markRead);
-  const removeItem = useMoChiNotificationInboxStore((state) => state.removeItem);
+  const removeRead = useMoChiNotificationInboxStore((state) => state.removeRead);
   const unreadCount = useMemo(() => selectUnreadMoChiNotificationCount(items), [items]);
+  const hasRead = useMemo(() => items.some((item) => item.readAt && !item.resolvedAt), [items]);
 
   const handleOpenItem = (item: MoChiNotificationItem) => {
-    if (item.resolvedAt) {
-      markRead(item.id);
-      return;
-    }
-
-    removeItem(item.id);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    markRead(item.id);
     performMoChiNotificationAction(item.action, item.mealTypeId);
+  };
+
+  const handleDeleteRead = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (typeof removeRead === 'function') {
+      removeRead();
+    } else {
+      // Fallback in case Metro bundler has cached the old store actions
+      useMoChiNotificationInboxStore.setState((state) => ({
+        items: state.items.filter((item) => !(item.readAt && !item.resolvedAt)),
+      }));
+    }
   };
 
   return (
@@ -112,67 +125,88 @@ const NotificationCenterScreen = (): React.ReactElement => {
         contentContainerStyle={[S.scrollContent, { paddingBottom: insets.bottom + 28 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={S.summaryCard}>
-          <View style={S.summaryIcon}>
-            <Ionicons name="notifications" size={24} color={palette.primary} />
+        {unreadCount > 0 && (
+          <View style={S.summaryCard}>
+            <View style={S.summaryIcon}>
+              <Ionicons name="notifications" size={24} color={palette.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={S.summaryTitle}>
+                {`${unreadCount} việc mới cần xem`}
+              </ThemedText>
+              <ThemedText style={S.summaryText}>
+                MoChi chỉ giữ lại các nhắc nhở có hành động rõ ràng hoặc báo cáo cần kiểm tra.
+              </ThemedText>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <ThemedText style={S.summaryTitle}>
-              {unreadCount > 0 ? `${unreadCount} việc mới cần xem` : 'Đã xem hết thông báo'}
-            </ThemedText>
-            <ThemedText style={S.summaryText}>
-              {unreadCount > 0
-                ? 'MoChi chỉ giữ lại các nhắc nhở có hành động rõ ràng hoặc báo cáo cần kiểm tra.'
-                : 'Khi có nhắc bữa, nước hoặc báo cáo quan trọng, chúng sẽ nằm ở đây.'}
-            </ThemedText>
-          </View>
-        </View>
+        )}
 
         {items.length === 0 ? (
           <MoChiInlineNotice
             mochiEvent="weekly_review"
             routeName="NotificationCenter"
-            title="Chưa có việc cần xem"
-            message="Khi có nhắc nhở quan trọng, MoChi sẽ gom lại ở đây để bạn xử lý khi tiện."
+            title="Hộp thư đang trống nè!"
+            message="Khi có nhắc nhở ăn uống hoặc báo cáo sức khỏe, MoChi sẽ báo cho bạn biết ở đây nha!"
             compact
             tone="calm"
           />
         ) : (
-          <View style={S.list}>
-            {items.map((item) => {
-              const visual = getNotificationVisual(item);
-              const isUnread = !item.readAt && !item.resolvedAt;
-
-              return (
+          <View style={S.listContainer}>
+            <View style={S.listHeader}>
+              {hasRead && (
                 <Pressable
-                  key={item.id}
-                  onPress={() => handleOpenItem(item)}
                   style={[
-                    S.notificationRow,
-                    isUnread && S.notificationRowUnread,
-                    item.resolvedAt && S.notificationRowResolved,
+                    S.clearButton,
+                    {
+                      backgroundColor: palette.dangerContainer,
+                      borderColor: palette.danger + '22',
+                    },
                   ]}
+                  onPress={handleDeleteRead}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Xóa thông báo đã xem"
                 >
-                  <View style={[S.notificationIcon, { backgroundColor: visual.tone + '18' }]}>
-                    <Ionicons name={visual.icon} size={20} color={visual.tone} />
-                  </View>
-                  <View style={S.notificationCopy}>
-                    <View style={S.notificationTitleRow}>
-                      <ThemedText style={S.notificationTitle} numberOfLines={1}>
-                        {item.title}
-                      </ThemedText>
-                      <ThemedText style={[S.notificationState, isUnread && { color: palette.primary }]}>
-                        {getNotificationStateLabel(item)}
-                      </ThemedText>
-                    </View>
-                    <ThemedText style={S.notificationBody} numberOfLines={2}>
-                      {item.body}
-                    </ThemedText>
-
-                  </View>
+                  <ThemedText style={[S.clearButtonText, { color: palette.danger }]}>Xóa thông báo</ThemedText>
                 </Pressable>
-              );
-            })}
+              )}
+            </View>
+            <View style={S.list}>
+              {items.map((item) => {
+                const visual = getNotificationVisual(item);
+                const isUnread = !item.readAt && !item.resolvedAt;
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => handleOpenItem(item)}
+                    style={[
+                      S.notificationRow,
+                      isUnread && S.notificationRowUnread,
+                      item.resolvedAt && S.notificationRowResolved,
+                    ]}
+                  >
+                    <View style={[S.notificationIcon, { backgroundColor: visual.tone + '18' }]}>
+                      <Ionicons name={visual.icon} size={20} color={visual.tone} />
+                    </View>
+                    <View style={S.notificationCopy}>
+                      <View style={S.notificationTitleRow}>
+                        <ThemedText style={S.notificationTitle} numberOfLines={1}>
+                          {item.title}
+                        </ThemedText>
+                        <ThemedText style={[S.notificationState, isUnread && { color: palette.primary }]}>
+                          {getNotificationStateLabel(item)}
+                        </ThemedText>
+                      </View>
+                      <ThemedText style={S.notificationBody} numberOfLines={2}>
+                        {item.body}
+                      </ThemedText>
+
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -249,6 +283,29 @@ const S = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     color: P.onSurfaceVariant,
+  },
+  listContainer: {
+    gap: 8,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  clearButtonText: {
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_600SemiBold',
   },
   list: {
     gap: 10,
