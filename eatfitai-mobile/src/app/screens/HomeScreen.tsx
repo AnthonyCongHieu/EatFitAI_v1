@@ -45,9 +45,12 @@ import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
 import { waterService, type WaterIntakeData } from '../../services/waterService';
 import type { AppTabsParamList } from '../navigation/AppTabs';
+import WeightCard from '../../components/home/WeightCard';
+import WeightUpdateModal from '../../components/home/WeightUpdateModal';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
 import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
+import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
 import {
   selectUnreadMoChiNotificationCount,
   useMoChiNotificationInboxStore,
@@ -274,10 +277,12 @@ const HomeScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [weightModalVisible, setWeightModalVisible] = useState(false);
   const notificationInboxItems = useMoChiNotificationInboxStore((state) => state.items);
   const markMoChiNotificationActed = useMoChiNotificationInboxStore((state) => state.markActed);
   const setMoChiVisibleTarget = useMoChiVisibleTargetsStore((state) => state.setVisibleTarget);
   const unreadNotificationCount = selectUnreadMoChiNotificationCount(notificationInboxItems);
+  const { currentStep } = useMoChiTutorial();
   const homeWaterReminder = useMemo(() => {
     const now = Date.now();
 
@@ -414,6 +419,15 @@ const HomeScreen = (): React.ReactElement => {
 
     return () => timers.forEach(clearTimeout);
   }, [route.params?.focusWaterRequestId, waterCardY]);
+
+  useEffect(() => {
+    if (currentStep?.targetId === 'home_water' && waterCardY != null) {
+      const timer = setTimeout(() => {
+        screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep?.targetId, waterCardY]);
 
   const showCommonErrors = useCallback(
     (error: any, fallback: { text1: string; text2: string }) => {
@@ -938,6 +952,18 @@ const HomeScreen = (): React.ReactElement => {
             </Pressable>
           )}
         </Animated.View>
+
+        {/* ══════════ WEIGHT TRACKING ══════════ */}
+        <WeightCard
+          onUpdatePress={() => setWeightModalVisible(true)}
+          onCardPress={() => navigation.navigate('WeightStats')}
+        />
+
+        {/* ══════════ Weight Update Modal ══════════ */}
+        <WeightUpdateModal
+          visible={weightModalVisible}
+          onClose={() => setWeightModalVisible(false)}
+        />
       </Screen>
     </View>
   );

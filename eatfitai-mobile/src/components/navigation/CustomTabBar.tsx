@@ -185,7 +185,7 @@ const CommandButton = ({
     <Animated.View
       style={[
         styles.commandInner,
-        command.isPrimary && styles.primaryDock,
+        command.isPrimary && (tutorialTargetId ? styles.primaryDockInner : styles.primaryDock),
         anim,
       ]}
     >
@@ -268,6 +268,8 @@ const CommandButton = ({
         <MoChiTutorialTarget
           targetId={tutorialTargetId}
           highlightProfile={command.isPrimary ? 'dock' : 'tab'}
+          style={command.isPrimary ? styles.primaryDock : undefined}
+          onTutorialActivate={handlePress}
         >
           {inner}
         </MoChiTutorialTarget>
@@ -436,6 +438,12 @@ const styles = StyleSheet.create({
     height: 86,
     borderRadius: 43,
     marginTop: -30,
+    backgroundColor: 'transparent',
+  },
+  primaryDockInner: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     backgroundColor: 'transparent',
   },
   primaryDockHalo: {

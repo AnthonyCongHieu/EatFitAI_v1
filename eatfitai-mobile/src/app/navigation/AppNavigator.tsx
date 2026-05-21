@@ -108,6 +108,9 @@ const getGoalSettingsScreen = lazyScreen(() =>
 const getWeightHistoryScreen = lazyScreen(() =>
   require('../screens/profile/WeightHistoryScreen'),
 );
+const getWeightStatsScreen = lazyScreen(() =>
+  require('../screens/stats/WeightStatsScreen'),
+);
 const getChangePasswordScreen = lazyScreen(() =>
   require('../screens/profile/ChangePasswordScreen'),
 );
@@ -367,6 +370,11 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="WeightHistory"
                 getComponent={getWeightHistoryScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="WeightStats"
+                getComponent={getWeightStatsScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen

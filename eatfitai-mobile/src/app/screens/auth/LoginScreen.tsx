@@ -100,8 +100,8 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
         });
         Toast.show({
           type: 'success',
-          text1: 'Chào mừng trở lại!',
-          text2: 'Đăng nhập thành công',
+          text1: 'Chào mừng bạn quay trở lại! 🎉',
+          text2: 'Đăng nhập thành công rồi nha.',
         });
 
         if (result.needsOnboarding) {
@@ -161,8 +161,8 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
       });
       Toast.show({
         type: 'success',
-        text1: 'Đăng nhập với Google thành công',
-        text2: 'Chào mừng bạn!',
+        text1: 'Đăng nhập Google thành công rồi nha! 🎉',
+        text2: 'Chào mừng bạn đến với EatFitAI!',
       });
 
       if (result.needsOnboarding) {
@@ -186,8 +186,8 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
 
       Toast.show({
         type: 'error',
-        text1: 'Đăng nhập Google thất bại',
-        text2: e?.message || 'Vui lòng thử lại',
+        text1: 'Đăng nhập Google chưa thành công rồi! 😢',
+        text2: e?.message || 'Bạn vui lòng thử lại sau nha.',
         visibilityTime: 4000,
       });
     } finally {

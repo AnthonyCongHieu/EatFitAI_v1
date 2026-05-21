@@ -136,8 +136,8 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
 
         Toast.show({
           type: 'success',
-          text1: '🎉 Đăng ký thành công!',
-          text2: 'Kiểm tra email để lấy mã xác minh',
+          text1: 'Đăng ký tài khoản thành công rồi! 🎉',
+          text2: 'Bạn kiểm tra email để lấy mã xác minh giúp mình nha.',
         });
 
         navigation.navigate('VerifyEmail', {
@@ -172,8 +172,8 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
         });
         Toast.show({
           type: 'error',
-          text1: 'Đăng ký thất bại',
-          text2: message,
+          text1: 'Đăng ký tài khoản chưa được rồi! 😢',
+          text2: message || 'Vui lòng kiểm tra lại thông tin và thử lại nha.',
           visibilityTime: 4000,
         });
       } finally {
