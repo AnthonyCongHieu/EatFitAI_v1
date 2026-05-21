@@ -9,6 +9,70 @@ const ACCESS_TOKEN_KEY = 'eatfitai.accessToken';
 const REFRESH_TOKEN_KEY = 'eatfitai.refreshToken';
 const ACCESS_EXP_KEY = 'eatfitai.accessTokenExp'; // ISO string UTC
 const REFRESH_EXP_KEY = 'eatfitai.refreshTokenExp'; // ISO string UTC
+const CHUNK_COUNT_SUFFIX = '.chunkCount';
+const CHUNK_VALUE_SUFFIX = '.chunk.';
+const SECURE_STORE_CHUNK_SIZE = 1800;
+
+const getChunkCountKey = (key: string): string => `${key}${CHUNK_COUNT_SUFFIX}`;
+const getChunkKey = (key: string, index: number): string =>
+  `${key}${CHUNK_VALUE_SUFFIX}${index}`;
+
+const deleteChunkedItemAsync = async (key: string): Promise<void> => {
+  const countValue = await SecureStore.getItemAsync(getChunkCountKey(key));
+  const count = Number.parseInt(countValue || '', 10);
+  if (Number.isFinite(count) && count > 0) {
+    await Promise.all(
+      Array.from({ length: count }, (_, index) =>
+        SecureStore.deleteItemAsync(getChunkKey(key, index)),
+      ),
+    );
+  }
+
+  await SecureStore.deleteItemAsync(getChunkCountKey(key));
+};
+
+const setSecureValueAsync = async (key: string, value: string): Promise<void> => {
+  if (value.length <= SECURE_STORE_CHUNK_SIZE) {
+    await deleteChunkedItemAsync(key);
+    await SecureStore.setItemAsync(key, value);
+    return;
+  }
+
+  const chunks = value.match(new RegExp(`.{1,${SECURE_STORE_CHUNK_SIZE}}`, 'g')) ?? [];
+  await Promise.all(
+    chunks.map((chunk, index) => SecureStore.setItemAsync(getChunkKey(key, index), chunk)),
+  );
+  await SecureStore.setItemAsync(getChunkCountKey(key), String(chunks.length));
+  await SecureStore.deleteItemAsync(key);
+};
+
+const getSecureValueAsync = async (key: string): Promise<string | null> => {
+  const countValue = await SecureStore.getItemAsync(getChunkCountKey(key));
+  const count = Number.parseInt(countValue || '', 10);
+
+  if (Number.isFinite(count) && count > 0) {
+    const chunks = await Promise.all(
+      Array.from({ length: count }, (_, index) =>
+        SecureStore.getItemAsync(getChunkKey(key, index)),
+      ),
+    );
+
+    if (chunks.every((chunk): chunk is string => typeof chunk === 'string')) {
+      return chunks.join('');
+    }
+
+    logger.warn('[SecureStore] Chunked value is incomplete, clearing stale chunks');
+    await deleteChunkedItemAsync(key);
+    return null;
+  }
+
+  return SecureStore.getItemAsync(key);
+};
+
+const deleteSecureValueAsync = async (key: string): Promise<void> => {
+  await SecureStore.deleteItemAsync(key);
+  await deleteChunkedItemAsync(key);
+};
 
 // Hàm set/get/clear token tiện dụng
 export const tokenStorage = {
@@ -29,9 +93,9 @@ export const tokenStorage = {
       logger.warn('[EatFitAI] Refresh token đưa vào saveTokens không hợp lệ, bỏ qua');
       refreshToken = undefined;
     }
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+    await setSecureValueAsync(ACCESS_TOKEN_KEY, accessToken);
     if (refreshToken) {
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      await setSecureValueAsync(REFRESH_TOKEN_KEY, refreshToken);
     }
   },
 
@@ -86,7 +150,7 @@ export const tokenStorage = {
       );
     }
 
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+    await setSecureValueAsync(ACCESS_TOKEN_KEY, accessToken);
     if (__DEV__) {
       logger.info('[SecureStore] Saved access token:', {
         tokenLength: accessToken.length,
@@ -97,14 +161,14 @@ export const tokenStorage = {
       typeof accessTokenExpiresAt === 'string' &&
       !isNaN(Date.parse(accessTokenExpiresAt))
     ) {
-      await SecureStore.setItemAsync(ACCESS_EXP_KEY, accessTokenExpiresAt);
+      await setSecureValueAsync(ACCESS_EXP_KEY, accessTokenExpiresAt);
     }
     if (
       refreshToken &&
       typeof refreshToken === 'string' &&
       refreshToken.trim().length > 0
     ) {
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      await setSecureValueAsync(REFRESH_TOKEN_KEY, refreshToken);
       if (__DEV__) {
         logger.info('[SecureStore] Saved refresh token:', {
           tokenLength: refreshToken.length,
@@ -120,13 +184,13 @@ export const tokenStorage = {
       typeof refreshTokenExpiresAt === 'string' &&
       !isNaN(Date.parse(refreshTokenExpiresAt))
     ) {
-      await SecureStore.setItemAsync(REFRESH_EXP_KEY, refreshTokenExpiresAt);
+      await setSecureValueAsync(REFRESH_EXP_KEY, refreshTokenExpiresAt);
     }
   },
 
   // Lấy access token
   async getAccessToken(): Promise<string | null> {
-    const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    const token = await getSecureValueAsync(ACCESS_TOKEN_KEY);
     if (__DEV__) {
       logger.info('[EatFitAI] Getting access token from storage:', {
         hasToken: !!token,
@@ -138,7 +202,7 @@ export const tokenStorage = {
 
   // Lấy refresh token
   async getRefreshToken(): Promise<string | null> {
-    const token = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    const token = await getSecureValueAsync(REFRESH_TOKEN_KEY);
     if (__DEV__) {
       logger.info('[EatFitAI] Getting refresh token from storage:', {
         hasToken: !!token,
@@ -149,19 +213,19 @@ export const tokenStorage = {
   },
 
   async getAccessTokenExpiresAt(): Promise<string | null> {
-    return SecureStore.getItemAsync(ACCESS_EXP_KEY);
+    return getSecureValueAsync(ACCESS_EXP_KEY);
   },
 
   async getRefreshTokenExpiresAt(): Promise<string | null> {
-    return SecureStore.getItemAsync(REFRESH_EXP_KEY);
+    return getSecureValueAsync(REFRESH_EXP_KEY);
   },
 
   // Xoá cả hai token (đăng xuất)
   async clearAll(): Promise<void> {
-    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(ACCESS_EXP_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_EXP_KEY);
+    await deleteSecureValueAsync(ACCESS_TOKEN_KEY);
+    await deleteSecureValueAsync(REFRESH_TOKEN_KEY);
+    await deleteSecureValueAsync(ACCESS_EXP_KEY);
+    await deleteSecureValueAsync(REFRESH_EXP_KEY);
   },
 };
 

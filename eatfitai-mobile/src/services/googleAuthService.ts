@@ -164,20 +164,34 @@ const signInWithLegacyGoogle = async (): Promise<GoogleAuthResult | null> => {
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
   const response = await GoogleSignin.signIn();
+  if ((response as any)?.type && (response as any).type !== 'success') {
+    return {
+      success: false,
+      error:
+        (response as any).type === 'cancelled'
+          ? 'Đã hủy đăng nhập'
+          : 'Đăng nhập Google chưa hoàn tất. Vui lòng thử lại.',
+    };
+  }
+
   const userInfo = (response as any).data || response;
   const user = userInfo.user || userInfo;
+  const idToken = readString(userInfo.idToken, response.idToken);
 
-  if (!user || !user.email) {
-    logger.error('[GoogleAuth] No user email in response:', {
+  if (!idToken) {
+    logger.error('[GoogleAuth] No ID token in response:', {
       hasUser: Boolean(user),
-      hasIdToken: Boolean(userInfo.idToken || response.idToken),
       hasServerAuthCode: Boolean(userInfo.serverAuthCode || response.serverAuthCode),
     });
     return {
       success: false,
       error:
-        'Không thể lấy thông tin email từ Google. Vui lòng thử lại.',
+        'Không nhận được ID Token từ Google. Vui lòng thử lại.',
     };
+  }
+
+  if (!user?.email) {
+    logger.warn('[GoogleAuth] No user email in response; backend will verify ID token.');
   }
 
   logger.info('[GoogleAuth] Sign in success');
@@ -185,12 +199,12 @@ const signInWithLegacyGoogle = async (): Promise<GoogleAuthResult | null> => {
   return {
     success: true,
     user: {
-      id: user.id || user.userId || '',
-      email: user.email,
-      name: user.name || user.displayName || null,
-      photo: user.photo || user.photoUrl || null,
+      id: readString(user?.id, user?.userId),
+      email: readString(user?.email),
+      name: readString(user?.name, user?.displayName) || null,
+      photo: readString(user?.photo, user?.photoUrl) || null,
     },
-    idToken: userInfo.idToken || response.idToken || undefined,
+    idToken,
     serverAuthCode: userInfo.serverAuthCode || response.serverAuthCode || undefined,
   };
 };
@@ -345,7 +359,7 @@ export const googleAuthService = {
           const user = normalizeNativeGoogleUser(nativeResponse);
           const idToken = readString(nativeResponse?.idToken, nativeResponse?.data?.idToken);
 
-          if (!idToken || !user.email) {
+          if (!idToken) {
             logger.error('[GoogleAuth] Credential Manager response missing required fields:', {
               hasIdToken: Boolean(idToken),
               hasEmail: Boolean(user.email),
@@ -355,6 +369,10 @@ export const googleAuthService = {
               error:
                 'Không thể lấy thông tin đăng nhập từ Google. Vui lòng thử lại.',
             };
+          }
+
+          if (!user.email) {
+            logger.warn('[GoogleAuth] Credential Manager response has no email; backend will verify ID token.');
           }
 
           logger.info('[GoogleAuth] Credential Manager sign in success');

@@ -1,10 +1,15 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const fs = require('fs');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
-const { buildAsciiKeyEventArgs } = require('./lib/adb-text');
 const { logcatContainsAppCrash, redactLogcatText } = require('./lib/device-logcat');
 const { toBusinessDateOnly } = require('./lib/business-date');
+const {
+  createDisposableMailbox,
+  waitForMatchingMessage,
+} = require('./lib/disposable-mail');
+const { resolveAuthCode } = require('./lib/auth-smoke-codes');
 const {
   VISUAL_AUDIT_FLOWS,
   buildVisualBugMatrix,
@@ -27,6 +32,7 @@ const MODES = [
   'post-login-smoke',
   'scan-entry',
   'diary-readback',
+  'register-new-user',
   'login-real',
   'home-smoke',
   'full-tab-ui-smoke',
@@ -1426,17 +1432,12 @@ function inputText(adb, serial, text) {
 }
 
 function inputEmailText(adb, serial, email) {
-  const keyEventArgs = buildAsciiKeyEventArgs(email, { lowercase: true });
-  if (keyEventArgs) {
-    return {
-      ...runAdb(adb, serial, keyEventArgs, { timeoutMs: 20000 }),
-      method: 'ascii-keyevent',
-    };
-  }
-
+  // Email must use `input text` instead of letter keyevents. Some Vietnamese
+  // IMEs treat repeated KEYCODE_* letters as Telex composition and can turn
+  // `example.com` into accented text, which invalidates real-device auth.
   return {
-    ...inputText(adb, serial, email),
-    method: 'adb-input-text',
+    ...inputText(adb, serial, String(email || '').toLowerCase()),
+    method: 'adb-input-text-email',
   };
 }
 
@@ -3189,6 +3190,401 @@ async function runBackendFrontendLiveCheck(context) {
   capturePerformanceSnapshot(context, 'backend-frontend-live-check-final');
 }
 
+async function resolveFreshRegisterAccount(context) {
+  const explicitEmail =
+    trim(resolveEnv('EATFITAI_NEW_USER_EMAIL')) ||
+    trim(resolveEnv('EATFITAI_REGISTER_EMAIL'));
+  const explicitPassword =
+    trim(resolveEnv('EATFITAI_NEW_USER_PASSWORD')) ||
+    trim(resolveEnv('EATFITAI_REGISTER_PASSWORD'));
+  const displayName =
+    trim(resolveEnv('EATFITAI_NEW_USER_NAME')) ||
+    `Codex Fresh ${Date.now().toString().slice(-5)}`;
+
+  if (explicitEmail && explicitPassword) {
+    return {
+      email: explicitEmail,
+      password: explicitPassword,
+      displayName,
+      mailbox: null,
+      source: 'env',
+    };
+  }
+
+  const mailbox = await createDisposableMailbox({
+    outputDir: context.outputDir,
+    artifactName: 'fresh-user-mailbox.json',
+  });
+
+  return {
+    email: mailbox.address,
+    password: `FreshUser${Date.now().toString().slice(-6)}A`,
+    displayName,
+    mailbox,
+    source: 'mail.tm',
+  };
+}
+
+async function resolveFreshVerificationCode(context, account, createdAfterIso) {
+  const { backend, outputDir, report } = context;
+  const responseBodies = [];
+  const resend = await requestJson(`${backend.url}/api/auth/resend-verification`, {
+    method: 'POST',
+    json: { Email: account.email },
+    timeoutMs: 60000,
+  });
+  responseBodies.push(resend.body);
+  report.apiReadbacks.push({
+    name: 'register-new-user-resend-verification-code',
+    status: resend.ok ? 'pass' : 'fail',
+    mandatory: false,
+    httpStatus: resend.status,
+    durationMs: resend.durationMs,
+    body: summarizeApiBody(resend.body),
+    error: resend.error || '',
+  });
+
+  let resolution = resolveAuthCode({
+    responseBodies,
+    responseKey: 'verificationCode',
+    mailboxMessage: null,
+  });
+  if (resolution.code) {
+    return resolution;
+  }
+
+  if (!account.mailbox) {
+    addWarning(
+      report,
+      'fresh-register-verification-code-unavailable',
+      'Verification code was not returned by the backend and no disposable mailbox is available.',
+      { resendStatus: resend.status },
+    );
+    return resolution;
+  }
+
+  const message = await waitForMatchingMessage({
+    mailbox: account.mailbox,
+    outputDir,
+    artifactName: 'fresh-user-verification-message.json',
+    subjectIncludes: 'Mã xác minh',
+    createdAfterIso,
+    timeoutMs: parsePositiveInteger(resolveEnv('EATFITAI_REGISTER_MAILBOX_TIMEOUT_MS'), 240000),
+    pollIntervalMs: parsePositiveInteger(resolveEnv('EATFITAI_REGISTER_MAILBOX_POLL_MS'), 10000),
+  });
+
+  resolution = resolveAuthCode({
+    responseBodies,
+    responseKey: 'verificationCode',
+    mailboxMessage: message,
+  });
+  return resolution;
+}
+
+async function fillTextMarker(context, marker, name, value, xRatio, yRatio, options = {}) {
+  const { adb, serial, outputDir, report } = context;
+  const tapResult = await tapMarkerOrCoordinate(context, marker, `${name}-tap`, xRatio, yRatio, 600);
+  await sleep(500);
+  if (options.tapKeyboardGlobe) {
+    await maybeTapKeyboardGlobe(context, `${name}-keyboard-globe-tap`);
+  }
+  clearFocusedText(adb, serial, options.clearAttempts || 64);
+  const input = options.email
+    ? inputEmailText(adb, serial, value)
+    : inputText(adb, serial, value);
+  await sleep(500);
+  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], { timeoutMs: 5000 });
+  await sleep(500);
+  report.steps.push({
+    name,
+    tap: tapResult,
+    inputOk: input.ok,
+    inputMethod: input.method || 'adb-input-text',
+  });
+  report.artifacts.push(captureScreenshot(adb, serial, outputDir, name));
+}
+
+async function enterVerificationCode(context, code) {
+  const { adb, serial, outputDir, report } = context;
+  const digits = String(code || '').split('');
+  const fallbackXs = [0.235, 0.34, 0.445, 0.555, 0.66, 0.765];
+  for (let index = 0; index < digits.length; index += 1) {
+    const tapResult = await tapMarkerOrCoordinate(
+      context,
+      `auth-verify-code-input-${index}`,
+      `register-new-user-verify-code-${index}-tap`,
+      fallbackXs[index] || 0.5,
+      0.49,
+      250,
+    );
+    const input = inputText(adb, serial, digits[index]);
+    report.steps.push({
+      name: `register-new-user-verify-code-${index}`,
+      tap: tapResult,
+      inputOk: input.ok,
+    });
+    await sleep(250);
+  }
+  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], { timeoutMs: 5000 });
+  await sleep(600);
+  report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-verify-code-filled'));
+}
+
+async function runRegisterNewUser(context) {
+  const { adb, serial, outputDir, report, record } = context;
+  report.screen = readScreenSize(adb, serial);
+  report.inputWarning =
+    'Fresh-user registration uses ADB text input through the active Android keyboard; screenshots verify no IME rewriting.';
+
+  const account = await resolveFreshRegisterAccount(context);
+  report.freshUser = {
+    source: account.source,
+    email: account.email,
+    displayName: account.displayName,
+    mailboxProvider: account.mailbox?.provider || '',
+    mailboxArtifact: account.mailbox ? path.join(outputDir, 'fresh-user-mailbox.json') : '',
+    verificationCodeSource: '',
+  };
+
+  runAdb(adb, serial, ['logcat', '-b', 'all', '-c']);
+  clearAppDataForCredentialLogin(context, 'register-new-user');
+  const recording = startRecording(adb, serial, outputDir, record, 'screenrecord-register-new-user');
+
+  try {
+    await launchAppForFlow(context, 'register-new-user');
+
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-intro-start-button',
+      'register-new-user-intro-start',
+      0.5,
+      0.925,
+      2500,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-welcome'));
+
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-welcome-register-button',
+      'register-new-user-open-register',
+      0.72,
+      0.905,
+      2500,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-register-screen'));
+    report.artifacts.push(captureUiDump(adb, serial, outputDir, 'register-new-user-register-ui'));
+
+    await fillTextMarker(
+      context,
+      'auth-register-name-input',
+      'register-new-user-name',
+      account.displayName,
+      0.5,
+      0.34,
+      { clearAttempts: 48 },
+    );
+    await fillTextMarker(
+      context,
+      'auth-register-email-input',
+      'register-new-user-email',
+      account.email,
+      0.5,
+      0.42,
+      { email: true, tapKeyboardGlobe: true, clearAttempts: 96 },
+    );
+    await fillTextMarker(
+      context,
+      'auth-register-password-input',
+      'register-new-user-password',
+      account.password,
+      0.5,
+      0.5,
+      { clearAttempts: 64 },
+    );
+    await fillTextMarker(
+      context,
+      'auth-register-confirm-password-input',
+      'register-new-user-confirm-password',
+      account.password,
+      0.5,
+      0.58,
+      { clearAttempts: 64 },
+    );
+
+    runAdb(adb, serial, ['shell', 'input', 'swipe', '540', '1900', '540', '1200', '450'], {
+      timeoutMs: 10000,
+    });
+    await sleep(800);
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-before-submit'));
+
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-register-terms-checkbox',
+      'register-new-user-terms',
+      0.22,
+      0.66,
+      800,
+    );
+    const registerSubmittedAt = new Date().toISOString();
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-register-submit-button',
+      'register-new-user-submit',
+      0.5,
+      0.76,
+      9000,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-after-submit'));
+    const verifyScreenshot = captureScreenshot(adb, serial, outputDir, 'register-new-user-verify-screen');
+    report.artifacts.push(verifyScreenshot);
+    const verifyUi = captureUiDump(adb, serial, outputDir, 'register-new-user-verify-ui');
+    report.artifacts.push(verifyUi);
+    recordScreenEvidence(report, {
+      name: 'register-new-user-verify-screen',
+      markers: ['auth-verify-screen', 'auth-verify-code-input-0', 'auth-verify-submit-button'],
+      uiArtifact: verifyUi,
+      screenshotArtifact: verifyScreenshot,
+      focus: addForegroundStep(report, adb, serial, 'register-new-user-verify-foreground', true),
+      critical: true,
+      allowScreenshotFallback: false,
+    });
+
+    const codeResolution = await resolveFreshVerificationCode(
+      context,
+      account,
+      registerSubmittedAt,
+    );
+    report.freshUser.verificationCodeSource = codeResolution.source || '';
+    if (!codeResolution.code) {
+      addFlowAssertion(
+        report,
+        'register-new-user-verification-code',
+        'fail',
+        { source: codeResolution.source || '', email: account.email },
+        true,
+      );
+      return;
+    }
+    addFlowAssertion(
+      report,
+      'register-new-user-verification-code',
+      'pass',
+      { source: codeResolution.source, codePresent: true },
+      true,
+    );
+
+    await enterVerificationCode(context, codeResolution.code);
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-verify-submit-button',
+      'register-new-user-verify-submit',
+      0.5,
+      0.6,
+      9000,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-after-verify'));
+    const onboardingScreenshot = captureScreenshot(adb, serial, outputDir, 'register-new-user-onboarding-screen');
+    report.artifacts.push(onboardingScreenshot);
+    const onboardingUi = captureUiDump(adb, serial, outputDir, 'register-new-user-onboarding-ui');
+    report.artifacts.push(onboardingUi);
+    recordScreenEvidence(report, {
+      name: 'register-new-user-onboarding-screen',
+      markers: ONBOARDING_INTRO_MARKERS,
+      uiArtifact: onboardingUi,
+      screenshotArtifact: onboardingScreenshot,
+      focus: addForegroundStep(report, adb, serial, 'register-new-user-onboarding-foreground', true),
+      critical: true,
+      allowScreenshotFallback: true,
+    });
+
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-gender-male-button',
+      'register-new-user-onboarding-gender',
+      0.31,
+      0.55,
+      800,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-onboarding-step-0'));
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-next-button',
+      'register-new-user-onboarding-next-0',
+      0.5,
+      0.91,
+      1800,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-onboarding-step-1'));
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-next-button',
+      'register-new-user-onboarding-next-1',
+      0.5,
+      0.91,
+      1800,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-onboarding-step-2'));
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-goal-maintain',
+      'register-new-user-onboarding-goal-maintain',
+      0.5,
+      0.48,
+      800,
+    );
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-next-button',
+      'register-new-user-onboarding-next-2',
+      0.5,
+      0.91,
+      1800,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-onboarding-step-4'));
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-next-button',
+      'register-new-user-onboarding-next-4',
+      0.5,
+      0.91,
+      2500,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-onboarding-step-5'));
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-next-button',
+      'register-new-user-onboarding-start-analysis',
+      0.5,
+      0.91,
+      25000,
+    );
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'register-new-user-onboarding-analysis-complete'));
+    await tapMarkerOrCoordinate(
+      context,
+      'auth-onboarding-complete-button',
+      'register-new-user-onboarding-complete',
+      0.5,
+      0.91,
+      12000,
+    );
+
+    await dismissHomeFirstLoginTutorial(context, 'register-new-user-home-tutorial', {
+      coordinateFallback: true,
+    });
+    const homeOk = await assertScreen(context, 'register-new-user-home', SCREEN_MARKERS.home, true, {
+      allowScreenshotFallback: false,
+    });
+    report.authenticated = homeOk;
+    capturePerformanceSnapshot(context, 'register-new-user-final');
+    report.artifacts.push(captureLogcat(adb, serial, outputDir, 'register-new-user-tail-logcat.txt', ['-t', '1200']));
+  } finally {
+    const video = stopRecording(adb, serial, recording);
+    if (video) {
+      report.artifacts.push(video);
+    }
+  }
+}
+
 async function ensureLoginScreen(context, options = {}) {
   const { adb, serial, outputDir, report } = context;
   const { allowUiDumpFailure = true } = options;
@@ -3412,6 +3808,8 @@ async function main() {
     await runScanEntry(context);
   } else if (mode === 'diary-readback') {
     await runDiaryReadback(context);
+  } else if (mode === 'register-new-user') {
+    await runRegisterNewUser(context);
   } else if (mode === 'login-real') {
     await runLoginReal(context);
   } else if (mode === 'home-smoke') {

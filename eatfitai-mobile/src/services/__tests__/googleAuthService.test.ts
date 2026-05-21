@@ -166,4 +166,88 @@ describe('googleAuthService native sign-in paths', () => {
 
     expect(legacySignIn).toHaveBeenCalledTimes(1);
   });
+
+  it('handles cancelled legacy Google Sign-In without reporting a missing email', async () => {
+    const legacySignIn = jest.fn().mockResolvedValue({
+      type: 'cancelled',
+      data: null,
+    });
+
+    jest.doMock('react-native', () => {
+      return {
+        Platform: { OS: 'android' },
+        NativeModules: {
+          EatFitCredentialManager: undefined,
+        },
+      };
+    });
+
+    jest.doMock('@react-native-google-signin/google-signin', () => ({
+      GoogleSignin: {
+        configure: jest.fn(),
+        hasPlayServices: jest.fn().mockResolvedValue(true),
+        signIn: legacySignIn,
+      },
+      statusCodes: {},
+    }));
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+    const { googleAuthService } = require('../googleAuthService');
+
+    await expect(googleAuthService.configure()).resolves.toBe(true);
+    await expect(googleAuthService.signIn()).resolves.toMatchObject({
+      success: false,
+      error: 'Đã hủy đăng nhập',
+    });
+
+    expect(legacySignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts a legacy Google ID token even when the SDK omits email details', async () => {
+    const legacySignIn = jest.fn().mockResolvedValue({
+      type: 'success',
+      data: {
+        idToken: 'legacy-id-token',
+        serverAuthCode: null,
+        user: {
+          id: 'legacy-user-1',
+          email: '',
+          name: null,
+          photo: null,
+        },
+      },
+    });
+
+    jest.doMock('react-native', () => {
+      return {
+        Platform: { OS: 'android' },
+        NativeModules: {
+          EatFitCredentialManager: undefined,
+        },
+      };
+    });
+
+    jest.doMock('@react-native-google-signin/google-signin', () => ({
+      GoogleSignin: {
+        configure: jest.fn(),
+        hasPlayServices: jest.fn().mockResolvedValue(true),
+        signIn: legacySignIn,
+      },
+      statusCodes: {},
+    }));
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+    const { googleAuthService } = require('../googleAuthService');
+
+    await expect(googleAuthService.configure()).resolves.toBe(true);
+    await expect(googleAuthService.signIn()).resolves.toMatchObject({
+      success: true,
+      idToken: 'legacy-id-token',
+      user: {
+        email: '',
+      },
+    });
+
+    expect(legacySignIn).toHaveBeenCalledTimes(1);
+  });
 });
