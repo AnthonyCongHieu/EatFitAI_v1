@@ -71,7 +71,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
   const palette = { ...P_STATIC, ...useEN() };
   const items = useMoChiNotificationInboxStore((state) => state.items);
   const markRead = useMoChiNotificationInboxStore((state) => state.markRead);
-  const removeRead = useMoChiNotificationInboxStore((state) => state.removeRead);
+  const removeRead = useMoChiNotificationInboxStore((state) => state.removeRead); // removeItem
   const unreadCount = useMemo(() => selectUnreadMoChiNotificationCount(items), [items]);
   const hasRead = useMemo(() => items.some((item) => item.readAt || item.resolvedAt), [items]);
 

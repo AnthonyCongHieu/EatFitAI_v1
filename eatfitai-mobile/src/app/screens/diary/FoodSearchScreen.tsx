@@ -109,8 +109,18 @@ const FoodSearchScreen = (): React.ReactElement => {
   const [commonMeals, setCommonMeals] = useState<CommonMealTemplate[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDebouncing, setIsDebouncing] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'recent' | 'favorites' | 'common' | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -407,6 +417,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       } finally {
         if (searchRequestSeqRef.current === requestSeq) {
           setIsLoading(false);
+          setIsDebouncing(false);
         }
       }
     },
@@ -414,12 +425,19 @@ const FoodSearchScreen = (): React.ReactElement => {
   );
 
   const handleSearch = useCallback(() => {
-
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    setIsDebouncing(false);
     runSearch(query, false).catch(() => {});
   }, [query, runSearch]);
 
   const handleQuickSuggestion = useCallback(
     (nextQuery: string) => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      setIsDebouncing(false);
       setQuery(nextQuery);
       runSearch(nextQuery, false).catch(() => {});
     },
@@ -644,7 +662,11 @@ const FoodSearchScreen = (): React.ReactElement => {
 
           <View style={S.searchArea}>
             <View style={S.searchInputBox}>
-              <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={{ marginRight: 10 }} />
+              {isLoading || isDebouncing ? (
+                <ActivityIndicator size="small" color={P.primary} style={{ marginRight: 10 }} />
+              ) : (
+                <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={{ marginRight: 10 }} />
+              )}
               <TextInput
                 testID={TEST_IDS.foodSearch.queryInput}
                 nativeID={TEST_IDS.foodSearch.queryInput}
@@ -653,13 +675,44 @@ const FoodSearchScreen = (): React.ReactElement => {
                 placeholder="Tìm kiếm món ăn, công thức..."
                 placeholderTextColor={P.onSurfaceVariant + '80'}
                 value={query}
-                onChangeText={setQuery}
+                onChangeText={(text) => {
+                  setQuery(text);
+
+                  if (searchTimeoutRef.current) {
+                    clearTimeout(searchTimeoutRef.current);
+                  }
+
+                  const trimmed = text.trim();
+                  if (!trimmed) {
+                    setIsDebouncing(false);
+                    setItems([]);
+                    setHasSearched(false);
+                  } else {
+                    setIsDebouncing(true);
+                    setItems([]);
+                    setHasSearched(false);
+                    searchTimeoutRef.current = setTimeout(() => {
+                      runSearch(trimmed, false).catch(() => {});
+                    }, 500);
+                  }
+                }}
                 onSubmitEditing={handleSearch}
                 autoFocus={shouldAutoFocusSearch}
                 returnKeyType="search"
               />
               {query.length > 0 && (
-                <Pressable onPress={() => setQuery('')} hitSlop={10}>
+                <Pressable
+                  onPress={() => {
+                    if (searchTimeoutRef.current) {
+                      clearTimeout(searchTimeoutRef.current);
+                    }
+                    setIsDebouncing(false);
+                    setQuery('');
+                    setItems([]);
+                    setHasSearched(false);
+                  }}
+                  hitSlop={10}
+                >
                   <Ionicons name="close-circle" size={18} color={P.onSurfaceVariant} />
                 </Pressable>
               )}

@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   name: {
     flexShrink: 1,
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: 'BeVietnamPro_700Bold',
     color: C_STATIC.onSurface,
     letterSpacing: -0.2,
