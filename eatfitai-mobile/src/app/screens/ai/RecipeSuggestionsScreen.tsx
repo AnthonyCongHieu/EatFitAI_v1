@@ -21,6 +21,8 @@ import { sanitizeFoodImageUrl } from '../../../utils/imageHelpers';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 import { useEN } from '../../../theme/emeraldNebula';
+import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
+import { filterRecipesByPreferences } from '../../../utils/foodPreferenceFilter';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
@@ -43,6 +45,9 @@ const P_STATIC = {
   glassBorder: 'rgba(255,255,255,0.08)',
   glassHeader: 'rgba(22, 27, 43, 0.6)',
   danger: '#ff8c8c',
+  macroC: '#f7c052',
+  macroP: '#34d399',
+  macroF: '#f87171',
 };
 
 const SORT_OPTIONS: { key: SortMode; label: string }[] = [
@@ -65,18 +70,121 @@ const selectRecipeImageUrl = (
 const getRecipeTimeLabel = (recipe: RecipeSuggestion): string =>
   recipe.cookTimeMinutes ? `${recipe.cookTimeMinutes} phút` : 'Chưa rõ';
 
-const getPrimaryReason = (recipe: RecipeSuggestion): string => {
-  if (recipe.scoreReasons?.length) return recipe.scoreReasons[0]!;
-  if (recipe.matchedIngredientsCount > 0) {
-    return `Khớp ${recipe.matchedIngredientsCount}/${recipe.totalIngredientsCount} nguyên liệu`;
+const getSuitableMeals = (recipeName: string, calories: number): string[] => {
+  const name = recipeName.toLowerCase();
+  const meals: string[] = [];
+
+  // Breakfast indicators:
+  const isBreakfast =
+    name.includes('bún') ||
+    name.includes('phở') ||
+    name.includes('hủ tiếu') ||
+    name.includes('mì') ||
+    name.includes('miến') ||
+    name.includes('cháo') ||
+    name.includes('bánh mì') ||
+    name.includes('xôi') ||
+    name.includes('trứng') ||
+    name.includes('pancake') ||
+    name.includes('ngũ cốc') ||
+    name.includes('oatmeal') ||
+    name.includes('bánh cuốn') ||
+    name.includes('bánh giò') ||
+    name.includes('smoothie') ||
+    name.includes('sinh tố');
+
+  // Snack indicators:
+  const isSnack =
+    (name.includes('chè') ||
+      name.includes('bánh ngọt') ||
+      name.includes('sữa chua') ||
+      name.includes('yogurt') ||
+      name.includes('trái cây') ||
+      name.includes('hạt') ||
+      name.includes('salad')) &&
+    calories < 250;
+
+  // Lunch/Dinner indicators:
+  const isLunchDinner =
+    name.includes('cơm') ||
+    name.includes('kho') ||
+    name.includes('xào') ||
+    name.includes('lẩu') ||
+    name.includes('canh') ||
+    name.includes('sườn') ||
+    name.includes('cá') ||
+    name.includes('thịt') ||
+    name.includes('gà') ||
+    name.includes('bò') ||
+    name.includes('heo') ||
+    name.includes('tôm') ||
+    name.includes('mực') ||
+    name.includes('đậu hũ') ||
+    name.includes('tempeh') ||
+    name.includes('cà ri') ||
+    name.includes('curry') ||
+    name.includes('nướng') ||
+    calories >= 300;
+
+  if (isBreakfast) {
+    meals.push('Bữa sáng');
   }
-  return 'Dựa trên nguyên liệu đã chọn';
+
+  if (isLunchDinner) {
+    meals.push('Bữa trưa');
+    meals.push('Bữa tối');
+  }
+
+  if (isSnack && meals.length === 0) {
+    meals.push('Bữa phụ');
+  }
+
+  // Fallback if nothing matched:
+  if (meals.length === 0) {
+    if (calories < 200) {
+      meals.push('Bữa phụ');
+    } else if (calories < 400) {
+      meals.push('Bữa sáng');
+      meals.push('Bữa trưa');
+    } else {
+      meals.push('Bữa trưa');
+      meals.push('Bữa tối');
+    }
+  }
+
+  return meals;
+};
+
+const getPrimaryReason = (recipe: RecipeSuggestion): string => {
+  if (recipe.scoreReasons?.length) {
+    const firstReason = recipe.scoreReasons[0]!;
+    if (
+      firstReason !== 'Gợi ý món phù hợp cho hôm nay' &&
+      firstReason !== 'Dựa trên nguyên liệu đã chọn' &&
+      !firstReason.startsWith('Khớp ')
+    ) {
+      return firstReason;
+    }
+  }
+
+  const meals = getSuitableMeals(recipe.recipeName, recipe.totalCalories);
+  if (meals.length === 1) {
+    return `Phù hợp nhất cho ${meals[0]!.toLowerCase()}`;
+  }
+  if (meals.includes('Bữa trưa') && meals.includes('Bữa tối')) {
+    if (meals.includes('Bữa sáng')) {
+      return 'Thích hợp cho tất cả các bữa chính';
+    }
+    return 'Gợi ý tốt cho bữa trưa hoặc bữa tối';
+  }
+  return `Phù hợp cho ${meals.map((m) => m.toLowerCase()).join(' và ')}`;
 };
 
 const getRecipeBadgeLabel = (recipe: RecipeSuggestion): string => {
   if (recipe.canCookNow) return 'Nấu ngay';
-  if ((recipe.missingIngredientCount ?? 0) > 0) {
-    return `Thiếu ${recipe.missingIngredientCount} món`;
+  const missingCount = recipe.missingIngredients?.length ?? recipe.missingIngredientCount ?? 0;
+  if (missingCount > 0) {
+    return `Thiếu ${missingCount} nguyên liệu`;
   }
 
   const matchValue = Math.round(recipe.matchPercentage || recipe.matchScore || 0);
@@ -128,7 +236,18 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
     glassBorder: EN.glassBorder,
     glassHeader: EN.glassBg,
     danger: EN.danger,
+    macroC: P_STATIC.macroC,
+    macroP: P_STATIC.macroP,
+    macroF: P_STATIC.macroF,
   };
+
+  const { preferences, fetchPreferences } = useUserPreferenceStore();
+
+  useEffect(() => {
+    if (!preferences) {
+      void fetchPreferences();
+    }
+  }, [preferences, fetchPreferences]);
 
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
@@ -140,8 +259,13 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   const [sortMode, setSortMode] = useState<SortMode>('best');
   const requestedMode = route.params?.mode ?? (ingredients.length > 0 ? 'ingredient_combo' : 'auto');
   const isDailyRecommendation = requestedMode === 'daily_recommendation';
+
+  const filteredRecipes = useMemo(() => {
+    return filterRecipesByPreferences(recipes, preferences).recipes;
+  }, [recipes, preferences]);
+
   const displayedRecipes = useMemo(() => {
-    const sorted = [...recipes];
+    const sorted = [...filteredRecipes];
     sorted.sort((a, b) => {
       if (sortMode === 'fast') {
         return (a.cookTimeMinutes ?? 999) - (b.cookTimeMinutes ?? 999);
@@ -155,7 +279,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       return (b.matchScore ?? b.matchPercentage ?? 0) - (a.matchScore ?? a.matchPercentage ?? 0);
     });
     return sorted;
-  }, [recipes, sortMode]);
+  }, [filteredRecipes, sortMode]);
   const groupedSections = useMemo(() => {
     if (isDailyRecommendation) {
       return [
@@ -285,14 +409,31 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             <View style={S.gridCardBody}>
               <ThemedText style={[S.gridTitle, { color: P.onSurface }]} numberOfLines={2}>{item.recipeName}</ThemedText>
               <ThemedText style={[S.gridReason, { color: P.onSurfaceVariant }]} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
+              
+              {/* Nutrition boxes matching detail screen style but smaller */}
+              <View style={S.macrosRow}>
+                <View style={[S.macroBox, { backgroundColor: P.primary + '15', borderColor: P.primary + '40' }]}>
+                  <ThemedText style={[S.macroVal, { color: P.primary }]}>{Math.round(item.totalCalories)}</ThemedText>
+                  <ThemedText style={S.macroLabel}>Kcal</ThemedText>
+                </View>
+                <View style={[S.macroBox, { backgroundColor: P.macroP + '15', borderColor: P.macroP + '40' }]}>
+                  <ThemedText style={[S.macroVal, { color: P.macroP }]}>{Math.round(item.totalProtein)}g</ThemedText>
+                  <ThemedText style={S.macroLabel}>Đạm</ThemedText>
+                </View>
+                <View style={[S.macroBox, { backgroundColor: P.macroC + '15', borderColor: P.macroC + '40' }]}>
+                  <ThemedText style={[S.macroVal, { color: P.macroC }]}>{Math.round(item.totalCarbs)}g</ThemedText>
+                  <ThemedText style={S.macroLabel}>Carb</ThemedText>
+                </View>
+                <View style={[S.macroBox, { backgroundColor: P.macroF + '15', borderColor: P.macroF + '40' }]}>
+                  <ThemedText style={[S.macroVal, { color: P.macroF }]}>{Math.round(item.totalFat)}g</ThemedText>
+                  <ThemedText style={S.macroLabel}>Béo</ThemedText>
+                </View>
+              </View>
+
               <View style={S.gridMetrics}>
                 <View style={S.metric}>
                   <Ionicons name="time-outline" size={12} color={P.onSurfaceVariant} />
                   <ThemedText style={S.metricTextSmall}>{getRecipeTimeLabel(item)}</ThemedText>
-                </View>
-                <View style={S.metric}>
-                  <Ionicons name="flame-outline" size={12} color={P.primary} />
-                  <ThemedText style={S.metricTextSmall}>{Math.round(item.totalCalories)}</ThemedText>
                 </View>
               </View>
             </View>
@@ -634,6 +775,29 @@ const S = StyleSheet.create({
   },
   tagTextSmall: { fontSize: 9, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onPrimary },
   gridCardBody: { padding: 12, gap: 8 },
+  macrosRow: {
+    flexDirection: 'row',
+    gap: 4,
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  macroBox: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+  },
+  macroVal: {
+    fontSize: 10,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+  macroLabel: {
+    fontSize: 8,
+    fontFamily: 'BeVietnamPro_500Medium',
+  },
   gridTitle: { fontSize: 14, fontFamily: 'BeVietnamPro_700Bold', color: P_STATIC.onSurface, lineHeight: 20 },
   gridReason: { fontSize: 11, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurfaceVariant, lineHeight: 16 },
   gridMetrics: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
