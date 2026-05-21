@@ -1,5 +1,6 @@
 import type { UserPreference } from '../app/types';
 import type { FoodItem } from '../services/foodService';
+import type { RecipeSuggestion } from '../types/aiEnhanced';
 
 type FoodFilterRule = {
   id: string;
@@ -270,6 +271,57 @@ export const filterFoodsByPreferences = (
   return {
     items: filteredItems,
     excludedCount: Math.max(0, items.length - filteredItems.length),
+    appliedLabels: rules.map((rule) => rule.label),
+  };
+};
+
+const getRecipeHaystack = (recipe: RecipeSuggestion): string => {
+  const ingredientTexts = [
+    ...(recipe.allIngredients ?? []),
+    ...(recipe.requiredIngredients ?? []),
+    ...(recipe.matchedIngredients ?? []),
+    ...(recipe.missingIngredients ?? []),
+  ].filter(Boolean);
+
+  return normalizeText(
+    [recipe.recipeName, recipe.description, ...ingredientTexts]
+      .filter(Boolean)
+      .join(' '),
+  );
+};
+
+export const filterRecipesByPreferences = (
+  recipes: RecipeSuggestion[],
+  preferences: UserPreference | null | undefined,
+): {
+  recipes: RecipeSuggestion[];
+  excludedCount: number;
+  appliedLabels: string[];
+} => {
+  const rules = collectRules(preferences);
+  if (rules.length === 0) {
+    return { recipes, excludedCount: 0, appliedLabels: [] };
+  }
+
+  const filteredRecipes = recipes.filter((recipe) => {
+    const servingCount = recipe.servingCount && recipe.servingCount > 0 ? recipe.servingCount : 1;
+    const pseudoFood: FoodItem = {
+      id: String(recipe.recipeId),
+      name: recipe.recipeName,
+      carbs: recipe.totalCarbs / servingCount,
+      protein: recipe.totalProtein / servingCount,
+      calories: recipe.totalCalories / servingCount,
+      fat: recipe.totalFat / servingCount,
+    };
+
+    const haystack = getRecipeHaystack(recipe);
+
+    return !rules.some((rule) => rule.excludes(pseudoFood, haystack));
+  });
+
+  return {
+    recipes: filteredRecipes,
+    excludedCount: Math.max(0, recipes.length - filteredRecipes.length),
     appliedLabels: rules.map((rule) => rule.label),
   };
 };

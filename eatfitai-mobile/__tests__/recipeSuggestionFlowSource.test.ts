@@ -34,7 +34,7 @@ describe('recipe suggestion flow source contract', () => {
     const source = readSource('src/app/screens/ai/RecipeSuggestionsScreen.tsx');
 
     expect(source).toContain('getRecipeBadgeLabel');
-    expect(source).toContain('Thiếu ${recipe.missingIngredientCount} món');
+    expect(source).toContain('Thiếu ${missingCount} nguyên liệu');
     expect(source).toContain('Phù hợp ${matchValue}%');
     expect(source).not.toContain('} điểm');
   });

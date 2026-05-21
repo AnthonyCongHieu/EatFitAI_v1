@@ -77,23 +77,25 @@ namespace EatFitAI.API.Data
 
         private static async Task SeedServingUnitsAsync(EatFitAIDbContext context)
         {
-            if (await context.ServingUnits.AnyAsync()) return;
+            var units = new[] { "gram", "milliliter", "cup", "tablespoon", "teaspoon", "piece", "slice", "bowl", "plate" };
+            var existingNames = await context.ServingUnits
+                .Select(su => su.Name)
+                .ToListAsync();
 
-            var servingUnits = new[]
+            var toAdd = new List<ServingUnit>();
+            foreach (var unitName in units)
             {
-                new ServingUnit { Name = "gram" },
-                new ServingUnit { Name = "milliliter" },
-                new ServingUnit { Name = "cup" },
-                new ServingUnit { Name = "tablespoon" },
-                new ServingUnit { Name = "teaspoon" },
-                new ServingUnit { Name = "piece" },
-                new ServingUnit { Name = "slice" },
-                new ServingUnit { Name = "bowl" },
-                new ServingUnit { Name = "plate" }
-            };
+                if (!existingNames.Contains(unitName, StringComparer.OrdinalIgnoreCase))
+                {
+                    toAdd.Add(new ServingUnit { Name = unitName });
+                }
+            }
 
-            await context.ServingUnits.AddRangeAsync(servingUnits);
-            await context.SaveChangesAsync();
+            if (toAdd.Count > 0)
+            {
+                await context.ServingUnits.AddRangeAsync(toAdd);
+                await context.SaveChangesAsync();
+            }
         }
 
         private static async Task SeedMealTypesAsync(EatFitAIDbContext context)
@@ -135,8 +137,6 @@ namespace EatFitAI.API.Data
 
         private static async Task SeedFoodItemsAsync(EatFitAIDbContext context)
         {
-            if (await context.FoodItems.AnyAsync()) return;
-
             var foodItems = new[]
             {
                 new FoodItem
@@ -261,8 +261,25 @@ namespace EatFitAI.API.Data
                 }
             };
 
-            await context.FoodItems.AddRangeAsync(foodItems);
-            await context.SaveChangesAsync();
+            var existingNames = await context.FoodItems
+                .Where(f => !f.IsDeleted)
+                .Select(f => f.FoodName)
+                .ToListAsync();
+
+            var toAdd = new List<FoodItem>();
+            foreach (var item in foodItems)
+            {
+                if (!existingNames.Contains(item.FoodName, StringComparer.OrdinalIgnoreCase))
+                {
+                    toAdd.Add(item);
+                }
+            }
+
+            if (toAdd.Count > 0)
+            {
+                await context.FoodItems.AddRangeAsync(toAdd);
+                await context.SaveChangesAsync();
+            }
         }
 
         private static readonly string[] Yolo11mCleanV1Labels =
@@ -692,8 +709,6 @@ namespace EatFitAI.API.Data
 
         private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)
         {
-            if (await context.FoodServings.AnyAsync()) return;
-
             var gramUnit = await context.ServingUnits.FirstOrDefaultAsync(su => su.Name == "gram");
             var cupUnit = await context.ServingUnits.FirstOrDefaultAsync(su => su.Name == "cup");
             var pieceUnit = await context.ServingUnits.FirstOrDefaultAsync(su => su.Name == "piece");
@@ -702,75 +717,100 @@ namespace EatFitAI.API.Data
             if (gramUnit == null || cupUnit == null || pieceUnit == null || tablespoonUnit == null) return;
 
             var foodItems = await context.FoodItems.ToListAsync();
+            var existingServings = await context.FoodServings.ToListAsync();
 
             var foodServings = new List<FoodServing>();
 
             foreach (var foodItem in foodItems)
             {
                 // Add gram serving for all foods
-                foodServings.Add(new FoodServing
+                if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == gramUnit.ServingUnitId))
                 {
-                    FoodItemId = foodItem.FoodItemId,
-                    ServingUnitId = gramUnit.ServingUnitId,
-                    GramsPerUnit = 100
-                });
+                    foodServings.Add(new FoodServing
+                    {
+                        FoodItemId = foodItem.FoodItemId,
+                        ServingUnitId = gramUnit.ServingUnitId,
+                        GramsPerUnit = 100
+                    });
+                }
 
                 // Add specific servings based on food type
                 switch (foodItem.FoodName)
                 {
                     case "Chicken Breast":
-                        foodServings.Add(new FoodServing
+                        if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == pieceUnit.ServingUnitId))
                         {
-                            FoodItemId = foodItem.FoodItemId,
-                            ServingUnitId = pieceUnit.ServingUnitId,
-                            GramsPerUnit = 150 // Average chicken breast piece
-                        });
+                            foodServings.Add(new FoodServing
+                            {
+                                FoodItemId = foodItem.FoodItemId,
+                                ServingUnitId = pieceUnit.ServingUnitId,
+                                GramsPerUnit = 150 // Average chicken breast piece
+                            });
+                        }
                         break;
                     case "Brown Rice":
-                        foodServings.Add(new FoodServing
+                        if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == cupUnit.ServingUnitId))
                         {
-                            FoodItemId = foodItem.FoodItemId,
-                            ServingUnitId = cupUnit.ServingUnitId,
-                            GramsPerUnit = 185 // Cooked rice cup
-                        });
+                            foodServings.Add(new FoodServing
+                            {
+                                FoodItemId = foodItem.FoodItemId,
+                                ServingUnitId = cupUnit.ServingUnitId,
+                                GramsPerUnit = 185 // Cooked rice cup
+                            });
+                        }
                         break;
                     case "Banana":
-                        foodServings.Add(new FoodServing
+                        if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == pieceUnit.ServingUnitId))
                         {
-                            FoodItemId = foodItem.FoodItemId,
-                            ServingUnitId = pieceUnit.ServingUnitId,
-                            GramsPerUnit = 118 // Average banana
-                        });
+                            foodServings.Add(new FoodServing
+                            {
+                                FoodItemId = foodItem.FoodItemId,
+                                ServingUnitId = pieceUnit.ServingUnitId,
+                                GramsPerUnit = 118 // Average banana
+                            });
+                        }
                         break;
                     case "Greek Yogurt":
-                        foodServings.Add(new FoodServing
+                        if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == cupUnit.ServingUnitId))
                         {
-                            FoodItemId = foodItem.FoodItemId,
-                            ServingUnitId = cupUnit.ServingUnitId,
-                            GramsPerUnit = 245 // Standard yogurt cup
-                        });
+                            foodServings.Add(new FoodServing
+                            {
+                                FoodItemId = foodItem.FoodItemId,
+                                ServingUnitId = cupUnit.ServingUnitId,
+                                GramsPerUnit = 245 // Standard yogurt cup
+                            });
+                        }
                         break;
                     case "Almonds":
-                        foodServings.Add(new FoodServing
+                        if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == tablespoonUnit.ServingUnitId))
                         {
-                            FoodItemId = foodItem.FoodItemId,
-                            ServingUnitId = tablespoonUnit.ServingUnitId,
-                            GramsPerUnit = 12 // 1 tbsp almonds
-                        });
+                            foodServings.Add(new FoodServing
+                            {
+                                FoodItemId = foodItem.FoodItemId,
+                                ServingUnitId = tablespoonUnit.ServingUnitId,
+                                GramsPerUnit = 12 // 1 tbsp almonds
+                            });
+                        }
                         break;
                     case "Egg":
-                        foodServings.Add(new FoodServing
+                        if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == pieceUnit.ServingUnitId))
                         {
-                            FoodItemId = foodItem.FoodItemId,
-                            ServingUnitId = pieceUnit.ServingUnitId,
-                            GramsPerUnit = 50 // Average egg
-                        });
+                            foodServings.Add(new FoodServing
+                            {
+                                FoodItemId = foodItem.FoodItemId,
+                                ServingUnitId = pieceUnit.ServingUnitId,
+                                GramsPerUnit = 50 // Average egg
+                            });
+                        }
                         break;
                 }
             }
 
-            await context.FoodServings.AddRangeAsync(foodServings);
-            await context.SaveChangesAsync();
+            if (foodServings.Count > 0)
+            {
+                await context.FoodServings.AddRangeAsync(foodServings);
+                await context.SaveChangesAsync();
+            }
         }
 
         private static async Task SeedDefaultUserPasswordsAsync(EatFitAIDbContext context, IHostEnvironment env)
@@ -1058,7 +1098,22 @@ namespace EatFitAI.API.Data
                 recipe.Difficulty = seed.Difficulty;
                 recipe.ServingCount = seed.ServingCount;
                 recipe.CredibilityScore = seed.CredibilityScore;
-                recipe.InstructionsJson = SerializeSeedStringList(seed.Instructions);
+                if (seed.PrepItems.Count > 0 || seed.Seasonings.Count > 0 || !string.IsNullOrEmpty(seed.CookingMethod))
+                {
+                    var instructionsObj = new
+                    {
+                        steps = seed.Instructions,
+                        prepItems = seed.PrepItems,
+                        seasonings = seed.Seasonings,
+                        cookingMethod = seed.CookingMethod ?? "Khác",
+                        tips = seed.Tips
+                    };
+                    recipe.InstructionsJson = JsonSerializer.Serialize(instructionsObj, SeedJsonOptions);
+                }
+                else
+                {
+                    recipe.InstructionsJson = SerializeSeedStringList(seed.Instructions);
+                }
                 recipe.SourceUrlsJson = SerializeSeedStringList(seed.SourceUrls);
                 var directYoutubeVideoUrl = IsYoutubeUrl(seed.VideoUrl)
                     ? seed.VideoUrl!.Trim()

@@ -572,6 +572,8 @@ describe('aiService', () => {
     );
     expect(result).toEqual({
       prepItems: [],
+      seasonings: [],
+      cookingMethod: undefined,
       steps: ['Step 1', 'Step 2'],
       cookingTime: '30 minutes',
       difficulty: 'Easy',

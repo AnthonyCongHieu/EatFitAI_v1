@@ -116,6 +116,10 @@ public static class VietnameseFoodCatalog
         public List<string> Instructions { get; set; } = [];
         public List<string> SourceUrls { get; set; } = [];
         public string? VideoUrl { get; set; }
+        public List<string> PrepItems { get; set; } = [];
+        public List<string> Seasonings { get; set; } = [];
+        public string? CookingMethod { get; set; }
+        public List<string> Tips { get; set; } = [];
     }
 
     public sealed class RecipeIngredientSeed

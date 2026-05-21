@@ -40,9 +40,10 @@ public sealed class AiUsageQuotaServiceTests : IDisposable
     {
         var userId = Guid.NewGuid();
         var service = CreateService();
-        await SeedLogsAsync(userId, "RecipeSuggestion", 20, DateTime.UtcNow);
-        await SeedLogsAsync(userId, "NutritionInsight", 19, DateTime.UtcNow);
-        await SeedLogsAsync(userId, "VisionDetect", 50, DateTime.UtcNow);
+        var testTime = _timeProvider.GetUtcNow().UtcDateTime;
+        await SeedLogsAsync(userId, "RecipeSuggestion", 20, testTime);
+        await SeedLogsAsync(userId, "NutritionInsight", 19, testTime);
+        await SeedLogsAsync(userId, "VisionDetect", 50, testTime);
 
         var status = await service.GetStatusAsync(userId);
 
@@ -88,7 +89,8 @@ public sealed class AiUsageQuotaServiceTests : IDisposable
     {
         var userId = Guid.NewGuid();
         await SeedPremiumEntitlementAsync(userId);
-        await SeedLogsAsync(userId, "AdaptiveTarget", 45, DateTime.UtcNow);
+        var testTime = _timeProvider.GetUtcNow().UtcDateTime;
+        await SeedLogsAsync(userId, "AdaptiveTarget", 45, testTime);
         var service = CreateService();
 
         await service.EnsureCanUseAsync(userId, AiUsageQuotaFeatureKeys.AdaptiveTarget);

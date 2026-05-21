@@ -173,7 +173,45 @@ public sealed class RecipeGuideService : IRecipeGuideService
 
     private RecipeCookingGuideDto? BuildStoredGuide(Recipe recipe)
     {
-        var steps = ParseStringList(recipe.InstructionsJson);
+        if (string.IsNullOrWhiteSpace(recipe.InstructionsJson))
+        {
+            return null;
+        }
+
+        List<string> steps = [];
+        List<string> prepItems = [];
+        List<string> seasonings = [];
+        string? cookingMethod = null;
+        List<string> tips = [];
+
+        try
+        {
+            var trimmed = recipe.InstructionsJson.Trim();
+            if (trimmed.StartsWith('{'))
+            {
+                var parsed = JsonSerializer.Deserialize<StoredInstructionsJsonDto>(trimmed, JsonOptions);
+                steps = parsed?.Steps ?? [];
+                prepItems = parsed?.PrepItems ?? [];
+                seasonings = parsed?.Seasonings ?? [];
+                cookingMethod = parsed?.CookingMethod;
+                tips = parsed?.Tips ?? [];
+            }
+            else
+            {
+                steps = JsonSerializer.Deserialize<List<string>>(trimmed, JsonOptions) ?? [];
+                prepItems = steps.Take(2).ToList();
+            }
+        }
+        catch (JsonException)
+        {
+            steps = recipe.InstructionsJson
+                .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(item => item.Trim())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .ToList();
+            prepItems = steps.Take(2).ToList();
+        }
+
         if (steps.Count == 0)
         {
             return null;
@@ -189,7 +227,10 @@ public sealed class RecipeGuideService : IRecipeGuideService
             YoutubeVideo = !IsDirectYoutubeVideoUrl(recipe.VideoUrl)
                 ? null
                 : new RecipeYoutubeVideoDto { Url = recipe.VideoUrl },
-            PrepItems = steps.Take(2).ToList()
+            PrepItems = prepItems,
+            Seasonings = seasonings,
+            CookingMethod = cookingMethod,
+            Tips = tips
         };
     }
 
@@ -258,7 +299,15 @@ public sealed class RecipeGuideService : IRecipeGuideService
 
     private static void PersistGuide(Recipe recipe, RecipeCookingGuideDto guide)
     {
-        recipe.InstructionsJson = JsonSerializer.Serialize(guide.Steps, JsonOptions);
+        var instructionsObj = new
+        {
+            steps = guide.Steps,
+            prepItems = guide.PrepItems,
+            seasonings = guide.Seasonings,
+            cookingMethod = guide.CookingMethod ?? "Khác",
+            tips = guide.Tips
+        };
+        recipe.InstructionsJson = JsonSerializer.Serialize(instructionsObj, JsonOptions);
         recipe.CookTimeMinutes = guide.CookingTimeMinutes ?? recipe.CookTimeMinutes;
         recipe.Difficulty = guide.Difficulty ?? recipe.Difficulty;
         recipe.SourceUrlsJson = JsonSerializer.Serialize(guide.SourceUrls, JsonOptions);
@@ -363,5 +412,14 @@ public sealed class RecipeGuideService : IRecipeGuideService
                 .Where(item => !string.IsNullOrWhiteSpace(item))
                 .ToList();
         }
+    }
+
+    private class StoredInstructionsJsonDto
+    {
+        public List<string> Steps { get; set; } = new();
+        public List<string> PrepItems { get; set; } = new();
+        public List<string> Seasonings { get; set; } = new();
+        public string? CookingMethod { get; set; }
+        public List<string> Tips { get; set; } = new();
     }
 }

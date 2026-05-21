@@ -487,6 +487,13 @@ const normalizeRecipeSuggestionItem = (item: RecipeSuggestionApiItem | any): Rec
   sourceUrls: normalizeStringArray(item?.sourceUrls ?? item?.SourceUrls) ?? [],
   youtubeVideo: item?.youtubeVideo ?? item?.YoutubeVideo ?? null,
   prepItems: normalizeStringArray(item?.prepItems ?? item?.PrepItems) ?? [],
+  seasonings: normalizeStringArray(item?.seasonings ?? item?.Seasonings) ?? [],
+  cookingMethod: (() => {
+    const rawMethod = item?.cookingMethod ?? item?.CookingMethod;
+    return typeof rawMethod === 'string' && rawMethod.trim().length > 0
+      ? rawMethod.trim()
+      : undefined;
+  })(),
   disclaimer: (() => {
     const rawDisclaimer = item?.disclaimer ?? item?.Disclaimer;
     return typeof rawDisclaimer === 'string' && rawDisclaimer.trim().length > 0
@@ -572,6 +579,13 @@ const normalizeRecipeCookingGuide = (data: any): RecipeCookingGuide => ({
       ? String(data.recipeName ?? data.RecipeName).trim()
       : undefined,
   prepItems: normalizeStringArray(data?.prepItems ?? data?.PrepItems) ?? [],
+  seasonings: normalizeStringArray(data?.seasonings ?? data?.Seasonings) ?? [],
+  cookingMethod: (() => {
+    const rawMethod = data?.cookingMethod ?? data?.CookingMethod;
+    return typeof rawMethod === 'string' && rawMethod.trim().length > 0
+      ? rawMethod.trim()
+      : undefined;
+  })(),
   steps: normalizeStringArray(data?.steps ?? data?.Steps) ?? [],
   cookingTimeMinutes:
     toNumber(data?.cookingTimeMinutes ?? data?.CookingTimeMinutes) ?? undefined,
@@ -1076,7 +1090,14 @@ export const aiService = {
     recipeName: string,
     ingredients: { foodName: string; grams: number }[],
     description?: string,
-  ): Promise<{ prepItems?: string[]; steps: string[]; cookingTime?: string; difficulty?: string }> {
+  ): Promise<{
+    prepItems?: string[];
+    seasonings?: string[];
+    cookingMethod?: string;
+    steps: string[];
+    cookingTime?: string;
+    difficulty?: string;
+  }> {
     try {
       const baseUrl = getApiBaseUrl();
       const response = await fetchWithAuthRetry(
@@ -1110,6 +1131,8 @@ export const aiService = {
       const data = await response.json();
       return {
         prepItems: Array.isArray(data.prepItems) ? data.prepItems : [],
+        seasonings: Array.isArray(data.seasonings) ? data.seasonings : [],
+        cookingMethod: typeof data.cookingMethod === 'string' ? data.cookingMethod : undefined,
         steps: Array.isArray(data.steps) ? data.steps : [],
         cookingTime: data.cookingTime,
         difficulty: data.difficulty,

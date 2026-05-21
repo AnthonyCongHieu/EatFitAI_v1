@@ -1,9 +1,11 @@
 import {
   filterFoodsByPreferences,
   getActiveFoodFilterLabels,
+  filterRecipesByPreferences,
 } from '../src/utils/foodPreferenceFilter';
 import type { FoodItem } from '../src/services/foodService';
 import type { UserPreference } from '../src/app/types';
+import type { RecipeSuggestion } from '../src/types/aiEnhanced';
 
 const makeFood = (overrides: Partial<FoodItem>): FoodItem => ({
   id: overrides.id ?? '1',
@@ -116,5 +118,79 @@ describe('foodPreferenceFilter', () => {
       'Kh\u00f4ng \u0103n b\u00f2',
       'D\u1ecb \u1ee9ng s\u1eefa',
     ]);
+  });
+
+  describe('filterRecipesByPreferences', () => {
+    const makeRecipe = (overrides: Partial<RecipeSuggestion>): RecipeSuggestion => ({
+      recipeId: overrides.recipeId ?? 1,
+      recipeName: overrides.recipeName ?? 'Recipe Name',
+      description: overrides.description ?? '',
+      totalCalories: overrides.totalCalories ?? 0,
+      totalProtein: overrides.totalProtein ?? 0,
+      totalCarbs: overrides.totalCarbs ?? 0,
+      totalFat: overrides.totalFat ?? 0,
+      matchedIngredientsCount: overrides.matchedIngredientsCount ?? 0,
+      totalIngredientsCount: overrides.totalIngredientsCount ?? 0,
+      matchPercentage: overrides.matchPercentage ?? 0,
+      matchedIngredients: overrides.matchedIngredients ?? [],
+      missingIngredients: overrides.missingIngredients ?? [],
+      allIngredients: overrides.allIngredients ?? [],
+      ...overrides,
+    });
+
+    it('returns the original list when the user has no preferences', () => {
+      const recipes = [
+        makeRecipe({ recipeId: 1, recipeName: 'Steak', totalProtein: 40 }),
+        makeRecipe({ recipeId: 2, recipeName: 'Salad', totalCarbs: 5 }),
+      ];
+
+      const result = filterRecipesByPreferences(recipes, makePreferences({}));
+
+      expect(result.recipes).toEqual(recipes);
+      expect(result.excludedCount).toBe(0);
+    });
+
+    it('excludes vegetarian non-compliant recipes', () => {
+      const recipes = [
+        makeRecipe({ recipeId: 1, recipeName: 'Thit heo luoc', totalProtein: 30 }),
+        makeRecipe({ recipeId: 2, recipeName: 'Dau hu sot', totalProtein: 15, allIngredients: ['dau hu', 'ca chua'] }),
+      ];
+
+      const result = filterRecipesByPreferences(
+        recipes,
+        makePreferences({ dietaryRestrictions: ['vegetarian'] }),
+      );
+
+      expect(result.recipes.map((r) => r.recipeId)).toEqual([2]);
+      expect(result.excludedCount).toBe(1);
+    });
+
+    it('excludes low-carb non-compliant recipes based on carbs or keywords', () => {
+      const recipes = [
+        makeRecipe({ recipeId: 1, recipeName: 'Com chien duong chau', totalCarbs: 60 }),
+        makeRecipe({ recipeId: 2, recipeName: 'Ga nuong', totalCarbs: 5, totalProtein: 30 }),
+      ];
+
+      const result = filterRecipesByPreferences(
+        recipes,
+        makePreferences({ dietaryRestrictions: ['low-carb'] }),
+      );
+
+      expect(result.recipes.map((r) => r.recipeId)).toEqual([2]);
+    });
+
+    it('excludes allergy non-compliant recipes', () => {
+      const recipes = [
+        makeRecipe({ recipeId: 1, recipeName: 'Lau hai san', allIngredients: ['tom', 'muc'] }),
+        makeRecipe({ recipeId: 2, recipeName: 'Sup ga', allIngredients: ['ga', 'nam'] }),
+      ];
+
+      const result = filterRecipesByPreferences(
+        recipes,
+        makePreferences({ allergies: ['seafood'] }),
+      );
+
+      expect(result.recipes.map((r) => r.recipeId)).toEqual([2]);
+    });
   });
 });
