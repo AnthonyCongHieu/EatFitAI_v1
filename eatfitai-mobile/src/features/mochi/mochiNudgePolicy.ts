@@ -67,6 +67,7 @@ export interface MoChiSurfaceDecisionInput {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const OVERLAY_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 const DISMISS_SUPPRESSION_MS = 3 * DAY_MS;
 const MAX_SESSION_OVERLAYS = 2;
 const MAX_DAILY_TRANSIENT_MESSAGES = 3;
@@ -294,7 +295,7 @@ export const resolveMoChiSurfaceDecision = (
     if (
       !input.bypassOverlayCooldown
       && lastShownAt
-      && now.getTime() - lastShownAt < DAY_MS
+      && now.getTime() - lastShownAt < OVERLAY_COOLDOWN_MS
     ) {
       return makeDecision(input, 'inline', category, cadenceKey, priority, 'overlay-cooldown');
     }

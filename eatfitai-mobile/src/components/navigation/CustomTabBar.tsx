@@ -26,7 +26,6 @@ import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
 import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
 import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
 import type { MoChiTutorialTargetId } from '../../features/mochi/tutorial/mochiTutorialCatalog';
-import { useMoChiSurfaceCoordinator } from '../../features/mochi/mochiSurfaceCoordinator';
 import { useMoChiSurfacePresence } from '../../features/mochi/useMoChiSurfacePresence';
 
 type CommandTarget = 'HomeTab' | 'MealDiary' | 'MoChiHub' | 'StatsTab' | 'ProfileTab';
@@ -115,14 +114,12 @@ const CommandButton = ({
   dockPose,
   colors,
   isHubOpen,
-  isMoChiBusy,
 }: {
   command: CommandItem;
   isFocused: boolean;
   onPress: () => void;
   dockPose: MoChiPoseKey;
   isHubOpen: boolean;
-  isMoChiBusy: boolean;
   colors: { primary: string; onPrimary: string; textMuted: string; bg: string };
 }) => {
   const scale = useSharedValue(1);
@@ -191,27 +188,15 @@ const CommandButton = ({
     >
       {command.isPrimary ? (
         <View
-          style={[
-            styles.primaryDockHalo,
-            isMoChiBusy && !isHubOpen && styles.primaryDockHaloQuiet,
-          ]}
+          style={styles.primaryDockHalo}
         >
           <View style={styles.primaryDockCore}>
             <View style={styles.primaryDockMascotPlate}>
-              {isMoChiBusy && !isHubOpen ? (
-                <Ionicons
-                  name="sparkles"
-                  size={26}
-                  color={colors.onPrimary}
-                  testID="mochi-dock-quiet-icon"
-                />
-              ) : (
-                <MoChiSprite
-                  poseKey={dockPose}
-                  size={62}
-                  animated={false}
-                />
-              )}
+              <MoChiSprite
+                poseKey={dockPose}
+                size={62}
+                animated={false}
+              />
             </View>
           </View>
         </View>
@@ -305,7 +290,6 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
   const safeBottom = 0; // Centered since outerWrapper is raised above home indicator
   const current = state.routes[state.index]?.name ?? '';
   const shouldHideForVoice = !isOverlay && current === 'VoiceTab';
-  const isMoChiBusy = useMoChiSurfaceCoordinator((store) => store.isBusy(current));
   const mochiDockPose = resolveMoChiDockPose(current);
   const navigateTab = navigation.navigate as unknown as (name: string, params?: unknown) => void;
 
@@ -394,7 +378,6 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
               colors={colors}
               dockPose={isHubVisible ? 'nutritionCoachNotice' : mochiDockPose}
               isHubOpen={isHubVisible}
-              isMoChiBusy={isMoChiBusy}
               isFocused={current === command.target}
               onPress={() => runCommand(command)}
             />
@@ -467,9 +450,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(16, 185, 129, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(74, 222, 128, 0.22)',
-  },
-  primaryDockHaloQuiet: {
-    opacity: 0.72,
   },
   primaryDockCore: {
     width: 72,

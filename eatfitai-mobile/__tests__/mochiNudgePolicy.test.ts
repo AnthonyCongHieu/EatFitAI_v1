@@ -22,7 +22,7 @@ describe('mochiNudgePolicy', () => {
     expect(decision.reason).toBe('visible-target-inline');
   });
 
-  it('downgrades repeated overlays for the same event within 24 hours', () => {
+  it('downgrades repeated overlays until the task overlay cooldown has passed', () => {
     const memory = createEmptyMoChiPolicyMemory(NOW);
     const first = resolveMoChiSurfaceDecision({
       eventType: 'meal_reminder',
@@ -42,10 +42,20 @@ describe('mochiNudgePolicy', () => {
       memory: afterShown,
       now: new Date(NOW.getTime() + 60 * 60 * 1000),
     });
+    const afterCooldown = resolveMoChiSurfaceDecision({
+      eventType: 'meal_reminder',
+      routeName: 'HomeTab',
+      preferredSurface: 'overlay',
+      hasStrongTiming: true,
+      memory: afterShown,
+      now: new Date(NOW.getTime() + 4 * 60 * 60 * 1000),
+    });
 
     expect(first.surface).toBe('overlay');
     expect(second.surface).toBe('inline');
     expect(second.reason).toBe('overlay-cooldown');
+    expect(afterCooldown.surface).toBe('overlay');
+    expect(afterCooldown.reason).toBe('overlay');
   });
 
   it('allows important notification retries to bypass the normal overlay cooldown', () => {

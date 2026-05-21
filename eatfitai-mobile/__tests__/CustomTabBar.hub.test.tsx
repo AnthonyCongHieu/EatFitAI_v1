@@ -153,7 +153,7 @@ describe('CustomTabBar MoChi hub layout', () => {
     expect(screen.toJSON()).toBeNull();
   });
 
-  it('hides the dock MoChi sprite while another MoChi surface is active', () => {
+  it('keeps the dock MoChi sprite visible while another MoChi surface is active', () => {
     useMoChiSurfaceCoordinator.getState().registerSurface({
       id: 'toast:daily-loop',
       surface: 'toast',
@@ -163,8 +163,8 @@ describe('CustomTabBar MoChi hub layout', () => {
 
     const screen = renderTabBar();
 
-    expect(screen.queryByText('mochi-boxIdle-62-auto')).toBeNull();
-    expect(screen.getByTestId('mochi-dock-quiet-icon')).toBeTruthy();
+    expect(screen.getByText('mochi-boxIdle-62-auto')).toBeTruthy();
+    expect(screen.queryByTestId('mochi-dock-quiet-icon')).toBeNull();
   });
 
   it('opens the hub sheet from the center button instead of navigating directly to scan', () => {

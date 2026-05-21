@@ -52,6 +52,7 @@ html {
   scroll-padding-top: 90px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -1352,15 +1353,15 @@ h2 {
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: minmax(275px, auto);
-  gap: 20px;
+  grid-auto-rows: minmax(220px, auto);
+  gap: 16px;
 }
 
 .bento-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: var(--r-lg);
-  padding: 28px;
+  padding: 20px;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -2246,11 +2247,12 @@ body[data-release-ready="true"] .status-dot {
   }
 
   .hero-visual {
-    order: -1;
+    /* Đưa ảnh mockup xuống dưới tiêu đề và nút CTA trên thiết bị di động để cải thiện trải nghiệm cuộn trang */
+    order: 1;
   }
 
   .hero-image {
-    max-height: 420px;
+    max-height: 380px;
   }
 
   .simulator-container {
@@ -2308,7 +2310,7 @@ body[data-release-ready="true"] .status-dot {
   }
 
   .bento-mascot-img {
-    opacity: 0.25 !important;
+    display: none !important;
   }
 
   .showcase-slider-wrapper {
@@ -2454,6 +2456,20 @@ body[data-release-ready="true"] .status-dot {
 }
 
 @media (max-width: 768px) {
+
+  .simulator-container {
+    padding: 20px 16px;
+    gap: 24px;
+  }
+
+  .tdee-form-box, .tdee-results-box {
+    padding: 24px 16px;
+  }
+
+  .results-macros {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 
   .stats-bar {
     flex-wrap: wrap;
@@ -2605,7 +2621,11 @@ body[data-release-ready="true"] .status-dot {
 /* Except Card 2 and Card 8 which have right-positioned mascots, so we restrict them */
 .bento-card:nth-child(2) .bento-content-wrap,
 .bento-card:nth-child(8) .bento-content-wrap {
-  max-width: 76%;
+  max-width: 62%;
+}
+.bento-card:nth-child(2),
+.bento-card:nth-child(8) {
+  min-height: 310px;
 }
 .bento-card.card-wide, .bento-card.card-tall {
   position: relative;
@@ -2617,8 +2637,11 @@ body[data-release-ready="true"] .status-dot {
   z-index: 1;
   pointer-events: none;
   filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4));
-  transition: transform 0.4s var(--transition-bounce), opacity 0.4s ease;
+  transition: transform 0.4s var(--transition-smooth), opacity 0.4s ease;
   opacity: 0.82;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+  object-fit: contain !important;
 }
 
 .bento-card:hover .bento-mascot-img {
@@ -3286,97 +3309,718 @@ body[data-release-ready="true"] .status-dot {
   100% { opacity: 1; box-shadow: 0 0 8px var(--brand-primary); }
 }
 
-@media (max-width: 768px) {
+/* ==================== 1. THU NHỎ NHẸ CHO PC (DESKTOP >= 1200px) ==================== */
+@media (min-width: 1200px) {
   .bento-grid {
-    grid-template-columns: 1fr !important;
-    gap: 16px;
+    gap: 16px !important;
   }
+
   .bento-card {
     padding: 20px !important;
-    min-height: auto !important;
-    height: auto !important;
   }
+
+  .bento-card h3 {
+    font-size: 1.12rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .bento-card p {
+    font-size: 0.8rem !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Thu nhỏ vòng tròn Macros Rings ở Card 4 */
+  .bento-mini-rings {
+    width: 145px !important;
+    height: 145px !important;
+  }
+  .mini-ring-svg {
+    width: 145px !important;
+    height: 145px !important;
+  }
+
+  /* Thay đổi chiều cao pixel trực tiếp của MoChi để đảm bảo độ sắc nét 100% khi co giãn */
+  .mascot-meal { height: 90px !important; bottom: 16px !important; }
+  .mascot-scale { height: 85px !important; bottom: 16px !important; }
+  .mascot-idle { height: 85px !important; bottom: 16px !important; }
+  .mascot-secure { height: 75px !important; bottom: 16px !important; }
+  .mascot-celebrate { height: 90px !important; bottom: 16px !important; }
+  .mascot-scan-success { height: 85px !important; bottom: 16px !important; }
+  .mascot-thinking { height: 85px !important; bottom: 16px !important; }
+
+  .bento-card:hover .bento-mascot-img {
+    transform: translateY(-4px) !important;
+  }
+}
+
+/* ==================== 2. THU NHỎ & GHÉP CẶP 2 CỘT TRÊN MOBILE (SCREEN <= 768px) ==================== */
+@media (max-width: 768px) {
+  .bento-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* Chuyển thành 2 cột kết hợp */
+    gap: 10px !important; /* Giảm gap xuống 10px để tăng không gian ngang */
+  }
+
+  .bento-card {
+    padding: 12px !important; /* Giảm padding xuống 12px */
+    width: auto !important;
+    height: 100% !important; /* Tự động kéo giãn bằng nhau theo dòng */
+  }
+
+  .bento-card h3 {
+    font-size: 0.9rem !important;
+    margin-bottom: 4px !important;
+    line-height: 1.25 !important;
+  }
+
+  .bento-card p {
+    font-size: 0.68rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .bento-badge {
+    font-size: 0.55rem !important;
+    padding: 2px 6px !important;
+    margin-bottom: 6px !important;
+  }
+
   .bento-content-wrap {
     max-width: 100% !important;
   }
-  .card-wide .bento-content-wrap,
-  .card-tall .bento-content-wrap,
-  .bento-card .bento-content-wrap {
-    max-width: 100% !important;
-  }
-  .bento-quota-visual,
-  .quota-guarantees {
-    max-width: 100% !important;
-  }
+
   .bento-mascot-img {
-    opacity: 0.12 !important; /* Subtle watermark on mobile to avoid overlap */
-    height: 100px !important;
-    bottom: 10px !important;
-    right: 10px !important;
+    display: none !important; /* Ẩn mascot trên mobile */
   }
-  .mascot-scale,
-  .mascot-celebrate,
-  .mascot-thinking,
-  .mascot-scan-success,
-  .mascot-secure,
-  .mascot-meal,
-  .mascot-idle {
-    height: 100px !important;
+
+  /* Thiết lập Grid Order để sắp xếp ghép cặp song song */
+  .bento-card:nth-child(1) { order: 1 !important; grid-column: span 2 !important; } /* Card 1: Camera AI (span 2) */
+  .bento-card:nth-child(2) { order: 2 !important; grid-column: span 1 !important; } /* Card 2: 100% Free (span 1) */
+  .bento-card:nth-child(5) { order: 3 !important; grid-column: span 1 !important; } /* Card 5: Water Tracker (span 1) -> Ghép cặp dòng 2 */
+  .bento-card:nth-child(3) { order: 4 !important; grid-column: span 2 !important; } /* Card 3: Voice AI (span 2) */
+  .bento-card:nth-child(4) { order: 5 !important; grid-column: span 2 !important; } /* Card 4: Macros Rings (span 2) */
+  .bento-card:nth-child(6) { order: 6 !important; grid-column: span 1 !important; } /* Card 6: Streak (span 1) */
+  .bento-card:nth-child(8) { order: 7 !important; grid-column: span 1 !important; } /* Card 8: Auth Sync (span 1) -> Ghép cặp dòng 5 */
+  .bento-card:nth-child(7) { order: 8 !important; grid-column: span 2 !important; } /* Card 7: AI Recipes (span 2) */
+
+  /* 2.1. Tối ưu hóa Card 2 (Free Quota) */
+  .quota-guarantees {
+    display: none !important; /* Ẩn cam kết để tiết kiệm chiều cao */
   }
-  /* Reset absolute widgets on mobile so they stack vertically */
-  .bento-phone-mockup,
-  .bento-recipe-mockup,
-  .bento-sync-flow,
-  .bento-mini-rings,
-  .bento-audio-visualizer,
+  .bento-quota-visual {
+    gap: 6px !important;
+    margin-top: 10px !important;
+    position: relative !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .quota-item {
+    padding: 6px 8px !important;
+    margin-bottom: 0 !important;
+  }
+  .quota-title, .quota-val {
+    font-size: 0.65rem !important;
+  }
+  .quota-bar-container {
+    height: 4px !important;
+  }
+
+  /* 2.2. Tối ưu hóa Card 5 (Water Tracker) */
+  .bento-water-visual {
+    position: relative !important;
+    margin: 12px auto 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .water-glass-container {
+    transform: scale(0.8) !important;
+    margin: 4px auto !important;
+  }
+  .water-badge-label {
+    font-size: 0.65rem !important;
+    padding: 4px 8px !important;
+  }
+  .btn-add-water {
+    font-size: 0.65rem !important;
+    padding: 4px 10px !important;
+    width: 100% !important;
+  }
+
+  /* 2.3. Tối ưu hóa Card 6 (Streak) */
+  .streak-gamified-details {
+    position: relative !important;
+    margin: 12px 0 0 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .bento-streak-visual {
+    gap: 6px !important;
+  }
+  .streak-flame-circle {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 1.0rem !important;
+  }
+  .streak-count-label {
+    font-size: 0.65rem !important;
+  }
+  .streak-level-badge {
+    font-size: 0.55rem !important;
+    padding: 2px 4px !important;
+  }
+  .bento-badges-row {
+    gap: 4px !important;
+    justify-content: center !important;
+    display: flex !important;
+  }
+  .badge-item {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  .badge-svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .xp-text {
+    font-size: 0.6rem !important;
+  }
+  .xp-bar-container {
+    height: 4px !important;
+  }
+
+  /* 2.4. Tối ưu hóa Card 8 (Auth Sync) */
   .bento-auth-sync-widget {
     position: relative !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: auto !important;
-    left: auto !important;
-    transform: none !important;
-    margin: 20px auto 0 auto !important;
+    margin: 10px auto 0 auto !important;
+    width: 100% !important;
     display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-  }
-  .bento-phone-mockup {
-    width: 220px !important;
-    height: 300px !important;
-    border-bottom: 4px solid #1c1e22 !important;
-  }
-  .bento-recipe-mockup {
-    width: 250px !important;
-  }
-  .bento-auth-sync-widget {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    gap: 12px !important;
-    justify-content: center !important;
-  }
-  .bento-mini-rings {
-    width: 115px !important;
-    height: 115px !important;
-  }
-  .bento-macros-layout {
     flex-direction: column !important;
-    max-width: 100% !important;
-    gap: 16px !important;
-    align-items: center !important;
+    gap: 6px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
   }
-  .macros-legend {
+  .google-btn-mockup {
+    padding: 6px 10px !important;
+    font-size: 0.68rem !important;
     width: 100% !important;
+    justify-content: center !important;
   }
-  .bento-voice-chat {
-    max-width: 100% !important;
+  .supabase-sync-badge {
+    padding: 6px 10px !important;
+    width: 100% !important;
+    justify-content: center !important;
   }
+  .db-icon-wrap {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .db-name {
+    font-size: 0.68rem !important;
+  }
+  .db-status {
+    font-size: 0.58rem !important;
+  }
+
+  /* 2.5. Tối ưu hóa các Card rộng (Flex Row) */
+  /* Card 1: Camera Scan */
+  .bento-card.card-wide:nth-child(1) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+  .bento-card.card-wide:nth-child(1) .bento-content-wrap {
+    max-width: 65% !important;
+    flex: 1 !important;
+  }
+  .bento-card.card-wide:nth-child(1) .bento-phone-mockup {
+    position: relative !important;
+    width: 90px !important;
+    height: 130px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+
+  /* Card 7: AI Recipes */
+  .bento-card.card-wide:nth-child(7) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+  .bento-card.card-wide:nth-child(7) .bento-content-wrap {
+    max-width: 65% !important;
+    flex: 1 !important;
+  }
+  .bento-card.card-wide:nth-child(7) .bento-recipe-mockup {
+    position: relative !important;
+    width: 110px !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .bento-card.card-wide:nth-child(7) .recipe-card-mini {
+    width: 100% !important;
+    padding: 6px !important;
+    border-radius: var(--r-md) !important;
+  }
+  .bento-card.card-wide:nth-child(7) .recipe-img-placeholder {
+    height: 48px !important;
+    border-radius: var(--r-sm) !important;
+  }
+  .bento-card.card-wide:nth-child(7) .recipe-info h4 {
+    font-size: 0.65rem !important;
+    margin-bottom: 2px !important;
+  }
+  .bento-card.card-wide:nth-child(7) .recipe-meta {
+    font-size: 0.55rem !important;
+  }
+  .bento-card.card-wide:nth-child(7) .recipe-ingredients {
+    display: none !important;
+  }
+
+  /* Card 3: Voice AI (Xếp dọc, thu gọn tối đa) */
+  .bento-card.card-tall:nth-child(3) .bento-voice-chat {
+    position: relative !important;
+    margin: 12px auto 0 auto !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .bento-card.card-tall:nth-child(3) .chat-bubble {
+    padding: 5px 8px !important;
+    font-size: 0.68rem !important;
+    margin: 0 !important;
+    max-width: 90% !important;
+  }
+  .bento-card.card-tall:nth-child(3) .chat-bubble:nth-child(n+3) {
+    display: none !important;
+  }
+  .bento-card.card-tall:nth-child(3) .bento-audio-visualizer {
+    position: relative !important;
+    margin: 8px auto 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 8px !important;
+    gap: 3px !important;
+    width: auto !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .bento-card.card-tall:nth-child(3) .audio-bar {
+    height: 10px !important;
+    width: 2px !important;
+  }
+  .bento-card.card-tall:nth-child(3) .audio-wave-label {
+    font-size: 0.6rem !important;
+  }
+
+  /* Card 4: Macros Rings (Xếp song song trong span 2) */
+  .bento-card.card-wide:nth-child(4) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+  .bento-card.card-wide:nth-child(4) .bento-content-wrap {
+    max-width: 55% !important;
+    flex: 1 !important;
+  }
+  .bento-card.card-wide:nth-child(4) .bento-macros-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 40% !important;
+    margin: 0 !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+  .bento-card.card-wide:nth-child(4) .bento-mini-rings {
+    display: flex !important;
+    width: 110px !important;
+    height: 110px !important;
+    transform: scale(0.68) !important;
+    transform-origin: center !important;
+    margin: -10px 0 !important;
+    position: relative !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+  }
+  .bento-card.card-wide:nth-child(4) .macros-legend {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 3px !important;
+  }
+  .bento-card.card-wide:nth-child(4) .legend-item {
+    font-size: 0.58rem !important;
+    padding: 2px 4px !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .bento-card:nth-child(8) .db-name {
+    font-size: 0.65rem !important;
+  }
+  .bento-card:nth-child(8) .db-status {
+    font-size: 0.55rem !important;
+  }
+
+  /* Hover scale reset on mobile */
   .bento-card:hover .bento-phone-mockup,
   .bento-card:hover .bento-recipe-mockup,
   .bento-card:hover .bento-mini-rings,
-  .bento-card:hover .bento-sync-flow,
+  .bento-card:hover .bento-auth-sync-widget {
+    transform: none !important;
+  }
+}
+
+/* ==================== 3. TỐI ƯU ĐẶC BIỆT CHO SMARTPHONE NHỎ (SCREEN <= 576px) ==================== */
+@media (max-width: 576px) {
+  /* === GRID: 1 cột dọc, tránh bóp nghẹt chiều ngang === */
+  .bento-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* === Reset TẤT CẢ card về 1 cột, flex-column ===
+       Dùng :nth-child để THẮNG specificity từ media query 768px (0-2-0) */
+  .bento-card,
+  .bento-card:nth-child(1),
+  .bento-card:nth-child(2),
+  .bento-card:nth-child(3),
+  .bento-card:nth-child(4),
+  .bento-card:nth-child(5),
+  .bento-card:nth-child(6),
+  .bento-card:nth-child(7),
+  .bento-card:nth-child(8) {
+    grid-column: span 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 14px !important;
+    height: auto !important;
+    min-height: unset !important;
+    order: unset !important;
+    width: auto !important;
+  }
+
+  /* Reset card-wide/card-tall với specificity cao */
+  .bento-card.card-wide,
+  .bento-card.card-tall,
+  .bento-card.card-wide:nth-child(1),
+  .bento-card.card-wide:nth-child(4),
+  .bento-card.card-wide:nth-child(7),
+  .bento-card.card-tall:nth-child(3) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  .bento-content-wrap {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .bento-card h3 {
+    font-size: 0.92rem !important;
+    margin-bottom: 4px !important;
+    line-height: 1.25 !important;
+  }
+
+  /* LINE-CLAMP: Giới hạn text mô tả chỉ 2 dòng để giảm chiều cao card */
+  .bento-card p {
+    font-size: 0.72rem !important;
+    line-height: 1.4 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .bento-badge {
+    font-size: 0.55rem !important;
+    padding: 2px 6px !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Ẩn bong bóng thoại và mascot */
+  .bento-mochi-speech,
+  .bento-mascot-img {
+    display: none !important;
+  }
+
+  /* === Card 1: Camera AI Scan — Thu gọn mockup điện thoại === */
+  .bento-phone-mockup {
+    position: relative !important;
+    width: 100% !important;
+    height: 100px !important;
+    margin: 8px auto 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .bento-phone-mockup .bento-mockup-img {
+    width: auto !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+  .scan-laser-line {
+    display: none !important;
+  }
+
+  /* === Card 2: 100% Free Quota — Thu gọn progress bars === */
+  .bento-quota-visual {
+    position: relative !important;
+    width: 100% !important;
+    margin: 8px 0 0 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .quota-item {
+    padding: 5px 8px !important;
+  }
+  .quota-title, .quota-val {
+    font-size: 0.62rem !important;
+  }
+  .quota-bar-container {
+    height: 3px !important;
+  }
+  .quota-guarantees {
+    display: none !important; /* Ẩn để tiết kiệm chiều cao */
+  }
+
+  /* === Card 3: Voice AI — Ẩn bớt bubbles và waveform === */
+  .bento-voice-chat {
+    position: relative !important;
+    width: 100% !important;
+    margin: 8px 0 0 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  /* Ẩn tất cả bubble trừ 2 cái đầu */
+  .bento-voice-chat .chat-bubble:nth-child(n+3) {
+    display: none !important;
+  }
+  .bento-voice-chat .chat-bubble {
+    padding: 5px 8px !important;
+    font-size: 0.68rem !important;
+    max-width: 85% !important;
+    margin: 0 !important;
+  }
+  .bento-audio-visualizer {
+    display: none !important; /* Ẩn sóng âm */
+  }
+
+  /* === Card 4: Macros Rings — Thu gọn vòng tròn, ẩn legend === */
+  .bento-macros-layout {
+    position: relative !important;
+    width: 100% !important;
+    margin: 8px auto 0 auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .bento-mini-rings {
+    display: flex !important;
+    width: 90px !important;
+    height: 90px !important;
+    transform: scale(0.6) !important;
+    transform-origin: center !important;
+    margin: -12px 0 !important;
+    position: relative !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+  }
+  .mini-ring-svg {
+    width: 90px !important;
+    height: 90px !important;
+  }
+  .macros-legend {
+    flex-direction: column !important;
+    gap: 3px !important;
+    align-items: flex-start !important;
+  }
+  .legend-item {
+    font-size: 0.58rem !important;
+    padding: 1px 4px !important;
+  }
+
+  /* === Card 5: Water Tracker — Thu gọn cốc nước === */
+  .bento-water-visual {
+    position: relative !important;
+    width: 100% !important;
+    margin: 8px auto 0 auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .water-glass-container {
+    transform: scale(0.7) !important;
+    margin: -8px 0 !important;
+  }
+  .water-badge-label {
+    font-size: 0.62rem !important;
+    padding: 3px 6px !important;
+  }
+  .btn-add-water {
+    font-size: 0.62rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* === Card 6: Streak — Thu gọn, xếp ngang flame + badges === */
+  .streak-gamified-details {
+    position: relative !important;
+    width: 100% !important;
+    margin: 8px 0 0 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .bento-streak-visual {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .streak-flame-circle {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.9rem !important;
+  }
+  .streak-count-label {
+    font-size: 0.62rem !important;
+  }
+  .streak-level-badge {
+    font-size: 0.55rem !important;
+    padding: 1px 4px !important;
+  }
+  .streak-xp-progress {
+    display: none !important; /* Ẩn thanh XP */
+  }
+  .bento-badges-row {
+    gap: 4px !important;
+    justify-content: flex-start !important;
+  }
+  .badge-item {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .badge-svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* === Card 7: AI Recipes — Thu gọn mockup công thức === */
+  .bento-recipe-mockup {
+    position: relative !important;
+    width: 100% !important;
+    margin: 8px auto 0 auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .recipe-card-mini {
+    width: 100% !important;
+    padding: 6px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    align-items: center !important;
+  }
+  .recipe-img-placeholder {
+    height: 50px !important;
+    width: 60px !important;
+    min-width: 60px !important;
+    border-radius: var(--r-sm) !important;
+  }
+  .recipe-info h4 {
+    font-size: 0.62rem !important;
+    margin-bottom: 2px !important;
+  }
+  .recipe-meta {
+    font-size: 0.55rem !important;
+  }
+  .recipe-ingredients {
+    display: none !important;
+  }
+
+  /* === Card 8: Auth Sync — Thu gọn nút Google & Supabase === */
+  .bento-auth-sync-widget {
+    position: relative !important;
+    width: 100% !important;
+    margin: 8px 0 0 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+    transform: none !important;
+  }
+  .google-btn-mockup {
+    padding: 6px 10px !important;
+    flex: 1 !important;
+    font-size: 0.68rem !important;
+    justify-content: center !important;
+  }
+  .supabase-sync-badge {
+    padding: 6px 10px !important;
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+  .db-icon-wrap {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  .db-name {
+    font-size: 0.62rem !important;
+  }
+  .db-status {
+    display: none !important; /* Ẩn "Đang hoạt động" */
+  }
+
+  /* Reset hover effects trên mobile */
+  .bento-card:hover .bento-phone-mockup,
+  .bento-card:hover .bento-recipe-mockup,
+  .bento-card:hover .bento-mini-rings,
   .bento-card:hover .bento-auth-sync-widget {
     transform: none !important;
   }
@@ -3403,7 +4047,9 @@ body[data-release-ready="true"] .status-dot {
 .hero-mochi-avatar {
   width: 24px;
   height: 24px;
-  object-fit: cover;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
 }
 .hero-mochi-msg {
   font-size: 0.82rem;
@@ -3472,8 +4118,8 @@ body[data-release-ready="true"] .status-dot {
   right: 72px;
 }
 .bubble-pos-card8 {
-  bottom: 130px;
-  right: 72px;
+  bottom: 120px;
+  right: 12px;
 }
 
 /* ═══ BENTO GRAPHICS & WIDGETS ═══ */
@@ -4148,8 +4794,10 @@ body[data-release-ready="true"] .status-dot {
 .mochi-widget-img {
   width: 64px;
   height: 64px;
-  object-fit: cover;
+  object-fit: contain;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
 }
 .mochi-widget-badge {
   position: absolute;
@@ -4239,9 +4887,19 @@ body[data-release-ready="true"] .status-dot {
     right: 8px;
     top: 6px;
   }
+  .hero h1 {
+    font-size: clamp(1.8rem, 6vw, 2.5rem);
+    line-height: 1.2;
+  }
+  .hero-desc {
+    margin-bottom: 24px;
+  }
   .hero-mochi-badge {
     align-self: center;
     margin-bottom: 16px;
+  }
+  .hero-image {
+    max-height: 300px;
   }
   .bento-mochi-speech {
     display: none; /* Hide interactive hover bubbles on mobile */
@@ -4466,6 +5124,10 @@ body[data-release-ready="true"] .status-dot {
   .hero-cta .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .hero-image {
+    max-height: 240px;
   }
 
   .form-row-three {
