@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using EatFitAI.API.DTOs.Support;
 using EatFitAI.API.Options;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.Extensions.Options;
@@ -55,11 +56,31 @@ namespace EatFitAI.API.Services
                 operationName: "verification code");
         }
 
+        public Task SendFeedbackAsync(
+            FeedbackEmailMessage message,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(message);
+
+            var subject = $"[EatFitAI Feedback] {message.Sentiment}/{message.Category}";
+            return SendTransactionalEmailAsync(
+                recipientEmail: message.RecipientEmail,
+                subject: subject,
+                textContent: BuildFeedbackBody(message),
+                operationName: "feedback",
+                replyToEmail: message.UserEmail,
+                replyToName: message.UserDisplayName,
+                cancellationToken: cancellationToken);
+        }
+
         private async Task SendTransactionalEmailAsync(
             string recipientEmail,
             string subject,
             string textContent,
-            string operationName)
+            string operationName,
+            string? replyToEmail = null,
+            string? replyToName = null,
+            CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"[EmailService] Sending {operationName} email to {recipientEmail} via Brevo.");
 
@@ -85,6 +106,13 @@ namespace EatFitAI.API.Services
                 ],
                 Subject = subject,
                 TextContent = textContent,
+                ReplyTo = HasConfiguredValue(replyToEmail)
+                    ? new BrevoAddress
+                    {
+                        Email = replyToEmail!.Trim(),
+                        Name = string.IsNullOrWhiteSpace(replyToName) ? null : replyToName.Trim(),
+                    }
+                    : null,
             };
 
             using var request = new HttpRequestMessage(HttpMethod.Post, SendTransactionalEmailPath);
@@ -98,7 +126,10 @@ namespace EatFitAI.API.Services
             try
             {
                 var stopwatch = Stopwatch.StartNew();
-                using var response = await _httpClient.SendAsync(request, timeoutCts.Token);
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                    timeoutCts.Token,
+                    cancellationToken);
+                using var response = await _httpClient.SendAsync(request, linkedCts.Token);
                 var responseBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
                 stopwatch.Stop();
 
@@ -192,6 +223,31 @@ namespace EatFitAI.API.Services
                 });
         }
 
+        private static string BuildFeedbackBody(FeedbackEmailMessage message)
+        {
+            return string.Join(
+                Environment.NewLine,
+                new[]
+                {
+                    "EatFitAI nhận phản hồi mới từ trong ứng dụng.",
+                    string.Empty,
+                    $"TraceId: {message.TraceId}",
+                    $"UserId: {message.UserId?.ToString() ?? "unknown"}",
+                    $"User email: {message.UserEmail}",
+                    $"User name: {message.UserDisplayName ?? "unknown"}",
+                    $"Category: {message.Category}",
+                    $"Sentiment: {message.Sentiment}",
+                    $"Screen: {message.Screen ?? "unknown"}",
+                    $"Platform: {message.Platform ?? "unknown"}",
+                    $"Device: {message.DeviceModel ?? "unknown"}",
+                    $"App version: {message.AppVersion ?? "unknown"}",
+                    $"Build: {message.BuildNumber ?? "unknown"}",
+                    string.Empty,
+                    "Nội dung:",
+                    message.Message,
+                });
+        }
+
         private sealed class BrevoSendEmailRequest
         {
             [JsonPropertyName("sender")]
@@ -205,6 +261,9 @@ namespace EatFitAI.API.Services
 
             [JsonPropertyName("textContent")]
             public string TextContent { get; set; } = string.Empty;
+
+            [JsonPropertyName("replyTo")]
+            public BrevoAddress? ReplyTo { get; set; }
         }
 
         private sealed class BrevoAddress

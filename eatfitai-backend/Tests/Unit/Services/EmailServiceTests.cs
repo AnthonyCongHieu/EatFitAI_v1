@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using EatFitAI.API.DTOs.Support;
 using EatFitAI.API.Options;
 using EatFitAI.API.Services;
 using Microsoft.Extensions.Hosting;
@@ -82,6 +83,57 @@ namespace EatFitAI.API.Tests.Unit.Services
                 service.SendVerificationCodeAsync("recipient@example.com", "123456", DateTime.UtcNow));
 
             Assert.Equal("Brevo email is not configured.", ex.Message);
+        }
+
+        [Fact]
+        public async Task SendFeedbackAsync_ValidBrevoConfig_SendsToAdminWithUserReplyTo()
+        {
+            string? capturedPayloadJson = null;
+            var handler = new StubHttpMessageHandler(request =>
+            {
+                capturedPayloadJson = request.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+                return new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent("{\"messageId\":\"feedback123\"}"),
+                };
+            });
+
+            using var httpClient = new HttpClient(handler);
+            var options = Microsoft.Extensions.Options.Options.Create(new BrevoOptions
+            {
+                BaseUrl = "https://api.brevo.com",
+                ApiKey = "brevo-test-key",
+                SenderEmail = "sender@eatfitai.test",
+                SenderName = "EatFitAI",
+            });
+            var environment = new Mock<IHostEnvironment>();
+            environment.SetupGet(x => x.EnvironmentName).Returns(Environments.Production);
+
+            var service = new EmailService(httpClient, options, environment.Object);
+
+            await service.SendFeedbackAsync(new FeedbackEmailMessage
+            {
+                RecipientEmail = "dinhconghieudch1610@gmail.com",
+                UserEmail = "user@example.com",
+                UserDisplayName = "Người dùng thử",
+                UserId = Guid.Parse("38cfb4c2-bb9e-4991-9a07-71e81e5fd066"),
+                Category = "performance",
+                Sentiment = "bad",
+                Message = "App hơi lag khi mở màn thống kê.",
+                AppVersion = "1.0.0",
+                BuildNumber = "1",
+                Platform = "android",
+                DeviceModel = "Pixel Test",
+                Screen = "About",
+                TraceId = "trace-feedback-test",
+            });
+
+            using var payload = JsonDocument.Parse(capturedPayloadJson!);
+            Assert.Equal("sender@eatfitai.test", payload.RootElement.GetProperty("sender").GetProperty("email").GetString());
+            Assert.Equal("dinhconghieudch1610@gmail.com", payload.RootElement.GetProperty("to")[0].GetProperty("email").GetString());
+            Assert.Equal("user@example.com", payload.RootElement.GetProperty("replyTo").GetProperty("email").GetString());
+            Assert.Contains("[EatFitAI Feedback]", payload.RootElement.GetProperty("subject").GetString());
+            Assert.Contains("App hơi lag khi mở màn thống kê.", payload.RootElement.GetProperty("textContent").GetString());
         }
 
         private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) : HttpMessageHandler
