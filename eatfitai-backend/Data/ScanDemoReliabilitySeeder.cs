@@ -328,11 +328,11 @@ public static class ScanDemoReliabilitySeeder
         var entries = new List<Db.MealDiary>();
         foreach (var seed in DemoMeals)
         {
-            var mealType = mealTypes.FirstOrDefault(item => item.Name == seed.MealTypeName)
+            var mealType = mealTypes.FirstOrDefault(item => string.Equals(item.Name, seed.MealTypeName, StringComparison.OrdinalIgnoreCase))
                 ?? throw new InvalidOperationException($"Missing meal type '{seed.MealTypeName}'.");
             var foodItem = FindFoodItemBySeedName(foodItems, seed.FoodName)
                 ?? throw new InvalidOperationException($"Missing food item '{seed.FoodName}'.");
-            var servingUnit = servingUnits.FirstOrDefault(item => item.Name == seed.ServingUnitName)
+            var servingUnit = servingUnits.FirstOrDefault(item => string.Equals(item.Name, seed.ServingUnitName, StringComparison.OrdinalIgnoreCase))
                 ?? throw new InvalidOperationException($"Missing serving unit '{seed.ServingUnitName}'.");
 
             var eatenDate = today.AddDays(-seed.DayOffset);
