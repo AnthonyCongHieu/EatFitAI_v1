@@ -610,6 +610,7 @@ def root() -> Dict[str, Any]:
 def healthz() -> Dict[str, Any]:
     """Health check nhẹ, không load YOLO trong lúc Render deploy."""
     gemini_status = _get_gemini_health_status()
+    public_gemini_status = _get_public_gemini_health_status(gemini_status)
     current_model_file = model_file or "not-loaded"
     packaged_model_exists = os.path.exists(YOLO_ONNX_MODEL_FILE)
     current_model_error = pending_model_readiness_error(
@@ -645,7 +646,7 @@ def healthz() -> Dict[str, Any]:
         "device": "cpu",
         "gpu_name": None,
         "llm_provider": "gemini",
-        **gemini_status,
+        **public_gemini_status,
     }
 
 
@@ -656,9 +657,36 @@ def healthz_gemini():
     return jsonify(
         {
             "status": "ok" if gemini_status.get("gemini_configured") else "degraded",
-            **gemini_status,
+            **_get_public_gemini_health_status(gemini_status, include_operational_fields=True),
         }
     ), http_status
+
+
+def _get_public_gemini_health_status(
+    gemini_status: Dict[str, Any],
+    *,
+    include_operational_fields: bool = False,
+) -> Dict[str, Any]:
+    public_status: Dict[str, Any] = {
+        "gemini_configured": bool(gemini_status.get("gemini_configured")),
+        "gemini_model": gemini_status.get("gemini_model"),
+    }
+
+    if not include_operational_fields:
+        return public_status
+
+    public_status.update(
+        {
+            "gemini_available": bool(gemini_status.get("gemini_available_project_count")),
+            "gemini_usage_state_store": gemini_status.get("gemini_usage_state_store"),
+            "gemini_usage_state_store_degraded": bool(
+                gemini_status.get("gemini_usage_state_store_degraded")
+            ),
+            "gemini_last_failover_reason": gemini_status.get("gemini_last_failover_reason"),
+            "gemini_retry_after": gemini_status.get("gemini_retry_after"),
+        }
+    )
+    return public_status
 
 
 def _get_gemini_health_status() -> Dict[str, Any]:

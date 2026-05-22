@@ -51,6 +51,105 @@ class LazyYoloModelTests(unittest.TestCase):
         self.assertEqual(payload["model_type"], "not-loaded")
         self.assertTrue(payload["yolo_onnx_low_memory"])
 
+    def test_public_healthz_redacts_gemini_runtime_details(self):
+        sensitive_status = {
+            "gemini_configured": True,
+            "gemini_model": "gemini-2.5-flash",
+            "gemini_active_project": "Mèo Key",
+            "activeKey": "Mèo Key",
+            "availableKeyCount": 1,
+            "gemini_available_project_count": 1,
+            "gemini_usage_state_store": "postgres",
+            "gemini_usage_state_store_degraded": False,
+            "gemini_usage_entries": [
+                {
+                    "projectAlias": "Mèo Key",
+                    "projectId": "project-secret",
+                    "keyAlias": "Mèo Key",
+                    "state": "available",
+                }
+            ],
+            "keyUsageEntries": [{"keyAlias": "Mèo Key"}],
+        }
+
+        with patch.object(app_module, "_get_gemini_health_status", return_value=sensitive_status):
+            response = self.client.get("/healthz")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["gemini_configured"])
+        self.assertEqual(payload["gemini_model"], "gemini-2.5-flash")
+        for field in (
+            "activeKey",
+            "availableKeyCount",
+            "gemini_active_project",
+            "gemini_usage_entries",
+            "keyUsageEntries",
+        ):
+            self.assertNotIn(field, payload)
+
+    def test_public_gemini_healthz_redacts_project_entries(self):
+        sensitive_status = {
+            "gemini_configured": True,
+            "gemini_model": "gemini-2.5-flash",
+            "gemini_active_project": "Mèo Key",
+            "activeKey": "Mèo Key",
+            "availableKeyCount": 1,
+            "gemini_available_project_count": 1,
+            "gemini_usage_state_store": "postgres",
+            "gemini_usage_state_store_degraded": False,
+            "gemini_usage_entries": [
+                {
+                    "projectAlias": "Mèo Key",
+                    "projectId": "project-secret",
+                    "keyAlias": "Mèo Key",
+                    "state": "available",
+                }
+            ],
+            "keyUsageEntries": [{"keyAlias": "Mèo Key"}],
+        }
+
+        with patch.object(app_module, "_get_gemini_health_status", return_value=sensitive_status):
+            response = self.client.get("/healthz/gemini")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["gemini_configured"])
+        self.assertEqual(payload["gemini_usage_state_store"], "postgres")
+        self.assertFalse(payload["gemini_usage_state_store_degraded"])
+        for field in (
+            "activeKey",
+            "availableKeyCount",
+            "gemini_active_project",
+            "gemini_usage_entries",
+            "keyUsageEntries",
+        ):
+            self.assertNotIn(field, payload)
+
+    def test_internal_runtime_status_keeps_gemini_runtime_details_with_token(self):
+        sensitive_status = {
+            "gemini_configured": True,
+            "gemini_model": "gemini-2.5-flash",
+            "gemini_active_project": "Mèo Key",
+            "activeKey": "Mèo Key",
+            "availableKeyCount": 1,
+            "gemini_usage_entries": [{"projectAlias": "Mèo Key", "keyAlias": "Mèo Key"}],
+        }
+
+        with (
+            patch.object(app_module, "_get_gemini_health_status", return_value=sensitive_status),
+            patch.dict(app_module.os.environ, {"AI_PROVIDER_INTERNAL_TOKEN": "expected-token"}),
+        ):
+            response = self.client.get(
+                "/internal/runtime/status",
+                headers={"X-Internal-Token": "expected-token"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["activeKey"], "Mèo Key")
+        self.assertEqual(payload["gemini_usage_entries"][0]["projectAlias"], "Mèo Key")
+
     def test_onnx_session_options_use_low_memory_defaults(self):
         previous_low_memory = app_module.YOLO_ONNX_LOW_MEMORY
         try:
