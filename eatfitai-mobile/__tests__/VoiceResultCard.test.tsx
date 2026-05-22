@@ -113,7 +113,7 @@ describe('VoiceResultCard review draft form', () => {
       />,
     );
 
-    expect(screen.getByText('Kiểm tra món trước khi lưu')).toBeTruthy();
+    expect(screen.getByText('Mình đã soạn sẵn thông tin rồi nè!')).toBeTruthy();
     fireEvent.changeText(screen.getByTestId('voice-review-grams-item-1'), '150');
     expect(onDraftChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -130,14 +130,14 @@ describe('VoiceResultCard review draft form', () => {
     const blockedDraft = {
       ...draft,
       canSave: false,
-      blockingReason: 'Không tìm thấy món phù hợp trong dữ liệu.',
+      blockingReason: 'Món này chưa có trong thư viện dinh dưỡng, bạn điền hoặc chọn món khác nhé.',
     };
 
     const screen = render(
       <VoiceResultCard command={command} reviewDraft={blockedDraft} onCommit={onCommit} />,
     );
 
-    expect(screen.getByText('Không tìm thấy món phù hợp trong dữ liệu.')).toBeTruthy();
+    expect(screen.getByText('Món này chưa có trong thư viện dinh dưỡng, bạn điền hoặc chọn món khác nhé.')).toBeTruthy();
     fireEvent.press(screen.getByTestId('voice-review-commit-button'));
     expect(onCommit).not.toHaveBeenCalled();
   });

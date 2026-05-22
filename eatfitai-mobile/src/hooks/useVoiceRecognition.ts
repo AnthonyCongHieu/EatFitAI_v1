@@ -66,7 +66,7 @@ export const useVoiceRecognition = (
       // Request permissions
       const permissionResult = await Audio.requestPermissionsAsync();
       if (!permissionResult.granted) {
-        setError('Cần quyền dùng micro để ghi âm.');
+        setError('Bạn cho mình xin quyền dùng micro để ghi âm nha.');
         return;
       }
 
@@ -116,7 +116,7 @@ export const useVoiceRecognition = (
       }, 100);
     } catch (err: any) {
       console.error('[VoiceRecognition] Start error:', err);
-      setError('Chưa bắt đầu ghi âm được. Vui lòng thử lại.');
+      setError('Mình chưa bắt đầu ghi âm được rồi, bạn thử lại giúp mình nha.');
       setIsRecording(false);
     }
   }, [maxDuration, setStatus]);
@@ -168,7 +168,7 @@ export const useVoiceRecognition = (
           console.log('[VoiceRecognition] Whisper transcribed:', transcription.text);
           await processText(transcription.text);
         } else {
-          setError(transcription.error || 'Chưa nhận diện được giọng nói. Vui lòng thử lại.');
+          setError(transcription.error || 'Mình chưa nghe rõ lắm, bạn nói lại giúp mình nha.');
           setStatus('error');
         }
 
@@ -178,7 +178,7 @@ export const useVoiceRecognition = (
       return null;
     } catch (err: any) {
       console.error('[VoiceRecognition] Stop error:', err);
-      setError('Chưa xử lý được bản ghi âm. Vui lòng thử lại.');
+      setError('Mình chưa xử lý được bản ghi âm rồi, bạn thử lại nha.');
       return null;
     }
   }, [setStatus, processText]);

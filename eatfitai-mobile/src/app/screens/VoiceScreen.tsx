@@ -77,16 +77,7 @@ const COMMAND_INPUT_MAX_HEIGHT = 112;
 /* ═══════════════════════════════════════════════
    Quick Command Chips
    ═══════════════════════════════════════════════ */
-const QUICK_COMMANDS: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  text: string;
-}[] = [
-  { icon: 'flame-outline', label: 'Calo', text: 'hôm nay còn bao nhiêu calo' },
-  { icon: 'reader-outline', label: 'Bữa', text: 'bữa trưa hôm qua ăn gì' },
-  { icon: 'repeat-outline', label: 'Lặp', text: 'thêm lại bữa trưa hôm qua vào hôm nay' },
-  { icon: 'create-outline', label: 'Ghi', text: 'ghi chú bữa trưa hơi nhiều dầu' },
-];
+
 
 /* ═══════════════════════════════════════════════
    Chat Message Type
@@ -156,10 +147,10 @@ const VoiceScreen = (): React.ReactElement => {
       showAppToast({
         type: 'info',
         text1:
-          isAiStatusLoading && !aiStatus ? 'Đang kiểm tra giọng nói' : voiceAvailability.title,
+          isAiStatusLoading && !aiStatus ? 'Đang chuẩn bị mic một tẹo nhé...' : voiceAvailability.title,
         text2:
           voiceAvailability.message ??
-          'Bạn vẫn có thể nhập bằng bàn phím trong lúc tính năng giọng nói sẵn sàng.',
+          'Bạn gõ phím ở ô bên dưới trong lúc chờ mic sẵn sàng nha!',
       });
       trackEvent('voice_ai_blocked', {
         flow: 'voice',
@@ -335,8 +326,8 @@ const VoiceScreen = (): React.ReactElement => {
     if (newStatus === 'success') {
       showAppToast({
         type: 'success',
-        text1: 'Đã cập nhật nhật ký',
-        text2: lastExecutedAction || 'Thông tin đã được lưu.',
+        text1: 'Lưu nhật ký thành công rồi nè!',
+        text2: lastExecutedAction || 'Thông tin đã được lưu rồi nha.',
         visibilityTime: 3000,
       });
       trackEvent('voice_execute_success', {
@@ -369,7 +360,7 @@ const VoiceScreen = (): React.ReactElement => {
       });
       showAppToast({
         type: 'error',
-        text1: 'Chưa thực hiện được',
+        text1: 'Mình chưa lưu được mất rồi',
         text2: execError,
       });
     }
@@ -397,8 +388,8 @@ const VoiceScreen = (): React.ReactElement => {
     if (newStatus === 'success') {
       showAppToast({
         type: 'success',
-        text1: 'Đã lưu vào nhật ký',
-        text2: lastExecutedAction || 'Thông tin đã được lưu.',
+        text1: 'Đã lưu xong rồi nha!',
+        text2: lastExecutedAction || 'Thông tin đã được lưu rồi nè.',
         visibilityTime: 3000,
       });
       trackEvent('voice_execute_success', {
@@ -431,25 +422,13 @@ const VoiceScreen = (): React.ReactElement => {
       });
       showAppToast({
         type: 'error',
-        text1: 'Chưa lưu được',
+        text1: 'Mình chưa lưu được mất rồi',
         text2: commitError,
       });
     }
   };
 
-  const handleQuickCommand = (text: string) => {
-    trackEvent('voice_parse_start', {
-      flow: 'voice',
-      step: 'parse',
-      status: 'started',
-      metadata: {
-        inputMode: 'quick_command',
-        textLength: text.length,
-      },
-    });
-    setRecognizedText(text);
-    processText(text);
-  };
+
 
   const handleSendText = async () => {
     if (recognizedText.trim()) {
@@ -516,22 +495,22 @@ const VoiceScreen = (): React.ReactElement => {
   const getStatusLabel = (): string => {
     switch (status) {
       case 'listening':
-        return 'Đang nghe';
+        return 'Mình đang nghe bạn nói nè...';
       case 'processing':
-        return 'Đang nhận diện';
+        return 'Đợi mình dịch giọng nói một tẹo nha...';
       case 'parsing':
-        return 'Đang hiểu yêu cầu';
+        return 'Đợi mình xem thông tin một xíu nhé...';
       case 'review':
-        return 'Cần xác nhận';
+        return 'Bạn xem lại thông tin xem đã chuẩn chưa nha!';
       case 'executing':
       case 'committing':
-        return 'Đang cập nhật';
+        return 'Đợi mình lưu thông tin vào nhật ký nha...';
       case 'success':
-        return 'Đã cập nhật';
+        return 'Mình ghi nhận xong rồi nè!';
       case 'error':
-        return 'Chưa hoàn tất';
+        return 'Mình chưa nghe rõ lắm, bạn nói lại giúp mình nha!';
       default:
-        return 'Sẵn sàng';
+        return 'Bạn cứ kể mình nghe nha!';
     }
   };
 
@@ -557,17 +536,17 @@ const VoiceScreen = (): React.ReactElement => {
     status === 'executing' ||
     status === 'committing';
   const micTitle = isRecording
-    ? 'Đang nghe'
+    ? 'Mình đang lắng nghe nè...'
     : isVoiceAiBlocked
-      ? 'Tạm thời chưa dùng được'
+      ? 'Tính năng này đang bận một tẹo mất rồi'
       : isBusy
         ? getStatusLabel()
-        : 'Sẵn sàng ghi nhanh';
+        : 'Hôm nay bạn thế nào?';
   const micHint = isRecording
-    ? 'Chạm để dừng'
+    ? 'Nói xong rồi bạn bấm nút mic lần nữa để gửi cho mình nha!'
     : isVoiceAiBlocked
-      ? 'Bạn vẫn có thể nhập yêu cầu bằng bàn phím.'
-      : 'Nói món ăn, cân nặng, ghi chú hoặc câu hỏi calo';
+      ? 'Bạn gõ phím ở ô bên dưới để nhắn cho mình nha.'
+      : 'Kể mình nghe hôm nay bạn ăn gì, nặng bao nhiêu hay muốn hỏi gì về calo nhé! Ví dụ: "Sáng nay mình ăn một bát phở bò".';
 
   return (
     <View
@@ -588,12 +567,7 @@ const VoiceScreen = (): React.ReactElement => {
             <Ionicons name="arrow-back" size={24} color={P.onSurface} />
           </Pressable>
           <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Nhật ký giọng nói</ThemedText>
-          <View style={S.rightPlaceholder}>
-            <View style={[S.headerState, { backgroundColor: P.primary + '18', borderColor: P.primary + '35' }]}>
-              <View style={S.headerStateDot} />
-              <ThemedText style={S.headerStateText} numberOfLines={1}>Sẵn sàng</ThemedText>
-            </View>
-          </View>
+          <View style={S.rightPlaceholder} />
         </View>
       </Animated.View>
 
@@ -643,51 +617,45 @@ const VoiceScreen = (): React.ReactElement => {
                 <ThemedText style={[S.voicePanelTitle, { color: P.onSurface }]}>{micTitle}</ThemedText>
                 <ThemedText style={[S.voicePanelHint, { color: P.onSurfaceVariant }]}>{micHint}</ThemedText>
               </View>
-              <View style={[S.voiceStatePill, isRecording && S.voiceStatePillActive]}>
-                <View style={[S.voiceStateDot, isRecording && S.voiceStateDotActive]} />
-                <ThemedText
-                  style={[S.voiceStateText, isRecording && S.voiceStateTextActive]}
-                >
-                  {isRecording ? 'Đang ghi' : 'Sẵn sàng'}
-                </ThemedText>
-              </View>
             </View>
 
             <View style={S.voiceSection}>
-              <Animated.View style={[S.ring, S.ring3, ring3Style]} />
-              <Animated.View style={[S.ring, S.ring2, ring2Style]} />
-              <Animated.View style={[S.ring, S.ring1, ring1Style]} />
+              <View style={S.micContainer}>
+                <Animated.View style={[S.ring, S.ring3, ring3Style]} />
+                <Animated.View style={[S.ring, S.ring2, ring2Style]} />
+                <Animated.View style={[S.ring, S.ring1, ring1Style]} />
 
-              <AnimatedPressable
-                onPress={handleToggleRecording}
-                style={[
-                  S.micBtnOuter,
-                  buttonAnimatedStyle,
-                  isVoiceAiBlocked && !isRecording && S.disabledControl,
-                ]}
-                testID="voice-mic-button"
-              >
-                <View style={S.micBtnGlassWrap}>
-                  <LinearGradient
-                    colors={
-                      isRecording
-                        ? ['#ff8c8c', '#dc2626']
-                        : [P.primary, P.primaryContainer]
-                    }
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={S.micBtnInner}
-                  >
-                    {isRecording ? (
-                      <ThemedText style={S.durationText}>
-                        {formatDuration(duration)}
-                      </ThemedText>
-                    ) : (
-                      <Ionicons name="mic" size={32} color="#fff" />
-                    )}
-                  </LinearGradient>
-                </View>
-              </AnimatedPressable>
+                <AnimatedPressable
+                  onPress={handleToggleRecording}
+                  style={[
+                    S.micBtnOuter,
+                    buttonAnimatedStyle,
+                    isVoiceAiBlocked && !isRecording && S.disabledControl,
+                  ]}
+                  testID="voice-mic-button"
+                >
+                  <View style={S.micBtnGlassWrap}>
+                    <LinearGradient
+                      colors={
+                        isRecording
+                          ? ['#ff8c8c', '#dc2626']
+                          : [P.primary, P.primaryContainer]
+                      }
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={S.micBtnInner}
+                    >
+                      {isRecording ? (
+                        <ThemedText style={S.durationText}>
+                          {formatDuration(duration)}
+                        </ThemedText>
+                      ) : (
+                        <Ionicons name="mic" size={32} color="#fff" />
+                      )}
+                    </LinearGradient>
+                  </View>
+                </AnimatedPressable>
+              </View>
 
               <ThemedText
                 style={[S.listeningLabel, isRecording && S.listeningLabelActive]}
@@ -721,7 +689,7 @@ const VoiceScreen = (): React.ReactElement => {
               <Ionicons name="sparkles" size={18} color={P.primary} style={S.commandIcon} />
               <TextInput
                 style={[S.textInput, { color: P.onSurface, height: commandInputHeight }]}
-                placeholder="Ghi món hoặc hỏi nhật ký..."
+                placeholder="Nhập món ăn hoặc câu hỏi ở đây nha..."
                 placeholderTextColor={P.onSurfaceVariant + '70'}
                 value={recognizedText}
                 onChangeText={setRecognizedText}
@@ -741,29 +709,6 @@ const VoiceScreen = (): React.ReactElement => {
               >
                 <Ionicons name="arrow-up" size={18} color="#003915" />
               </Pressable>
-            </View>
-
-            <View style={S.quickCommandRow}>
-              {QUICK_COMMANDS.map((cmd) => (
-                <Pressable
-                  key={cmd.label}
-                  style={[
-                    S.quickCommand,
-                    { backgroundColor: P.surfaceContainer, borderColor: P.glassBorder },
-                    isVoiceAiBlocked && S.disabledControl,
-                  ]}
-                  onPress={() => handleQuickCommand(cmd.text)}
-                >
-                  <Ionicons name={cmd.icon} size={15} color={P.primary} />
-                  <ThemedText
-                    style={[S.quickCommandText, { color: P.onSurface }]}
-                    numberOfLines={1}
-                    allowFontScaling={false}
-                  >
-                    {cmd.label}
-                  </ThemedText>
-                </Pressable>
-              ))}
             </View>
           </Animated.View>
         )}
@@ -803,7 +748,7 @@ const VoiceScreen = (): React.ReactElement => {
               >
                 <Ionicons name="sparkles" size={17} color="#003915" />
                 <ThemedText style={S.analyzeBtnText}>
-                  {status === 'parsing' ? 'Đang hiểu' : 'Xử lý yêu cầu'}
+                  {status === 'parsing' ? 'Đang phân tích...' : 'Phân tích giúp mình nhé'}
                 </ThemedText>
               </LinearGradient>
             </Pressable>
@@ -899,32 +844,7 @@ const S = StyleSheet.create({
     textAlign: 'center',
   },
   rightPlaceholder: {
-    width: 76,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  headerState: {
-    paddingHorizontal: 8,
-    height: 28,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(75, 226, 119, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(75, 226, 119, 0.16)',
-  },
-  headerStateDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: P.primary,
-  },
-  headerStateText: {
-    fontSize: 11,
-    fontFamily: 'BeVietnamPro_700Bold',
-    color: P.primary,
+    width: 44,
   },
   scrollView: {
     flex: 1,
@@ -1072,31 +992,7 @@ const S = StyleSheet.create({
   sendBtnDisabled: {
     opacity: 0.35,
   },
-  quickCommandRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-  },
-  quickCommand: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(226,232,240,0.12)',
-  },
-  quickCommandText: {
-    fontSize: 11,
-    fontFamily: 'BeVietnamPro_700Bold',
-    color: P.onSurface,
-    lineHeight: 15,
-    flexShrink: 1,
-  },
+
   transcriptWrap: {
     marginTop: 10,
     paddingHorizontal: 12,
@@ -1184,46 +1080,43 @@ const S = StyleSheet.create({
     color: '#fecaca',
   },
   voiceSection: {
-    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 18,
-    paddingBottom: 2,
+    paddingTop: 10,
+    paddingBottom: 10,
     minHeight: 188,
     alignSelf: 'center',
     width: '100%',
   },
+  micContainer: {
+    width: 184,
+    height: 184,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
   ring: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
     borderRadius: 999,
-    borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
+    borderStyle: 'solid',
   },
   ring1: {
     width: 122,
     height: 122,
-    marginLeft: -61,
-    marginTop: -61,
     borderWidth: 2,
     borderColor: 'rgba(75, 226, 119, 0.36)',
   },
   ring2: {
     width: 154,
     height: 154,
-    marginLeft: -77,
-    marginTop: -77,
     borderWidth: 1.5,
     borderColor: 'rgba(75, 226, 119, 0.2)',
   },
   ring3: {
     width: 184,
     height: 184,
-    marginLeft: -92,
-    marginTop: -92,
     borderWidth: 1,
     borderColor: 'rgba(75, 226, 119, 0.1)',
-    borderStyle: 'solid', // Android: dotted+borderRadius không hoạt động, dùng solid
   },
   micBtnOuter: {
     width: 96,

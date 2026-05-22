@@ -107,7 +107,7 @@ namespace EatFitAI.API.Controllers
             {
                 success = false,
                 error = "ai_quota_exceeded",
-                message = "Bạn đã dùng hết lượt xử lý giọng nói hôm nay. Vui lòng thử lại sau.",
+                message = "Hôm nay bạn dùng hết lượt xử lý giọng nói mất rồi. Để mai tụi mình lại thủ thỉ tiếp nha!",
                 featureKey = ex.Feature.Key,
                 featureLabel = ex.Feature.Label,
                 limit = ex.Feature.Limit,
@@ -244,12 +244,12 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new { error = "Bạn chưa đăng nhập" });
+                return Unauthorized(new { error = "Hình như bạn chưa đăng nhập nè." });
             }
 
             if (string.IsNullOrWhiteSpace(request.Text))
             {
-                return BadRequest(new { error = "Vui lòng nhập văn bản" });
+                return BadRequest(new { error = "Bạn nhập văn bản giúp mình nhé!" });
             }
 
             try
@@ -301,7 +301,7 @@ namespace EatFitAI.API.Controllers
                         var fallbackCommand = await BuildFallbackCommandAsync(
                             request,
                             "backend-rule-fallback",
-                            "Ứng dụng đã nhận diện bằng chế độ dự phòng. Vui lòng kiểm tra trước khi lưu.");
+                            "Hình như có chút trục trặc nhỏ, bạn kiểm tra lại thông tin trước khi lưu giúp mình nhé!");
 
                         return Ok(fallbackCommand);
                     }
@@ -329,14 +329,14 @@ namespace EatFitAI.API.Controllers
                         StatusCodes.Status503ServiceUnavailable,
                         ErrorResponseHelper.SafeError(
                             "voice_provider_auth_error",
-                            "Tính năng giọng nói đang được bảo trì. Vui lòng thử lại sau.",
+                            "Tính năng giọng nói đang được bảo trì một tẹo. Bạn thử lại sau nhé!",
                             HttpContext));
                 }
 
                 var providerErrorFallback = await BuildFallbackCommandAsync(
                     request,
                     "backend-rule-fallback",
-                    "Ứng dụng đã nhận diện bằng chế độ dự phòng. Vui lòng kiểm tra trước khi lưu.");
+                    "Hình như có chút trục trặc nhỏ, bạn kiểm tra lại thông tin trước khi lưu giúp mình nhé!");
                 return Ok(providerErrorFallback);
             }
             catch (AiUsageQuotaExceededException ex)
@@ -349,7 +349,7 @@ namespace EatFitAI.API.Controllers
                 var fallbackCommand = await BuildFallbackCommandAsync(
                     request,
                     "backend-rule-fallback",
-                    "Ứng dụng đã nhận diện bằng chế độ dự phòng. Vui lòng kiểm tra trước khi lưu.");
+                    "Hình như có chút trục trặc nhỏ, bạn kiểm tra lại thông tin trước khi lưu giúp mình nhé!");
                 return Ok(fallbackCommand);
             }
             catch (TaskCanceledException ex)
@@ -358,7 +358,7 @@ namespace EatFitAI.API.Controllers
                 var fallbackCommand = await BuildFallbackCommandAsync(
                     request,
                     "backend-rule-fallback",
-                    "Ứng dụng đã nhận diện bằng chế độ dự phòng. Vui lòng kiểm tra trước khi lưu.");
+                    "Hình như có chút trục trặc nhỏ, bạn kiểm tra lại thông tin trước khi lưu giúp mình nhé!");
                 return Ok(fallbackCommand);
             }
         }
@@ -494,10 +494,10 @@ namespace EatFitAI.API.Controllers
 
             if (command.Confidence <= 0 || command.Confidence < VoiceReviewConfidenceThreshold)
             {
-                return "Độ tin cậy chưa cao. Hãy kiểm tra trước khi lưu.";
+                return "EatFit nghe chưa rõ lắm nè, bạn kiểm tra lại thông tin trước khi lưu nha.";
             }
 
-            return "Vui lòng kiểm tra lại thông tin trước khi lưu.";
+            return "Bạn kiểm tra lại thông tin xem đã chuẩn chỉnh chưa nhé!";
         }
 
     public class TranscribeRequest
@@ -518,7 +518,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new { error = "Bạn chưa đăng nhập" });
+                return Unauthorized(new { error = "Hình như bạn chưa đăng nhập nè." });
             }
 
             if (!TryResolveVoiceObjectKey(request, userId, out var objectKey))
@@ -527,7 +527,7 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "invalid_audio_reference",
-                    message = "Tham chiếu audio không hợp lệ."
+                    message = "Tham chiếu âm thanh chưa đúng rồi nè, bạn xem lại nha."
                 });
             }
 
@@ -537,7 +537,7 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "media_storage_not_configured",
-                    message = "Kho media chưa được cấu hình an toàn.",
+                    message = "EatFit chưa kết nối được kho lưu trữ âm thanh rồi, bạn thử lại sau nha!",
                     requestId = HttpContext.TraceIdentifier,
                 });
             }
@@ -578,7 +578,7 @@ namespace EatFitAI.API.Controllers
                         {
                             success = false,
                             error = "voice_provider_auth_error",
-                            message = "Tính năng giọng nói đang được bảo trì. Vui lòng thử lại sau.",
+                            message = "Tính năng giọng nói đang được bảo trì một tẹo. Bạn thử lại sau nhé!",
                             requestId = HttpContext.TraceIdentifier,
                         });
                     }
@@ -587,7 +587,7 @@ namespace EatFitAI.API.Controllers
                     {
                         success = false,
                         error = "voice_provider_error",
-                        message = "Tính năng giọng nói chưa xử lý được yêu cầu này. Vui lòng thử lại.",
+                        message = "EatFit chưa xử lý được yêu cầu này rồi. Bạn thử lại nha.",
                         requestId = HttpContext.TraceIdentifier,
                     });
                 }
@@ -619,7 +619,7 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "voice_provider_unavailable",
-                    message = "AI giọng nói hiện không khả dụng.",
+                    message = "AI giọng nói của EatFit đang bận một tẹo, bạn thử lại sau nha.",
                     requestId = HttpContext.TraceIdentifier,
                 });
             }
@@ -630,7 +630,7 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "voice_provider_timeout",
-                    message = "AI giọng nói phản hồi quá chậm.",
+                    message = "AI giọng nói phản hồi hơi chậm một xíu rồi. Thử lại giúp mình nha.",
                     requestId = HttpContext.TraceIdentifier,
                 });
             }
@@ -645,14 +645,14 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Hình như bạn chưa đăng nhập nè." });
             }
 
             try
             {
                 if (string.IsNullOrWhiteSpace(request.Text))
                 {
-                    return BadRequest(new VoiceProcessResponse { Success = false, Error = "Văn bản không được để trống" });
+                    return BadRequest(new VoiceProcessResponse { Success = false, Error = "Văn bản đang trống kìa, bạn viết gì đó nhé." });
                 }
 
                 _logger.LogInformation("Processing voice text for user {UserId}: {Text}", userId, request.Text);
@@ -665,13 +665,13 @@ namespace EatFitAI.API.Controllers
                 {
                     Success = command.Intent != VoiceIntent.UNKNOWN,
                     Command = command,
-                    Error = command.Intent == VoiceIntent.UNKNOWN ? "Không hiểu lệnh. Hãy thử lại với cách nói khác." : null
+                    Error = command.Intent == VoiceIntent.UNKNOWN ? "EatFit chưa hiểu lệnh này rồi, bạn thử nói theo cách khác xem sao nha." : null
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing voice text");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Chưa xử lý được yêu cầu giọng nói. Vui lòng thử lại." });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Hệ thống chưa xử lý được yêu cầu của bạn rồi, thử lại giúp mình nhé!" });
             }
         }
 
@@ -700,7 +700,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new { error = "Bạn chưa đăng nhập" });
+                return Unauthorized(new { error = "Hình như bạn chưa đăng nhập nè." });
             }
 
             try
@@ -726,7 +726,7 @@ namespace EatFitAI.API.Controllers
                         ReviewRequired = preparedCommand.ReviewRequired,
                         ReviewReason = preparedCommand.ReviewReason,
                         CanSave = false,
-                        BlockingReason = "Không hỗ trợ lệnh này."
+                        BlockingReason = "EatFit chưa hỗ trợ lệnh này rồi nè."
                     }
                 };
 
@@ -735,7 +735,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error building voice review draft for user {UserId}", userId);
-                return StatusCode(500, new { error = "Chưa chuẩn bị được thông tin để lưu. Vui lòng thử lại." });
+                return StatusCode(500, new { error = "EatFit chưa chuẩn bị được thông tin lưu rồi. Bạn thử lại giúp mình nha." });
             }
         }
 
@@ -745,7 +745,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Hình như bạn chưa đăng nhập nè." });
             }
 
             try
@@ -759,7 +759,7 @@ namespace EatFitAI.API.Controllers
                     _ => BadRequest(new VoiceProcessResponse
                     {
                         Success = false,
-                        Error = "Không hỗ trợ lưu lệnh này."
+                        Error = "Lệnh này chưa hỗ trợ lưu mất rồi."
                     })
                 };
             }
@@ -769,7 +769,7 @@ namespace EatFitAI.API.Controllers
                 return StatusCode(500, new VoiceProcessResponse
                 {
                     Success = false,
-                    Error = "Chưa lưu được thông tin. Vui lòng thử lại."
+                    Error = "EatFit chưa lưu được thông tin rồi, thử lại giúp mình nha."
                 });
             }
         }
@@ -788,7 +788,7 @@ namespace EatFitAI.API.Controllers
             var foods = GetCommandFoodItems(command);
             if (foods.Count == 0)
             {
-                draft.Warnings.Add("Không tìm thấy tên món ăn trong lệnh.");
+                draft.Warnings.Add("Hình như bạn chưa nói tên món ăn nào thì phải. Bạn kể EatFit nghe đi!");
             }
 
             for (var index = 0; index < foods.Count; index++)
@@ -801,17 +801,17 @@ namespace EatFitAI.API.Controllers
 
                 if (string.IsNullOrWhiteSpace(food.FoodName))
                 {
-                    itemWarnings.Add("Thiếu tên món ăn.");
+                    itemWarnings.Add("Bạn điền tên món ăn vào đây giúp mình nha.");
                 }
 
                 if (!IsValidFoodGrams(grams))
                 {
-                    itemWarnings.Add("Khẩu phần phải từ 1g đến 5000g.");
+                    itemWarnings.Add("Khối lượng món ăn nằm trong khoảng từ 1g đến 5000g nè.");
                 }
 
                 if (selectedCandidate is null)
                 {
-                    itemWarnings.Add("Không tìm thấy món phù hợp trong dữ liệu.");
+                    itemWarnings.Add("Món này chưa có sẵn trong thư viện rồi, bạn chọn hoặc điền món khác nha.");
                 }
 
                 var reviewItem = new VoiceReviewItem
@@ -862,7 +862,7 @@ namespace EatFitAI.API.Controllers
 
             if (sourceEntries.Count == 0)
             {
-                draft.Warnings.Add("Chưa có món phù hợp trong bữa đã chọn để thêm lại.");
+                draft.Warnings.Add("Ủa, EatFit chưa thấy món nào ở bữa trước để ghi nhận lại cho bạn cả nè.");
             }
 
             for (var index = 0; index < sourceEntries.Count; index++)
@@ -888,7 +888,7 @@ namespace EatFitAI.API.Controllers
                 }
                 else
                 {
-                    itemWarnings.Add("Món này chưa thể thêm lại vì thiếu dữ liệu dinh dưỡng.");
+                    itemWarnings.Add("Món này thiếu thông tin dinh dưỡng để thêm lại mất rồi.");
                 }
 
                 draft.Items.Add(new VoiceReviewItem
@@ -928,7 +928,7 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrWhiteSpace(draft.Note.NoteText))
             {
-                draft.Warnings.Add("Ghi chú đang trống.");
+                draft.Warnings.Add("Ghi chú đang trống kìa, bạn viết thêm vài dòng nha.");
             }
 
             draft.CanSave = !string.IsNullOrWhiteSpace(draft.Note.NoteText);
@@ -951,7 +951,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Could not load current weight for voice review user {UserId}", userId);
-                draft.Warnings.Add("Không thể lấy cân nặng hiện tại, nhưng vẫn có thể kiểm tra số mới.");
+                draft.Warnings.Add("EatFit chưa lấy được số cân cũ, nhưng vẫn ghi nhận số cân mới được nha.");
             }
 
             draft.Weight = new VoiceWeightReview
@@ -963,7 +963,7 @@ namespace EatFitAI.API.Controllers
 
             if (!IsValidWeight(newWeight))
             {
-                draft.Warnings.Add("Cân nặng phải từ 20kg đến 300kg.");
+                draft.Warnings.Add("Số đo cân nặng chưa đúng rồi nè, bạn nhập từ 20kg đến 300kg nha.");
             }
 
             ApplyDraftSaveState(draft);
@@ -1000,7 +1000,7 @@ namespace EatFitAI.API.Controllers
                 return BadRequest(new VoiceProcessResponse
                 {
                     Success = false,
-                    Error = "Không có món ăn để lưu."
+                    Error = "Chưa có món ăn nào để lưu rồi bạn ơi."
                 });
             }
 
@@ -1020,7 +1020,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new VoiceProcessResponse
                     {
                         Success = false,
-                        Error = "Khẩu phần phải từ 1g đến 5000g."
+                        Error = "Khẩu phần ăn phải nằm trong khoảng từ 1g đến 5000g nha."
                     });
                 }
 
@@ -1030,7 +1030,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new VoiceProcessResponse
                     {
                         Success = false,
-                        Error = $"Không tìm thấy món '{item.FoodName}' để lưu."
+                        Error = $"EatFit chưa tìm thấy món '{item.FoodName}' trong danh sách để lưu nè."
                     });
                 }
 
@@ -1068,8 +1068,8 @@ namespace EatFitAI.API.Controllers
             }
 
             var details = addedFoods.Count == 1
-                ? $"Đã thêm {addedFoods[0]} ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(draft.MealType)}."
-                : $"Đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(draft.MealType)}: {string.Join(", ", addedFoods)}.";
+                ? $"EatFit đã ghi nhận {addedFoods[0]} ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(draft.MealType)} rồi nhé!"
+                : $"EatFit đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(draft.MealType)} nè: {string.Join(", ", addedFoods)}!";
 
             return Ok(new VoiceProcessResponse
             {
@@ -1108,7 +1108,7 @@ namespace EatFitAI.API.Controllers
                 return BadRequest(new VoiceProcessResponse
                 {
                     Success = false,
-                    Error = "Ghi chú đang trống."
+                    Error = "Ghi chú đang trống kìa, bạn điền thêm thông tin nha."
                 });
             }
 
@@ -1132,8 +1132,8 @@ namespace EatFitAI.API.Controllers
                 {
                     Type = "ADD_NOTE",
                     Details = isMealNote
-                        ? $"Đã lưu ghi chú cho {GetMealLabelLower(draft.MealType)}: {noteText}"
-                        : $"Đã lưu ghi chú ngày {FormatVoiceDate(noteDate)}: {noteText}",
+                        ? $"EatFit đã ghi lại lưu ý cho {GetMealLabelLower(draft.MealType)} rồi nè: {noteText}"
+                        : $"Đã thêm ghi chú cho ngày {FormatVoiceDate(noteDate)} rồi nhé: {noteText}",
                     Data = new Dictionary<string, object>
                     {
                         ["markerId"] = marker.MealDayMarkerId,
@@ -1155,7 +1155,7 @@ namespace EatFitAI.API.Controllers
                 return BadRequest(new VoiceProcessResponse
                 {
                     Success = false,
-                    Error = "Cân nặng phải từ 20kg đến 300kg."
+                    Error = "Số đo cân nặng chưa đúng rồi nè, bạn nhập từ 20kg đến 300kg nha."
                 });
             }
 
@@ -1173,7 +1173,7 @@ namespace EatFitAI.API.Controllers
                 ExecutedAction = new ExecutedAction
                 {
                     Type = "LOG_WEIGHT",
-                    Details = $"Đã cập nhật cân nặng: {newWeight} kg",
+                    Details = $"EatFit đã ghi nhận cân nặng mới của bạn là {newWeight} kg rồi nhé!",
                     Data = new Dictionary<string, object>
                     {
                         ["savedWeight"] = newWeight,
@@ -1343,7 +1343,7 @@ namespace EatFitAI.API.Controllers
                 return food.Quantity.Value * 100m;
             }
 
-            warnings.Add("Chưa có khẩu phần rõ ràng, tạm dùng 100g để bạn chỉnh lại.");
+            warnings.Add("EatFit chưa rõ khối lượng nên tạm để 100g, bạn chỉnh lại cho đúng nhé.");
             return 100m;
         }
 
@@ -1392,7 +1392,7 @@ namespace EatFitAI.API.Controllers
                 string.IsNullOrWhiteSpace(draft.Note?.NoteText);
 
             draft.CanSave = !hasBlockingItem && !hasBlockingWeight && !hasBlockingNote;
-            draft.BlockingReason = draft.CanSave ? null : allWarnings.FirstOrDefault() ?? "Cần kiểm tra lại dữ liệu trước khi lưu.";
+            draft.BlockingReason = draft.CanSave ? null : allWarnings.FirstOrDefault() ?? "Bạn xem lại thông tin xem đã chuẩn chưa nhé!";
         }
 
         private static bool IsValidFoodGrams(decimal grams)
@@ -1414,7 +1414,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Hình như bạn chưa đăng nhập nè." });
             }
 
             try
@@ -1430,7 +1430,7 @@ namespace EatFitAI.API.Controllers
                         // Kiểm tra confidence trước khi thực thi
                         if (command.Confidence < 0.5)
                         {
-                            error = "Độ tin cậy thấp. Vui lòng nói rõ hơn.";
+                            error = "EatFit chưa nghe rõ lắm. Bạn thử nói lại chi tiết xem sao nha.";
                             break;
                         }
                         (executedAction, error) = await ExecuteAddFoodAsync(userId, command);
@@ -1452,8 +1452,8 @@ namespace EatFitAI.API.Controllers
                                 {
                                     Type = "LOG_WEIGHT_CONFIRM",
                                     Details = currentWeight.HasValue
-                                    ? $"Cân hiện tại: {currentWeight}kg. Cập nhật thành {newWeight}kg?"
-                                    : $"Ghi cân nặng mới: {newWeight}kg?",
+                                    ? $"Cân nặng hiện tại là {currentWeight}kg. Bạn muốn cập nhật thành {newWeight}kg đúng không nè?"
+                                    : $"EatFit ghi nhận số cân mới là {newWeight}kg nha?",
                                     Data = new Dictionary<string, object>
                                     {
                                         ["currentWeight"] = currentWeight ?? 0,
@@ -1467,12 +1467,12 @@ namespace EatFitAI.API.Controllers
                             catch (Exception ex)
                             {
                                 _logger.LogError(ex, "Failed to get current weight");
-                                error = "Không thể lấy thông tin cân nặng. Vui lòng thử lại.";
+                                error = "EatFit chưa lấy được thông tin cân nặng rồi. Thử lại nha bạn.";
                             }
                         }
                         else
                         {
-                            error = "Chưa thấy số cân nặng trong yêu cầu.";
+                            error = "EatFit chưa nghe thấy số cân nặng của bạn nè. Bạn nói lại rõ hơn nha!";
                         }
                         break;
 
@@ -1489,7 +1489,7 @@ namespace EatFitAI.API.Controllers
                             executedAction = new ExecutedAction
                             {
                                 Type = "ASK_CALORIES",
-                                Details = $"Ngày {FormatVoiceDate(today)}, bạn đã dùng {totalCalories:N0} / {targetCalories:N0} kcal.",
+                                Details = $"Hôm nay (ngày {FormatVoiceDate(today)}), bạn đã dùng khoảng {totalCalories:N0} kcal trên mục tiêu {targetCalories:N0} kcal nhé.",
                                 Data = new Dictionary<string, object>
                                 {
                                     ["totalCalories"] = totalCalories,
@@ -1503,7 +1503,7 @@ namespace EatFitAI.API.Controllers
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Failed to get calories");
-                            error = "Không thể lấy thông tin calo. Vui lòng thử lại.";
+                            error = "EatFit chưa lấy được thông tin calo lúc này rồi. Thử lại sau nha.";
                         }
                         break;
 
@@ -1516,7 +1516,7 @@ namespace EatFitAI.API.Controllers
                         break;
 
                     default:
-                        error = "Chưa hỗ trợ yêu cầu này.";
+                        error = "EatFit chưa hỗ trợ yêu cầu này mất rồi, bạn thử nói yêu cầu khác xem sao nha!";
                         break;
                 }
 
@@ -1531,7 +1531,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing voice command");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Chưa thực hiện được yêu cầu giọng nói. Vui lòng thử lại." });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "EatFit đang bận một tẹo rồi, bạn thử lại sau giúp mình nha!" });
             }
         }
 
@@ -1544,7 +1544,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Hình như bạn chưa đăng nhập nè." });
             }
 
             try
@@ -1564,7 +1564,7 @@ namespace EatFitAI.API.Controllers
                     ExecutedAction = new ExecutedAction
                     {
                         Type = "LOG_WEIGHT",
-                        Details = $"Đã cập nhật cân nặng: {request.NewWeight} kg",
+                        Details = $"EatFit đã ghi nhận cân nặng mới của bạn là {request.NewWeight} kg rồi nhé!",
                         Data = new Dictionary<string, object>
                         {
                             ["savedWeight"] = request.NewWeight,
@@ -1576,7 +1576,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error confirming weight");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Chưa lưu được cân nặng." });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "EatFit chưa lưu được số cân mới rồi. Thử lại nha bạn." });
             }
         }
 
@@ -1605,8 +1605,8 @@ namespace EatFitAI.API.Controllers
             var names = entries.Select(ResolveMealEntryName).ToList();
             var mealLabel = mealType.HasValue ? GetMealLabel(mealType) : "Ngày";
             var details = entries.Count == 0
-                ? $"{mealLabel} {FormatVoiceDate(queryDate)} chưa có món nào."
-                : $"{mealLabel} {FormatVoiceDate(queryDate)} có {entries.Count} món, khoảng {Math.Round(totalCalories)} kcal: {string.Join(", ", names)}.";
+                ? $"{mealLabel} ngày {FormatVoiceDate(queryDate)} bạn chưa ghi nhận món nào nè."
+                : $"{mealLabel} ngày {FormatVoiceDate(queryDate)} bạn đã ăn {entries.Count} món (tổng cộng khoảng {Math.Round(totalCalories)} kcal) gồm: {string.Join(", ", names)} nha.";
 
             return (new ExecutedAction
             {
@@ -1659,8 +1659,8 @@ namespace EatFitAI.API.Controllers
                 _ => "protein"
             };
             var details = scope == "week"
-                ? $"Tuần này bạn đã nạp khoảng {Math.Round(value)}g {label}."
-                : $"Ngày {FormatVoiceDate(queryDate)}, bạn đã nạp khoảng {Math.Round(value)}g {label}.";
+                ? $"Tuần này bạn đã nạp khoảng {Math.Round(value)}g {label} rồi nhé."
+                : $"Trong ngày {FormatVoiceDate(queryDate)}, bạn đã nạp khoảng {Math.Round(value)}g {label} nè.";
 
             return (new ExecutedAction
             {
@@ -1730,22 +1730,22 @@ namespace EatFitAI.API.Controllers
                     }
                     else
                     {
-                        return (null, $"Chưa tìm thấy món '{command.Entities.FoodName}'. Hãy thử nói tên món cụ thể hơn.");
+                        return (null, $"EatFit chưa tìm thấy món '{command.Entities.FoodName}' rồi. Bạn thử kể chi tiết tên món hơn xem sao nhé.");
                     }
                 }
                 else
                 {
-                    return (null, "Chưa thấy tên món ăn trong yêu cầu.");
+                    return (null, "Ủa, hình như bạn chưa nhắc tới món ăn nào thì phải nè.");
                 }
 
                 if (addedFoods.Count == 0)
                 {
-                    return (null, "Chưa tìm thấy món phù hợp. Hãy thử nói tên món cụ thể hơn.");
+                    return (null, "EatFit chưa tìm thấy món ăn nào phù hợp hết. Bạn kể rõ tên món xem sao nha.");
                 }
 
                 var details = addedFoods.Count == 1
-                    ? $"Đã thêm {addedFoods[0]} ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(mealType)}."
-                    : $"Đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(mealType)}: {string.Join(", ", addedFoods)}.";
+                    ? $"EatFit đã thêm {addedFoods[0]} ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(mealType)} rồi nhé!"
+                    : $"EatFit đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)} kcal) vào {GetMealLabelLower(mealType)} rồi nè: {string.Join(", ", addedFoods)}!";
 
                 return (new ExecutedAction
                 {
@@ -1762,7 +1762,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding food via voice");
-                return (null, "Chưa thêm được món ăn. Vui lòng thử lại.");
+                return (null, "EatFit chưa lưu được món ăn rồi. Bạn thử lại xem sao nhé.");
             }
         }
 

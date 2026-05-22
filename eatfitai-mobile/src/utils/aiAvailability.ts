@@ -10,7 +10,7 @@ export type AiFeatureAvailability = {
   message: string | null;
 };
 
-const MANUAL_FALLBACK_MESSAGE = 'Bạn vẫn có thể nhập hoặc tìm món thủ công.';
+const MANUAL_FALLBACK_MESSAGE = 'Đừng lo nha, bạn vẫn có thể nhập tay hoặc tìm món thủ công nè.';
 
 const available = (): AiFeatureAvailability => ({
   state: 'available',
@@ -24,15 +24,15 @@ const checking = (): AiFeatureAvailability => ({
   state: 'blocked',
   canUseAi: false,
   allowsManualFallback: true,
-  title: 'AI đang kiểm tra',
-  message: 'Vui lòng thử lại sau khi trạng thái AI được cập nhật.',
+  title: 'Đang kết nối AI',
+  message: 'Bạn chờ một chút để mình kết nối với AI rồi thử lại nha!',
 });
 
 const blocked = (): AiFeatureAvailability => ({
   state: 'blocked',
   canUseAi: false,
   allowsManualFallback: true,
-  title: 'AI tạm offline',
+  title: 'AI đang tạm nghỉ',
   message: MANUAL_FALLBACK_MESSAGE,
 });
 
@@ -62,17 +62,17 @@ export function getAiFeatureAvailability(
 
   if (feature === 'vision' && status.state !== 'HEALTHY') {
     return degraded(
-      'AI nhận diện đang suy giảm',
+      'Quét ảnh hơi chậm một xíu',
       true,
-      'Bạn vẫn có thể thử quét ảnh; nếu lỗi, hãy tìm món thủ công.',
+      'Bạn cứ thử chụp lại xem sao, hoặc tìm món thủ công giúp mình nha!',
     );
   }
 
   if (feature !== 'vision' && !status.geminiConfigured) {
     return degraded(
       feature === 'nutrition'
-        ? 'AI dinh dưỡng chưa sẵn sàng'
-        : 'AI ngôn ngữ chưa sẵn sàng',
+        ? 'AI dinh dưỡng đang bận xíu nè'
+        : 'AI giọng nói đang bận xíu nè',
     );
   }
 

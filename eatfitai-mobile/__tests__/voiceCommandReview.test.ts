@@ -52,7 +52,7 @@ describe('voiceCommandReview', () => {
     });
 
     expect(getVoiceReviewMessage(command)).toBe(
-      'Độ tin cậy chưa cao. Hãy kiểm tra trước khi lưu.',
+      'EatFit nghe chưa rõ lắm nè, bạn kiểm tra lại thông tin trước khi lưu nha.',
     );
   });
 
@@ -69,7 +69,7 @@ describe('voiceCommandReview', () => {
     });
 
     expect(getVoicePortionClarificationMessage(command)).toBe(
-      'Bạn muốn ghi khẩu phần bao nhiêu? Hãy nói số gram hoặc khẩu phần như 1 bát, 1 phần. (gà)',
+      'Bạn muốn ghi khối lượng bao nhiêu nè? Chỉ cần nói số gam hoặc khẩu phần như 1 bát, 1 phần nha. (gà)',
     );
   });
 });

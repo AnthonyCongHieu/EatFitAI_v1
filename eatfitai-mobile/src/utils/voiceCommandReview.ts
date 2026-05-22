@@ -1,11 +1,11 @@
 import type { ParsedVoiceCommand } from '../services/voiceService';
 
 const LOW_CONFIDENCE_REVIEW_MESSAGE =
-  'Độ tin cậy chưa cao. Hãy kiểm tra trước khi lưu.';
+  'EatFit nghe chưa rõ lắm nè, bạn kiểm tra lại thông tin trước khi lưu nha.';
 
-const GENERIC_REVIEW_MESSAGE = 'Voice Beta cần bạn xác nhận trước khi lưu.';
+const GENERIC_REVIEW_MESSAGE = 'Bạn xem lại thông tin xem đã chuẩn chỉnh chưa nhé!';
 const MISSING_PORTION_MESSAGE =
-  'Bạn muốn ghi khẩu phần bao nhiêu? Hãy nói số gram hoặc khẩu phần như 1 bát, 1 phần.';
+  'Bạn muốn ghi khối lượng bao nhiêu nè? Chỉ cần nói số gam hoặc khẩu phần như 1 bát, 1 phần nha.';
 
 export function shouldRequireVoiceConfirmation(
   command: ParsedVoiceCommand,

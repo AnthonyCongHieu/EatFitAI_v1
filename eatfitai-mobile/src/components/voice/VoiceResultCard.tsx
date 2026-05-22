@@ -39,14 +39,14 @@ interface VoiceResultCardProps {
 }
 
 const INTENT_CONFIG: Record<VoiceIntent, { label: string; color: string }> = {
-  ADD_FOOD: { label: 'Thêm vào nhật ký', color: '#10B981' },
-  LOG_WEIGHT: { label: 'Cập nhật cân nặng', color: '#22C55E' },
-  ASK_CALORIES: { label: 'Calo hôm nay', color: '#f7c052' },
-  ASK_NUTRITION: { label: 'Dinh dưỡng', color: '#8B5CF6' },
-  QUERY_MEAL: { label: 'Tra cứu bữa ăn', color: '#38BDF8' },
-  REPEAT_MEAL: { label: 'Thêm lại bữa ăn', color: '#10B981' },
-  ADD_NOTE: { label: 'Ghi chú', color: '#F59E0B' },
-  UNKNOWN: { label: 'Chưa hiểu yêu cầu', color: '#728099' },
+  ADD_FOOD: { label: 'Nhật ký bữa ăn', color: '#10B981' },
+  LOG_WEIGHT: { label: 'Cân nặng của bạn', color: '#22C55E' },
+  ASK_CALORIES: { label: 'Lượng calo hôm nay', color: '#f7c052' },
+  ASK_NUTRITION: { label: 'Dinh dưỡng của bạn', color: '#8B5CF6' },
+  QUERY_MEAL: { label: 'Lịch sử ăn uống', color: '#38BDF8' },
+  REPEAT_MEAL: { label: 'Ăn lại món cũ', color: '#10B981' },
+  ADD_NOTE: { label: 'Lưu ý / Ghi chú', color: '#F59E0B' },
+  UNKNOWN: { label: 'Mình chưa hiểu ý bạn lắm', color: '#728099' },
 };
 
 const MEAL_OPTIONS = [
@@ -125,9 +125,9 @@ const normalizeDraftSaveState = (draft: VoiceReviewDraft): VoiceReviewDraft => {
     draft.blockingReason ||
     draft.warnings[0] ||
     draft.items.flatMap((item) => item.warnings)[0] ||
-    (foodBlocked ? 'Cần chọn món và khẩu phần hợp lệ trước khi lưu.' : undefined) ||
-    (weightBlocked ? 'Cân nặng phải từ 20kg đến 300kg.' : undefined) ||
-    (noteBlocked ? 'Ghi chú đang trống.' : undefined);
+    (foodBlocked ? 'Bạn nhớ chọn món ăn và điền số gam hợp lệ để mình lưu lại nha.' : undefined) ||
+    (weightBlocked ? 'Số cân chưa đúng kìa, bạn nhập từ 20 đến 300 kg nha.' : undefined) ||
+    (noteBlocked ? 'Ghi chú đang trống kìa, bạn viết thêm vài chữ nha.' : undefined);
 
   return {
     ...draft,
@@ -150,9 +150,9 @@ export const VoiceResultCard = ({
   const { theme } = useAppTheme();
   const config = INTENT_CONFIG[command.intent] || INTENT_CONFIG.UNKNOWN;
   const headerCaption = reviewDraft
-    ? 'Kiểm tra thông tin trước khi lưu'
-    : 'Kết quả từ nhật ký';
-  const headerBadge = reviewDraft ? 'Kiểm tra' : 'Kết quả';
+    ? 'Bạn xem lại thông tin xem đã chuẩn chưa nha!'
+    : 'Thông tin nhật ký nè';
+  const headerBadge = reviewDraft ? 'Cần bạn xem lại nè' : 'Lưu thành công';
 
   const styles = StyleSheet.create({
     card: {
@@ -377,11 +377,11 @@ export const VoiceResultCard = ({
   const renderAddFoodDraft = (draft: VoiceReviewDraft) => (
     <>
       <View style={styles.reviewBanner}>
-        <ThemedText variant="bodySmall" weight="600">
-          Kiểm tra món trước khi lưu
+        <ThemedText variant="bodySmall" weight="600" style={{ color: P.primary }}>
+          Mình đã soạn sẵn thông tin rồi nè!
         </ThemedText>
-        <ThemedText variant="caption" color="textSecondary">
-          Có thể sửa món, khẩu phần và bữa trước khi ghi nhật ký.
+        <ThemedText variant="caption" color="textSecondary" style={{ lineHeight: 18 }}>
+          Bạn xem qua rồi chỉnh lại bữa ăn, số gam, hoặc chọn món cho đúng bên dưới nha!
         </ThemedText>
       </View>
 
@@ -409,7 +409,7 @@ export const VoiceResultCard = ({
         <View key={item.clientId || index} style={styles.itemPanel}>
           <ThemedText style={styles.sectionTitle}>{item.foodName || `Món ${index + 1}`}</ThemedText>
 
-          <ThemedText style={styles.fieldLabel}>Khẩu phần (gram)</ThemedText>
+          <ThemedText style={styles.fieldLabel}>Khối lượng (gam)</ThemedText>
           <TextInput
             testID={`voice-review-grams-${item.clientId}`}
             value={String(item.grams || '')}
@@ -426,7 +426,7 @@ export const VoiceResultCard = ({
 
           {item.candidates.length > 0 && (
             <>
-              <ThemedText style={styles.fieldLabel}>Món khớp</ThemedText>
+              <ThemedText style={styles.fieldLabel}>Món ăn phù hợp nhất</ThemedText>
               <View style={styles.section}>
                 {item.candidates.map((candidate) => {
                   const active =
@@ -472,11 +472,11 @@ export const VoiceResultCard = ({
   const renderWeightDraft = (draft: VoiceReviewDraft) => (
     <>
       <View style={styles.reviewBanner}>
-        <ThemedText variant="bodySmall" weight="600">
-          Kiểm tra cân nặng trước khi lưu
+        <ThemedText variant="bodySmall" weight="600" style={{ color: P.primary }}>
+          Cập nhật số cân mới
         </ThemedText>
-        <ThemedText variant="caption" color="textSecondary">
-          Dữ liệu cân nặng chỉ được ghi sau khi bạn xác nhận.
+        <ThemedText variant="caption" color="textSecondary" style={{ lineHeight: 18 }}>
+          Bạn xác nhận lại số đo cân nặng mới để mình ghi chép giúp nha!
         </ThemedText>
       </View>
       {draft.weight?.currentWeight !== null && draft.weight?.currentWeight !== undefined && (
@@ -504,11 +504,11 @@ export const VoiceResultCard = ({
   const renderNoteDraft = (draft: VoiceReviewDraft) => (
     <>
       <View style={styles.reviewBanner}>
-        <ThemedText variant="bodySmall" weight="600">
-          Kiểm tra ghi chú trước khi lưu
+        <ThemedText variant="bodySmall" weight="600" style={{ color: P.primary }}>
+          Thêm ghi chú mới nè
         </ThemedText>
-        <ThemedText variant="caption" color="textSecondary">
-          Ghi chú sẽ được gắn vào ngày hoặc bữa ăn bạn chọn.
+        <ThemedText variant="caption" color="textSecondary" style={{ lineHeight: 18 }}>
+          Ghi lại vài dòng cảm xúc hoặc lưu ý đặc biệt cho ngày hôm nay nha!
         </ThemedText>
       </View>
       <View style={styles.section}>
@@ -609,13 +609,13 @@ export const VoiceResultCard = ({
             </View>
           </View>
           <ThemedText variant="caption" color="success" style={{ textAlign: 'center' }}>
-            Đã lấy thông tin mới nhất.
+            EatFit đã cập nhật thông tin mới nhất rồi nè!
           </ThemedText>
         </>
       ) : (
         onExecute && (
           <Button
-            title={isExecuting ? 'Đang xử lý...' : 'Xem kết quả'}
+            title={isExecuting ? 'Chờ mình một xíu nhé...' : 'Xem kết quả nhé'}
             variant="primary"
             onPress={onExecute}
             loading={isExecuting}

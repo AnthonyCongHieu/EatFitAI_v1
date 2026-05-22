@@ -17,13 +17,13 @@ const getApiBaseUrl = (): string => {
 };
 
 const FRIENDLY_ERROR_BY_CODE: Record<string, string> = {
-  ai_quota_exceeded: 'Bạn đã dùng hết lượt xử lý giọng nói hôm nay. Vui lòng thử lại sau.',
-  invalid_audio_reference: 'File ghi âm không hợp lệ. Vui lòng ghi âm lại.',
-  media_storage_not_configured: 'Tính năng ghi âm đang tạm ngưng. Vui lòng thử lại sau.',
-  voice_provider_auth_error: 'Tính năng giọng nói đang được bảo trì. Vui lòng thử lại sau.',
-  voice_provider_timeout: 'Tính năng giọng nói phản hồi hơi chậm. Vui lòng thử lại.',
-  voice_provider_unavailable: 'Tính năng giọng nói đang tạm thời gián đoạn. Vui lòng thử lại sau.',
-  voice_provider_error: 'Tính năng giọng nói chưa xử lý được yêu cầu này. Vui lòng thử lại.',
+  ai_quota_exceeded: 'Hôm nay bạn dùng hết lượt xử lý giọng nói mất rồi. Để mai tụi mình lại thủ thỉ tiếp nha!',
+  invalid_audio_reference: 'File ghi âm chưa hợp lệ rồi. Ghi âm lại giúp mình nha.',
+  media_storage_not_configured: 'Tính năng ghi âm đang tạm nghỉ ngơi một xíu. Thử lại sau giúp mình nha!',
+  voice_provider_auth_error: 'Tính năng giọng nói đang được bảo trì một tẹo. Bạn thử lại sau nhé!',
+  voice_provider_timeout: 'AI giọng nói phản hồi hơi chậm một xíu rồi. Thử lại giúp mình nha.',
+  voice_provider_unavailable: 'AI giọng nói của EatFit đang bận một tẹo, bạn thử lại sau nha.',
+  voice_provider_error: 'EatFit chưa xử lý được yêu cầu này rồi. Bạn thử lại nha.',
 };
 
 const TECHNICAL_ERROR_PATTERN =
@@ -265,7 +265,7 @@ export const voiceService = {
         success: false,
         error: getApiErrorMessage(
           error,
-          'Chưa nhận diện được giọng nói. Bạn có thể nhập yêu cầu bằng bàn phím.',
+          'EatFit chưa nghe rõ được giọng nói. Bạn thử nhập tay hoặc nói lại nha!',
         ),
       };
     }
@@ -300,9 +300,9 @@ export const voiceService = {
         confidence: 0,
         rawText: text,
         source: 'error',
-        suggestedAction: 'Chưa kết nối được tính năng giọng nói. Vui lòng thử lại.',
+        suggestedAction: 'EatFit chưa kết nối được tính năng giọng nói rồi. Thử lại nha bạn.',
         reviewRequired: false,
-        reviewReason: getApiErrorMessage(error, 'Chưa hiểu được yêu cầu giọng nói.'),
+        reviewReason: getApiErrorMessage(error, 'EatFit chưa hiểu được yêu cầu giọng nói rồi nè.'),
       };
     }
   },
@@ -343,7 +343,7 @@ export const voiceService = {
       });
       return {
         success: false,
-        error: getApiErrorMessage(error, 'Chưa thực hiện được yêu cầu này.'),
+        error: getApiErrorMessage(error, 'EatFit chưa thực hiện được yêu cầu này mất rồi.'),
       };
     }
   },
@@ -367,7 +367,7 @@ export const voiceService = {
       error:
         command.intent === 'UNKNOWN'
           ? command.reviewReason ||
-            'Chưa hiểu yêu cầu. Hãy thử nói rõ món, khẩu phần, bữa ăn hoặc điều muốn tra cứu.'
+            'EatFit chưa rõ bạn muốn ghi gì nè. Kể cụ thể món, lượng ăn hoặc cân nặng nhé!'
           : undefined,
     };
   },
@@ -387,7 +387,7 @@ export const voiceService = {
       });
       return {
         success: false,
-        error: getApiErrorMessage(error, 'Chưa lưu được cân nặng.'),
+        error: getApiErrorMessage(error, 'EatFit chưa lưu được số cân mới rồi.'),
       };
     }
   },

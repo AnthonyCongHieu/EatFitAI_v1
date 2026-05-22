@@ -128,7 +128,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
               set({
                 status: 'success',
                 lastExecutedAction:
-                  execResponse.executedAction.details || 'Đã thực hiện.',
+                  execResponse.executedAction.details || 'Đã thực hiện xong rồi nhé.',
                 executedData: {
                   type: execResponse.executedAction.type,
                   details: execResponse.executedAction.details,
@@ -140,12 +140,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
                 status: 'error',
                 error: toVoiceUserError(
                   execResponse.error,
-                  'Chưa lấy được thông tin. Vui lòng thử lại.',
+                  'Chưa lấy được thông tin rồi, thử lại giúp mình nha.',
                 ),
               });
             }
           } catch {
-            set({ status: 'error', error: 'Chưa lấy được thông tin. Vui lòng thử lại.' });
+            set({ status: 'error', error: 'Chưa lấy được thông tin rồi, thử lại giúp mình nha.' });
           }
           return;
         }
@@ -179,7 +179,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
               reviewDraft: null,
               error: toVoiceUserError(
                 error?.message,
-                'Chưa chuẩn bị được thông tin để lưu. Vui lòng thử lại.',
+                'EatFit chưa chuẩn bị được thông tin lưu rồi. Bạn thử lại giúp mình nha.',
               ),
             });
           }
@@ -196,7 +196,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
             command.intent === 'UNKNOWN'
               ? toVoiceUserError(
                 response.error,
-                'Chưa hiểu yêu cầu. Hãy thử nói rõ món, khẩu phần, bữa ăn hoặc điều muốn tra cứu.',
+                'EatFit chưa rõ bạn muốn ghi gì nè. Kể cụ thể món, lượng ăn hoặc cân nặng nhé!',
               )
               : null,
         });
@@ -209,7 +209,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         reviewDraft: null,
         error: toVoiceUserError(
           response.error,
-          'Chưa hiểu yêu cầu. Hãy thử nói rõ món, khẩu phần, bữa ăn hoặc điều muốn tra cứu.',
+          'EatFit chưa rõ bạn muốn ghi gì nè. Kể cụ thể món, lượng ăn hoặc cân nặng nhé!',
         ),
       });
     } catch (error: any) {
@@ -218,7 +218,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         status: 'error',
         parsedCommand: null,
         reviewDraft: null,
-        error: 'Tính năng giọng nói đang tạm gián đoạn. Vui lòng thử lại.',
+        error: 'Tính năng giọng nói đang tạm gián đoạn một xíu, thử lại giúp mình nha.',
       });
     }
   },
@@ -229,7 +229,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       set({
         error:
           reviewDraft?.blockingReason ||
-          'Thông tin chưa đủ để lưu.',
+          'Thông tin chưa đủ để lưu rồi bạn ơi.',
       });
       return;
     }
@@ -246,7 +246,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
         set({
           status: 'success',
-          lastExecutedAction: response.executedAction.details || 'Đã thực hiện lệnh.',
+          lastExecutedAction: response.executedAction.details || 'Đã thực hiện xong rồi nhé.',
           executedData: {
             type: response.executedAction.type,
             details: response.executedAction.details,
@@ -258,12 +258,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
       set({
         status: 'error',
-        error: toVoiceUserError(response.error, 'Chưa lưu được thông tin. Vui lòng thử lại.'),
+        error: toVoiceUserError(response.error, 'EatFit chưa lưu được thông tin rồi. Bạn thử lại nha.'),
       });
     } catch (error: any) {
       set({
         status: 'error',
-        error: toVoiceUserError(error?.message, 'Chưa lưu được thông tin. Vui lòng thử lại.'),
+        error: toVoiceUserError(error?.message, 'EatFit chưa lưu được thông tin rồi. Bạn thử lại nha.'),
       });
     }
   },
@@ -271,7 +271,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
   async executeCommand() {
     const { parsedCommand } = get();
     if (!parsedCommand || parsedCommand.intent === 'UNKNOWN') {
-      set({ error: 'Chưa có yêu cầu rõ ràng để thực hiện.' });
+      set({ error: 'Chưa có yêu cầu rõ ràng để thực hiện rồi bạn ơi.' });
       return;
     }
 
@@ -283,7 +283,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       if (response.success && response.executedAction) {
         set({
           status: 'success',
-          lastExecutedAction: response.executedAction.details || 'Đã thực hiện lệnh.',
+          lastExecutedAction: response.executedAction.details || 'Đã thực hiện xong rồi nhé.',
           executedData: {
             type: response.executedAction.type,
             details: response.executedAction.details,
@@ -295,12 +295,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
       set({
         status: 'error',
-        error: toVoiceUserError(response.error, 'Chưa thực hiện được yêu cầu này.'),
+        error: toVoiceUserError(response.error, 'EatFit chưa thực hiện được yêu cầu này mất rồi.'),
       });
     } catch (error: any) {
       set({
         status: 'error',
-        error: toVoiceUserError(error?.message, 'Chưa thực hiện được yêu cầu này.'),
+        error: toVoiceUserError(error?.message, 'EatFit chưa thực hiện được yêu cầu này mất rồi.'),
       });
     }
   },
@@ -316,7 +316,7 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
         set({
           status: 'success',
           lastExecutedAction:
-            response.executedAction?.details || `Đã lưu cân nặng ${weight} kg.`,
+            response.executedAction?.details || `Đã ghi nhận cân nặng mới của bạn là ${weight} kg rồi nhé!`,
           executedData: {
             type: 'LOG_WEIGHT',
             details: response.executedAction?.details,
@@ -328,12 +328,12 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
       set({
         status: 'error',
-        error: toVoiceUserError(response.error, 'Chưa lưu được cân nặng.'),
+        error: toVoiceUserError(response.error, 'EatFit chưa lưu được số cân mới rồi. Bạn thử lại nha.'),
       });
     } catch (error: any) {
       set({
         status: 'error',
-        error: toVoiceUserError(error?.message, 'Chưa lưu được cân nặng.'),
+        error: toVoiceUserError(error?.message, 'EatFit chưa lưu được số cân mới rồi. Bạn thử lại nha.'),
       });
     }
   },
