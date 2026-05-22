@@ -70,6 +70,9 @@ const NotificationCenterScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const palette = { ...P_STATIC, ...useEN() };
   const items = useMoChiNotificationInboxStore((state) => state.items);
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  }, [items]);
   const markRead = useMoChiNotificationInboxStore((state) => state.markRead);
   const removeRead = useMoChiNotificationInboxStore((state) => state.removeRead); // removeItem
   const unreadCount = useMemo(() => selectUnreadMoChiNotificationCount(items), [items]);
@@ -164,7 +167,7 @@ const NotificationCenterScreen = (): React.ReactElement => {
               )}
             </View>
             <View style={S.list}>
-              {items.map((item) => {
+              {sortedItems.map((item) => {
                 const visual = getNotificationVisual(item);
                 const isUnread = !item.readAt && !item.resolvedAt;
 
