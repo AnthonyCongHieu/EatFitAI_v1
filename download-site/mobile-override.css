@@ -1,18 +1,72 @@
 /* ═══════════════════════════════════════════════════════════════
-   BENTO GRID MOBILE OVERRIDE — FILE NÀY LOAD CUỐI CÙNG
-   Mục đích: Cải tổ triệt để layout Bento Grid cho di động nhỏ (<= 576px)
-   Giảm 50% chiều dài scroll bằng cấu trúc nằm ngang (Flex-Row)
+   BENTO GRID & SPA PAGES MOBILE OVERRIDE — LOAD CUỐI CÙNG
+   Mục đích:
+   1. Khắc phục triệt để lỗi đè chữ (overlapping text) ở Hero Title và Bento Card 7.
+   2. Thực hiện chiến dịch "Scale Down" thu nhỏ toàn diện giao diện di động (max-width: 576px)
+      nhằm giảm 35% chiều dài cuộn trang, tạo giao diện native-like tinh tế và gọn gàng.
    ═══════════════════════════════════════════════════════════════ */
 
 @media (max-width: 576px) {
-  /* === GRID: 1 cột dọc === */
+
+  /* ==========================================
+     I. CHỐNG ĐÈ CHỮ & CĂN CHỈNH KHUNG TRANG CHUNG
+     ========================================== */
+
+  /* Sửa lỗi đè chữ ở Hero Title (Top): Tăng line-height và giảm font-size */
+  .hero h1 {
+    font-size: clamp(1.48rem, 5.5vw, 1.85rem) !important;
+    line-height: 1.35 !important; /* Tạo khoảng trống an toàn giữa các dòng chữ */
+  }
+
+  /* Nén khoảng cách dọc của các section để giảm cuộn trang */
+  .section,
+  .spa-section {
+    padding: 24px 0 !important; /* Nén padding dọc từ 80px xuống 24px */
+  }
+
+  /* Giúp phần nội dung trồi lên cao hơn, tận dụng không gian màn hình nhỏ */
+  .page-wrapper {
+    padding-top: 68px !important; /* Giảm padding-top từ 100px xuống 68px */
+  }
+
+  /* Nén phần tiêu đề của các section */
+  .section-header {
+    text-align: center !important;
+    max-width: 100% !important;
+    margin-top: 0 !important;
+    margin-bottom: 20px !important; /* Nén khoảng cách dưới tiêu đề từ 56px xuống 20px */
+  }
+
+  /* Thu nhỏ kích thước tiêu đề section cho thanh lịch, native-like */
+  .section-header h2 {
+    font-size: clamp(1.15rem, 4.6vw, 1.55rem) !important;
+    line-height: 1.35 !important;
+    letter-spacing: -0.01em !important;
+    word-break: keep-all;
+  }
+
+  /* Thu nhỏ mô tả section subtitle */
+  .section-header .section-subtitle,
+  .section-header .section-sub,
+  .section-header p {
+    font-size: 0.76rem !important;
+    line-height: 1.4 !important;
+    margin-top: 6px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  /* ==========================================
+     II. HỆ THỐNG BENTO GRID (TÍNH NĂNG)
+     ========================================== */
+
+  /* Thu nhỏ khoảng cách giữa các card */
   .bento-grid {
     display: grid !important;
     grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    gap: 8px !important; /* Giảm từ 12px xuống 8px để sít nhau hơn */
   }
 
-  /* === RESET CARD: Flex-Row nằm ngang === */
+  /* Reset Card sang dạng Flex-Column xếp dọc tự nhiên, thông thoáng */
   .bento-card,
   .bento-card:nth-child(1),
   .bento-card:nth-child(2),
@@ -24,11 +78,11 @@
   .bento-card:nth-child(8) {
     grid-column: span 1 !important;
     display: flex !important;
-    flex-direction: row !important; /* Xếp ngang */
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 12px !important;
-    padding: 14px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 12px !important; /* Gap dọc giữa text và widget */
+    padding: 16px !important; /* Padding vừa vặn, rộng rãi */
     height: auto !important;
     min-height: unset !important;
     max-height: none !important;
@@ -38,7 +92,7 @@
     overflow: hidden !important;
   }
 
-  /* Ép tất cả các class biến thể layout ban đầu */
+  /* Ghi đè triệt để tất cả các biến thể layout ban đầu */
   .bento-card.card-wide,
   .bento-card.card-tall,
   .bento-card.card-wide:nth-child(1),
@@ -48,50 +102,52 @@
   .bento-card.card-wide.bg-gradient-forest,
   .bento-card.card-wide.bg-gradient-amber {
     display: flex !important;
-    flex-direction: row !important; /* Luôn xếp ngang */
+    flex-direction: column !important;
     grid-column: span 1 !important;
     gap: 12px !important;
   }
 
-  /* === BÊN TRÁI: KHU VỰC CHỮ (TEXT WRAP) === */
+  /* VÙNG CHỮ BÊN TRÊN (BENTO TEXT) */
   .bento-content-wrap {
-    flex: 1 !important; /* Chiếm tối đa không gian còn lại */
-    max-width: 65% !important;
-    min-width: 0 !important; /* Quan trọng: Ngăn flexbox bị tràn */
+    flex: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important; /* Quan trọng: Ngăn flexbox bị phình ngang */
     text-align: left !important;
   }
 
+  /* Thu nhỏ font-size của tiêu đề card */
   .bento-card h3 {
-    font-size: 0.95rem !important;
+    font-size: 0.95rem !important; /* Tăng nhẹ từ 0.85rem lên 0.95rem để dễ đọc */
     margin-bottom: 4px !important;
-    line-height: 1.25 !important;
+    line-height: 1.3 !important;
     font-weight: 800 !important;
   }
 
+  /* Thu nhỏ font-size mô tả ngắn trong card */
   .bento-card p {
-    font-size: 0.72rem !important;
+    font-size: 0.76rem !important; /* Tăng nhẹ từ 0.68rem lên 0.76rem để hiển thị đầy đủ, sắc nét */
     line-height: 1.4 !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important; /* Cắt tối đa 2 dòng để mỏng card */
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    display: block !important; /* Bỏ cắt dòng thô bạo để người dùng đọc đầy đủ */
+    overflow: visible !important;
+    text-overflow: clip !important;
     margin: 0 !important;
   }
 
+  /* Thu nhỏ badge card */
   .bento-badge {
-    font-size: 0.55rem !important;
+    font-size: 0.58rem !important;
     padding: 2px 6px !important;
     margin-bottom: 4px !important;
   }
 
-  /* Ẩn bong bóng thoại + mascot MoChi trên mobile nhỏ */
+  /* Ẩn bong bóng thoại + mascot MoChi trên mobile để tinh giản */
   .bento-mochi-speech,
   .bento-mascot-img {
     display: none !important;
   }
 
-  /* === BÊN PHẢI: KHU VỰC WIDGET THU GỌN (COMPACT WIDGET AREA) === */
+  /* VÙNG WIDGET BÊN DƯỚI (COMPACT BENTO WIDGETS) */
   .bento-phone-mockup,
   .bento-quota-visual,
   .bento-voice-chat,
@@ -100,24 +156,25 @@
   .streak-gamified-details,
   .bento-recipe-mockup,
   .bento-auth-sync-widget {
-    flex-shrink: 0 !important; /* Không bị bóp méo */
-    width: 35% !important; /* Chiếm khoảng 35% chiều rộng bên phải */
-    max-width: 110px !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
     position: relative !important;
     top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
     transform: none !important;
-    margin: 0 !important;
+    margin: 8px auto 0 auto !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
   }
 
-  /* --- CARD 1: Camera AI (Mockup điện thoại quét) --- */
+  /* --- CARD 1: Camera AI Mockup (Điện thoại quét) --- */
   .bento-phone-mockup,
   .bento-phone-mockup.phone-foodscan {
-    height: 90px !important;
-    width: 75px !important;
+    height: 120px !important; /* Tăng chiều cao để mockup điện thoại rõ nét và sang trọng */
+    width: 95px !important;
     display: flex !important;
+    margin: 0 auto !important;
   }
   .bento-phone-mockup .bento-mockup-img {
     height: 100% !important;
@@ -125,105 +182,149 @@
     object-fit: contain !important;
   }
   .scan-laser-line {
-    display: none !important; /* Ẩn tia laser quét để tối giản */
+    display: none !important;
   }
 
-  /* --- CARD 2: Quota AI (Thanh tiến trình) --- */
+  /* --- CARD 2: Quota AI (Thanh hạn ngạch tiến trình) --- */
   .bento-quota-visual {
     flex-direction: column !important;
-    gap: 5px !important;
-    width: 100px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 240px !important;
     align-items: stretch !important;
+    margin: 0 auto !important;
   }
   .quota-item {
-    padding: 4px 6px !important;
+    padding: 6px 8px !important;
     background: rgba(255, 255, 255, 0.02) !important;
     border: 1px solid rgba(255, 255, 255, 0.05) !important;
     border-radius: 6px !important;
   }
-  .quota-title, .quota-val {
-    font-size: 0.58rem !important;
+  .bento-quota-visual .quota-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+  .bento-quota-visual .quota-title {
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+    font-size: 0.6rem !important;
+  }
+  .bento-quota-visual .quota-icon-svg {
+    width: 11px !important;
+    height: 11px !important;
+    margin-right: 4px !important;
+  }
+  .bento-quota-visual .quota-val {
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
   }
   .quota-bar-container {
-    height: 3px !important;
-    margin-top: 3px !important;
+    height: 4px !important;
+    margin-top: 4px !important;
   }
   .quota-guarantees {
     display: none !important;
   }
 
-  /* --- CARD 3: Voice AI (Bong bóng thoại chat AI) --- */
-  .bento-voice-chat {
+  /* --- CARD 3: Voice AI (Bong bóng chat AI) --- */
+  .bento-card.card-tall:nth-child(3) .bento-voice-chat {
     flex-direction: column !important;
-    gap: 4px !important;
-    width: 100px !important;
+    gap: 5px !important;
+    width: 100% !important;
+    max-width: 240px !important;
     align-items: flex-end !important;
+    margin: 0 auto !important;
+    display: flex !important;
   }
-  .bento-voice-chat .chat-bubble {
-    font-size: 0.65rem !important;
-    padding: 4px 8px !important;
+  .bento-card.card-tall:nth-child(3) .chat-bubble {
+    font-size: 0.68rem !important;
+    padding: 6px 10px !important;
     border-radius: 10px !important;
-    max-width: 100% !important;
+    max-width: 90% !important;
     margin: 0 !important;
-    line-height: 1.2 !important;
+    line-height: 1.3 !important;
   }
-  /* Ẩn bong bóng dài, chỉ giữ 2 bong bóng ngắn */
-  .bento-voice-chat .chat-bubble:nth-child(n+3) {
+  .bento-card.card-tall:nth-child(3) .chat-bubble:nth-child(n+3) {
     display: none !important;
   }
-  .bento-audio-visualizer {
+  .bento-card.card-tall:nth-child(3) .bento-audio-visualizer {
     display: none !important;
   }
 
-  /* --- CARD 4: Macros Rings (Vòng tròn dinh dưỡng) --- */
+  /* --- CARD 4: Macros Rings (Vòng tròn đa lượng) --- */
   .bento-macros-layout {
     justify-content: center !important;
-    width: 95px !important;
+    align-items: center !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 20px !important;
   }
   .bento-mini-rings {
     display: flex !important;
-    width: 90px !important;
-    height: 90px !important;
-    transform: scale(0.65) !important; /* Scale nhỏ tinh tế */
+    width: 100px !important;
+    height: 100px !important;
+    transform: scale(0.85) !important;
     transform-origin: center center !important;
-    margin: -10px !important;
+    margin: 0 !important;
   }
   .mini-ring-svg {
-    width: 90px !important;
-    height: 90px !important;
+    width: 100px !important;
+    height: 100px !important;
   }
   .macros-legend {
-    display: none !important; /* Ẩn toàn bộ legend chú giải để không đè chữ */
+    display: flex !important; /* Hiển thị lại chú thích đa lượng cực đẹp trên Mobile xếp dọc */
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+  .legend-item {
+    font-size: 0.58rem !important;
+    padding: 2px 0 !important;
   }
 
   /* --- CARD 5: Water (Cốc nước thông minh) --- */
   .bento-water-visual {
-    flex-direction: column !important;
-    gap: 6px !important;
-    width: 90px !important;
+    flex-direction: row !important;
+    gap: 15px !important;
+    width: 100% !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
   .water-glass-container {
-    transform: scale(0.65) !important;
+    transform: scale(0.75) !important;
     transform-origin: center center !important;
-    margin: -12px 0 !important;
+    margin: 0 !important;
   }
   .water-badge-label {
-    display: none !important; /* Ẩn nhãn cốc nước cồng kềnh */
+    display: none !important;
   }
-  .btn-add-water {
+  .water-info-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+  .btn-add-water,
+  .btn-sub-water {
     font-size: 0.58rem !important;
-    padding: 3px 6px !important;
+    padding: 4px 8px !important;
     border-radius: 6px !important;
-    width: 100% !important;
+    width: auto !important;
     text-align: center !important;
   }
 
-  /* --- CARD 6: Streak (Số ngày streak & badge) --- */
+  /* --- CARD 6: Streak (Ngọn lửa streak gamified) --- */
   .streak-gamified-details {
     flex-direction: column !important;
     gap: 6px !important;
-    width: 100px !important;
+    width: 100% !important;
+    max-width: 240px !important;
     align-items: center !important;
+    margin: 0 auto !important;
   }
   .bento-streak-visual {
     display: flex !important;
@@ -237,16 +338,16 @@
     font-size: 0.8rem !important;
   }
   .streak-count-label {
-    font-size: 0.58rem !important;
+    font-size: 0.62rem !important;
   }
   .streak-level-badge {
-    display: none !important; /* Ẩn level badge cồng kềnh */
+    display: none !important;
   }
   .streak-xp-progress {
     display: none !important;
   }
   .bento-badges-row {
-    gap: 3px !important;
+    gap: 4px !important;
     justify-content: center !important;
   }
   .badge-item {
@@ -254,97 +355,130 @@
     height: 20px !important;
   }
   .badge-svg {
-    width: 10px !important;
-    height: 10px !important;
+    width: 11px !important;
+    height: 11px !important;
   }
 
-  /* --- CARD 7: AI Recipes (Mini recipe card) --- */
+  /* --- CARD 7: AI Recipes (Gợi ý công thức món ăn) --- */
   .bento-recipe-mockup {
-    width: 105px !important;
-    height: 75px !important;
-  }
-  .recipe-card-mini {
     width: 100% !important;
+    max-width: 290px !important;
+    height: 80px !important;
+    margin: 0 auto !important;
+  }
+
+  .recipe-card-mini {
     padding: 4px !important;
     border-radius: 8px !important;
     display: flex !important;
-    flex-direction: column !important;
-    gap: 3px !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    align-items: center !important;
+    height: 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .recipe-info {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
   }
   .recipe-img-placeholder {
-    height: 35px !important;
-    width: 100% !important;
+    height: 70px !important;
+    width: 70px !important;
     border-radius: 6px !important;
+    flex-shrink: 0 !important;
   }
+
   .recipe-info h4 {
-    font-size: 0.58rem !important;
-    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    font-size: 0.62rem !important;
+    margin: 0 0 3px 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
+  .recipe-info h4 .recipe-icon-svg {
+    display: inline-block !important;
+    vertical-align: -1px !important;
+    margin-right: 2px !important;
+  }
   .recipe-meta {
-    font-size: 0.5rem !important;
+    font-size: 0.52rem !important;
   }
   .recipe-ingredients {
     display: none !important;
   }
 
-  /* --- CARD 8: Auth Sync (Nút đăng nhập và Database) --- */
+  /* --- CARD 8: Auth Sync (Đám mây đồng bộ) --- */
   .bento-auth-sync-widget {
-    flex-direction: column !important;
-    gap: 6px !important;
-    width: 105px !important;
-    align-items: stretch !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 290px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 auto !important;
   }
   .google-btn-mockup {
-    padding: 5px 8px !important;
-    font-size: 0.6rem !important;
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    font-size: 0.58rem !important;
     border-radius: 6px !important;
     justify-content: center !important;
     white-space: nowrap !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
-  /* Rút ngắn chữ "Tiếp tục với Google" trên mobile thành "Google" */
   .google-btn-mockup span {
-    display: none !important;
+    display: inline !important; /* Hiển thị chữ Google rõ nét */
   }
   .google-btn-mockup::after {
-    content: "Google" !important;
-    font-weight: 600 !important;
+    content: "" !important; /* Xóa nội dung content override cứng */
   }
   .google-logo-svg {
     margin-right: 4px !important;
+    width: 11px !important;
+    height: 11px !important;
   }
-  .supabase-sync-badge {
-    padding: 5px 8px !important;
+  .supabase-sync-badge-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
     border-radius: 6px !important;
     justify-content: center !important;
+    background: rgba(16, 185, 129, 0.02) !important;
+    border: 1px solid rgba(16, 185, 129, 0.15) !important;
   }
   .db-icon-wrap {
-    width: 14px !important;
-    height: 14px !important;
+    width: 11px !important;
+    height: 11px !important;
     margin-right: 4px !important;
+    background: rgba(16, 185, 129, 0.08) !important;
   }
   .db-name {
     font-size: 0.58rem !important;
+    white-space: nowrap !important;
+    font-weight: 700 !important;
   }
   .db-status {
-    display: none !important; /* Ẩn trạng thái "Đồng bộ 1-chạm" để vừa vặn */
+    display: none !important;
   }
 
   /* === BENTO FOOTER NOTE === */
   .bento-footer-note {
     grid-column: span 1 !important;
-    padding: 10px !important;
-    font-size: 0.65rem !important;
-    line-height: 1.4 !important;
+    padding: 8px !important; /* Nén padding note */
+    font-size: 0.62rem !important;
+    line-height: 1.35 !important;
   }
   .bento-footer-note svg {
-    width: 14px !important;
-    height: 14px !important;
+    width: 12px !important;
+    height: 12px !important;
   }
 
-  /* Loại bỏ mọi chuyển động hover gây lệch hàng */
+  /* Vô hiệu hóa hiệu ứng Hover trên di động */
   .bento-card:hover {
     transform: none !important;
   }
@@ -353,5 +487,506 @@
   .bento-card:hover .bento-mini-rings,
   .bento-card:hover .bento-auth-sync-widget {
     transform: none !important;
+  }
+
+  /* Ẩn hoàn toàn Floating Assistant Widget để giải phóng góc phải */
+  .mochi-assistant-widget {
+    display: none !important;
+  }
+
+  /* ==========================================
+     III. CẤU HÌNH THU NHỎ CÁC TRANG SPA KHÁC (SCALE DOWN)
+     ========================================== */
+
+  /* --- 1. TRANG AR SIMULATOR (#simulator) --- */
+  /* Tiết kiệm cực lớn chiều dọc bằng cách thu nhỏ camera mockup viewport */
+  .simulator-camera-mockup {
+    height: 290px !important; /* Giảm từ 420px xuống 290px */
+    border-radius: 12px !important;
+    margin-bottom: 12px !important;
+  }
+  /* Thu gọn control panel */
+  .simulator-control-panel {
+    padding: 12px !important; /* Giảm padding từ 24px xuống 12px */
+    border-radius: 12px !important;
+  }
+  .food-grid {
+    gap: 6px !important; /* Giảm khoảng cách các món ăn giả lập */
+  }
+  .food-item {
+    padding: 6px !important;
+    border-radius: 8px !important;
+  }
+  .food-info h4 {
+    font-size: 0.72rem !important;
+  }
+  .food-info p {
+    font-size: 0.58rem !important;
+  }
+  /* Thu nhỏ khu vực tư vấn của MoChi */
+  .mochi-advisor-box {
+    margin-top: 12px !important;
+    gap: 8px !important;
+  }
+  .mochi-coach-avatar {
+    width: 42px !important; /* Thu nhỏ avatar MoChi coach */
+    height: 42px !important;
+  }
+  .mochi-chat-bubble {
+    padding: 8px 12px !important;
+    font-size: 0.7rem !important;
+    border-radius: 12px !important;
+  }
+
+  /* --- 2. TRANG TÍNH THỂ TRẠNG TDEE (#tdee) --- */
+  .tdee-card {
+    padding: 12px !important; /* Giảm padding dọc từ 24px xuống 12px */
+    border-radius: 12px !important;
+  }
+  .tdee-form-grid {
+    gap: 6px !important;
+  }
+  .form-group {
+    margin-bottom: 6px !important;
+  }
+  .form-group label {
+    font-size: 0.72rem !important;
+    margin-bottom: 3px !important;
+  }
+  .tdee-form select {
+    padding: 8px 10px !important;
+    font-size: 0.78rem !important;
+    border-radius: 6px !important;
+  }
+
+  /* Range Sliders Mobile Custom View (Xu hướng 2026) */
+  .tdee-sliders-container {
+    gap: 22px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .slider-label-row {
+    margin-bottom: 4px !important;
+  }
+
+  .slider-label-row label {
+    font-size: 0.72rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .slider-val-badge {
+    font-size: 0.7rem !important;
+    padding: 2px 8px !important;
+    border-radius: 12px !important;
+  }
+
+  .range-container {
+    height: 20px !important;
+  }
+
+  .slider-cyberpunk {
+    height: 4px !important;
+  }
+
+  .slider-cyberpunk::-webkit-slider-runnable-track {
+    height: 4px !important;
+  }
+
+  .slider-cyberpunk::-webkit-slider-thumb {
+    width: 14px !important;
+    height: 14px !important;
+    margin-top: -5px !important; /* (4px - 14px)/2 = -5px */
+    box-shadow: 0 0 6px var(--brand-primary), 0 0 12px rgba(15, 159, 104, 0.4) !important;
+  }
+
+  .slider-cyberpunk::-moz-range-track {
+    height: 4px !important;
+  }
+
+  .slider-cyberpunk::-moz-range-thumb {
+    width: 14px !important;
+    height: 14px !important;
+    box-shadow: 0 0 6px var(--brand-primary), 0 0 12px rgba(15, 159, 104, 0.4) !important;
+  }
+
+  .tdee-realtime-badge {
+    padding: 4px 10px !important;
+    font-size: 0.7rem !important;
+    margin-bottom: 10px !important;
+    gap: 4px !important;
+  }
+
+  .tdee-realtime-badge .pulse-dot {
+    width: 4px !important;
+    height: 4px !important;
+  }
+  /* Thu nhỏ visual kết quả calo & biểu đồ TDEE */
+  .tdee-result {
+    padding: 12px !important;
+    border-radius: 12px !important;
+    margin-top: 12px !important;
+  }
+  .tdee-chart-container {
+    transform: scale(0.85) !important; /* Thu nhỏ biểu đồ 15% */
+    transform-origin: center center !important;
+    margin: -16px 0 !important; /* Nén lề dọc */
+  }
+  .calories-number {
+    font-size: 1.6rem !important; /* Giảm nhẹ cỡ chữ calo */
+  }
+  .macros-breakdown {
+    gap: 5px !important;
+  }
+  .macro-bar-item {
+    padding: 5px 8px !important;
+    border-radius: 6px !important;
+  }
+
+  /* --- 3. TRANG SHOWCASE LIBRARY (#showcase) --- */
+  /* Co dãn tự nhiên mockup điện thoại, loại bỏ transform scale 0.82 thô cứng */
+  .showcase-device-frame {
+    width: 220px !important;
+    height: 440px !important;
+    border-radius: 36px !important;
+    border-width: 8px !important;
+    margin: 0 auto 16px !important;
+    transform: none !important; /* Triệt tiêu hoàn toàn khoảng hở dọc trống kỳ dị do scale */
+  }
+  .showcase-screen-wrap {
+    border-radius: 28px !important;
+  }
+  .device-tabs {
+    margin-bottom: 10px !important;
+    gap: 4px !important;
+  }
+  .tab-btn {
+    padding: 4px 10px !important;
+    font-size: 0.7rem !important;
+    border-radius: 6px !important;
+  }
+
+  /* --- 4. TRANG FAQ HỎI ĐÁP (#faq) --- */
+  .faq-accordion-container {
+    gap: 8px !important;
+  }
+  .faq-accordion-item {
+    margin-bottom: 6px !important;
+    border-radius: 8px !important;
+  }
+  .faq-accordion-trigger {
+    font-size: 0.78rem !important; /* Thu nhỏ font câu hỏi */
+    padding: 12px 14px !important;
+    padding-right: 36px !important; /* Tăng padding-right để tránh đè chữ lên mũi tên đóng mở ở góc phải */
+  }
+  .faq-accordion-content-inner {
+    padding: 10px 14px 14px 14px !important;
+  }
+  .faq-accordion-content-inner p {
+    font-size: 0.72rem !important; /* Thu nhỏ font câu trả lời */
+    line-height: 1.5 !important;
+  }
+  .faq-mochi-helper {
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+  }
+  .faq-mochi-bubble {
+    font-size: 0.76rem !important;
+    padding: 8px 12px !important;
+  }
+  .faq-mochi-img {
+    width: 90px !important;
+    height: 90px !important;
+  }
+
+  /* --- 5. TRANG TẢI XUỐNG (#download) --- */
+  .download-panel {
+    flex-direction: column !important; /* Xếp dọc panel */
+    padding: 16px !important; /* Nén padding panel tải xuống */
+    gap: 20px !important;
+  }
+  .download-left {
+    text-align: center !important;
+  }
+  .download-left h2 {
+    font-size: 1.3rem !important;
+  }
+  .download-left p {
+    font-size: 0.76rem !important;
+    margin-bottom: 12px !important;
+  }
+  .build-specs-table {
+    margin: 12px 0 !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+  }
+  .spec-row {
+    padding: 6px 0 !important;
+    font-size: 0.72rem !important;
+  }
+  .qr-download-card {
+    padding: 16px !important;
+    border-radius: 16px !important;
+    max-width: 280px !important;
+    margin: 0 auto !important;
+  }
+  .qr-app-logo {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .qr-image-wrapper {
+    width: 110px !important; /* Thu nhỏ QR code để không chiếm dụng diện tích dọc */
+    height: 110px !important;
+    margin: 10px auto !important;
+  }
+  .qr-caption {
+    font-size: 0.68rem !important;
+    margin-bottom: 8px !important;
+  }
+  .checksum-card {
+    padding: 12px !important;
+    border-radius: 12px !important;
+    margin-top: 15px !important;
+  }
+  .checksum-header h3 {
+    font-size: 0.78rem !important;
+  }
+  .checksum-header p {
+    font-size: 0.68rem !important;
+  }
+  .checksum-body {
+    flex-direction: column !important; /* Checksum code xếp dọc với nút copy để không bị vỡ */
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+  .checksum-code {
+    font-size: 0.6rem !important; /* Giảm font-size để tránh tràn viền */
+    padding: 8px !important;
+    width: 100% !important;
+    word-break: break-all !important; /* Cho phép rớt dòng ở bất kỳ ký tự nào */
+    white-space: normal !important;
+  }
+
+  /* --- HƯỚNG DẪN CÀI ĐẶT (#how) --- */
+  .how-steps-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .how-step-card {
+    padding: 14px 16px !important; /* Nén padding step hướng dẫn cài đặt */
+    border-radius: 12px !important;
+    text-align: center !important;
+  }
+  .step-badge {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 0.7rem !important;
+    line-height: 22px !important;
+  }
+  .step-mochi-img {
+    height: 70px !important;
+    margin: 8px auto !important;
+  }
+  .how-step-card h3 {
+    font-size: 0.85rem !important;
+  }
+  .how-step-card p {
+    font-size: 0.72rem !important;
+  }
+
+  /* --- Override cho Live Camera & Drag Overlay trên Mobile (2026) --- */
+  .camera-toggle-btn {
+    padding: 8px 14px !important;
+    font-size: 0.78rem !important;
+    margin-top: 8px !important;
+  }
+  .ar-capture-btn {
+    width: 46px !important;
+    height: 46px !important;
+    bottom: 16px !important;
+    border-width: 3px !important;
+  }
+  .drag-overlay-content {
+    gap: 8px !important;
+  }
+  .drag-overlay-content span:first-of-type {
+    font-size: 0.8rem !important;
+  }
+  .drag-overlay-sub {
+    font-size: 0.65rem !important;
+  }
+  .drag-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  /* --- Override cho Bento Tương Tác trên Di Động (2026) --- */
+  .bento-card.card-tall:nth-child(3) .bento-audio-visualizer {
+    display: flex !important;
+    width: 85px !important;
+    padding: 3px 6px !important;
+    gap: 4px !important;
+    margin-top: 4px !important;
+    border-radius: 6px !important;
+  }
+  .bento-card.card-tall:nth-child(3) .voice-mic-btn {
+    width: 22px !important;
+    height: 22px !important;
+    flex-shrink: 0 !important;
+  }
+  .bento-card.card-tall:nth-child(3) .voice-mic-btn svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+  .bento-card.card-tall:nth-child(3) .voice-wave-container {
+    height: 18px !important;
+    padding: 0 2px !important;
+  }
+  .bento-card.card-tall:nth-child(3) .audio-wave-label {
+    display: none !important; /* Ẩn chữ trên mobile */
+  }
+
+  .water-ctrl-btns {
+    display: flex !important;
+    gap: 3px !important;
+    width: 100% !important;
+    margin-top: 3px !important;
+  }
+  .water-btn {
+    font-size: 0.5rem !important;
+    padding: 3px 2px !important;
+    border-radius: 4px !important;
+    flex: 1 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    display: block !important;
+  }
+
+  .supabase-sync-badge-btn {
+    padding: 6px 8px !important;
+    border-radius: 6px !important;
+    justify-content: center !important;
+    background: rgba(16, 185, 129, 0.02) !important;
+    border: 1px solid rgba(16, 185, 129, 0.15) !important;
+    flex: 1 !important;
+    width: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+  .supabase-sync-badge-btn .db-sync-info {
+    text-align: left !important;
+  }
+  .supabase-sync-badge-btn.success {
+    background: rgba(16, 185, 129, 0.1) !important;
+  }
+}
+
+/* Ẩn con trỏ custom và canvas hạt lấp lánh trên di động/máy tính bảng */
+@media (max-width: 991px) {
+  #particleCanvas,
+  .custom-cursor-glow {
+    display: none !important;
+  }
+}
+
+/* --- Tối ưu hóa các tương tác Bento và TDEE Goal Tabs 2026 trên Mobile --- */
+@media (max-width: 576px) {
+  .bento-interactive-btn {
+    font-size: 0.58rem !important;
+    padding: 3px 8px !important;
+    border-radius: 12px !important;
+    margin-top: 5px !important;
+  }
+
+  .bento-scan-tooltip-bubble {
+    padding: 4px 8px !important;
+    border-radius: 10px !important;
+    bottom: 15px !important;
+  }
+
+  .bento-tooltip-txt {
+    font-size: 0.52rem !important;
+    letter-spacing: -0.3px !important;
+  }
+
+  .tdee-goal-tabs {
+    border-radius: 16px !important;
+    margin: 10px 0 !important;
+    padding: 2px !important;
+    gap: 2px !important;
+  }
+
+  .goal-tab-btn {
+    font-size: 0.65rem !important;
+    padding: 5px 8px !important;
+    border-radius: 12px !important;
+    gap: 3px !important;
+  }
+}
+
+/* Nâng cấp tối ưu hóa tương tác Đợt 3 cho di động */
+@media (max-width: 576px) {
+  /* 1. Tắt Spotlight di chuột & Hover Vòng tròn Macros trên di động để tăng hiệu năng và tránh chạm nhầm */
+  .bento-card-glow {
+    display: none !important;
+  }
+
+  .macro-ring-group:hover {
+    transform: none !important;
+  }
+
+  .bento-macro-tooltip {
+    display: none !important;
+  }
+
+  /* 2. Căn chỉnh Floating Slider Tooltip siêu nhỏ gọn trên mobile */
+  .slider-cyberpunk::-webkit-slider-thumb {
+    width: 14px !important; /* Thu nhỏ núm trượt xuống 14px */
+    height: 14px !important;
+    margin-top: -5px !important;
+  }
+  .slider-cyberpunk::-moz-range-thumb {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .slider-cyberpunk::-webkit-slider-runnable-track {
+    height: 4px !important; /* Thu mỏng track xuống 4px */
+  }
+  .slider-cyberpunk::-moz-range-track {
+    height: 4px !important;
+  }
+  .tdee-slider-tooltip {
+    top: -28px !important;
+    font-size: 0.58rem !important;
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 6px rgba(15, 159, 104, 0.3) !important;
+  }
+
+  /* 3. Tối ưu nút Copy & Toast thông báo sao chép TDEE trên di động */
+  .tdee-copy-container {
+    margin-top: 4px !important;
+    justify-content: center !important;
+  }
+
+  .tdee-copy-btn {
+    padding: 4px 8px !important;
+    font-size: 0.65rem !important;
+    border-radius: 6px !important;
+  }
+
+  .tdee-copy-btn svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+
+  .tdee-copy-toast {
+    bottom: 24px !important;
+    padding: 6px 14px !important;
+    font-size: 0.68rem !important;
+    border-radius: 20px !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4) !important;
+    width: auto !important;
+    white-space: nowrap !important;
   }
 }

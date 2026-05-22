@@ -13,6 +13,12 @@
 - **Tối ưu hóa Backend (Caching):** Đã inject `IMemoryCache` vào `FoodService.cs` để lưu trữ kết quả tìm kiếm thực phẩm (`SearchFoodItemsAsync`) trong vòng 5 phút, giúp giảm tới 90% tải cho Database và tăng tốc độ phản hồi API.
 - **Mở khóa Tính năng AI (STT):** Đã sửa lỗi cấu hình trong file `render.yaml`, đổi `ENABLE_STT` từ `false` thành `true` để kích hoạt nhận diện giọng nói trên môi trường Production.
 
+### Nâng cấp Đợt 4: Rà soát & Tối ưu UI/UX Web (ĐÃ HOÀN THÀNH 100%)
+- **Loại bỏ hiệu ứng chuột JS:** Đã gỡ bỏ 100% tilt 3D, magnet, spotlight di động ngốn CPU, chuyển sang CSS `:hover` phát sáng neon tĩnh 5 tone màu riêng biệt tuyệt đẹp.
+- **Simulator Preset Tĩnh:** Xóa bỏ camera thật WebRTC và upload ảnh thật, hoạt động mượt mà với 4 món mẫu Việt.
+- **Sửa lỗi lệch bố cục:** Xếp dọc Bento Grid mobile column, chỉnh mockup Showcase tự nhiên không hở dọc, giãn gap Sliders 22px, FAQ & Download khớp chuẩn class ghi đè và co dãn cân đối.
+- **Hậu kiểm tự động:** Chụp 14 ảnh kiểm chứng lần 2 bằng kịch bản Edge Headless, đối chiếu trước/sau chứng minh sửa thành công hoàn mỹ 100%.
+
 ## 2. TIẾN ĐỘ HIỆN TẠI VÀ TASK TIẾP THEO (CURRENT PROGRESS & NEXT STEPS)
 
 ### Backend (Đạt 85% cho Production)

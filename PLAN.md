@@ -1,69 +1,36 @@
-# KẾ HOẠCH TỐI ƯU HÓA BENTO GRID & SỬA LỖI MASCOT MOCHI BỊ MỜ (PC & MOBILE)
+# KẾ HOẠCH SỬA LỖI CO CỤM NÚT HEADER & TỐI ƯU HÓA MOBILE (TABLET/LAPTOP TRUNG GIAN)
 
-## 1. MỤC TIÊU CẢI THIỆN
-- **Thu nhỏ nhẹ nhàng giao diện (PC & Mobile)**: Giảm chiều cao cuộn trang (scroll) trên cả hai nền tảng để giao diện trở nên gọn gàng, tinh tế và chuyên nghiệp hơn, đáp ứng yêu cầu "nhỏ lại chỉ 1 chút thôi".
-- **Cải tổ triệt để Bento Grid trên Mobile**: Giảm **50%** chiều dài cuộn trang trên Smartphone nhỏ (<= 576px) bằng cách chuyển từ layout xếp dọc (**flex-column**) sang layout nằm ngang (**flex-row**).
-- **Khắc phục triệt để lỗi Mascot MoChi bị mờ khi co giãn**: Đảm bảo các hình ảnh MoChi sắc nét 100% khi co giãn cửa sổ trình duyệt trên PC hoặc hiển thị trên các thiết bị di động.
-- **Không thay đổi cấu trúc dữ liệu**: Mọi thay đổi hoàn toàn nằm ở tầng giao diện (CSS/HTML).
+Chào bạn! Qua phân tích ảnh chụp thực tế và báo cáo phân tích CSS của Browser Subagent, chúng tôi đã xác định được nguyên nhân chính xác gây lỗi đè/méo nút trên Header và lập kế hoạch khắc phục dưới đây.
 
----
+## 1. PHÂN TÍCH NGUYÊN NHÂN (EVIDENCE-BASED)
+* **Lỗi méo nút theme-toggle:**
+  - Nút chuyển đổi Theme (`.theme-toggle-btn`) là hình tròn `36px` x `36px` nhưng không có thuộc tính `flex-shrink: 0`.
+  - Khi chiều rộng màn hình hẹp lại (khoảng từ 1025px đến 1100px ở chế độ Desktop), flexbox sẽ ép nút này co cụm lại, khiến chiều rộng thực tế bị ép xuống còn **`29.74px`**, biến nút tròn thành hình bầu dục và làm méo các icon SVG bên trong.
+* **Lỗi ngắt dòng và phình to của nút Tải APK:**
+  - Nút `.btn-nav` (Tải APK) không có `flex-shrink: 0` và `white-space: nowrap`, khiến chữ "Tải APK" bị ngắt thành 2 dòng ("Tải" và "APK"), làm chiều cao nút phình to từ 36px lên **`61px`** và đẩy lệch layout.
+* **Lỗi tràn đè của menu:**
+  - Thanh menu desktop `.nav-links` chứa 6 mục điều hướng dài. Khi màn hình nhỏ hơn 1150px, nó chiếm quá nhiều không gian ngang, đẩy sát và đè lên cụm nút bên phải.
 
-## 2. KẾ HOẠCH CHI TIẾT CHO PC & MOBILE
+## 2. GIẢI PHÁP ĐỀ XUẤT (PROPOSED CHANGES)
 
-### A. Tối ưu cho PC (Màn hình lớn >= 1200px)
-- **Giảm chiều cao cơ sở**: Hạ `grid-auto-rows` từ `minmax(275px, auto)` xuống `minmax(220px, auto)`.
-- **Căn chỉnh lại padding & gap**: Giảm padding trong bento-card từ `28px` xuống `20px`, giảm gap từ `20px` xuống `16px`.
-- **Thu gọn typography**:
-  - Tiêu đề `h3` giảm xuống `1.12rem` (gọn gàng, tinh tế hơn).
-  - Mô tả `p` giảm xuống `0.8rem` (line-height: 1.5).
-- **Khắc phục lỗi MoChi bị mờ**:
-  - Loại bỏ các thuộc tính `transform: scale()` dùng để co ảnh raster. Thay thế bằng định lượng kích thước thực tế (`width` và `height` bằng pixel rõ ràng).
-  - Áp dụng thuộc tính render chất lượng cao để khử mờ:
-    ```css
-    .bento-mascot-img {
-      image-rendering: -webkit-optimize-contrast !important;
-      image-rendering: crisp-edges !important;
-      object-fit: contain !important;
-    }
-    ```
+### 🛠️ Bước 1: Khắc phục lỗi co cụm của Theme Toggle & Nút Tải APK
+* Thêm `flex-shrink: 0;` cho `.theme-toggle-btn` trong [styles.css](file:///d:/EatFitAI_v1/download-site/styles.css) để giữ nguyên hình tròn 36x36px.
+* Thêm `flex-shrink: 0;` và `white-space: nowrap;` cho `.nav-actions .btn-nav` để chữ "Tải APK" luôn nằm trên 1 hàng ngang, không bị bóp méo hay rớt dòng.
 
-### B. Tối ưu cho Tablet & Màn hình trung bình (577px - 1024px)
-- **Layout 2 cột ghép cặp thông minh**:
-  - Các card lớn (Card 1, 3, 4, 7) chiếm full 2 cột (`span 2`).
-  - Các card nhỏ (Card 2, 5, 6, 8) xếp song song 2 bên (`span 1`).
-  - Đảm bảo các con MoChi ở kích thước này co giãn sắc nét qua CSS, không bị mờ nhòe.
-  - Sử dụng chiều cao bằng nhau tự động theo dòng (`height: 100%`).
-
-### C. Tối ưu hóa tối đa cho Smartphone nhỏ (<= 576px)
-Để loại bỏ việc scroll quá nhiều, chúng ta sẽ chuyển Bento Card sang **Flex-Row nằm ngang**:
-- **Cấu hình Layout Ngang**:
-  - Thiết lập `.bento-card` thành `display: flex; flex-direction: row !important; align-items: center !important; gap: 16px !important; padding: 16px !important;`.
-- **Phân phối nội dung 60-40**:
-  - **Bên trái (60% - 65% chiều rộng)**: Chứa text (`.bento-content-wrap`). Chữ trải ngang sẽ ít bị xuống dòng hơn rất nhiều, làm giảm chiều cao dọc của card xuống mức tối thiểu.
-  - **Bên phải (35% - 40% chiều rộng)**: Khu vực hiển thị Widget thu gọn (Compact Widget Area).
-- **Thu gọn triệt để các widgets bên phải**:
-  - **Card 1 (Camera AI):** Mockup điện thoại đặt dọc bên phải, thu nhỏ thành `width: 75px; height: 95px`.
-  - **Card 2 (Quota AI):** Xếp các progress bar mỏng dọc bên phải; ẩn `.quota-guarantees`.
-  - **Card 3 (Voice AI):** Hiển thị 2 bong bóng chat AI thu gọn xếp chồng lên nhau bên phải, ẩn biểu đồ âm thanh cồng kềnh.
-  - **Card 4 (Macros):** Vòng tròn macros scale xuống `scale(0.6)` bên phải, ẩn bảng legend mô tả (đưa thông số P-C-F trực tiếp vào vòng tròn hoặc hiển thị tối giản).
-  - **Card 5 (Nước):** Đặt cốc nước và nút bấm nhỏ cạnh nhau nằm ngang bên phải.
-  - **Card 6 (Streak):** Hiển thị đốm lửa lớn kèm số ngày streak, và 3 huy hiệu nhỏ xếp ngang bên phải.
-  - **Card 7 (AI Recipes):** Mockup công thức thu gọn thành một hình chữ nhật nhỏ nằm ngang bên phải.
-  - **Card 8 (Auth Sync):** Đặt nút đăng nhập Google mockup và Supabase sync badge xếp dọc gọn gàng bên phải.
+### 🛠️ Bước 2: Tối ưu hóa thanh điều hướng cho màn hình laptop nhỏ (1025px - 1180px)
+* Thêm một media query bổ sung trong [styles.css](file:///d:/EatFitAI_v1/download-site/styles.css) để tự động thu nhỏ nhẹ khoảng cách (`gap`) và padding của các mục menu desktop khi màn hình hẹp ngang. Giải pháp này giúp thanh menu co giãn thông minh, giải phóng không gian cho cụm nút mà không cần phải thay đổi các breakpoint 1024px hiện tại (tránh làm hỏng layout Bento Grid bên dưới).
 
 ---
 
-## 3. RỦI RO & PHƯƠNG ÁN KHẮC PHỤC
-- **Rủi ro tràn chiều ngang (Horizontal Overflow) ở màn hình 320px (iPhone SE)**: Khi ép text và widget nằm ngang, nếu text quá dài hoặc widget không co giãn tốt sẽ gây tràn viền.
-- **Khắc phục**:
-  - Áp dụng `min-width: 0` cho text wrap để flexbox tự động tính toán co giãn chữ.
-  - Sử dụng `flex-shrink: 0` cho khu vực widget bên phải để giữ nguyên kích thước widget không bị bóp méo.
-  - Sử dụng `-webkit-line-clamp: 2` cho thẻ mô tả `p` trên mobile để đảm bảo nội dung đồng đều, không bị lệch hàng.
+## 3. RỦI RO & PHƯƠNG ÁN NÉ TRÁNH
+* **Rủi ro:** Việc chỉnh sửa breakpoint lớn có thể làm vỡ layout của các khối Bento Grid bên dưới.
+* **Phương án né tránh:** Không thay đổi breakpoint `@media (max-width: 1024px)`. Chỉ dùng media query đặc trị cho khoảng `1025px - 1180px` để giảm padding của menu và nút trên Header. Điều này cô lập hoàn toàn thay đổi trong phạm vi Header, bảo đảm an toàn 100% cho các phần bento card bên dưới.
 
 ---
 
-## 4. CÁC BƯỚC THỰC HIỆN TIẾP THEO
-1. Gửi bản kế hoạch này đến USER để phê duyệt.
-2. Sau khi được phê duyệt, tiến hành chỉnh sửa file `styles.css` và `mobile-override.css` theo đúng mô tả.
-3. Cập nhật cache version trong `index.html`.
-4. Yêu cầu USER kiểm tra trực tiếp trên thiết bị hoặc DevTools responsive.
+## 4. QUY TRÌNH XÁC MINH & NGHIỆM THU
+1. **Áp dụng thay đổi CSS:** Sửa đổi [styles.css](file:///d:/EatFitAI_v1/download-site/styles.css).
+2. **Kiểm tra tự động với Browser Subagent:** Chụp ảnh màn hình ở độ phân giải 1050px (để test laptop nhỏ), 1200px (PC), 768px và 375px (Mobile).
+3. **Đối chiếu kết quả:** Đảm bảo nút theme tròn trịa, chữ Tải APK thẳng hàng, và không còn hiện tượng đè chữ hay chồng chéo.
+
+Bạn vui lòng xem và duyệt kế hoạch này để chúng tôi thực hiện chỉnh sửa ngay lập tức!

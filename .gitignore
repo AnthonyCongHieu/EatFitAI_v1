@@ -25,6 +25,7 @@ eatfitai-mobile/android/.kotlin/
 _tooling/
 _state/
 _logs/
+logs/
 _artifacts/
 uploads/
 artifacts/
@@ -117,6 +118,7 @@ data_chunks/
 !eatfitai-backend/supabase_schema.sql
 !eatfitai-backend/supabase_storage.sql
 artifacts-device-latest.png
+test_pc_top.png
 codesign-*.html
 
 # Firebase runtime config must stay local/provider-managed.

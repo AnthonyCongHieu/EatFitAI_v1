@@ -298,6 +298,12 @@ button, input, select, textarea {
   transform: scale(1.15) rotate(5deg);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .nav-actions .btn-nav {
   display: inline-flex;
   align-items: center;
@@ -308,6 +314,8 @@ button, input, select, textarea {
   font-size: 0.88rem;
   font-weight: 700;
   box-shadow: 0 4px 12px var(--brand-glow);
+  flex-shrink: 0; /* Ngăn nút Tải APK bị co cụm làm biến dạng chữ */
+  white-space: nowrap; /* Giữ chữ trên một hàng ngang */
 }
 
 .nav-actions .btn-nav:hover {
@@ -1194,6 +1202,248 @@ h2 {
   background: rgba(255, 255, 255, 0.01);
 }
 
+/* ════ Range Sliders Custom Style (Xu hướng 2026) ════ */
+.tdee-sliders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.slider-group {
+  margin-bottom: 0 !important;
+}
+
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.slider-label-row label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0 !important;
+}
+
+.slider-val-badge {
+  background: rgba(15, 159, 104, 0.1);
+  color: var(--brand-primary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid rgba(15, 159, 104, 0.2);
+  letter-spacing: 0.02em;
+}
+
+.range-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 24px;
+}
+
+.slider-cyberpunk {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+  transition: background 0.3s ease;
+  margin: 0;
+  padding: 0 !important;
+  min-height: auto !important;
+  border: none !important;
+}
+
+.slider-cyberpunk::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.slider-cyberpunk::-webkit-slider-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -6px;
+  box-shadow: 0 0 10px var(--brand-primary), 0 0 20px rgba(15, 159, 104, 0.4);
+  transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slider-cyberpunk::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.slider-cyberpunk::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px var(--brand-primary), 0 0 20px rgba(15, 159, 104, 0.4);
+  transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slider-cyberpunk:hover::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.slider-cyberpunk:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px var(--brand-primary), 0 0 25px rgba(15, 159, 104, 0.6);
+}
+
+.slider-cyberpunk:active::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px var(--brand-primary), 0 0 25px rgba(15, 159, 104, 0.6);
+}
+
+.tdee-realtime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 159, 104, 0.06);
+  color: var(--brand-primary);
+  border: 1px solid rgba(15, 159, 104, 0.15);
+  padding: 6px 12px;
+  border-radius: 30px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.tdee-realtime-badge .pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--brand-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(15, 159, 104, 0.7);
+  animation: pulse-badge 1.8s infinite;
+}
+
+@keyframes pulse-badge {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(15, 159, 104, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(15, 159, 104, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(15, 159, 104, 0);
+  }
+}
+
+/* ════ Ambient Magnetic Neon Hover (Xu hướng 2026) ════ */
+.btn-primary, .btn-secondary, .google-btn-mockup, .btn-nav {
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease, color 0.3s ease !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 20px rgba(15, 159, 104, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.google-btn-mockup:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 20px rgba(66, 133, 244, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(66, 133, 244, 0.5) !important;
+}
+
+/* ════ Active Gradient Border Glow (Xu hướng 2026) ════ */
+.tdee-results-box {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.tdee-results-box:not(.hidden-results) {
+  border-color: rgba(15, 159, 104, 0.3);
+  box-shadow: 0 0 25px rgba(15, 159, 104, 0.08), var(--shadow-md);
+}
+
+.tdee-output-card {
+  position: relative;
+  z-index: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+.tdee-output-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent, rgba(15, 159, 104, 0.4), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: borderGlowSweep 4s linear infinite;
+}
+
+@keyframes borderGlowSweep {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ════ Mochi Reactivity Bounce (Xu hướng 2026) ════ */
+.mochi-bounce {
+  animation: mochiBounceEffect 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+@keyframes mochiBounceEffect {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.8) translateY(10px);
+  }
+  60% {
+    transform: scale(1.15) translateY(-15px);
+  }
+  80% {
+    transform: scale(0.95) translateY(4px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
 /* Calculator Results */
 .tdee-results-box {
   display: flex;
@@ -1371,25 +1621,43 @@ h2 {
   transition: var(--transition-smooth);
 }
 
-/* Mouse Hover Radial Glow Light effect */
-.bento-card-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle 120px at var(--mouse-x, 0) var(--mouse-y, 0), rgba(255, 255, 255, 0.035), transparent 80%);
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.bento-card:hover .bento-card-glow {
-  opacity: 1;
-}
-
+/* Hover phát sáng viền neon tĩnh dịu mắt theo tone màu riêng biệt để tối ưu hóa CPU render */
 .bento-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* 1. Tone Xanh ngọc (Card 1, Card 5) */
+#bentoCardScan:hover,
+.bento-card:nth-child(5):hover {
+  border-color: rgba(15, 159, 104, 0.65) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(15, 159, 104, 0.25) !important;
+}
+
+/* 2. Tone Lam ngọc / Xanh dương (Card 2, Card 8) */
+.bento-card:nth-child(2):hover,
+.bento-card:nth-child(8):hover {
+  border-color: rgba(50, 215, 240, 0.65) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(50, 215, 240, 0.25) !important;
+}
+
+/* 3. Tone Tím Neon (Card 3, Card 4) */
+.bento-card.card-tall:hover,
+.bento-card:has(.bento-mini-rings):hover {
+  border-color: rgba(157, 124, 255, 0.65) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(157, 124, 255, 0.25) !important;
+}
+
+/* 4. Tone Vàng Kim (Card 6) */
+#bentoCardStreak:hover {
+  border-color: rgba(212, 175, 55, 0.65) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(212, 175, 55, 0.25) !important;
+}
+
+/* 5. Tone Cam Hổ phách (Card 7) */
+#bentoCardRecipe:hover {
+  border-color: rgba(255, 115, 0, 0.65) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(255, 115, 0, 0.25) !important;
 }
 
 .bento-content-wrap {
@@ -2038,7 +2306,7 @@ body[data-release-ready="true"] .status-dot {
 
 /* ═══ FAQS ACCORDION ═══ */
 .faq-accordion-container {
-  max-width: 760px;
+  max-width: 720px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -2451,6 +2719,14 @@ body[data-release-ready="true"] .status-dot {
   }
 
   .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+    margin-right: 16px;
+  }
+
+  .nav-actions .btn-nav {
     display: none;
   }
 }
@@ -2634,7 +2910,7 @@ body[data-release-ready="true"] .status-dot {
 /* Mascot Images inside Bento Cards */
 .bento-mascot-img {
   position: absolute;
-  z-index: 1;
+  z-index: 5;
   pointer-events: none;
   filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4));
   transition: transform 0.4s var(--transition-smooth), opacity 0.4s ease;
@@ -2651,7 +2927,7 @@ body[data-release-ready="true"] .status-dot {
 
 /* Specific position adjustments for Bento Cards */
 .mascot-meal {
-  bottom: 24px;
+  bottom: -22px;
   right: 210px;
   height: 110px;
   width: auto;
@@ -2659,43 +2935,43 @@ body[data-release-ready="true"] .status-dot {
 }
 
 .mascot-scale {
-  bottom: 24px;
+  bottom: -18px;
   right: 28px;
   height: 108px;
   width: auto;
 }
 
 .mascot-idle {
-  bottom: 24px;
+  bottom: -18px;
   right: 28px;
   height: 108px;
   width: auto;
 }
 
 .mascot-secure {
-  bottom: 24px;
+  bottom: -18px;
   right: 28px;
   height: 95px;
   width: auto;
 }
 
 .mascot-celebrate {
-  bottom: 24px;
+  bottom: -24px;
   right: 28px;
   height: 110px;
   width: auto;
 }
 
 .mascot-scan-success {
-  bottom: 24px;
+  bottom: -18px;
   right: 28px;
   height: 105px;
   width: auto;
 }
 
 .mascot-thinking {
-  bottom: 24px;
-  right: 28px;
+  bottom: -18px;
+  right: 16px;
   height: 105px;
   width: auto;
 }
@@ -3195,10 +3471,25 @@ body[data-release-ready="true"] .status-dot {
   font-weight: 900;
   color: #fff;
 }
-.ing-check input[type="checkbox"]:checked + span {
-  color: var(--text-dim);
-  text-decoration: line-through;
-  opacity: 0.65;
+.ing-check,
+.ing-check *,
+.ing-check span,
+.ing-check input,
+.ing-check input:disabled + span,
+.ing-check input:checked + span,
+.ing-check input[type="checkbox"]:checked:disabled + span {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+  -webkit-text-decoration-line: none !important;
+}
+
+.ing-check input[type="checkbox"]:checked + span,
+.ing-check input[type="checkbox"]:checked:disabled + span {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  text-decoration-line: none !important;
 }
 
 /* Card 8: Secure Cloud Sync & Google Auth Widget */
@@ -3246,17 +3537,18 @@ body[data-release-ready="true"] .status-dot {
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: rgba(15, 159, 104, 0.04);
-  border: 1px solid rgba(15, 159, 104, 0.15);
-  border-radius: var(--r-md);
+  background: rgba(16, 185, 129, 0.02);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 100px;
   transition: var(--transition-smooth);
   backdrop-filter: blur(4px);
+  white-space: nowrap;
 }
 .bento-card:hover .supabase-sync-badge {
-  background: rgba(15, 159, 104, 0.08);
-  border-color: rgba(15, 159, 104, 0.3);
+  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(16, 185, 129, 0.3);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(15, 159, 104, 0.12);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.12);
 }
 .db-icon-wrap {
   width: 28px;
@@ -3339,14 +3631,13 @@ body[data-release-ready="true"] .status-dot {
     height: 145px !important;
   }
 
-  /* Thay đổi chiều cao pixel trực tiếp của MoChi để đảm bảo độ sắc nét 100% khi co giãn */
-  .mascot-meal { height: 90px !important; bottom: 16px !important; }
-  .mascot-scale { height: 85px !important; bottom: 16px !important; }
-  .mascot-idle { height: 85px !important; bottom: 16px !important; }
-  .mascot-secure { height: 75px !important; bottom: 16px !important; }
-  .mascot-celebrate { height: 90px !important; bottom: 16px !important; }
-  .mascot-scan-success { height: 85px !important; bottom: 16px !important; }
-  .mascot-thinking { height: 85px !important; bottom: 16px !important; }
+  .mascot-meal { height: 110px !important; bottom: -22px !important; right: 210px !important; }
+  .mascot-scale { height: 108px !important; bottom: -18px !important; }
+  .mascot-idle { height: 108px !important; bottom: -18px !important; }
+  .mascot-secure { height: 95px !important; bottom: -18px !important; }
+  .mascot-celebrate { height: 110px !important; bottom: -24px !important; }
+  .mascot-scan-success { height: 105px !important; bottom: -18px !important; }
+  .mascot-thinking { height: 105px !important; bottom: -18px !important; right: 16px !important; }
 
   .bento-card:hover .bento-mascot-img {
     transform: translateY(-4px) !important;
@@ -4271,6 +4562,7 @@ body[data-release-ready="true"] .status-dot {
   height: 30px;
   z-index: 2;
   transition: var(--transition-smooth);
+  max-width: calc(100% - 135px);
 }
 .audio-bar {
   width: 3px;
@@ -5162,16 +5454,16 @@ body[data-release-ready="true"] .status-dot {
 .page-transition-curtain {
   position: fixed;
   inset: 0;
-  background: rgba(5, 7, 13, 0.85); /* Dark base matching theme */
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  background: radial-gradient(circle at center, rgba(5, 7, 13, 0.95) 40%, rgba(15, 159, 104, 0.12) 100%);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   z-index: 99999; /* Ensure it is above everything */
   display: flex;
   justify-content: center;
   align-items: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: opacity 0.32s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .page-transition-curtain.active {
@@ -5243,4 +5535,985 @@ body[data-release-ready="true"] .status-dot {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   NÂNG CẤP ĐỘT PHÁ UI/UX SIMULATOR 2026 (LIVE CAMERA, DRAG & DROP, 3D TILT)
+   ========================================================================== */
+
+/* Nút Bật/Tắt Live Camera Cyberpunk */
+.camera-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 18px;
+  margin-top: 12px;
+  background: rgba(15, 159, 104, 0.06);
+  border: 1.5px solid rgba(15, 159, 104, 0.3);
+  border-radius: var(--r-md);
+  color: var(--brand-primary);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(15, 159, 104, 0.05);
+}
+
+.camera-toggle-btn:hover {
+  background: var(--brand-primary);
+  color: #fff;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 15px rgba(15, 159, 104, 0.4);
+  transform: translateY(-2px);
+}
+
+.camera-toggle-btn.active {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.camera-icon {
+  transition: transform 0.3s ease;
+}
+
+.camera-toggle-btn:hover .camera-icon {
+  transform: rotate(15deg);
+}
+
+/* Thẻ video feed hiển thị camera trực tiếp */
+.ar-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Nút chụp hình ảo bên trong camera screen */
+.ar-capture-btn {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 4px solid #fff;
+  padding: 4px;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.ar-capture-btn-inner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.ar-capture-btn:hover {
+  transform: translateX(-50%) scale(1.08);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ar-capture-btn:active {
+  transform: translateX(-50%) scale(0.92);
+}
+
+.ar-capture-btn:active .ar-capture-btn-inner {
+  transform: scale(0.85);
+}
+
+/* Hiệu ứng chớp sáng màn trập */
+.shutter-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.shutter-flash.flash-active {
+  animation: shutterFlash 0.3s ease-out forwards;
+}
+
+@keyframes shutterFlash {
+  0% { opacity: 0; }
+  15% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+/* Lớp phủ Drag & Drop Glassmorphic */
+.drag-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 15;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 16px;
+}
+
+.drag-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 90%;
+  height: 90%;
+  border: 2px dashed rgba(15, 159, 104, 0.4);
+  border-radius: var(--r-md);
+  color: var(--text-main);
+  text-align: center;
+  transition: all 0.3s ease;
+  background: rgba(15, 159, 104, 0.02);
+}
+
+.drag-icon {
+  color: var(--brand-primary);
+  animation: floatIcon 2.0s ease-in-out infinite alternate;
+}
+
+.drag-overlay-content span:first-of-type {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.drag-overlay-sub {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+/* Lớp viền đứt nét phát sáng chạy động khi kéo ảnh */
+.ar-camera-view.drag-active .drag-overlay {
+  opacity: 1;
+}
+
+.ar-camera-view.drag-active .drag-overlay-content {
+  border-color: var(--brand-primary);
+  box-shadow: inset 0 0 15px rgba(15, 159, 104, 0.1);
+  background: rgba(15, 159, 104, 0.05);
+}
+
+@keyframes floatIcon {
+  0% { transform: translateY(-4px); }
+  100% { transform: translateY(4px); }
+}
+
+/* Hiệu ứng 3D Perspective Tilt cho màn hình lớn */
+@media (min-width: 992px) {
+  .simulator-container {
+    perspective: 1200px;
+  }
+
+  .sim-phone, .sim-analysis {
+    transition: transform 0.12s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  /* Specular Sheen (Phản xạ ánh sáng) trên điện thoại Mockup */
+  .phone-mockup-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 40px;
+    background: radial-gradient(circle at var(--sheen-x, 50%) var(--sheen-y, -20%), rgba(255, 255, 255, 0.12) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .sim-phone:hover .phone-mockup-frame::after {
+    opacity: 1;
+  }
+}
+
+/* ════════════════════════════════════════════════ */
+/* ═══ NÂNG CẤP ĐỘT PHÁ UI/UX XU HƯỚNG 2026 ═══ */
+/* ════════════════════════════════════════════════ */
+
+/* ═══ 1. Dark/Light Theme Switching CSS Variables ═══ */
+body.light-theme {
+  --bg-primary: #F0F4F8;     /* Màu xám sáng nhẹ nhàng */
+  --bg-secondary: #FFFFFF;   /* Màu trắng tuyết tinh khiết */
+  --bg-card: rgba(255, 255, 255, 0.82);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+
+  --text-main: #1A1F26;      /* Đen xám mịn màng */
+  --text-muted: #5A6578;     /* Xám xanh dịu mát */
+  --text-dim: #8E9BAE;
+
+  --border-light: rgba(0, 0, 0, 0.06);
+  --border-hover: rgba(15, 159, 104, 0.35);
+
+  --shadow-sm: 0 4px 12px rgba(10, 20, 30, 0.05);
+  --shadow-md: 0 10px 30px rgba(10, 20, 30, 0.08);
+  --shadow-lg: 0 16px 50px rgba(10, 20, 30, 0.12);
+}
+
+/* Áp dụng hiệu ứng chuyển dịch êm ái cho toàn bộ giao diện */
+body, header, .bento-card, .section, .site-header, .brand, .nav-links a, .tdee-card, .faq-item, .bento-water-visual, .bento-voice-chat, .chat-bubble {
+  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Nút chuyển đổi Theme */
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0; /* Ngăn nút bị bóp méo thành hình oval trên màn hình trung gian */
+}
+.theme-toggle-btn:hover {
+  background: rgba(15, 159, 104, 0.1);
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 0 0 12px rgba(15, 159, 104, 0.25);
+}
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+body.light-theme .sun-icon {
+  display: none;
+}
+body.light-theme .moon-icon {
+  display: block !important;
+  color: #1A1F26;
+}
+
+/* ═══ 2. Custom Cursor & Glowing Aura Canvas - Đã lược bỏ hoàn toàn để khôi phục con trỏ chuột mặc định tinh khiết ═══ */
+
+/* ═══ 3. Bento Card 3 Voice Chat Interactive Mic ═══ */
+.voice-mic-btn {
+  background: rgba(157, 124, 255, 0.1);
+  border: 1px solid rgba(157, 124, 255, 0.25);
+  color: var(--accent-violet);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+}
+.voice-mic-btn:hover {
+  background: var(--accent-violet);
+  color: #fff;
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 10px rgba(157, 124, 255, 0.4);
+  transform: scale(1.08);
+}
+.voice-mic-btn.listening {
+  background: #ff4a7d !important;
+  border-color: #ff4a7d !important;
+  color: #fff !important;
+  box-shadow: 0 0 15px rgba(255, 74, 125, 0.5) !important;
+  animation: pulse-red-listening 1.2s infinite ease-in-out;
+}
+@keyframes pulse-red-listening {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.voice-wave-container {
+  flex: 1;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.015);
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 0 5px;
+}
+#voiceWaveform {
+  width: 100%;
+  height: 100%;
+}
+.audio-wave-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  transition: var(--transition-smooth);
+}
+.bento-audio-visualizer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--r-md);
+  margin-top: 14px;
+  backdrop-filter: blur(8px);
+  max-width: calc(100% - 135px);
+}
+
+/* ═══ 4. Bento Card 5 Water Dual Controller Buttons ═══ */
+.water-ctrl-btns {
+  display: flex;
+  gap: 6px;
+}
+.water-btn {
+  background: rgba(50, 215, 240, 0.06);
+  border: 1px solid rgba(50, 215, 240, 0.2);
+  color: var(--accent-cyan);
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+.water-btn:hover {
+  background: var(--accent-cyan);
+  color: #000;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(50, 215, 240, 0.35);
+  transform: translateY(-1px);
+}
+.water-btn:active {
+  transform: translateY(1px);
+}
+.water-wave {
+  transition: height 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.water-bubbles .bubble {
+  position: absolute;
+  bottom: 0;
+  background: rgba(255,255,255,0.45);
+  border-radius: 50%;
+  animation: float-bubble 2s infinite ease-in;
+}
+.water-bubbles .bubble:nth-child(1) { left: 25%; width: 4px; height: 4px; animation-delay: 0.2s; }
+.water-bubbles .bubble:nth-child(2) { left: 45%; width: 6px; height: 6px; animation-delay: 0.8s; }
+.water-bubbles .bubble:nth-child(3) { left: 70%; width: 3px; height: 3px; animation-delay: 1.4s; }
+.water-bubbles .bubble:nth-child(4) { left: 15%; width: 5px; height: 5px; animation-delay: 0.5s; }
+.water-bubbles .bubble:nth-child(5) { left: 80%; width: 5px; height: 5px; animation-delay: 1.1s; }
+
+@keyframes float-bubble {
+  0% { bottom: 0; opacity: 0; transform: translateX(0); }
+  50% { opacity: 0.8; }
+  100% { bottom: 85%; opacity: 0; transform: translateX(4px); }
+}
+
+/* ═══ 5. Bento Card 8 Cloud Sync Interactive Button ═══ */
+.supabase-sync-badge-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 159, 104, 0.04);
+  border: 1px solid rgba(15, 159, 104, 0.15);
+  padding: 8px 12px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  color: var(--text-main);
+  text-align: left;
+}
+.supabase-sync-badge-btn:hover {
+  background: rgba(15, 159, 104, 0.08);
+  border-color: var(--brand-primary);
+  box-shadow: 0 4px 15px rgba(15, 159, 104, 0.2);
+  transform: translateY(-2px);
+}
+.supabase-sync-badge-btn:active {
+  transform: translateY(1px);
+}
+
+.supabase-sync-badge-btn.syncing .db-icon-wrap {
+  animation: spin-cloud-sync 1.2s infinite linear;
+  color: var(--accent-amber);
+}
+
+@keyframes spin-cloud-sync {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.supabase-sync-badge-btn.success {
+  border-color: var(--brand-primary) !important;
+  background: rgba(15, 159, 104, 0.12) !important;
+}
+.supabase-sync-badge-btn.success .db-icon-wrap {
+  color: var(--brand-primary);
+  animation: scale-success-checkmark 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scale-success-checkmark {
+  0% { transform: scale(0.6); }
+  100% { transform: scale(1.1); }
+}
+
+/* ═══ 6. TDEE Sliders & Ambient Glow Tuning ═══ */
+body.light-theme .tdee-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+body.light-theme .tdee-card:hover {
+  border-color: rgba(15, 159, 104, 0.25) !important;
+}
+
+body.light-theme .calc-title-box h3 {
+  color: #1A1F26 !important;
+}
+
+/* ════════════════════════════════════════════════ */
+/* ═══ NÂNG CẤP ĐỘT PHÁ TỐI ƯU UI/UX ĐỢT 2 (2026) ═══ */
+/* ════════════════════════════════════════════════ */
+
+/* --- A. Bento Interactive Elements & Buttons --- */
+.bento-interactive-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: #FFFFFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  backdrop-filter: blur(8px);
+  will-change: transform, box-shadow;
+}
+
+body.light-theme .bento-interactive-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1A1F26;
+}
+
+.bento-interactive-btn:hover {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  box-shadow: 0 4px 15px rgba(15, 159, 104, 0.35);
+  transform: translateY(-2px);
+  color: #FFFFFF;
+}
+
+body.light-theme .bento-interactive-btn:hover {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: #FFFFFF;
+}
+
+.bento-interactive-btn:active {
+  transform: translateY(1px);
+}
+
+.bento-interactive-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.bento-interactive-btn:hover svg {
+  transform: scale(1.1);
+}
+
+/* --- B. Bento Card 1: Scan Laser & Glassmorphic Tooltip --- */
+#bentoCardScan {
+  position: relative;
+  overflow: hidden;
+}
+
+#bentoLaserBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, transparent, var(--brand-primary), #00F2FE, var(--brand-primary), transparent);
+  box-shadow: 0 0 12px var(--brand-primary), 0 0 20px #00F2FE;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#bentoLaserBar.scanning {
+  animation: bentoScanLaser 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  opacity: 1;
+}
+
+@keyframes bentoScanLaser {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+/* Glassmorphic Tooltip Bubble */
+.bento-scan-tooltip-bubble {
+  position: absolute;
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: rgba(10, 25, 20, 0.78);
+  border: 1px solid rgba(15, 159, 104, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 15px rgba(15, 159, 104, 0.25);
+  backdrop-filter: blur(12px);
+  padding: 6px 12px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+body.light-theme .bento-scan-tooltip-bubble {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(15, 159, 104, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 10px rgba(15, 159, 104, 0.15);
+}
+
+.bento-scan-tooltip-bubble:not(.hidden) {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+.bento-tooltip-txt {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.2px;
+}
+
+body.light-theme .bento-tooltip-txt {
+  color: #1A1F26;
+}
+
+.sparkle-icon {
+  animation: pulse-sparkle 1s infinite alternate;
+  color: var(--accent-amber);
+}
+
+@keyframes pulse-sparkle {
+  0% { transform: scale(0.9); filter: drop-shadow(0 0 2px var(--accent-amber)); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 6px var(--accent-amber)); }
+}
+
+/* --- C. Bento Card 6: Streak Sparkle Flame & Level Up --- */
+#bentoStreakFlame.active {
+  animation: flame-burn-dynamic 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite alternate;
+}
+
+#bentoStreakFlame.active .flame-icon {
+  display: inline-block;
+  animation: flame-wobble-rotate 0.4s infinite alternate;
+}
+
+@keyframes flame-burn-dynamic {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(255, 115, 0, 0.4), 0 0 20px rgba(255, 204, 0, 0.2);
+    border-color: rgba(255, 115, 0, 0.4);
+  }
+  100% {
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(15, 159, 104, 0.6), 0 0 35px rgba(0, 242, 254, 0.3);
+    border-color: var(--brand-primary);
+  }
+}
+
+@keyframes flame-wobble-rotate {
+  0% { transform: rotate(-3deg) scale(0.95); }
+  100% { transform: rotate(3deg) scale(1.1); }
+}
+
+/* Streak button custom styles */
+#bentoStreakBtn.claimed {
+  background: rgba(15, 159, 104, 0.12) !important;
+  border-color: var(--brand-primary) !important;
+  color: var(--brand-primary) !important;
+  pointer-events: none;
+}
+
+#bentoStreakBtn.claimed svg {
+  color: var(--brand-primary);
+}
+
+/* --- D. TDEE AI Goal Planner Tabs --- */
+.tdee-goal-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px;
+  border-radius: 24px;
+  margin: 18px 0;
+  gap: 4px;
+}
+
+body.light-theme .tdee-goal-tabs {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.goal-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.goal-tab-btn:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.light-theme .goal-tab-btn:hover {
+  color: #1A1F26;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Active tab styles depending on goals for premium aesthetic */
+.goal-tab-btn.active[data-goal="maintenance"] {
+  background: rgba(15, 159, 104, 0.15);
+  border: 1px solid rgba(15, 159, 104, 0.3);
+  color: var(--brand-primary);
+  box-shadow: 0 0 15px rgba(15, 159, 104, 0.15);
+}
+
+.goal-tab-btn.active[data-goal="cutting"] {
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+  color: #00F2FE;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
+}
+
+.goal-tab-btn.active[data-goal="bulking"] {
+  background: rgba(255, 115, 0, 0.12);
+  border: 1px solid rgba(255, 115, 0, 0.3);
+  color: #FF7300;
+  box-shadow: 0 0 15px rgba(255, 115, 0, 0.15);
+}
+
+body.light-theme .goal-tab-btn.active {
+  color: #FFFFFF !important;
+}
+
+body.light-theme .goal-tab-btn.active[data-goal="maintenance"] {
+  background: var(--brand-primary) !important;
+}
+
+body.light-theme .goal-tab-btn.active[data-goal="cutting"] {
+  background: #00B4DB !important;
+}
+
+body.light-theme .goal-tab-btn.active[data-goal="bulking"] {
+  background: #E65C00 !important;
+}
+
+/* --- E. Magnetic Buttons Transition Support --- */
+.btn-primary, .btn-secondary, .google-btn-mockup, .bento-interactive-btn, .camera-toggle-btn {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease, background 0.3s ease;
+}
+
+/* ==========================================
+   F. NÂNG CẤP UI/UX TƯƠNG TÁC ĐỢT 3 (XU HƯỚNG 2026)
+   ========================================== */
+
+/* 1. Bento Spotlight Dynamic Mouse Glow - Đã chuyển sang hover CSS tĩnh dịu mắt tiết kiệm CPU */
+
+/* 2. Interactive SVG Macros Rings */
+.macro-ring-group {
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.macro-ring-group:hover {
+  transform: scale(1.05);
+  transform-origin: 80px 80px; /* Tâm hình tròn xoay quanh 80 80 của SVG */
+}
+
+.bento-macro-tooltip {
+  position: absolute;
+  background: rgba(13, 20, 18, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(15, 159, 104, 0.45);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(15, 159, 104, 0.25);
+  z-index: 100;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  opacity: 0;
+  transform: scale(0.9) translate(-50%, -100%);
+  top: 0;
+  left: 0;
+}
+.bento-macro-tooltip.show {
+  opacity: 1;
+  transform: scale(1) translate(-50%, -120%);
+}
+
+/* 3. Smart Floating Slider Thumb Tooltips */
+.range-input-container {
+  position: relative;
+}
+
+.tdee-slider-tooltip {
+  position: absolute;
+  top: -38px;
+  left: var(--percent, 50%);
+  transform: translateX(-50%) scale(0.85);
+  background: rgba(15, 159, 104, 0.95);
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(15, 159, 104, 0.3), 0 0 8px rgba(15, 159, 104, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 50;
+  white-space: nowrap;
+}
+
+.tdee-slider-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px 4px 0;
+  border-style: solid;
+  border-color: rgba(15, 159, 104, 0.95) transparent;
+}
+
+.tdee-slider-tooltip.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* 4. Copy TDEE target với Toast */
+.tdee-copy-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tdee-copy-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  gap: 6px;
+}
+
+.tdee-copy-btn:hover {
+  background: rgba(15, 159, 104, 0.15);
+  border-color: var(--brand-primary);
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 0 10px rgba(15, 159, 104, 0.25);
+}
+
+.tdee-copy-btn:active {
+  transform: scale(0.95);
+}
+
+.tdee-copy-btn svg {
+  stroke: currentColor;
+}
+
+.tdee-copy-toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(13, 20, 18, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--brand-primary);
+  padding: 10px 22px;
+  border-radius: 50px;
+  color: #FFFFFF;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(15, 159, 104, 0.35);
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tdee-copy-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 5. Bento Card 7 Carousel Transitions */
+.recipe-card-mini {
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), filter 0.25s ease;
+}
+
+.recipe-card-mini.slide-fade-out {
+  opacity: 0;
+  transform: translateX(-15px) scale(0.95);
+  filter: blur(4px);
+}
+
+.recipe-card-mini.slide-fade-in {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  filter: blur(0);
+}
+
+/* Tinh chỉnh nút bento-interactive-btn cho 2026 */
+.bento-interactive-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  z-index: 10;
+}
+
+.bento-interactive-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.bento-btn-icon-svg {
+  transition: transform 0.3s ease;
+}
+
+.bento-interactive-btn:hover .bento-btn-icon-svg {
+  transform: rotate(180deg);
+}
+
+/* 6. Dynamic Water Gas Bubbles */
+.water-bubbles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.bubble-sparkle {
+  position: absolute;
+  bottom: 0;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: riseUpBubble var(--duration, 1.6s) ease-in forwards;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+}
+
+@keyframes riseUpBubble {
+  0% {
+    transform: translateY(10px) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-90px) translateX(var(--drift, 12px)) scale(1.1);
+    opacity: 0;
+  }
+}
+
+/* ═══ Tối ưu hóa khoảng trống điều hướng cho màn hình laptop/tablet trung gian ═══ */
+@media (min-width: 1025px) and (max-width: 1180px) {
+  .nav-links {
+    gap: 4px !important;
+    padding: 3px !important;
+  }
+  .nav-links a {
+    padding: 6px 12px !important;
+    font-size: 0.82rem !important;
+  }
+  .nav-actions {
+    gap: 8px !important;
+  }
+  .nav-actions .btn-nav {
+    padding: 8px 16px !important;
+    font-size: 0.82rem !important;
+  }
 }
