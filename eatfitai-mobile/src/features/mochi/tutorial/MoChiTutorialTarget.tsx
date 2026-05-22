@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Platform, StatusBar, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type {
   MoChiTutorialHighlightProfile,
@@ -39,8 +40,8 @@ const PROFILE_DEFAULTS: Record<
     insets: { top: 2, right: 2, bottom: 2, left: 2 },
   },
   homeWater: {
-    radius: 22,
-    insets: { top: 5, right: 5, bottom: 5, left: 5 },
+    radius: 26,
+    insets: { top: 3, right: 3, bottom: 3, left: 3 },
   },
 };
 
@@ -56,6 +57,10 @@ export const MoChiTutorialTarget = ({
   showHalo = true,
 }: MoChiTutorialTargetProps): React.ReactElement => {
   const ref = useRef<View>(null);
+  const insets = useSafeAreaInsets();
+  const insetsRef = useRef(insets);
+  insetsRef.current = insets;
+
   const focus = useRef(new Animated.Value(0)).current;
   const activateTargetRef = useRef(onTutorialActivate);
   const measureAdjustmentRef = useRef(measureAdjustment);
@@ -129,9 +134,11 @@ export const MoChiTutorialTarget = ({
               }
 
               const currentAdjustment = measureAdjustmentRef.current;
+              const currentInsets = insetsRef.current;
+              const statusBarOffset = Platform.OS === 'android' ? (currentInsets.top || StatusBar.currentHeight || 24) : 0;
               const adjustedFrame = {
                 x: x + (currentAdjustment?.x ?? 0),
-                y: y + (currentAdjustment?.y ?? 0),
+                y: y + (currentAdjustment?.y ?? 0) + statusBarOffset,
                 width: width + (currentAdjustment?.width ?? 0),
                 height: height + (currentAdjustment?.height ?? 0),
               };
@@ -252,7 +259,6 @@ const styles = StyleSheet.create({
   },
   activeTarget: {
     zIndex: 30,
-    elevation: 30,
   },
   highlightHalo: {
     position: 'absolute',
@@ -263,6 +269,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.34,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
   },
 });

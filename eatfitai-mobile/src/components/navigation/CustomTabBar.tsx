@@ -114,6 +114,7 @@ const CommandButton = ({
   dockPose,
   colors,
   isHubOpen,
+  isOverlay = false,
 }: {
   command: CommandItem;
   isFocused: boolean;
@@ -121,17 +122,20 @@ const CommandButton = ({
   dockPose: MoChiPoseKey;
   isHubOpen: boolean;
   colors: { primary: string; onPrimary: string; textMuted: string; bg: string };
+  isOverlay?: boolean;
 }) => {
   const scale = useSharedValue(1);
   const activeProgress = useSharedValue(isFocused ? 1 : 0);
   const hubProgress = useSharedValue(isHubOpen ? 1 : 0);
   const { currentStep, notifyTargetActivated, phase } = useMoChiTutorial();
   const tutorialTargetId: MoChiTutorialTargetId | null =
-    command.target === 'MoChiHub'
-      ? 'mochi_hub'
-      : command.target === 'StatsTab'
-        ? 'stats_tab'
-        : null;
+    isOverlay
+      ? null
+      : command.target === 'MoChiHub'
+        ? 'mochi_hub'
+        : command.target === 'StatsTab'
+          ? 'stats_tab'
+          : null;
   const isTutorialTargetActive =
     phase === 'spotlight' && currentStep?.targetId === tutorialTargetId;
   const anim = useAnimatedStyle(() => ({
@@ -259,7 +263,7 @@ const CommandButton = ({
           highlightProfile={command.isPrimary ? 'dock' : 'tab'}
           style={command.isPrimary ? styles.primaryDock : undefined}
           showHalo={!command.isPrimary}
-          measureAdjustment={command.isPrimary ? { y: 36 } : undefined}
+          measureAdjustment={command.isPrimary ? { y: 0 } : undefined}
           onTutorialActivate={handleTutorialActivate}
         >
           {inner}
@@ -413,6 +417,7 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({
               isHubOpen={isHubVisible}
               isFocused={current === command.target}
               onPress={() => runCommand(command)}
+              isOverlay={isOverlay}
             />
           ))}
         </View>

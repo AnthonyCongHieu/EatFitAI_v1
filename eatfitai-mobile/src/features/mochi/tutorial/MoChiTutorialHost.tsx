@@ -13,6 +13,7 @@ import Svg, {
   Circle,
   Defs,
   Mask,
+  Path,
   RadialGradient,
   Rect,
   Stop,
@@ -80,6 +81,20 @@ const SkipButton = ({
   </Pressable>
 );
 
+const getRoundedRectPath = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): string => {
+  const r = Math.min(radius, width / 2, height / 2);
+  if (r <= 0) {
+    return `M ${x} ${y} h ${width} v ${height} h ${-width} Z`;
+  }
+  return `M ${x + r} ${y} h ${width - 2 * r} a ${r} ${r} 0 0 1 ${r} ${r} v ${height - 2 * r} a ${r} ${r} 0 0 1 ${-r} ${r} h ${-(width - 2 * r)} a ${r} ${r} 0 0 1 ${-r} ${-r} v ${-(height - 2 * r)} a ${r} ${r} 0 0 1 ${r} ${-r} Z`;
+};
+
 const SpotlightMask = ({
   ring,
   screenWidth,
@@ -139,13 +154,14 @@ const SpotlightMask = ({
               fill={maskFeather > 0 ? 'url(#mochiTutorialSpotlightFeather)' : 'black'}
             />
           ) : (
-            <Rect
-              x={ring.left}
-              y={ring.top}
-              width={ring.width}
-              height={ring.height}
-              rx={ring.borderRadius}
-              ry={ring.borderRadius}
+            <Path
+              d={getRoundedRectPath(
+                ring.left,
+                ring.top,
+                ring.width,
+                ring.height,
+                ring.borderRadius,
+              )}
               fill="black"
             />
           )}
@@ -410,12 +426,26 @@ const MoChiTutorialHost = ({
   } = useMoChiTutorial();
   const [targetFrame, setTargetFrame] = useState<MoChiTutorialFrame | null>(null);
   const [coachCardHeight, setCoachCardHeight] = useState(DEFAULT_COACH_CARD_HEIGHT);
+  const [hasReachedDestination, setHasReachedDestination] = useState(false);
+
+  useEffect(() => {
+    if (phase !== 'transition') {
+      setHasReachedDestination(false);
+      return;
+    }
+    if (currentStep?.destinationRouteName && currentRouteName === currentStep.destinationRouteName) {
+      setHasReachedDestination(true);
+    }
+  }, [phase, currentRouteName, currentStep]);
 
   useEffect(() => {
     if (phase === 'transition' && currentRouteName && TAB_ROUTE_NAMES.has(currentRouteName)) {
-      continueFromTransition();
+      const hasDestination = !!currentStep?.destinationRouteName;
+      if (!hasDestination || hasReachedDestination) {
+        continueFromTransition();
+      }
     }
-  }, [phase, currentRouteName, continueFromTransition]);
+  }, [phase, currentRouteName, currentStep, hasReachedDestination, continueFromTransition]);
 
   useEffect(() => {
     if (
@@ -712,7 +742,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.38,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
   },
   centerStage: {
     flex: 1,

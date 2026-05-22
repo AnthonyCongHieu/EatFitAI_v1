@@ -107,8 +107,8 @@ const SPOTLIGHT_PROFILES: Record<
     insets: { top: 2, right: 2, bottom: 2, left: 2 },
   },
   homeWater: {
-    radius: 22,
-    insets: { top: 5, right: 5, bottom: 5, left: 5 },
+    radius: 26,
+    insets: { top: 3, right: 3, bottom: 3, left: 3 },
   },
 };
 
@@ -168,7 +168,12 @@ export const getMoChiTutorialSpotlightLayout = ({
   ringLeft = clamp(ringLeft, minRingLeft, maxRingLeft);
 
   const minRingTopVal = minRingTop;
-  const dockBottomOverflow = highlightProfile === 'dock' ? 72 : 0;
+  const dockBottomOverflow =
+    highlightProfile === 'dock'
+      ? 72
+      : highlightProfile === 'tab'
+        ? 48
+        : 0;
   const maxRingTopVal = Math.max(
     minRingTopVal,
     screenHeight - bottomInset - 10 + dockBottomOverflow - ringHeight,
