@@ -177,7 +177,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             {
                 Label = "canh",
                 FoodItemId = 910,
-                MinConfidence = 0.60m,
+                MinConfidence = 0.75m,
                 CreatedAt = DateTime.UtcNow
             });
             await _context.SaveChangesAsync();
@@ -194,6 +194,85 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal("Canh", item.FoodName);
             Assert.True(item.TrustSummary?.NeedsReview);
             Assert.Equal("Ước tính", item.TrustSummary?.Label);
+        }
+
+        [Fact]
+        public async Task MapDetectionsAsync_GenericLabelBelowProductionThresholdIsUnmatched()
+        {
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 912,
+                FoodName = "Canh",
+                FoodNameUnsigned = "canh",
+                CaloriesPer100g = 35,
+                ProteinPer100g = 1.5m,
+                CarbPer100g = 5,
+                FatPer100g = 1,
+                IsActive = true,
+                IsDeleted = false,
+                CredibilityScore = 50,
+                NutrientCompletenessScore = 100,
+                VerificationStatus = "generic_estimate"
+            });
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "canh",
+                FoodItemId = 912,
+                MinConfidence = 0.60m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "canh", Confidence = 0.70f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Null(item.FoodItemId);
+            Assert.False(item.IsMatched);
+            Assert.True(item.RequiresUserConfirmation);
+        }
+
+        [Fact]
+        public async Task MapDetectionsAsync_ExactLabelDoesNotMapInactiveTarget()
+        {
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 913,
+                FoodName = "Rice inactive",
+                FoodNameUnsigned = "rice",
+                CaloriesPer100g = 130,
+                ProteinPer100g = 2.7m,
+                CarbPer100g = 28,
+                FatPer100g = 0.3m,
+                IsActive = false,
+                IsDeleted = false,
+                CredibilityScore = 95,
+                NutrientCompletenessScore = 100,
+                VerificationStatus = "trusted_reference"
+            });
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "rice",
+                FoodItemId = 913,
+                MinConfidence = 0.60m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "rice", Confidence = 0.95f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Null(item.FoodItemId);
+            Assert.False(item.IsMatched);
         }
 
         [Fact]
@@ -350,7 +429,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
-        public async Task MapDetectionsAsync_AllowsSeededYoloRecoveryLabelBelowCatalogThreshold()
+        public async Task MapDetectionsAsync_BlocksSeededLabelBelowProductionThreshold()
         {
             _context.FoodItems.Add(new FoodItem
             {
@@ -382,9 +461,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             });
 
             var item = Assert.Single(mapped);
-            Assert.Equal(505, item.FoodItemId);
-            Assert.Equal("Beef", item.FoodName);
-            Assert.True(item.IsMatched);
+            Assert.Null(item.FoodItemId);
+            Assert.False(item.IsMatched);
         }
 
         [Fact]

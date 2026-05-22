@@ -194,7 +194,7 @@ public static class AiVisionLabelCatalog
         string[] aliases,
         decimal minConfidence = 0.60m,
         bool isGeneric = false) =>
-        new(label, displayNameVi, aliases, minConfidence, isGeneric);
+        new(label, displayNameVi, aliases, isGeneric ? Math.Max(minConfidence, 0.75m) : minConfidence, isGeneric);
 
     private static string? ResolveSeedFilePath(string? contentRootPath)
     {

@@ -330,7 +330,7 @@ public static class ScanDemoReliabilitySeeder
         {
             var mealType = mealTypes.FirstOrDefault(item => item.Name == seed.MealTypeName)
                 ?? throw new InvalidOperationException($"Missing meal type '{seed.MealTypeName}'.");
-            var foodItem = foodItems.FirstOrDefault(item => item.FoodName == seed.FoodName)
+            var foodItem = FindFoodItemBySeedName(foodItems, seed.FoodName)
                 ?? throw new InvalidOperationException($"Missing food item '{seed.FoodName}'.");
             var servingUnit = servingUnits.FirstOrDefault(item => item.Name == seed.ServingUnitName)
                 ?? throw new InvalidOperationException($"Missing serving unit '{seed.ServingUnitName}'.");
@@ -404,8 +404,33 @@ public static class ScanDemoReliabilitySeeder
     }
 
     private static int GetFoodItemId(IReadOnlyList<Db.FoodItem> foodItems, string foodName) =>
-        foodItems.FirstOrDefault(item => item.FoodName == foodName)?.FoodItemId
+        FindFoodItemBySeedName(foodItems, foodName)?.FoodItemId
         ?? throw new InvalidOperationException($"Missing food item '{foodName}'.");
+
+    private static Db.FoodItem? FindFoodItemBySeedName(IReadOnlyList<Db.FoodItem> foodItems, string foodName)
+    {
+        var canonicalName = LegacyFoodNameAliases.TryGetValue(foodName, out var mappedName)
+            ? mappedName
+            : foodName;
+
+        return foodItems.FirstOrDefault(item =>
+            item.FoodName == canonicalName ||
+            item.FoodNameEn == foodName);
+    }
+
+    private static readonly Dictionary<string, string> LegacyFoodNameAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Chicken Breast"] = "Ức gà (luộc)",
+        ["Brown Rice"] = "Cơm gạo lứt (chín)",
+        ["Broccoli"] = "Bông cải xanh",
+        ["Banana"] = "Chuối (tươi)",
+        ["Greek Yogurt"] = "Sữa chua Hy Lạp không béo",
+        ["Almonds"] = "Hạt hạnh nhân",
+        ["Salmon"] = "Cá hồi (sống)",
+        ["Sweet Potato"] = "Khoai lang",
+        ["Spinach"] = "Rau chân vịt",
+        ["Egg"] = "Trứng",
+    };
 
     private static DateTime CreateTimestamp(DateOnly eatenDate, string mealTypeName)
     {

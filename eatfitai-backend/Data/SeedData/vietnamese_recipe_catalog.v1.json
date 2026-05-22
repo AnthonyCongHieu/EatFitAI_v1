@@ -337,7 +337,7 @@
   {
     "slug": "chao-long",
     "recipeName": "Cháo lòng",
-    "description": "Công thức gợi ý cho Cháo lòng, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Cháo lòng, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -355,6 +355,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Cháo lòng"
+        ],
+        "grams": 428.4,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -372,7 +380,7 @@
   {
     "slug": "sup-cua",
     "recipeName": "Súp cua",
-    "description": "Công thức gợi ý cho Súp cua, dùng nguyên liệu chính: cua, hành lá.",
+    "description": "Công thức gợi ý cho Súp cua, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -390,6 +398,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Súp cua"
+        ],
+        "grams": 152.3,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -407,7 +423,7 @@
   {
     "slug": "canh-bi-do",
     "recipeName": "Canh bí đỏ",
-    "description": "Công thức gợi ý cho Canh bí đỏ, dùng nguyên liệu chính: bí đỏ, hành lá.",
+    "description": "Công thức gợi ý cho Canh bí đỏ, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -425,6 +441,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Canh bí đỏ"
+        ],
+        "grams": 220.0,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -442,7 +466,7 @@
   {
     "slug": "canh-khoai-mo-tim",
     "recipeName": "Canh khoai mỡ tím",
-    "description": "Công thức gợi ý cho Canh khoai mỡ tím, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Canh khoai mỡ tím, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/canh-khoai-mo-tim.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -460,6 +484,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Canh khoai mỡ tím"
+        ],
+        "grams": 440.4,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -552,7 +584,7 @@
   {
     "slug": "canh-bau",
     "recipeName": "Canh bầu",
-    "description": "Công thức gợi ý cho Canh bầu, dùng nguyên liệu chính: bầu, hành lá.",
+    "description": "Công thức gợi ý cho Canh bầu, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/canh-bau.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -570,6 +602,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Canh bầu"
+        ],
+        "grams": 401.4,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -587,7 +627,7 @@
   {
     "slug": "canh-rau-muong",
     "recipeName": "Canh rau muống",
-    "description": "Công thức gợi ý cho Canh rau muống, dùng nguyên liệu chính: rau muống, hành lá.",
+    "description": "Công thức gợi ý cho Canh rau muống, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/canh-rau-muong.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -605,6 +645,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Canh rau muống"
+        ],
+        "grams": 396.3,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -622,7 +670,7 @@
   {
     "slug": "canh-cai-thao",
     "recipeName": "Canh cải thảo",
-    "description": "Công thức gợi ý cho Canh cải thảo, dùng nguyên liệu chính: cải thảo/bắp cải, hành lá.",
+    "description": "Công thức gợi ý cho Canh cải thảo, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/canh-cai-thao.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -640,6 +688,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Canh cải thảo"
+        ],
+        "grams": 382.5,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -692,7 +748,7 @@
   {
     "slug": "canh-xuong-ham-cu-cai",
     "recipeName": "Canh xương hầm củ cải",
-    "description": "Công thức gợi ý cho Canh xương hầm củ cải, dùng nguyên liệu chính: củ cải, hành lá.",
+    "description": "Công thức gợi ý cho Canh xương hầm củ cải, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/canh-xuong-ham-cu-cai.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Dễ",
@@ -710,6 +766,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Canh xương hầm củ cải"
+        ],
+        "grams": 400.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -762,7 +826,7 @@
   {
     "slug": "lau-hai-san",
     "recipeName": "Lẩu hải sản",
-    "description": "Công thức gợi ý cho Lẩu hải sản, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Lẩu hải sản, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/lau-hai-san.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -780,6 +844,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Lẩu hải sản"
+        ],
+        "grams": 530.7,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -867,7 +939,7 @@
   {
     "slug": "lau-nam",
     "recipeName": "Lẩu nấm",
-    "description": "Công thức gợi ý cho Lẩu nấm, dùng nguyên liệu chính: nấm, hành lá.",
+    "description": "Công thức gợi ý cho Lẩu nấm, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/lau-nam.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -885,6 +957,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Lẩu nấm"
+        ],
+        "grams": 515.5,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -937,7 +1017,7 @@
   {
     "slug": "lau-chua-cay-sa-ot",
     "recipeName": "Lẩu chua cay sả ớt",
-    "description": "Công thức gợi ý cho Lẩu chua cay sả ớt, dùng nguyên liệu chính: sả, ớt.",
+    "description": "Công thức gợi ý cho Lẩu chua cay sả ớt, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/lau-chua-cay-sa-ot.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -955,6 +1035,14 @@
           "chili"
         ],
         "grams": 6
+      },
+      {
+        "keys": [
+          "Lẩu chua cay sả ớt"
+        ],
+        "grams": 535.0,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -2352,7 +2440,7 @@
   {
     "slug": "dau-hu-kho-nam",
     "recipeName": "Đậu hũ kho nấm",
-    "description": "Công thức gợi ý cho Đậu hũ kho nấm, dùng nguyên liệu chính: đậu hũ, nấm.",
+    "description": "Công thức gợi ý cho Đậu hũ kho nấm, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/dau-hu-kho-nam.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -2370,6 +2458,14 @@
           "mushroom"
         ],
         "grams": 120
+      },
+      {
+        "keys": [
+          "Đậu hũ kho nấm"
+        ],
+        "grams": 212.9,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -2463,7 +2559,7 @@
   {
     "slug": "bot-chien",
     "recipeName": "Bột chiên",
-    "description": "Công thức gợi ý cho Bột chiên, dùng nguyên liệu chính: tỏi, ớt.",
+    "description": "Công thức gợi ý cho Bột chiên, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -2481,6 +2577,14 @@
           "chili"
         ],
         "grams": 6
+      },
+      {
+        "keys": [
+          "Bột chiên"
+        ],
+        "grams": 274.2,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -2498,7 +2602,7 @@
   {
     "slug": "banh-xeo",
     "recipeName": "Bánh xèo",
-    "description": "Công thức gợi ý cho Bánh xèo, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh xèo, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -2516,6 +2620,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh xèo"
+        ],
+        "grams": 211.3,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -2533,7 +2645,7 @@
   {
     "slug": "banh-khot",
     "recipeName": "Bánh khọt",
-    "description": "Công thức gợi ý cho Bánh khọt, dùng nguyên liệu chính: ớt, hành lá.",
+    "description": "Công thức gợi ý cho Bánh khọt, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -2551,6 +2663,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Bánh khọt"
+        ],
+        "grams": 216.2,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -2568,7 +2688,7 @@
   {
     "slug": "cha-gio",
     "recipeName": "Chả giò",
-    "description": "Công thức gợi ý cho Chả giò, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Chả giò, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -2586,6 +2706,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Chả giò"
+        ],
+        "grams": 48.6,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -2805,7 +2933,7 @@
   {
     "slug": "rau-muong-xao-toi",
     "recipeName": "Rau muống xào tỏi",
-    "description": "Công thức gợi ý cho Rau muống xào tỏi, dùng nguyên liệu chính: rau muống, sả, tỏi.",
+    "description": "Công thức gợi ý cho Rau muống xào tỏi, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/rau-muong-xao-toi.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -2829,6 +2957,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Rau muống xào tỏi"
+        ],
+        "grams": 275.1,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -2846,7 +2982,7 @@
   {
     "slug": "cai-thia-xao-nam",
     "recipeName": "Cải thìa xào nấm",
-    "description": "Công thức gợi ý cho Cải thìa xào nấm, dùng nguyên liệu chính: cải thìa, nấm, sả.",
+    "description": "Công thức gợi ý cho Cải thìa xào nấm, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/cai-thia-xao-nam.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -2876,6 +3012,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Cải thìa xào nấm"
+        ],
+        "grams": 266.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3239,7 +3383,7 @@
   {
     "slug": "khoai-lang-chien",
     "recipeName": "Khoai lang chiên",
-    "description": "Công thức gợi ý cho Khoai lang chiên, dùng nguyên liệu chính: khoai lang, tỏi.",
+    "description": "Công thức gợi ý cho Khoai lang chiên, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/khoai-lang-chien.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -3257,6 +3401,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Khoai lang chiên"
+        ],
+        "grams": 228.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3274,7 +3426,7 @@
   {
     "slug": "khoai-tay-chien",
     "recipeName": "Khoai tây chiên",
-    "description": "Công thức gợi ý cho Khoai tây chiên, dùng nguyên liệu chính: khoai tây, tỏi.",
+    "description": "Công thức gợi ý cho Khoai tây chiên, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/khoai-tay-chien.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -3292,6 +3444,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Khoai tây chiên"
+        ],
+        "grams": 250.3,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3309,7 +3469,7 @@
   {
     "slug": "dau-hu-chien-sa",
     "recipeName": "Đậu hũ chiên sả",
-    "description": "Công thức gợi ý cho Đậu hũ chiên sả, dùng nguyên liệu chính: đậu hũ, tỏi.",
+    "description": "Công thức gợi ý cho Đậu hũ chiên sả, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/dau-hu-chien-sa.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3327,6 +3487,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Đậu hũ chiên sả"
+        ],
+        "grams": 229.7,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3344,7 +3512,7 @@
   {
     "slug": "goi-cuon",
     "recipeName": "Gỏi cuốn",
-    "description": "Công thức gợi ý cho Gỏi cuốn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "description": "Công thức gợi ý cho Gỏi cuốn, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3362,6 +3530,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Gỏi cuốn"
+        ],
+        "grams": 97.7,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3379,7 +3555,7 @@
   {
     "slug": "banh-cuon",
     "recipeName": "Bánh cuốn",
-    "description": "Công thức gợi ý cho Bánh cuốn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "description": "Công thức gợi ý cho Bánh cuốn, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -3397,6 +3573,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Bánh cuốn"
+        ],
+        "grams": 154.6,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3525,7 +3709,7 @@
   {
     "slug": "tom-hap-sa",
     "recipeName": "Tôm hấp sả",
-    "description": "Công thức gợi ý cho Tôm hấp sả, dùng nguyên liệu chính: tôm, hành lá.",
+    "description": "Công thức gợi ý cho Tôm hấp sả, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/tom-hap-sa.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3543,6 +3727,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Tôm hấp sả"
+        ],
+        "grams": 187.4,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3560,7 +3752,7 @@
   {
     "slug": "rau-cu-hap",
     "recipeName": "Rau củ hấp",
-    "description": "Công thức gợi ý cho Rau củ hấp, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "description": "Công thức gợi ý cho Rau củ hấp, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/rau-cu-hap.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3578,6 +3770,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Rau củ hấp"
+        ],
+        "grams": 259.6,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3770,7 +3970,7 @@
   {
     "slug": "tom-nuong-muoi-ot",
     "recipeName": "Tôm nướng muối ớt",
-    "description": "Công thức gợi ý cho Tôm nướng muối ớt, dùng nguyên liệu chính: tôm, ớt.",
+    "description": "Công thức gợi ý cho Tôm nướng muối ớt, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/tom-nuong-muoi-ot.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3788,6 +3988,14 @@
           "chili"
         ],
         "grams": 6
+      },
+      {
+        "keys": [
+          "Tôm nướng muối ớt"
+        ],
+        "grams": 229.1,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3916,7 +4124,7 @@
   {
     "slug": "rau-cu-nuong",
     "recipeName": "Rau củ nướng",
-    "description": "Công thức gợi ý cho Rau củ nướng, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "description": "Công thức gợi ý cho Rau củ nướng, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/rau-cu-nuong.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3934,6 +4142,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Rau củ nướng"
+        ],
+        "grams": 275.5,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3951,7 +4167,7 @@
   {
     "slug": "bap-xao-mo-hanh",
     "recipeName": "Bắp xào mỡ hành",
-    "description": "Công thức gợi ý cho Bắp xào mỡ hành, dùng nguyên liệu chính: bắp, hành lá.",
+    "description": "Công thức gợi ý cho Bắp xào mỡ hành, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/bap-xao-mo-hanh.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3969,6 +4185,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Bắp xào mỡ hành"
+        ],
+        "grams": 244.6,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -3990,7 +4214,7 @@
   {
     "slug": "dau-hu-sot-ca-chua",
     "recipeName": "Đậu hũ sốt cà chua",
-    "description": "Công thức gợi ý cho Đậu hũ sốt cà chua, dùng nguyên liệu chính: cá, đậu hũ, cà chua.",
+    "description": "Công thức gợi ý cho Đậu hũ sốt cà chua, dùng nguyên liệu chính: đậu hũ, cà chua.",
     "imageKey": "recipe-images/v1/thumb/dau-hu-sot-ca-chua.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -3999,21 +4223,21 @@
     "ingredients": [
       {
         "keys": [
-          "fish"
-        ],
-        "grams": 180
-      },
-      {
-        "keys": [
           "tofu"
         ],
-        "grams": 160
+        "grams": 220
       },
       {
         "keys": [
           "tomato"
         ],
-        "grams": 100
+        "grams": 140
+      },
+      {
+        "keys": [
+          "green_onion"
+        ],
+        "grams": 10
       },
       {
         "keys": [
@@ -4084,7 +4308,7 @@
   {
     "slug": "rau-cu-luoc-cham-nuoc-mam",
     "recipeName": "Rau củ luộc chấm nước mắm",
-    "description": "Công thức gợi ý cho Rau củ luộc chấm nước mắm, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "description": "Công thức gợi ý cho Rau củ luộc chấm nước mắm, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/rau-cu-luoc-cham-nuoc-mam.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Dễ",
@@ -4102,6 +4326,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Rau củ luộc chấm nước mắm"
+        ],
+        "grams": 263.3,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4119,7 +4351,7 @@
   {
     "slug": "canh-rau-cu",
     "recipeName": "Canh rau củ",
-    "description": "Công thức gợi ý cho Canh rau củ, dùng nguyên liệu chính: nấm, bông cải xanh.",
+    "description": "Công thức gợi ý cho Canh rau củ, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/canh-rau-cu.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -4137,6 +4369,14 @@
           "broccoli"
         ],
         "grams": 100
+      },
+      {
+        "keys": [
+          "Canh rau củ"
+        ],
+        "grams": 378.9,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4275,7 +4515,7 @@
   {
     "slug": "bi-do-ham-nam",
     "recipeName": "Bí đỏ hầm nấm",
-    "description": "Công thức gợi ý cho Bí đỏ hầm nấm, dùng nguyên liệu chính: bí đỏ, nấm.",
+    "description": "Công thức gợi ý cho Bí đỏ hầm nấm, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/bi-do-ham-nam.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Dễ",
@@ -4293,6 +4533,14 @@
           "mushroom"
         ],
         "grams": 120
+      },
+      {
+        "keys": [
+          "Bí đỏ hầm nấm"
+        ],
+        "grams": 243.7,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4310,7 +4558,7 @@
   {
     "slug": "khoai-lang-hap",
     "recipeName": "Khoai lang hấp",
-    "description": "Công thức gợi ý cho Khoai lang hấp, dùng nguyên liệu chính: khoai lang, hành lá.",
+    "description": "Công thức gợi ý cho Khoai lang hấp, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/khoai-lang-hap.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -4328,6 +4576,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Khoai lang hấp"
+        ],
+        "grams": 180.0,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4345,7 +4601,7 @@
   {
     "slug": "banh-beo",
     "recipeName": "Bánh bèo",
-    "description": "Công thức gợi ý cho Bánh bèo, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh bèo, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4363,6 +4619,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh bèo"
+        ],
+        "grams": 207.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4380,7 +4644,7 @@
   {
     "slug": "banh-bo",
     "recipeName": "Bánh bò",
-    "description": "Công thức gợi ý cho Bánh bò, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh bò, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4398,6 +4662,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh bò"
+        ],
+        "grams": 72.5,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4415,7 +4687,7 @@
   {
     "slug": "banh-bot-loc",
     "recipeName": "Bánh bột lọc",
-    "description": "Công thức gợi ý cho Bánh bột lọc, dùng nguyên liệu chính: ớt, hành lá.",
+    "description": "Công thức gợi ý cho Bánh bột lọc, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4433,6 +4705,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Bánh bột lọc"
+        ],
+        "grams": 195.2,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4450,7 +4730,7 @@
   {
     "slug": "banh-can",
     "recipeName": "Bánh căn",
-    "description": "Công thức gợi ý cho Bánh căn, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh căn, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4468,6 +4748,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh căn"
+        ],
+        "grams": 209.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4485,7 +4773,7 @@
   {
     "slug": "banh-canh",
     "recipeName": "Bánh canh",
-    "description": "Công thức gợi ý cho Bánh canh, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh canh, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4503,6 +4791,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh canh"
+        ],
+        "grams": 482.6,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4520,7 +4816,7 @@
   {
     "slug": "banh-chung",
     "recipeName": "Bánh chưng",
-    "description": "Công thức gợi ý cho Bánh chưng, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh chưng, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4538,6 +4834,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh chưng"
+        ],
+        "grams": 171.7,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4555,7 +4859,7 @@
   {
     "slug": "banh-cong",
     "recipeName": "Bánh cống",
-    "description": "Công thức gợi ý cho Bánh cống, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh cống, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4573,6 +4877,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh cống"
+        ],
+        "grams": 113.0,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4590,7 +4902,7 @@
   {
     "slug": "banh-da-lon",
     "recipeName": "Bánh da lợn",
-    "description": "Công thức gợi ý cho Bánh da lợn, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh da lợn, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4608,6 +4920,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh da lợn"
+        ],
+        "grams": 83.1,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4625,7 +4945,7 @@
   {
     "slug": "banh-duc",
     "recipeName": "Bánh đúc",
-    "description": "Công thức gợi ý cho Bánh đúc, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh đúc, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4643,6 +4963,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh đúc"
+        ],
+        "grams": 207.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4660,7 +4988,7 @@
   {
     "slug": "banh-tet",
     "recipeName": "Bánh tét",
-    "description": "Công thức gợi ý cho Bánh tét, dùng nguyên liệu chính: hành lá, tỏi.",
+    "description": "Công thức gợi ý cho Bánh tét, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4678,6 +5006,14 @@
           "garlic"
         ],
         "grams": 8
+      },
+      {
+        "keys": [
+          "Bánh tét"
+        ],
+        "grams": 112.0,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4695,7 +5031,7 @@
   {
     "slug": "banh-trang-tron",
     "recipeName": "Bánh tráng trộn",
-    "description": "Công thức gợi ý cho Bánh tráng trộn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "description": "Công thức gợi ý cho Bánh tráng trộn, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": null,
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4713,6 +5049,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Bánh tráng trộn"
+        ],
+        "grams": 127.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4730,7 +5074,7 @@
   {
     "slug": "banh-trang-cuon",
     "recipeName": "Bánh tráng cuốn",
-    "description": "Công thức gợi ý cho Bánh tráng cuốn, dùng nguyên liệu chính: bánh tráng, hành lá.",
+    "description": "Công thức gợi ý cho Bánh tráng cuốn, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/banh-trang-cuon.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Trung bình",
@@ -4748,6 +5092,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Bánh tráng cuốn"
+        ],
+        "grams": 63.5,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4765,7 +5117,7 @@
   {
     "slug": "donut-me-rong-ruot",
     "recipeName": "Donut mè rỗng ruột",
-    "description": "Công thức gợi ý cho Donut mè rỗng ruột, dùng nguyên liệu chính: ớt, hành lá.",
+    "description": "Công thức gợi ý cho Donut mè rỗng ruột, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/donut-me-rong-ruot.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -4783,6 +5135,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Donut mè rỗng ruột"
+        ],
+        "grams": 116.4,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -4946,7 +5306,7 @@
   {
     "slug": "goi-bap-cai",
     "recipeName": "Gỏi bắp cải",
-    "description": "Công thức gợi ý cho Gỏi bắp cải, dùng nguyên liệu chính: cải thảo/bắp cải, bắp.",
+    "description": "Công thức gợi ý cho Gỏi bắp cải, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/goi-bap-cai.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -4964,6 +5324,14 @@
           "corn"
         ],
         "grams": 100
+      },
+      {
+        "keys": [
+          "Gỏi bắp cải"
+        ],
+        "grams": 159.5,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -5028,7 +5396,7 @@
   {
     "slug": "salad-rau-cu",
     "recipeName": "Salad rau củ",
-    "description": "Công thức gợi ý cho Salad rau củ, dùng nguyên liệu chính: bông cải xanh, hành lá.",
+    "description": "Công thức gợi ý cho Salad rau củ, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/salad-rau-cu.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -5046,6 +5414,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Salad rau củ"
+        ],
+        "grams": 252.5,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -5098,7 +5474,7 @@
   {
     "slug": "goi-xoai-tom-kho",
     "recipeName": "Gỏi xoài tôm khô",
-    "description": "Công thức gợi ý cho Gỏi xoài tôm khô, dùng nguyên liệu chính: tôm, hành lá.",
+    "description": "Công thức gợi ý cho Gỏi xoài tôm khô, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/goi-xoai-tom-kho.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -5116,6 +5492,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Gỏi xoài tôm khô"
+        ],
+        "grams": 157.8,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -5168,7 +5552,7 @@
   {
     "slug": "salad-khoai-tay",
     "recipeName": "Salad khoai tây",
-    "description": "Công thức gợi ý cho Salad khoai tây, dùng nguyên liệu chính: khoai tây, hành lá.",
+    "description": "Công thức gợi ý cho Salad khoai tây, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/salad-khoai-tay.webp",
     "cookTimeMinutes": 35,
     "difficulty": "Trung bình",
@@ -5186,6 +5570,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Salad khoai tây"
+        ],
+        "grams": 196.0,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -5203,7 +5595,7 @@
   {
     "slug": "chao-ga",
     "recipeName": "Cháo gà",
-    "description": "Công thức gợi ý cho Cháo gà, dùng nguyên liệu chính: thịt gà, hành lá.",
+    "description": "Công thức gợi ý cho Cháo gà, dùng nguyên liệu chính: thịt gà, cơm, hành lá.",
     "imageKey": "recipe-images/v1/thumb/chao-ga.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -5214,7 +5606,13 @@
         "keys": [
           "chicken"
         ],
-        "grams": 150
+        "grams": 80
+      },
+      {
+        "keys": [
+          "rice"
+        ],
+        "grams": 120
       },
       {
         "keys": [
@@ -5238,7 +5636,7 @@
   {
     "slug": "tom-rim",
     "recipeName": "Tôm rim",
-    "description": "Công thức gợi ý cho Tôm rim, dùng nguyên liệu chính: tôm, hành lá.",
+    "description": "Công thức gợi ý cho Tôm rim, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/tom-rim.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -5256,6 +5654,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Tôm rim"
+        ],
+        "grams": 228.9,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [
@@ -5273,7 +5679,7 @@
   {
     "slug": "cua-soup",
     "recipeName": "Súp cua",
-    "description": "Công thức gợi ý cho Súp cua, dùng nguyên liệu chính: cua, hành lá.",
+    "description": "Công thức gợi ý cho Súp cua, dùng khẩu phần ước tính từ catalog món Việt để phản ánh năng lượng của món hoàn chỉnh; gia vị và topping có thể điều chỉnh theo khẩu vị.",
     "imageKey": "recipe-images/v1/thumb/cua-soup.webp",
     "cookTimeMinutes": 25,
     "difficulty": "Dễ",
@@ -5291,6 +5697,14 @@
           "green_onion"
         ],
         "grams": 20
+      },
+      {
+        "keys": [
+          "Súp cua"
+        ],
+        "grams": 152.3,
+        "nutritionProxy": true,
+        "source": "ai_vision_food_catalog.v1/vietnamese_food_catalog.v1 composite estimate"
       }
     ],
     "instructions": [

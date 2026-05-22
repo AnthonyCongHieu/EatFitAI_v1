@@ -585,6 +585,84 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Contains("không phải khuyến nghị của chuyên gia", result.Disclaimer);
         }
 
+        [Fact]
+        public async Task SuggestRecipesAsync_UsesNutritionProxyWithoutDisplayingItAsIngredient()
+        {
+            var chili = new FoodItem
+            {
+                FoodItemId = 10,
+                FoodName = "Ớt",
+                CaloriesPer100g = 40,
+                ProteinPer100g = 1.9m,
+                CarbPer100g = 9,
+                FatPer100g = 0.4m,
+                IsActive = true,
+                IsDeleted = false
+            };
+            var greenOnion = new FoodItem
+            {
+                FoodItemId = 11,
+                FoodName = "Hành lá",
+                CaloriesPer100g = 32,
+                ProteinPer100g = 1.8m,
+                CarbPer100g = 7.3m,
+                FatPer100g = 0.2m,
+                IsActive = true,
+                IsDeleted = false
+            };
+            var nutritionProxy = new FoodItem
+            {
+                FoodItemId = 12,
+                FoodName = "Bánh khọt",
+                CaloriesPer100g = 245,
+                ProteinPer100g = 6,
+                CarbPer100g = 38,
+                FatPer100g = 8,
+                VerificationStatus = "estimated",
+                IsActive = true,
+                IsDeleted = false
+            };
+            var recipe = new Recipe
+            {
+                RecipeId = 10,
+                RecipeName = "Bánh khọt",
+                Description = "Công thức dùng estimate món hoàn chỉnh",
+                ImageUrl = "recipe-images/v1/thumb/banh-khot.webp",
+                InstructionsJson = "[\"Sơ chế\", \"Nấu\", \"Hoàn thiện\"]",
+                SourceUrlsJson = "[\"https://monngonmoingay.com/cong-thuc-demo\"]",
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.FoodItems.AddRange(chili, greenOnion, nutritionProxy);
+            _context.Recipes.Add(recipe);
+            _context.RecipeIngredients.AddRange(
+                new RecipeIngredient { RecipeId = 10, FoodItemId = chili.FoodItemId, Grams = 6 },
+                new RecipeIngredient { RecipeId = 10, FoodItemId = greenOnion.FoodItemId, Grams = 20 },
+                new RecipeIngredient { RecipeId = 10, FoodItemId = nutritionProxy.FoodItemId, Grams = 116.4m });
+            await _context.SaveChangesAsync();
+
+            var suggestions = await _service.SuggestRecipesAsync(new RecipeSuggestionRequest
+            {
+                Mode = "ingredient_combo",
+                AvailableIngredients = new List<string> { "Ớt" },
+                MaxResults = 5
+            });
+
+            var suggestion = Assert.Single(suggestions);
+            Assert.Equal("Bánh khọt", suggestion.RecipeName);
+            Assert.InRange(suggestion.TotalCalories, 293m, 295m);
+            Assert.Equal(2, suggestion.TotalIngredientsCount);
+            Assert.DoesNotContain("Bánh khọt", suggestion.RequiredIngredients);
+
+            var detail = await _service.GetRecipeDetailAsync(recipe.RecipeId);
+            Assert.NotNull(detail);
+            Assert.InRange(detail!.TotalCalories, 293m, 295m);
+            Assert.DoesNotContain(detail.Ingredients, ingredient => ingredient.FoodName == "Bánh khọt");
+            Assert.DoesNotContain("Bánh khọt", detail.RequiredIngredients);
+        }
+
         private static RecipeCookingGuideDto BuildProductionGuide(int recipeId) => new()
         {
             RecipeId = recipeId,

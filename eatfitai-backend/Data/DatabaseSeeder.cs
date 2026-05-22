@@ -137,142 +137,56 @@ namespace EatFitAI.API.Data
 
         private static async Task SeedFoodItemsAsync(EatFitAIDbContext context)
         {
-            var foodItems = new[]
+            var now = DateTime.UtcNow;
+            var foodItems = new LegacyFoodSeed[]
             {
-                new FoodItem
-                {
-                    FoodName = "Chicken Breast",
-                    CaloriesPer100g = 165m,
-                    ProteinPer100g = 31m,
-                    CarbPer100g = 0m,
-                    FatPer100g = 3.6m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Brown Rice",
-                    CaloriesPer100g = 111m,
-                    ProteinPer100g = 2.6m,
-                    CarbPer100g = 23m,
-                    FatPer100g = 0.9m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Broccoli",
-                    CaloriesPer100g = 34m,
-                    ProteinPer100g = 2.8m,
-                    CarbPer100g = 7m,
-                    FatPer100g = 0.4m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Banana",
-                    CaloriesPer100g = 89m,
-                    ProteinPer100g = 1.1m,
-                    CarbPer100g = 23m,
-                    FatPer100g = 0.3m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Greek Yogurt",
-                    CaloriesPer100g = 59m,
-                    ProteinPer100g = 10m,
-                    CarbPer100g = 3.6m,
-                    FatPer100g = 0.4m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Almonds",
-                    CaloriesPer100g = 579m,
-                    ProteinPer100g = 21m,
-                    CarbPer100g = 22m,
-                    FatPer100g = 50m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Salmon",
-                    CaloriesPer100g = 208m,
-                    ProteinPer100g = 22m,
-                    CarbPer100g = 0m,
-                    FatPer100g = 13m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Sweet Potato",
-                    CaloriesPer100g = 86m,
-                    ProteinPer100g = 1.6m,
-                    CarbPer100g = 20m,
-                    FatPer100g = 0.1m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Spinach",
-                    CaloriesPer100g = 23m,
-                    ProteinPer100g = 2.9m,
-                    CarbPer100g = 3.6m,
-                    FatPer100g = 0.4m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new FoodItem
-                {
-                    FoodName = "Egg",
-                    CaloriesPer100g = 155m,
-                    ProteinPer100g = 13m,
-                    CarbPer100g = 1.1m,
-                    FatPer100g = 11m,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                }
+                new("Ức gà (luộc)", "Chicken breast (cooked)", 165m, 31m, 0m, 3.6m, ["Chicken Breast"]),
+                new("Cơm gạo lứt (chín)", "Brown rice (cooked)", 123m, 2.74m, 25.58m, 0.97m, ["Brown Rice"]),
+                new("Bông cải xanh", "Broccoli", 34m, 2.8m, 7m, 0.4m, ["Broccoli"]),
+                new("Chuối (tươi)", "Banana", 89m, 1.09m, 22.84m, 0.33m, ["Banana"]),
+                new("Sữa chua Hy Lạp không béo", "Greek yogurt (plain, nonfat)", 59m, 10.3m, 3.6m, 0.4m, ["Greek Yogurt"]),
+                new("Hạt hạnh nhân", "Almonds", 579m, 21.15m, 21.55m, 49.93m, ["Almonds"]),
+                new("Cá hồi (sống)", "Salmon (raw)", 208m, 20.42m, 0m, 13.42m, ["Salmon"]),
+                new("Khoai lang", "Sweet potato", 86m, 1.6m, 20m, 0.1m, ["Sweet Potato"]),
+                new("Rau chân vịt", "Spinach", 23m, 2.9m, 3.6m, 0.4m, ["Spinach"]),
+                new("Trứng", "Egg", 155m, 13m, 1.1m, 11m, ["Egg"])
             };
 
-            var existingNames = await context.FoodItems
-                .Where(f => !f.IsDeleted)
-                .Select(f => f.FoodName)
+            var activeFoodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
                 .ToListAsync();
 
             var toAdd = new List<FoodItem>();
-            foreach (var item in foodItems)
+            foreach (var seed in foodItems)
             {
-                if (!existingNames.Contains(item.FoodName, StringComparer.OrdinalIgnoreCase))
+                var existing = FindLegacySeedFood(seed, activeFoodItems);
+                if (existing == null)
                 {
-                    toAdd.Add(item);
+                    existing = new FoodItem
+                    {
+                        CreatedAt = now,
+                    };
+                    activeFoodItems.Add(existing);
+                    toAdd.Add(existing);
                 }
+
+                existing.FoodName = seed.FoodName;
+                existing.FoodNameEn = seed.FoodNameEn;
+                existing.FoodNameUnsigned = BuildLegacySeedSearchText(seed);
+                existing.CaloriesPer100g = seed.CaloriesPer100g;
+                existing.ProteinPer100g = seed.ProteinPer100g;
+                existing.CarbPer100g = seed.CarbPer100g;
+                existing.FatPer100g = seed.FatPer100g;
+                existing.IsActive = true;
+                existing.IsDeleted = false;
+                existing.IsVerified = true;
+                existing.VerifiedBy = "USDA FoodData Central reference";
+                existing.VerificationStatus = "verified_reference";
+                existing.CredibilityScore = 88;
+                existing.NutrientCompletenessScore = 100;
+                existing.MissingNutrients = null;
+                existing.LastReviewedAt = now;
+                existing.UpdatedAt = now;
             }
 
             if (toAdd.Count > 0)
@@ -282,11 +196,49 @@ namespace EatFitAI.API.Data
             }
         }
 
+        private sealed record LegacyFoodSeed(
+            string FoodName,
+            string FoodNameEn,
+            decimal CaloriesPer100g,
+            decimal ProteinPer100g,
+            decimal CarbPer100g,
+            decimal FatPer100g,
+            IReadOnlyList<string> Aliases);
+
+        private static FoodItem? FindLegacySeedFood(
+            LegacyFoodSeed seed,
+            IReadOnlyCollection<FoodItem> activeFoodItems)
+        {
+            var keys = BuildLegacySeedKeys(seed);
+            return activeFoodItems.FirstOrDefault(food =>
+                keys.Contains(NormalizeCatalogKey(food.FoodName)) ||
+                keys.Contains(NormalizeCatalogKey(food.FoodNameUnsigned)) ||
+                keys.Contains(NormalizeCatalogKey(food.FoodNameEn)));
+        }
+
+        private static string BuildLegacySeedSearchText(LegacyFoodSeed seed)
+        {
+            var normalized = BuildLegacySeedKeys(seed).ToList();
+            var searchText = string.Join(' ', normalized);
+            return searchText.Length <= 255 ? searchText : searchText[..255];
+        }
+
+        private static HashSet<string> BuildLegacySeedKeys(LegacyFoodSeed seed)
+        {
+            return new[] { seed.FoodName, seed.FoodNameEn }
+                .Concat(seed.Aliases)
+                .Select(NormalizeCatalogKey)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.Ordinal)
+                .ToHashSet(StringComparer.Ordinal);
+        }
+
         private static readonly string[] Yolo11mCleanV1Labels =
             AiVisionLabelCatalog.Entries.Select(entry => entry.Label).ToArray();
 
         private static async Task SeedAiLabelMapsAsync(EatFitAIDbContext context)
         {
+            var now = DateTime.UtcNow;
             var foodItems = await context.FoodItems
                 .Where(food => food.IsActive && !food.IsDeleted)
                 .ToListAsync();
@@ -449,7 +401,10 @@ namespace EatFitAI.API.Data
                 return;
             }
 
-            var foodItems = await context.FoodItems.ToListAsync();
+            var now = DateTime.UtcNow;
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
             foreach (var seed in seeds)
             {
                 var entry = AiVisionLabelCatalog.Find(seed.Label);
@@ -464,7 +419,7 @@ namespace EatFitAI.API.Data
                 {
                     food = new FoodItem
                     {
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = now,
                     };
                     foodItems.Add(food);
                     await context.FoodItems.AddAsync(food);
@@ -488,7 +443,8 @@ namespace EatFitAI.API.Data
                 food.CredibilityScore = seed.CredibilityScore;
                 food.NutrientCompletenessScore = seed.NutrientCompletenessScore;
                 food.MissingNutrients = FoodTrustBuilder.SerializeMissingNutrients(seed.MissingNutrients);
-                food.UpdatedAt = DateTime.UtcNow;
+                food.LastReviewedAt = now;
+                food.UpdatedAt = now;
             }
 
             await context.SaveChangesAsync();
@@ -535,6 +491,7 @@ namespace EatFitAI.API.Data
             }
 
             var servingUnits = await context.ServingUnits.ToListAsync();
+            var now = DateTime.UtcNow;
             var foodItems = await context.FoodItems
                 .Where(food => food.IsActive && !food.IsDeleted)
                 .ToListAsync();
@@ -582,7 +539,10 @@ namespace EatFitAI.API.Data
                 return;
             }
 
-            var foodItems = await context.FoodItems.ToListAsync();
+            var now = DateTime.UtcNow;
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
             foreach (var seed in seeds)
             {
                 var food = FindVietnameseCatalogFood(seed, foodItems);
@@ -592,7 +552,7 @@ namespace EatFitAI.API.Data
                 {
                     food = new FoodItem
                     {
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = now,
                     };
                     foodItems.Add(food);
                     await context.FoodItems.AddAsync(food);
@@ -622,11 +582,13 @@ namespace EatFitAI.API.Data
                     food.CredibilityScore = seed.CredibilityScore;
                     food.NutrientCompletenessScore = seed.NutrientCompletenessScore;
                     food.MissingNutrients = FoodTrustBuilder.SerializeMissingNutrients(seed.MissingNutrients);
+                    food.LastReviewedAt = now;
                 }
 
                 food.IsActive = true;
                 food.IsDeleted = false;
-                food.UpdatedAt = DateTime.UtcNow;
+                food.LastReviewedAt ??= now;
+                food.UpdatedAt = now;
             }
 
             await context.SaveChangesAsync();
@@ -716,7 +678,9 @@ namespace EatFitAI.API.Data
 
             if (gramUnit == null || cupUnit == null || pieceUnit == null || tablespoonUnit == null) return;
 
-            var foodItems = await context.FoodItems.ToListAsync();
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
             var existingServings = await context.FoodServings.ToListAsync();
 
             var foodServings = new List<FoodServing>();
@@ -737,7 +701,7 @@ namespace EatFitAI.API.Data
                 // Add specific servings based on food type
                 switch (foodItem.FoodName)
                 {
-                    case "Chicken Breast":
+                    case "Ức gà (luộc)":
                         if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == pieceUnit.ServingUnitId))
                         {
                             foodServings.Add(new FoodServing
@@ -748,7 +712,7 @@ namespace EatFitAI.API.Data
                             });
                         }
                         break;
-                    case "Brown Rice":
+                    case "Cơm gạo lứt (chín)":
                         if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == cupUnit.ServingUnitId))
                         {
                             foodServings.Add(new FoodServing
@@ -759,7 +723,7 @@ namespace EatFitAI.API.Data
                             });
                         }
                         break;
-                    case "Banana":
+                    case "Chuối (tươi)":
                         if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == pieceUnit.ServingUnitId))
                         {
                             foodServings.Add(new FoodServing
@@ -770,7 +734,7 @@ namespace EatFitAI.API.Data
                             });
                         }
                         break;
-                    case "Greek Yogurt":
+                    case "Sữa chua Hy Lạp không béo":
                         if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == cupUnit.ServingUnitId))
                         {
                             foodServings.Add(new FoodServing
@@ -781,7 +745,7 @@ namespace EatFitAI.API.Data
                             });
                         }
                         break;
-                    case "Almonds":
+                    case "Hạt hạnh nhân":
                         if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == tablespoonUnit.ServingUnitId))
                         {
                             foodServings.Add(new FoodServing
@@ -792,7 +756,7 @@ namespace EatFitAI.API.Data
                             });
                         }
                         break;
-                    case "Egg":
+                    case "Trứng":
                         if (!existingServings.Any(fs => fs.FoodItemId == foodItem.FoodItemId && fs.ServingUnitId == pieceUnit.ServingUnitId))
                         {
                             foodServings.Add(new FoodServing

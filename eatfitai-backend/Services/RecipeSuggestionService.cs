@@ -120,11 +120,13 @@ namespace EatFitAI.API.Services
                     continue;
                 }
 
-                var recipeIngredients = recipe.RecipeIngredients
+                var activeRecipeIngredients = recipe.RecipeIngredients
                     .Where(ri => ri.FoodItem != null
                         && !ri.FoodItem.IsDeleted
-                        && ri.FoodItem.IsActive
-                        && RecipeIngredientEligibility.IsIngredientFood(ri.FoodItem))
+                        && ri.FoodItem.IsActive)
+                    .ToList();
+                var recipeIngredients = activeRecipeIngredients
+                    .Where(ri => RecipeIngredientEligibility.IsIngredientFood(ri.FoodItem))
                     .ToList();
 
                 if (recipeIngredients.Count == 0) continue;
@@ -154,8 +156,8 @@ namespace EatFitAI.API.Services
 
                 if (!useDailyRecommendation && matchCount < minMatchedIngredients) continue;
 
-                var (calories, protein, carbs, fat) = CalculateRecipeNutrition(recipeIngredients);
-                var totalGrams = CalculateTotalGrams(recipeIngredients);
+                var (calories, protein, carbs, fat) = CalculateRecipeNutrition(activeRecipeIngredients);
+                var totalGrams = CalculateTotalGrams(activeRecipeIngredients);
                 var matchedIngredientIds = matchedIngredients
                     .Select(item => item.Ingredient.FoodItemId)
                     .ToHashSet();
@@ -484,29 +486,42 @@ namespace EatFitAI.API.Services
 
             if (recipe == null) return null;
 
-            var (totalCalories, totalProtein, totalCarbs, totalFat) = 
-                CalculateRecipeNutrition(recipe.RecipeIngredients.ToList());
-            var totalGrams = CalculateTotalGrams(recipe.RecipeIngredients.ToList());
-
-            var ingredientDetails = recipe.RecipeIngredients
-                .Where(ri => ri.FoodItem != null && !ri.FoodItem.IsDeleted)
-                .Select(ri =>
-                {
-                    var factor = ri.Grams / 100m;
-                    return new RecipeIngredientDetailDto
-                    {
-                        FoodItemId = ri.FoodItemId,
-                        FoodName = GetRecipeIngredientDisplayName(
-                            recipe.RecipeName,
-                            ri.FoodItem.FoodName),
-                        Grams = ri.Grams,
-                        Calories = ri.FoodItem.CaloriesPer100g * factor,
-                        Protein = ri.FoodItem.ProteinPer100g * factor,
-                        Carbs = ri.FoodItem.CarbPer100g * factor,
-                        Fat = ri.FoodItem.FatPer100g * factor
-                    };
-                })
+            var activeRecipeIngredients = recipe.RecipeIngredients
+                .Where(ri => ri.FoodItem != null
+                    && !ri.FoodItem.IsDeleted
+                    && ri.FoodItem.IsActive)
                 .ToList();
+            var displayRecipeIngredients = activeRecipeIngredients
+                .Where(ri => !IsRecipeNutritionProxy(recipe.RecipeName, ri.FoodItem))
+                .ToList();
+
+            var (totalCalories, totalProtein, totalCarbs, totalFat) =
+                CalculateRecipeNutrition(activeRecipeIngredients);
+            var totalGrams = CalculateTotalGrams(activeRecipeIngredients);
+
+                var ingredientDetails = displayRecipeIngredients
+                    .Select(ri =>
+                    {
+                        var totals = NutritionCalculator.FromFoodPer100g(
+                            ri.FoodItem.CaloriesPer100g,
+                            ri.FoodItem.ProteinPer100g,
+                            ri.FoodItem.CarbPer100g,
+                            ri.FoodItem.FatPer100g,
+                            ri.Grams);
+                        return new RecipeIngredientDetailDto
+                        {
+                            FoodItemId = ri.FoodItemId,
+                            FoodName = GetRecipeIngredientDisplayName(
+                                recipe.RecipeName,
+                                ri.FoodItem.FoodName),
+                            Grams = ri.Grams,
+                            Calories = totals.Calories,
+                            Protein = totals.Protein,
+                            Carbs = totals.Carb,
+                            Fat = totals.Fat
+                        };
+                    })
+                    .ToList();
 
             var guide = _recipeGuideService == null
                 ? null
@@ -564,16 +579,13 @@ namespace EatFitAI.API.Services
         private (decimal calories, decimal protein, decimal carbs, decimal fat) CalculateRecipeNutrition(
             List<RecipeIngredient> ingredients)
         {
-            decimal totalCals = 0m, totalP = 0m, totalC = 0m, totalF = 0m;
-            foreach (var ingredient in ingredients.Where(i => i.FoodItem != null && !i.FoodItem.IsDeleted))
+            if (ingredients.Count == 0)
             {
-                var factor = ingredient.Grams / 100m;
-                totalCals += ingredient.FoodItem.CaloriesPer100g * factor;
-                totalP += ingredient.FoodItem.ProteinPer100g * factor;
-                totalC += ingredient.FoodItem.CarbPer100g * factor;
-                totalF += ingredient.FoodItem.FatPer100g * factor;
+                return (0m, 0m, 0m, 0m);
             }
-            return (totalCals, totalP, totalC, totalF);
+
+            var totals = NutritionCalculator.FromRecipeIngredients(ingredients);
+            return (totals.Calories, totals.Protein, totals.Carb, totals.Fat);
         }
 
         private static decimal CalculateTotalGrams(List<RecipeIngredient> ingredients)
@@ -581,6 +593,24 @@ namespace EatFitAI.API.Services
             return ingredients
                 .Where(i => i.FoodItem != null && !i.FoodItem.IsDeleted && i.FoodItem.IsActive)
                 .Sum(i => i.Grams);
+        }
+
+        private static bool IsRecipeNutritionProxy(string recipeName, FoodItem food)
+        {
+            if (RecipeIngredientEligibility.IsIngredientFood(food))
+            {
+                return false;
+            }
+
+            var recipeKey = AiVisionLabelCatalog.NormalizeKey(recipeName);
+            if (string.IsNullOrWhiteSpace(recipeKey))
+            {
+                return false;
+            }
+
+            return new[] { food.FoodName, food.FoodNameUnsigned, food.FoodNameEn }
+                .Select(AiVisionLabelCatalog.NormalizeKey)
+                .Any(key => string.Equals(key, recipeKey, StringComparison.Ordinal));
         }
 
         private static IngredientQuery BuildIngredientQuery(RecipeSuggestionRequest request)

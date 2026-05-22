@@ -138,6 +138,53 @@ namespace EatFitAI.API.Tests.Unit.Services
             _context.SaveChanges();
         }
 
+        private async Task SeedRecipeAsync(
+            int recipeId = 1,
+            bool includeInactiveIngredient = false)
+        {
+            _context.Recipes.Add(new Recipe
+            {
+                RecipeId = recipeId,
+                RecipeName = includeInactiveIngredient
+                    ? "Recipe inactive ingredient"
+                    : "Recipe nutrition test",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            });
+
+            _context.RecipeIngredients.AddRange(
+                new RecipeIngredient
+                {
+                    RecipeId = recipeId,
+                    FoodItemId = 1,
+                    Grams = 100m
+                },
+                new RecipeIngredient
+                {
+                    RecipeId = recipeId,
+                    FoodItemId = includeInactiveIngredient ? 3 : 2,
+                    Grams = 50m
+                });
+
+            if (includeInactiveIngredient)
+            {
+                _context.FoodItems.Add(new FoodItem
+                {
+                    FoodItemId = 3,
+                    FoodName = "Inactive ingredient",
+                    CaloriesPer100g = 100m,
+                    ProteinPer100g = 10m,
+                    CarbPer100g = 10m,
+                    FatPer100g = 1m,
+                    IsActive = false,
+                    IsDeleted = false
+                });
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
         public void Dispose()
         {
             _context.Dispose();
@@ -432,6 +479,74 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             Assert.NotNull(result);
             _mealDiaryRepositoryMock.Verify(r => r.AddAsync(It.IsAny<MealDiary>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateMealDiaryAsync_WithRecipe_UsesSharedNutritionCalculation()
+        {
+            await SeedRecipeAsync();
+            var request = new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = 1,
+                RecipeId = 1,
+                Grams = 75
+            };
+
+            var mappedDiary = new MealDiary
+            {
+                UserId = _testUserId,
+                EatenDate = DateOnly.FromDateTime(request.EatenDate),
+                MealTypeId = 1,
+                RecipeId = 1,
+                Grams = 75
+            };
+
+            MealDiary? captured = null;
+            _mapperMock.Setup(m => m.Map<MealDiary>(request)).Returns(mappedDiary);
+            _mealDiaryRepositoryMock
+                .Setup(r => r.AddAsync(It.IsAny<MealDiary>()))
+                .Callback<MealDiary>(diary => captured = diary)
+                .Returns(Task.CompletedTask);
+            _mealDiaryRepositoryMock.Setup(r => r.GetByIdWithIncludesAsync(It.IsAny<int>())).ReturnsAsync(mappedDiary);
+            _mapperMock.Setup(m => m.Map<MealDiaryDto>(It.IsAny<MealDiary>()))
+                .Returns(new MealDiaryDto { MealDiaryId = 1, Calories = 106.25m });
+
+            await _mealDiaryService.CreateMealDiaryAsync(_testUserId, request);
+
+            Assert.NotNull(captured);
+            Assert.Equal(106.25m, captured!.Calories);
+            Assert.Equal(9.1m, captured.Protein);
+            Assert.Equal(14m, captured.Carb);
+            Assert.Equal(1.05m, captured.Fat);
+        }
+
+        [Fact]
+        public async Task CreateMealDiaryAsync_WithRecipeInactiveIngredient_ThrowsClearError()
+        {
+            await SeedRecipeAsync(recipeId: 2, includeInactiveIngredient: true);
+            var request = new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = 1,
+                RecipeId = 2,
+                Grams = 100
+            };
+
+            var mappedDiary = new MealDiary
+            {
+                UserId = _testUserId,
+                EatenDate = DateOnly.FromDateTime(request.EatenDate),
+                MealTypeId = 1,
+                RecipeId = 2,
+                Grams = 100
+            };
+
+            _mapperMock.Setup(m => m.Map<MealDiary>(request)).Returns(mappedDiary);
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                _mealDiaryService.CreateMealDiaryAsync(_testUserId, request));
+            Assert.Contains("inactive", exception.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

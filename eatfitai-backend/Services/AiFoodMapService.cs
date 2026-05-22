@@ -58,11 +58,22 @@ namespace EatFitAI.API.Services
                 .Distinct()
                 .ToList();
 
+            var usableFoodItems = _db.FoodItems
+                .AsNoTracking()
+                .Where(food =>
+                    food.IsActive &&
+                    !food.IsDeleted &&
+                    food.CaloriesPer100g > 0 &&
+                    (food.ProteinPer100g > 0 || food.CarbPer100g > 0 || food.FatPer100g > 0) &&
+                    food.ProteinPer100g >= 0 &&
+                    food.CarbPer100g >= 0 &&
+                    food.FatPer100g >= 0);
+
             var rows = await _db.AiLabelMaps
                 .AsNoTracking()
                 .Where(map => labelKeys.Contains(map.Label))
                 .GroupJoin(
-                    _db.FoodItems.AsNoTracking(),
+                    usableFoodItems,
                     map => map.FoodItemId,
                     food => food.FoodItemId,
                     (map, foods) => new { map, foods })
@@ -72,7 +83,7 @@ namespace EatFitAI.API.Services
                     {
                         Label = item.map.Label,
                         MinConfidence = item.map.MinConfidence,
-                        FoodItemId = item.map.FoodItemId,
+                        FoodItemId = food != null ? food.FoodItemId : null,
                         FoodName = food != null ? food.FoodName : null,
                         CaloriesPer100g = food != null ? food.CaloriesPer100g : null,
                         ProteinPer100g = food != null ? food.ProteinPer100g : null,
@@ -107,19 +118,21 @@ namespace EatFitAI.API.Services
                 if (!string.IsNullOrWhiteSpace(exactKey) && byLabel.TryGetValue(exactKey, out var row))
                 {
                     var confDec = (decimal)original.Confidence;
-                    if (confDec >= row.MinConfidence
+                    var exactMinConfidence = GetEffectiveMinConfidence(exactKey, row.MinConfidence, catalogEntry);
+                    if (confDec >= exactMinConfidence
                         && row.FoodItemId.HasValue)
                     {
                         result.Add(CreateMappedFoodDto(
                             original,
                             catalogEntry,
                             ToFoodCatalogMatch(row),
-                            row.MinConfidence));
+                            exactMinConfidence));
                         continue;
                     }
                 }
 
-                if ((decimal)original.Confidence >= CatalogMinConfidence
+                var catalogMinConfidence = GetEffectiveMinConfidence(original.Label, CatalogMinConfidence, catalogEntry);
+                if ((decimal)original.Confidence >= catalogMinConfidence
                     && !string.IsNullOrWhiteSpace(searchKey)
                     && catalogResolutions.TryGetValue(searchKey, out var catalogMatch))
                 {
@@ -138,7 +151,7 @@ namespace EatFitAI.API.Services
                         ThumbNail = _mediaUrlResolver.NormalizePublicUrl(catalogMatch.ThumbNail),
                         MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(catalogMatch.MissingNutrients),
                         NutrientCompletenessScore = catalogMatch.NutrientCompletenessScore,
-                        TrustSummary = BuildTrustSummary(catalogMatch, catalogEntry, original.Confidence, CatalogMinConfidence)
+                        TrustSummary = BuildTrustSummary(catalogMatch, catalogEntry, original.Confidence, catalogMinConfidence)
                     });
                     continue;
                 }
@@ -223,7 +236,10 @@ namespace EatFitAI.API.Services
             }
 
             var normalized = request.Label.Trim().ToLowerInvariant();
-            var minConfidence = request.MinConfidence ?? 0.60m;
+            var minConfidence = GetEffectiveMinConfidence(
+                normalized,
+                request.MinConfidence ?? CatalogMinConfidence,
+                AiVisionLabelCatalog.Find(normalized));
 
             var existing = await _db.Set<AiLabelMap>()
                 .FirstOrDefaultAsync(x => x.Label == normalized, cancellationToken);
@@ -271,6 +287,16 @@ namespace EatFitAI.API.Services
                 NutrientCompletenessScore = food.NutrientCompletenessScore,
                 TrustSummary = BuildTrustSummary(food, labelEntry, detection.Confidence, minConfidence)
             };
+        }
+
+        private static decimal GetEffectiveMinConfidence(
+            string? label,
+            decimal configuredMinConfidence,
+            AiVisionLabelCatalog.Entry? catalogEntry)
+        {
+            catalogEntry ??= AiVisionLabelCatalog.Find(label);
+            var labelFloor = catalogEntry?.MinConfidence ?? CatalogMinConfidence;
+            return Math.Max(CatalogMinConfidence, Math.Max(configuredMinConfidence, labelFloor));
         }
 
         private static void ApplyConfidenceMetadata(MappedFoodDto item)

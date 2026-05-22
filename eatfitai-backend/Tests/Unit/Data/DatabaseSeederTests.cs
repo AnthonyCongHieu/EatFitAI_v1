@@ -113,6 +113,55 @@ public class DatabaseSeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_AddsNutritionProxyForUndercoveredRecipeCalories()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var banhKhot = await context.Recipes
+            .Include(recipe => recipe.RecipeIngredients)
+            .ThenInclude(ingredient => ingredient.FoodItem)
+            .SingleAsync(recipe => recipe.RecipeName == "Bánh khọt");
+
+        var totalCalories = banhKhot.RecipeIngredients
+            .Where(ingredient => ingredient.FoodItem != null && ingredient.FoodItem.IsActive && !ingredient.FoodItem.IsDeleted)
+            .Sum(ingredient => ingredient.Grams * ingredient.FoodItem.CaloriesPer100g / 100m);
+
+        Assert.Contains(
+            banhKhot.RecipeIngredients,
+            ingredient => ingredient.FoodItem.FoodName == "Bánh khọt" && ingredient.Grams > 100m);
+        Assert.InRange(totalCalories, 505m, 507m);
+        Assert.DoesNotContain("ớt, hành lá", banhKhot.Description ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+
+        var guardedRecipes = await context.Recipes
+            .Include(recipe => recipe.RecipeIngredients)
+            .ThenInclude(ingredient => ingredient.FoodItem)
+            .Where(recipe => recipe.RecipeName == "Gỏi cuốn" || recipe.RecipeName == "Canh bí đỏ")
+            .ToListAsync();
+
+        Assert.Equal(2, guardedRecipes.Count);
+        foreach (var recipe in guardedRecipes)
+        {
+            var calories = recipe.RecipeIngredients
+                .Where(ingredient => ingredient.FoodItem != null && ingredient.FoodItem.IsActive && !ingredient.FoodItem.IsDeleted)
+                .Sum(ingredient => ingredient.Grams * ingredient.FoodItem.CaloriesPer100g / 100m);
+
+            Assert.True(calories >= 150m, $"{recipe.RecipeName} should not remain below 150 kcal after nutrition proxy seeding; actual={calories}.");
+            Assert.DoesNotContain("nguyên liệu chính", recipe.Description ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public async Task SeedAsync_RepairsPartialStableLookupRows()
     {
         var databaseRoot = new InMemoryDatabaseRoot();
@@ -188,8 +237,87 @@ public class DatabaseSeederTests
             var map = Assert.Single(maps, item => item.Label == label);
             Assert.True(map.FoodItemId.HasValue, $"Expected '{label}' to map to a broad FoodItem.");
             Assert.Equal(expectedFoodName, foods[map.FoodItemId!.Value].FoodName);
-            Assert.True(map.MinConfidence >= 0.60m, $"Expected '{label}' to avoid low-confidence broad auto-mapping.");
+            Assert.True(map.MinConfidence >= 0.75m, $"Expected '{label}' to require high confidence for broad auto-mapping.");
         }
+    }
+
+    [Fact]
+    public async Task SeedAsync_DoesNotCreateLegacyEnglishFoodDuplicates()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        await DatabaseSeeder.SeedAsync(provider);
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var activeNames = await context.FoodItems
+            .Where(food => food.IsActive && !food.IsDeleted)
+            .Select(food => food.FoodName)
+            .ToListAsync();
+
+        foreach (var legacyName in LegacyEnglishFoodNames)
+        {
+            Assert.DoesNotContain(legacyName, activeNames);
+        }
+
+        Assert.Contains("Ức gà (luộc)", activeNames);
+        Assert.Contains("Cơm gạo lứt (chín)", activeNames);
+        Assert.Contains("Sữa chua Hy Lạp không béo", activeNames);
+    }
+
+    [Fact]
+    public async Task SeedAsync_DoesNotReviveDeactivatedCatalogFood()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            await context.FoodItems.AddAsync(new FoodItem
+            {
+                FoodItemId = 999,
+                FoodName = "Bông cải xanh",
+                FoodNameUnsigned = "bong cai xanh",
+                CaloriesPer100g = 34m,
+                ProteinPer100g = 2.8m,
+                CarbPer100g = 7m,
+                FatPer100g = 0.4m,
+                IsActive = false,
+                IsDeleted = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using var verifyScope = provider.CreateScope();
+        var verifyContext = verifyScope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var oldRow = await verifyContext.FoodItems.SingleAsync(food => food.FoodItemId == 999);
+        var activeBroccoli = await verifyContext.FoodItems
+            .Where(food => food.FoodName == "Bông cải xanh" && food.IsActive && !food.IsDeleted)
+            .ToListAsync();
+
+        Assert.False(oldRow.IsActive);
+        Assert.True(oldRow.IsDeleted);
+        Assert.Single(activeBroccoli);
+        Assert.DoesNotContain(activeBroccoli, food => food.FoodItemId == 999);
     }
 
     [Fact]
@@ -678,12 +806,30 @@ public class DatabaseSeederTests
     {
         ["beans"] = "Đậu",
         ["beef"] = "Thịt bò",
+        ["bun"] = "Bún",
         ["canh"] = "Canh",
         ["chicken"] = "Thịt gà",
         ["fish"] = "Cá",
+        ["lau"] = "Lẩu",
+        ["mushroom"] = "Nấm",
         ["noodles"] = "Mì/bún/phở",
+        ["nuoc_cham"] = "Nước chấm",
         ["pork"] = "Thịt heo",
     };
+
+    private static readonly string[] LegacyEnglishFoodNames =
+    [
+        "Chicken Breast",
+        "Brown Rice",
+        "Broccoli",
+        "Banana",
+        "Greek Yogurt",
+        "Almonds",
+        "Salmon",
+        "Sweet Potato",
+        "Spinach",
+        "Egg",
+    ];
 
     private sealed class FakeHostEnvironment : IHostEnvironment
     {

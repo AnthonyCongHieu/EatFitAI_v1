@@ -304,6 +304,9 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Contains("protein", result.FoodItem.MissingNutrients);
             Assert.Contains("fat", result.FoodItem.MissingNutrients);
             Assert.Equal(FoodTrustStatus.NeedsReview, result.FoodItem.TrustSummary?.Status);
+            Assert.False(result.FoodItem.IsActive);
+            Assert.Equal(0, result.FoodItem.FoodItemId);
+            Assert.Empty(await _context.FoodItems.Where(item => item.Barcode == "8938505974198").ToListAsync());
         }
 
         #endregion

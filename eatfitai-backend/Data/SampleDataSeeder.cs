@@ -158,7 +158,7 @@ namespace EatFitAI.API.Data
                     var eatenDate = today.AddDays(-dayOffset);
 
                     // Breakfast
-                    var breakfastFoods = new[] { "Egg", "Greek Yogurt", "Banana" };
+                    var breakfastFoods = new[] { "Trứng", "Sữa chua Hy Lạp không béo", "Chuối (tươi)" };
                     foreach (var foodName in breakfastFoods)
                     {
                         var food = foodItems.FirstOrDefault(f => f.FoodName == foodName);
@@ -166,13 +166,13 @@ namespace EatFitAI.API.Data
                         {
                             var portion = foodName switch
                             {
-                                "Egg" => 50m, // 1 egg
-                                "Greek Yogurt" => 200m, // 200g serving
-                                "Banana" => 118m, // 1 banana
+                                "Trứng" => 50m, // 1 egg
+                                "Sữa chua Hy Lạp không béo" => 200m, // 200g serving
+                                "Chuối (tươi)" => 118m, // 1 banana
                                 _ => 100m
                             };
 
-                            var servingUnitId = foodName == "Egg" ? pieceUnit?.ServingUnitId : gramUnit?.ServingUnitId;
+                            var servingUnitId = foodName == "Trứng" ? pieceUnit?.ServingUnitId : gramUnit?.ServingUnitId;
 
                             mealDiaries.Add(CreateMealDiaryEntry(
                                 user.UserId,
@@ -187,7 +187,7 @@ namespace EatFitAI.API.Data
                     }
 
                     // Lunch
-                    var lunchFoods = new[] { "Chicken Breast", "Brown Rice", "Broccoli" };
+                    var lunchFoods = new[] { "Ức gà (luộc)", "Cơm gạo lứt (chín)", "Bông cải xanh" };
                     foreach (var foodName in lunchFoods)
                     {
                         var food = foodItems.FirstOrDefault(f => f.FoodName == foodName);
@@ -195,9 +195,9 @@ namespace EatFitAI.API.Data
                         {
                             var portion = foodName switch
                             {
-                                "Chicken Breast" => 150m, // 150g chicken breast
-                                "Brown Rice" => 150m, // 150g cooked rice
-                                "Broccoli" => 100m, // 100g broccoli
+                                "Ức gà (luộc)" => 150m, // 150g chicken breast
+                                "Cơm gạo lứt (chín)" => 150m, // 150g cooked rice
+                                "Bông cải xanh" => 100m, // 100g broccoli
                                 _ => 100m
                             };
 
@@ -214,7 +214,7 @@ namespace EatFitAI.API.Data
                     }
 
                     // Dinner
-                    var dinnerFoods = new[] { "Salmon", "Sweet Potato", "Spinach" };
+                    var dinnerFoods = new[] { "Cá hồi (sống)", "Khoai lang", "Rau chân vịt" };
                     foreach (var foodName in dinnerFoods)
                     {
                         var food = foodItems.FirstOrDefault(f => f.FoodName == foodName);
@@ -222,9 +222,9 @@ namespace EatFitAI.API.Data
                         {
                             var portion = foodName switch
                             {
-                                "Salmon" => 120m, // 120g salmon
-                                "Sweet Potato" => 150m, // 150g sweet potato
-                                "Spinach" => 80m, // 80g spinach
+                                "Cá hồi (sống)" => 120m, // 120g salmon
+                                "Khoai lang" => 150m, // 150g sweet potato
+                                "Rau chân vịt" => 80m, // 80g spinach
                                 _ => 100m
                             };
 
@@ -241,19 +241,19 @@ namespace EatFitAI.API.Data
                     }
 
                     // Snack
-                    var snackFoods = new[] { "Almonds", "Banana" };
+                    var snackFoods = new[] { "Hạt hạnh nhân", "Chuối (tươi)" };
                     var randomSnack = snackFoods[random.Next(snackFoods.Length)];
                     var snackFood = foodItems.FirstOrDefault(f => f.FoodName == randomSnack);
                     if (snackFood != null)
                     {
                         var portion = randomSnack switch
                         {
-                            "Almonds" => 25m, // 25g almonds
-                            "Banana" => 118m, // 1 banana
+                            "Hạt hạnh nhân" => 25m, // 25g almonds
+                            "Chuối (tươi)" => 118m, // 1 banana
                             _ => 50m
                         };
 
-                        var servingUnitId = randomSnack == "Banana" ? pieceUnit?.ServingUnitId : gramUnit?.ServingUnitId;
+                        var servingUnitId = randomSnack == "Chuối (tươi)" ? pieceUnit?.ServingUnitId : gramUnit?.ServingUnitId;
 
                         mealDiaries.Add(CreateMealDiaryEntry(
                             user.UserId,

@@ -1,0 +1,120 @@
+[
+  {
+    "foodName": "Ức gà (sống)",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/",
+    "sourceId": "FDC chicken breast raw reference",
+    "caloriesPer100g": 120,
+    "proteinPer100g": 22.5,
+    "carbPer100g": 0,
+    "fatPer100g": 2.62,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Ức gà (luộc)",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/",
+    "sourceId": "FDC chicken breast cooked reference",
+    "caloriesPer100g": 165,
+    "proteinPer100g": 31,
+    "carbPer100g": 0,
+    "fatPer100g": 3.6,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Cơm gạo lứt (chín)",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/",
+    "sourceId": "FDC brown rice cooked reference",
+    "caloriesPer100g": 123,
+    "proteinPer100g": 2.74,
+    "carbPer100g": 25.58,
+    "fatPer100g": 0.97,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Sữa chua không đường",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/",
+    "sourceId": "plain yogurt whole milk reference",
+    "caloriesPer100g": 61,
+    "proteinPer100g": 3.47,
+    "carbPer100g": 4.66,
+    "fatPer100g": 3.25,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Sữa chua Hy Lạp không béo",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/",
+    "sourceId": "Greek yogurt plain nonfat reference",
+    "caloriesPer100g": 59,
+    "proteinPer100g": 10.3,
+    "carbPer100g": 3.6,
+    "fatPer100g": 0.4,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Trứng gà (chiên)",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/fdc-app.html#/food-details/173423/nutrients",
+    "sourceId": "FDC 173423",
+    "caloriesPer100g": 196,
+    "proteinPer100g": 13.61,
+    "carbPer100g": 0.83,
+    "fatPer100g": 14.84,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Cá ngừ (hộp, ngâm dầu)",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/fdc-app.html#/food-details/173708/nutrients",
+    "sourceId": "FDC 173708",
+    "caloriesPer100g": 198,
+    "proteinPer100g": 29.13,
+    "carbPer100g": 0,
+    "fatPer100g": 8.21,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Bông cải xanh",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/",
+    "sourceId": "broccoli raw reference",
+    "caloriesPer100g": 34,
+    "proteinPer100g": 2.8,
+    "carbPer100g": 7,
+    "fatPer100g": 0.4,
+    "confidence": "high"
+  },
+  {
+    "foodName": "Muối ăn (NaCl)",
+    "sourceType": "reference_database",
+    "sourceName": "USDA FoodData Central",
+    "sourceUrl": "https://fdc.nal.usda.gov/",
+    "sourceId": "salt table reference",
+    "caloriesPer100g": 0,
+    "proteinPer100g": 0,
+    "carbPer100g": 0,
+    "fatPer100g": 0,
+    "confidence": "high",
+    "trueZeroCalorie": true
+  },
+  {
+    "barcode": "8935049501268",
+    "foodName": "Coca-Cola Original",
+    "sourceType": "product_label",
+    "sourceName": "Open Food Facts",
+    "sourceUrl": "https://world.openfoodfacts.org/api/v2/product/8935049501268.json",
+    "verificationStatus": "trusted_product_label",
+    "confidence": "medium"
+  }
+]

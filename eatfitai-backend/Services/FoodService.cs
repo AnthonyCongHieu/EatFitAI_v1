@@ -430,7 +430,11 @@ namespace EatFitAI.API.Services
 
                 // Double-check: barcode có thể đã được lưu bởi concurrent request
                 var existingByBarcode = await _context.FoodItems
-                    .FirstOrDefaultAsync(f => f.Barcode == barcode && !f.IsDeleted, cancellationToken);
+                    .FirstOrDefaultAsync(f =>
+                        f.Barcode == barcode &&
+                        f.IsActive &&
+                        !f.IsDeleted,
+                        cancellationToken);
                 if (existingByBarcode != null)
                 {
                     return new BarcodeLookupResultDto
@@ -441,7 +445,24 @@ namespace EatFitAI.API.Services
                     };
                 }
 
-                // Luôn lưu FoodItem mới từ provider vào database để có ID thực tế
+                if (HasMissingRequiredMacros(foodItem))
+                {
+                    foodItem.FoodItemId = 0;
+                    foodItem.IsActive = false;
+                    foodItem.VerificationStatus = FoodTrustStatus.NeedsReview;
+                    foodItem.TrustSummary = FoodTrustBuilder.BuildSummary(foodItem);
+                    foodItem.TrustDetails = FoodTrustBuilder.BuildDetails(foodItem);
+
+                    return new BarcodeLookupResultDto
+                    {
+                        Barcode = barcode,
+                        Source = "provider",
+                        ProviderName = _configuration["FoodBarcodeProvider:Name"] ?? "barcode-provider",
+                        FoodItem = foodItem,
+                    };
+                }
+
+                var reviewedAt = DateTime.UtcNow;
                 var newFoodItemEntity = new FoodItem
                 {
                     FoodName = foodItem.FoodName,
@@ -455,12 +476,14 @@ namespace EatFitAI.API.Services
                     IsActive = true,
                     IsVerified = false,
                     IsDeleted = false,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    CredibilityScore = 50,
+                    CreatedAt = reviewedAt,
+                    UpdatedAt = reviewedAt,
+                    CredibilityScore = 75,
+                    VerifiedBy = "Open Food Facts product label",
                     MissingNutrients = FoodTrustBuilder.SerializeMissingNutrients(foodItem.MissingNutrients),
                     NutrientCompletenessScore = foodItem.NutrientCompletenessScore,
-                    VerificationStatus = foodItem.TrustSummary?.Status ?? FoodTrustStatus.NeedsReview
+                    VerificationStatus = "trusted_product_label",
+                    LastReviewedAt = reviewedAt
                 };
                 _context.FoodItems.Add(newFoodItemEntity);
                 await _context.SaveChangesAsync(cancellationToken);
@@ -541,6 +564,7 @@ namespace EatFitAI.API.Services
             if (!fat.HasValue) missing.Add("fat");
 
             var completenessScore = Math.Round(((4 - missing.Count) / 4m) * 100m, 0);
+            var hasCompleteMacros = missing.Count == 0;
 
             var dto = new FoodItemDto
             {
@@ -554,15 +578,27 @@ namespace EatFitAI.API.Services
                 FatPer100g = fat ?? 0m,
                 ThumbNail = ReadString(product, "image_url", "image_front_url", "image"),
                 Source = "provider",
-                IsActive = true,
+                IsActive = hasCompleteMacros,
                 IsVerified = false,
-                ReliabilityScore = 0.5d,
+                VerifiedBy = hasCompleteMacros ? "Open Food Facts product label" : null,
+                VerificationStatus = hasCompleteMacros ? "trusted_product_label" : FoodTrustStatus.NeedsReview,
+                ReliabilityScore = hasCompleteMacros ? 0.75d : 0.3d,
                 MissingNutrients = missing,
                 NutrientCompletenessScore = completenessScore,
+                LastReviewedAt = hasCompleteMacros ? DateTime.UtcNow : null
             };
             dto.TrustSummary = FoodTrustBuilder.BuildSummary(dto);
             dto.TrustDetails = FoodTrustBuilder.BuildDetails(dto);
             return dto;
+        }
+
+        private static bool HasMissingRequiredMacros(FoodItemDto foodItem)
+        {
+            return foodItem.MissingNutrients.Any(nutrient =>
+                nutrient.Equals("calories", StringComparison.OrdinalIgnoreCase) ||
+                nutrient.Equals("protein", StringComparison.OrdinalIgnoreCase) ||
+                nutrient.Equals("carb", StringComparison.OrdinalIgnoreCase) ||
+                nutrient.Equals("fat", StringComparison.OrdinalIgnoreCase));
         }
 
         private static string? ReadString(JsonElement element, params string[] keys)

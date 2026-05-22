@@ -731,7 +731,6 @@ namespace EatFitAI.API.Services
             Console.WriteLine($"[MealDiaryService] ComputeAndAssignMacros: entryId={mealDiary.MealDiaryId}, grams={mealDiary.Grams}, source={sourceKind}");
 
             var grams = mealDiary.Grams;
-            var factor = grams / 100m;
 
             switch (sourceKind)
             {
@@ -748,11 +747,13 @@ namespace EatFitAI.API.Services
                         throw new KeyNotFoundException("User food item not found");
                     }
 
-                    mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(userFoodItem.CaloriesPer100 * factor, 2);
-                    mealDiary.Protein = Math.Round(userFoodItem.ProteinPer100 * factor, 2);
-                    mealDiary.Carb = Math.Round(userFoodItem.CarbPer100 * factor, 2);
-                    mealDiary.Fat = Math.Round(userFoodItem.FatPer100 * factor, 2);
+                    var totals = NutritionCalculator.FromFoodPer100g(
+                        userFoodItem.CaloriesPer100,
+                        userFoodItem.ProteinPer100,
+                        userFoodItem.CarbPer100,
+                        userFoodItem.FatPer100,
+                        grams);
+                    AssignNutrition(mealDiary, grams, totals);
                     mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
                         ? "user"
                         : mealDiary.SourceMethod;
@@ -772,11 +773,13 @@ namespace EatFitAI.API.Services
                         throw new KeyNotFoundException("Food item not found");
                     }
 
-                    mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(foodItem.CaloriesPer100g * factor, 2);
-                    mealDiary.Protein = Math.Round(foodItem.ProteinPer100g * factor, 2);
-                    mealDiary.Carb = Math.Round(foodItem.CarbPer100g * factor, 2);
-                    mealDiary.Fat = Math.Round(foodItem.FatPer100g * factor, 2);
+                    var totals = NutritionCalculator.FromFoodPer100g(
+                        foodItem.CaloriesPer100g,
+                        foodItem.ProteinPer100g,
+                        foodItem.CarbPer100g,
+                        foodItem.FatPer100g,
+                        grams);
+                    AssignNutrition(mealDiary, grams, totals);
                     mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
                         ? "catalog"
                         : mealDiary.SourceMethod;
@@ -804,39 +807,18 @@ namespace EatFitAI.API.Services
                         throw new InvalidOperationException("User dish must contain at least one ingredient");
                     }
 
-                    decimal totalCalories = 0m;
-                    decimal totalProtein = 0m;
-                    decimal totalCarb = 0m;
-                    decimal totalFat = 0m;
-                    decimal totalGrams = 0m;
-
-                    foreach (var ingredient in userDish.UserDishIngredients)
-                    {
-                        if (ingredient.FoodItem == null)
-                        {
-                            throw new KeyNotFoundException("User dish ingredient food item not found");
-                        }
-
-                        var ingredientGrams = ingredient.Grams;
-                        totalGrams += ingredientGrams;
-                        var ingredientFactor = ingredientGrams / 100m;
-                        totalCalories += ingredient.FoodItem.CaloriesPer100g * ingredientFactor;
-                        totalProtein += ingredient.FoodItem.ProteinPer100g * ingredientFactor;
-                        totalCarb += ingredient.FoodItem.CarbPer100g * ingredientFactor;
-                        totalFat += ingredient.FoodItem.FatPer100g * ingredientFactor;
-                    }
+                    var totalGrams = NutritionCalculator.TotalUserDishGrams(userDish.UserDishIngredients);
 
                     if (totalGrams <= 0)
                     {
                         throw new InvalidOperationException("User dish ingredients must have positive grams");
                     }
 
-                    var scaleFactor = grams / totalGrams;
-                    mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(totalCalories * scaleFactor, 2);
-                    mealDiary.Protein = Math.Round(totalProtein * scaleFactor, 2);
-                    mealDiary.Carb = Math.Round(totalCarb * scaleFactor, 2);
-                    mealDiary.Fat = Math.Round(totalFat * scaleFactor, 2);
+                    var totals = NutritionCalculator.ScaleToGrams(
+                        NutritionCalculator.FromUserDishIngredients(userDish.UserDishIngredients),
+                        totalGrams,
+                        grams);
+                    AssignNutrition(mealDiary, grams, totals);
                     mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
                         ? "user_dish"
                         : mealDiary.SourceMethod;
@@ -861,45 +843,36 @@ namespace EatFitAI.API.Services
                         throw new InvalidOperationException("Recipe must contain at least one ingredient");
                     }
 
-                    decimal totalCalories = 0m;
-                    decimal totalProtein = 0m;
-                    decimal totalCarb = 0m;
-                    decimal totalFat = 0m;
-                    decimal totalGrams = 0m;
-
-                    foreach (var ingredient in recipe.RecipeIngredients)
-                    {
-                        if (ingredient.FoodItem == null)
-                        {
-                            throw new KeyNotFoundException("Recipe ingredient food item not found");
-                        }
-
-                        var ingredientGrams = ingredient.Grams;
-                        totalGrams += ingredientGrams;
-                        var ingredientFactor = ingredientGrams / 100m;
-                        totalCalories += ingredient.FoodItem.CaloriesPer100g * ingredientFactor;
-                        totalProtein += ingredient.FoodItem.ProteinPer100g * ingredientFactor;
-                        totalCarb += ingredient.FoodItem.CarbPer100g * ingredientFactor;
-                        totalFat += ingredient.FoodItem.FatPer100g * ingredientFactor;
-                    }
+                    var totalGrams = NutritionCalculator.TotalRecipeGrams(recipe.RecipeIngredients);
 
                     if (totalGrams <= 0)
                     {
                         throw new InvalidOperationException("Recipe ingredients must have positive grams");
                     }
 
-                    var scaleFactor = grams / totalGrams;
-                    mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(totalCalories * scaleFactor, 2);
-                    mealDiary.Protein = Math.Round(totalProtein * scaleFactor, 2);
-                    mealDiary.Carb = Math.Round(totalCarb * scaleFactor, 2);
-                    mealDiary.Fat = Math.Round(totalFat * scaleFactor, 2);
+                    var totals = NutritionCalculator.ScaleToGrams(
+                        NutritionCalculator.FromRecipeIngredients(recipe.RecipeIngredients),
+                        totalGrams,
+                        grams);
+                    AssignNutrition(mealDiary, grams, totals);
                     mealDiary.SourceMethod = string.IsNullOrWhiteSpace(mealDiary.SourceMethod)
                         ? "recipe"
                         : mealDiary.SourceMethod;
                     return;
                 }
             }
+        }
+
+        private static void AssignNutrition(
+            MealDiary mealDiary,
+            decimal grams,
+            NutritionTotals totals)
+        {
+            mealDiary.Grams = grams;
+            mealDiary.Calories = totals.Calories;
+            mealDiary.Protein = totals.Protein;
+            mealDiary.Carb = totals.Carb;
+            mealDiary.Fat = totals.Fat;
         }
 
         private async Task PopulateUserFoodNamesAsync(Guid userId, IEnumerable<MealDiary> entities, IEnumerable<MealDiaryDto> dtos)
