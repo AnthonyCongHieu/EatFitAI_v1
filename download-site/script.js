@@ -2080,7 +2080,7 @@
 
 💡 Lời khuyên thiết thực từ AI: Hãy ưu tiên thực phẩm tươi sạch nguyên bản Việt Nam và theo dõi cân nặng hàng tuần để EatFit AI hiệu chỉnh kế hoạch thích ứng nhé!
 ------------------------------------------
-Tải ứng dụng tại: https://eatfitai.vn`;
+Tải ứng dụng tại: https://eatfitai-vn.pages.dev`;
 
         navigator.clipboard.writeText(copyText).then(() => {
           // Phát âm thanh Pop cơ học cao cấp
