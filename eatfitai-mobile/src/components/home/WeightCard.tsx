@@ -22,6 +22,9 @@ import { profileService, type BodyMetricsPayload } from '../../services/profileS
 /* ─── Hằng số ─── */
 const AMBER_ICON = '#f7c052';
 
+/* ─── Định dạng hiển thị cân nặng ẩn .0 ─── */
+const formatWeight = (val: number): string => parseFloat(val.toFixed(1)).toString();
+
 /* ─── Props ─── */
 interface WeightCardProps {
   onUpdatePress: () => void;
@@ -102,7 +105,7 @@ const WeightCard = ({ onUpdatePress, onCardPress }: WeightCardProps): React.Reac
             </ThemedText>
             
             <ThemedText style={[styles.weightValue, { color: EN.onSurface }]}>
-              {currentWeight != null ? `${currentWeight.toFixed(1)} kg` : '— kg'}
+              {currentWeight != null ? `${formatWeight(currentWeight)} kg` : '— kg'}
             </ThemedText>
 
             {measuredDateText ? (

@@ -301,8 +301,8 @@ const HomeScreen = (): React.ReactElement => {
       return !retryAfter || retryAfter <= now;
     });
   }, [notificationInboxItems]);
-  const waterTargetInlineReady = waterCardY != null
-    && scrollY + SCREEN_HEIGHT - WATER_TARGET_VISIBLE_BOTTOM_CLEARANCE >= waterCardY;
+  const waterTargetInlineReady = (waterCardY != null
+    && scrollY + SCREEN_HEIGHT - WATER_TARGET_VISIBLE_BOTTOM_CLEARANCE >= waterCardY) && false;
   useEffect(() => {
     setMoChiVisibleTarget('HomeTab', 'water_reminder', waterTargetInlineReady);
     return () => setMoChiVisibleTarget('HomeTab', 'water_reminder', false);

@@ -76,7 +76,8 @@ public sealed class RecipeGuideService : IRecipeGuideService
         }
 
         var stored = BuildStoredGuide(recipe);
-        if (stored != null && IsFresh(recipe.EnhancedAt) && IsUsableStoredGuide(stored))
+        bool isCurated = recipe.CredibilityScore >= 74 && stored != null && stored.SourceUrls.Count > 0;
+        if (stored != null && (IsFresh(recipe.EnhancedAt) || isCurated) && IsUsableStoredGuide(stored))
         {
             stored.GuideStatus = "stored";
             _cache.Set(cacheKey, stored, TimeSpan.FromHours(6));

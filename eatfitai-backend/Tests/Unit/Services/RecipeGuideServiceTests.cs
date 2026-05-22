@@ -53,6 +53,72 @@ public class RecipeGuideServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetCookingGuideAsync_ReturnsStaleCuratedStoredGuideWithoutCallingProvider()
+    {
+        var recipeId = await SeedRecipeAsync();
+        var recipe = await _context.Recipes.SingleAsync();
+        recipe.InstructionsJson = "[\"Sơ chế\", \"Áp chảo\", \"Hoàn thiện\"]";
+        recipe.SourceUrlsJson = "[\"https://example.com/recipe\"]";
+        recipe.VideoUrl = "https://www.youtube.com/watch?v=abc";
+        recipe.EnhancedAt = DateTime.UtcNow.AddDays(-10); // stale (more than 7 days)
+        recipe.CredibilityScore = 74; // curated score
+        await _context.SaveChangesAsync();
+
+        var factory = new StubHttpClientFactory(_ => throw new InvalidOperationException("provider should not be called"));
+        var service = CreateService(factory);
+
+        var result = await service.GetCookingGuideAsync(recipeId);
+
+        Assert.NotNull(result);
+        Assert.Equal("stored", result!.GuideStatus);
+        Assert.Equal(new[] { "Sơ chế", "Áp chảo", "Hoàn thiện" }, result.Steps);
+        Assert.Equal("https://example.com/recipe", Assert.Single(result.SourceUrls));
+    }
+
+    [Fact]
+    public async Task GetCookingGuideAsync_RegeneratesStaleNonCuratedStoredGuide()
+    {
+        var recipeId = await SeedRecipeAsync();
+        var recipe = await _context.Recipes.SingleAsync();
+        recipe.InstructionsJson = "[\"Sơ chế\", \"Áp chảo\", \"Hoàn thiện\"]";
+        recipe.SourceUrlsJson = "[\"https://example.com/recipe\"]";
+        recipe.VideoUrl = "https://www.youtube.com/watch?v=abc";
+        recipe.EnhancedAt = DateTime.UtcNow.AddDays(-10); // stale
+        recipe.CredibilityScore = 70; // default non-curated score
+        await _context.SaveChangesAsync();
+
+        var factory = new StubHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """
+                {
+                  "steps": ["Sơ chế mới", "Áp chảo mới", "Hoàn thiện mới"],
+                  "cookingTimeMinutes": 20,
+                  "difficulty": "Dễ",
+                  "tips": ["Nấu lửa vừa"],
+                  "sourceUrls": ["https://example.com/recipe-new"],
+                  "youtubeVideo": {
+                    "videoId": "abc",
+                    "title": "Cách nấu",
+                    "channelTitle": "Trusted",
+                    "url": "https://www.youtube.com/watch?v=abc"
+                  },
+                  "guideStatus": "generated"
+                }
+                """,
+                Encoding.UTF8,
+                "application/json")
+        });
+        var service = CreateService(factory);
+
+        var result = await service.GetCookingGuideAsync(recipeId);
+
+        Assert.NotNull(result);
+        Assert.Equal("generated", result!.GuideStatus);
+        Assert.Equal(new[] { "Sơ chế mới", "Áp chảo mới", "Hoàn thiện mới" }, result.Steps);
+    }
+
+    [Fact]
     public async Task GetCookingGuideAsync_TreatsStoredGuideWithYoutubeSearchUrlAsSourceBackedWithoutVideo()
     {
         var recipeId = await SeedRecipeAsync();

@@ -110,6 +110,9 @@ const formatTooltipDate = (dateStr: string): string => {
   return `${day}-${month}-${year}`;
 };
 
+/* ─── Định dạng hiển thị cân nặng ẩn .0 ─── */
+const formatWeight = (val: number): string => parseFloat(val.toFixed(1)).toString();
+
 /* ─── Số ngày trong tháng ─── */
 const getDaysInMonth = (year: number, month: number): number =>
   new Date(year, month + 1, 0).getDate();
@@ -517,7 +520,7 @@ const WeightStatsScreen = (): React.ReactElement => {
             ]}
           >
             <ThemedText style={styles.tooltipWeight}>
-              {selectedPt.weight.toFixed(1)} kg
+              {formatWeight(selectedPt.weight)} kg
             </ThemedText>
             <ThemedText style={styles.tooltipDate}>
               {formatTooltipDate(selectedPt.date)}
@@ -667,7 +670,7 @@ const WeightStatsScreen = (): React.ReactElement => {
                 </ThemedText>
                 <View style={styles.statValueRow}>
                   <ThemedText style={[styles.statValue, { color: EN.onSurface }]}>
-                    {stats.starting.toFixed(1)}
+                    {formatWeight(stats.starting)}
                   </ThemedText>
                   <ThemedText style={[styles.statUnit, { color: EN.textMuted }]}>
                     {' '}kg
@@ -682,7 +685,7 @@ const WeightStatsScreen = (): React.ReactElement => {
                 </ThemedText>
                 <View style={styles.statValueRow}>
                   <ThemedText style={[styles.statValue, { color: EN.onSurface }]}>
-                    {stats.current.toFixed(1)}
+                    {formatWeight(stats.current)}
                   </ThemedText>
                   <ThemedText style={[styles.statUnit, { color: EN.textMuted }]}>
                     {' '}kg
@@ -708,7 +711,7 @@ const WeightStatsScreen = (): React.ReactElement => {
                       },
                     ]}
                   >
-                    {stats.change > 0 ? '+' : ''}{stats.change.toFixed(1)}
+                    {stats.change > 0 ? '+' : ''}{formatWeight(stats.change)}
                   </ThemedText>
                   <ThemedText style={[styles.statUnit, { color: EN.textMuted }]}>
                     {' '}kg

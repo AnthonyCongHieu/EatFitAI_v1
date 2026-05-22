@@ -33,6 +33,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_HEIGHT = 200;
 const CHART_PADDING = 16;
 
+/* ─── Định dạng hiển thị cân nặng ẩn .0 ─── */
+const formatWeight = (val: number): string => parseFloat(val.toFixed(1)).toString();
+
 interface WeightRecord {
   date: string;
   weight: number;
@@ -459,7 +462,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                  <ThemedText style={styles.statValue}>{stats.current}</ThemedText>
+                  <ThemedText style={styles.statValue}>{formatWeight(stats.current)}</ThemedText>
                   <ThemedText style={styles.statUnit}> kg</ThemedText>
                 </View>
                 <ThemedText style={styles.statLabel}>Hiện tại</ThemedText>
@@ -482,7 +485,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
                   ]}
                 >
                   {stats.change > 0 ? '+' : ''}
-                  {stats.change.toFixed(1)} kg
+                  {formatWeight(stats.change)} kg
                 </ThemedText>
                 <ThemedText style={styles.statLabel}>Thay đổi</ThemedText>
               </View>
@@ -509,7 +512,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
               <ThemedText style={styles.recordDate}>
                 {new Date(record.date).toLocaleDateString('vi-VN')}
               </ThemedText>
-              <ThemedText style={styles.recordWeight}>{record.weight} kg</ThemedText>
+              <ThemedText style={styles.recordWeight}>{formatWeight(record.weight)} kg</ThemedText>
             </View>
           ))}
         </Animated.View>

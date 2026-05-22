@@ -488,7 +488,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             <TextInput
               ref={ingredientInputRef}
               style={[S.searchInput, { color: P.onSurface }]}
-              placeholder="Nhập nguyên liệu (VD: Thịt gà)..."
+              placeholder="Nhập nguyên liệu (VD: Thịt gà)"
               placeholderTextColor={P.onSurfaceVariant}
               value={newIngredient}
               onChangeText={setNewIngredient}
@@ -622,7 +622,13 @@ const S = StyleSheet.create({
     paddingHorizontal: 16,
   },
   searchIcon: { marginRight: 12 },
-  searchInput: { flex: 1, fontSize: 16, fontFamily: 'BeVietnamPro_500Medium', color: P_STATIC.onSurface },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'BeVietnamPro_500Medium',
+    color: P_STATIC.onSurface,
+    paddingVertical: 0,
+  },
   addBtnInside: { marginLeft: 8 },
 
   chipsSection: { marginHorizontal: -20, marginBottom: 24 },

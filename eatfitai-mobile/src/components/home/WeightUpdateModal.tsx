@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Modal, Pressable, StyleSheet, View, ActivityIndicator } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, ActivityIndicator, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,9 @@ import MeshBackground from '../ui/MeshBackground';
 const WEIGHT_STEP = 0.1;
 const MIN_WEIGHT = 20;
 const MAX_WEIGHT = 300;
+
+/* ─── Định dạng hiển thị cân nặng ẩn .0 ─── */
+const formatWeight = (val: number): string => parseFloat(val.toFixed(1)).toString();
 
 /* ─── Props ─── */
 interface WeightUpdateModalProps {
@@ -52,11 +55,35 @@ const WeightUpdateModal = ({ visible, onClose }: WeightUpdateModalProps): React.
   const [weight, setWeight] = useState<number>(profile?.weightKg ?? 70);
   const [measuredDate] = useState<Date>(new Date());
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editVal, setEditVal] = useState('');
 
   // Reset cân nặng khi modal mở
   const handleShow = useCallback(() => {
     setWeight(useProfileStore.getState().profile?.weightKg ?? 70);
+    setIsEditing(false);
+    setEditVal('');
   }, []);
+
+  const handleStartEdit = useCallback(() => {
+    setEditVal(formatWeight(weight));
+    setIsEditing(true);
+  }, [weight]);
+
+  const handleFinishEdit = useCallback(() => {
+    setIsEditing(false);
+    const normalized = editVal.replace(',', '.');
+    const parsed = parseFloat(normalized);
+    if (!isNaN(parsed) && parsed >= MIN_WEIGHT && parsed <= MAX_WEIGHT) {
+      setWeight(Math.round(parsed * 10) / 10);
+    } else if (editVal.trim() !== '') {
+      Toast.show({
+        type: 'info',
+        text1: 'Cân nặng không hợp lệ ⚖️',
+        text2: `Vui lòng nhập từ ${MIN_WEIGHT} kg đến ${MAX_WEIGHT} kg`,
+      });
+    }
+  }, [editVal]);
 
   // Tăng cân nặng 0.1 kg
   const handleIncrement = useCallback(() => {
@@ -103,7 +130,7 @@ const WeightUpdateModal = ({ visible, onClose }: WeightUpdateModalProps): React.
       Toast.show({
         type: 'success',
         text1: 'Cập nhật cân nặng thành công! 🎉',
-        text2: `Capy đã ghi lại số cân ${weight.toFixed(1)} kg rồi nhé. Cố lên nào! 💪`,
+        text2: `Capy đã ghi lại số cân ${formatWeight(weight)} kg rồi nhé. Cố lên nào! 💪`,
       });
 
       // 5. Đóng modal
@@ -167,7 +194,7 @@ const WeightUpdateModal = ({ visible, onClose }: WeightUpdateModalProps): React.
           {/* Mục tiêu */}
           {targetWeight != null && (
             <ThemedText style={[styles.targetText, { color: EN.textMuted }]}>
-              Mục tiêu: {targetWeight.toFixed(1)} Kg
+              Mục tiêu: {formatWeight(targetWeight)} Kg
             </ThemedText>
           )}
 
@@ -185,14 +212,37 @@ const WeightUpdateModal = ({ visible, onClose }: WeightUpdateModalProps): React.
             </Pressable>
 
             {/* Hiển thị cân nặng lớn */}
-            <View style={styles.weightDisplay}>
-              <ThemedText style={[styles.weightValueLarge, { color: EN.onSurface }]}>
-                {weight.toFixed(1)}
-              </ThemedText>
+            <Pressable
+              onPress={handleStartEdit}
+              style={styles.weightDisplay}
+              accessibilityRole="keyboardkey"
+              accessibilityLabel={`Cân nặng hiện tại là ${formatWeight(weight)} kg. Chạm để nhập số nhanh.`}
+            >
+              {isEditing ? (
+                <TextInput
+                  value={editVal}
+                  onChangeText={setEditVal}
+                  onBlur={handleFinishEdit}
+                  onSubmitEditing={handleFinishEdit}
+                  keyboardType="decimal-pad"
+                  autoFocus
+                  selectTextOnFocus
+                  style={[
+                    styles.weightInputLarge,
+                    {
+                      color: EN.onSurface,
+                    },
+                  ]}
+                />
+              ) : (
+                <ThemedText style={[styles.weightValueLarge, { color: EN.onSurface }]}>
+                  {formatWeight(weight)}
+                </ThemedText>
+              )}
               <ThemedText style={[styles.weightUnitLarge, { color: EN.textMuted }]}>
                 Kg
               </ThemedText>
-            </View>
+            </Pressable>
 
             {/* Nút tăng */}
             <Pressable
@@ -317,6 +367,14 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontFamily: 'BeVietnamPro_700Bold',
     lineHeight: 56,
+  },
+  weightInputLarge: {
+    fontSize: 48,
+    fontFamily: 'BeVietnamPro_700Bold',
+    lineHeight: 56,
+    textAlign: 'center',
+    minWidth: 140,
+    padding: 0,
   },
   weightUnitLarge: {
     fontSize: 16,
