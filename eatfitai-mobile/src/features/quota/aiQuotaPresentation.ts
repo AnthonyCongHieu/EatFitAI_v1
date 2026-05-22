@@ -61,9 +61,9 @@ const resolveTone = (remaining: number, limit: number): AiQuotaTone => {
 };
 
 const statusTextByTone: Record<AiQuotaTone, string> = {
-  healthy: 'Còn nhiều',
-  low: 'Sắp hết',
-  empty: 'Hết lượt',
+  healthy: 'Hoạt động tốt',
+  low: 'Sắp hết lượt',
+  empty: 'Đã hết lượt',
   unlimited: 'Không giới hạn',
 };
 
@@ -81,15 +81,15 @@ const getPlanLabel = (planCode: string | undefined, isPremium: boolean): string 
 
 export const formatQuotaResetText = (resetAtUtc?: string): string => {
   if (!resetAtUtc) {
-    return 'Làm mới theo chu kỳ ngày';
+    return 'Tự động làm mới mỗi ngày';
   }
 
   const resetDate = new Date(resetAtUtc);
   if (Number.isNaN(resetDate.getTime())) {
-    return 'Làm mới theo chu kỳ ngày';
+    return 'Tự động làm mới mỗi ngày';
   }
 
-  return `Làm mới lúc ${resetDate.toLocaleTimeString('vi-VN', {
+  return `Tự động làm mới lúc ${resetDate.toLocaleTimeString('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
   })}`;
@@ -173,9 +173,9 @@ export const summarizeAiQuota = ({
 
   const statusText =
     tone === 'empty'
-      ? 'Một nhóm AI đã hết lượt'
+      ? 'Đã hết lượt dùng'
       : tone === 'low'
-        ? 'Một nhóm AI sắp hết'
+        ? 'Sắp hết lượt dùng'
         : 'AI sẵn sàng hỗ trợ';
 
   return {

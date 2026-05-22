@@ -25,7 +25,7 @@ describe('aiQuotaPresentation', () => {
 
     expect(group.label).toBe('Còn 0/5 lượt');
     expect(group.tone).toBe('empty');
-    expect(group.statusText).toBe('Hết lượt');
+    expect(group.statusText).toBe('Đã hết lượt');
     expect(group.ratio).toBe(0);
   });
 
@@ -56,6 +56,6 @@ describe('aiQuotaPresentation', () => {
 
     expect(summary.planLabel).toBe('Free');
     expect(summary.tone).toBe('empty');
-    expect(summary.statusText).toBe('Một nhóm AI đã hết lượt');
+    expect(summary.statusText).toBe('Đã hết lượt dùng');
   });
 });

@@ -138,7 +138,7 @@ const AIQuotaScreen = (): React.ReactElement => {
         <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
         </Pressable>
-        <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Lượt AI hôm nay</ThemedText>
+        <ThemedText style={[S.headerTitle, { color: P.onSurface }]}>Trung tâm AI</ThemedText>
         <View style={S.headerBtn} />
       </View>
 
@@ -157,44 +157,25 @@ const AIQuotaScreen = (): React.ReactElement => {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={[S.heroPanel, { backgroundColor: P.glassBg, borderColor: P.glassBorder }]}>
-          <View style={[S.heroIcon, { backgroundColor: P.primary + '18' }]}>
-            <Ionicons name="sparkles" size={24} color={P.primary} />
-          </View>
-          <View style={S.heroCopy}>
-            <View style={S.heroTitleRow}>
-              <ThemedText style={[S.heroTitle, { color: P.onSurface }]}>
-                Trung tâm AI hôm nay
-              </ThemedText>
-              <View style={[S.planBadge, { backgroundColor: P.primary + '14', borderColor: P.primary + '38' }]}>
-                <ThemedText style={[S.planBadgeText, { color: P.primary }]}>
-                  {quotaSummary.planLabel}
+        <View style={[S.heroPanel, { backgroundColor: P.glassBg, borderColor: P.glassBorder, flexDirection: 'column', alignItems: 'stretch', padding: 16, gap: 16 }]}>
+          {/* Header row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[S.heroIcon, { backgroundColor: P.primary + '18' }]}>
+              <Ionicons name="sparkles" size={24} color={P.primary} />
+            </View>
+            <View style={S.heroCopy}>
+              <View style={S.heroTitleRow}>
+                <ThemedText style={[S.heroTitle, { color: P.onSurface }]}>
+                  Lượt dùng AI hôm nay
                 </ThemedText>
+                <View style={[S.planBadge, { backgroundColor: P.primary + '14', borderColor: P.primary + '38' }]}>
+                  <ThemedText style={[S.planBadgeText, { color: P.primary }]}>
+                    {quotaSummary.planLabel}
+                  </ThemedText>
+                </View>
               </View>
-            </View>
-            <ThemedText style={[S.heroSubtitle, { color: P.onSurfaceVariant }]}>
-              {quotaSummary.resetText}
-            </ThemedText>
-          </View>
-          <View style={[S.heroStatus, { borderColor: summaryColor + '38', backgroundColor: summaryColor + '12' }]}>
-            <View style={[S.heroStatusDot, { backgroundColor: summaryColor }]} />
-            <ThemedText style={[S.heroStatusText, { color: summaryColor }]}>
-              {quotaSummary.statusText}
-            </ThemedText>
-          </View>
-        </View>
-
-        <View style={[S.panel, { backgroundColor: P.glassBg, borderColor: P.glassBorder }]}>
-          <View style={S.panelHeader}>
-            <View style={[S.panelIcon, { backgroundColor: P.primary + '18' }]}>
-              <Ionicons name="sparkles-outline" size={19} color={P.primary} />
-            </View>
-            <View style={S.panelCopy}>
-              <ThemedText style={[S.panelTitle, { color: P.onSurface }]}>
-                Quota theo ngày
-              </ThemedText>
-              <ThemedText style={[S.panelSubtitle, { color: P.onSurfaceVariant }]}>
-                Hai nhóm chính để bạn dễ theo dõi, không liệt kê rườm rà từng tác vụ.
+              <ThemedText style={[S.heroSubtitle, { color: P.onSurfaceVariant }]}>
+                {quotaSummary.resetText}
               </ThemedText>
             </View>
           </View>
@@ -207,10 +188,10 @@ const AIQuotaScreen = (): React.ReactElement => {
             <View style={S.errorState}>
               <Ionicons name="cloud-offline-outline" size={24} color={P.error} />
               <ThemedText style={[S.errorTitle, { color: P.onSurface }]}>
-                Chưa tải được quota
+                Không thể tải lượt dùng
               </ThemedText>
               <ThemedText style={[S.errorBody, { color: P.onSurfaceVariant }]}>
-                Kiểm tra kết nối rồi thử lại để xem lượt AI mới nhất.
+                Vui lòng kiểm tra kết nối mạng và thử lại nhé.
               </ThemedText>
               <Pressable
                 style={({ pressed }) => [
@@ -225,18 +206,34 @@ const AIQuotaScreen = (): React.ReactElement => {
               </Pressable>
             </View>
           ) : (
-            <View style={S.quotaList}>
-              <QuotaBar
-                icon="scan-outline"
-                group={quotaSummary.scan}
-                color={scanColor}
-              />
-              <QuotaBar
-                icon="chatbubbles-outline"
-                group={quotaSummary.assistant}
-                color={assistantColor}
-              />
-            </View>
+            <>
+              <View style={{ height: 1, backgroundColor: P.glassBorder }} />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <ThemedText style={{ fontSize: 13, fontFamily: 'BeVietnamPro_600SemiBold', color: P.onSurfaceVariant }}>
+                  Trạng thái AI
+                </ThemedText>
+                <View style={[S.heroStatus, { borderColor: summaryColor + '38', backgroundColor: summaryColor + '12' }]}>
+                  <View style={[S.heroStatusDot, { backgroundColor: summaryColor }]} />
+                  <ThemedText style={[S.heroStatusText, { color: summaryColor }]}>
+                    {quotaSummary.statusText}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <View style={S.quotaList}>
+                <QuotaBar
+                  icon="scan-outline"
+                  group={quotaSummary.scan}
+                  color={scanColor}
+                />
+                <QuotaBar
+                  icon="chatbubbles-outline"
+                  group={quotaSummary.assistant}
+                  color={assistantColor}
+                />
+              </View>
+            </>
           )}
         </View>
       </ScrollView>

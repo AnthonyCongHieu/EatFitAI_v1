@@ -32,12 +32,6 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 import { subscriptionService } from '../../services/subscriptionService';
-import { aiQuotaService } from '../../services/aiQuotaService';
-import {
-  summarizeAiQuota,
-  type AiQuotaGroup,
-  type AiQuotaTone,
-} from '../../features/quota/aiQuotaPresentation';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
@@ -151,51 +145,6 @@ const MenuRow = ({
   );
 };
 
-const quotaToneColor = (
-  tone: AiQuotaTone,
-  palette: { error: string; primary: string; amber?: string; cyan?: string },
-) => {
-  if (tone === 'empty') return palette.error;
-  if (tone === 'low') return palette.amber ?? '#f7c052';
-  if (tone === 'unlimited') return palette.cyan ?? palette.primary;
-  return palette.primary;
-};
-
-const QuotaMiniMeter = ({
-  group,
-  icon,
-  color,
-}: {
-  group: AiQuotaGroup;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-}) => {
-  const width = `${Math.round(Math.max(0, Math.min(1, group.ratio)) * 100)}%` as `${number}%`;
-
-  return (
-    <View style={S.quotaMeter}>
-      <View style={S.quotaMeterTop}>
-        <View style={[S.quotaMeterIcon, { backgroundColor: color + '18' }]}>
-          <Ionicons name={icon} size={16} color={color} />
-        </View>
-        <View style={S.quotaMeterCopy}>
-          <ThemedText style={S.quotaMeterTitle} numberOfLines={1}>
-            {group.title}
-          </ThemedText>
-          <ThemedText style={S.quotaMeterStatus} numberOfLines={1}>
-            {group.statusText}
-          </ThemedText>
-        </View>
-        <ThemedText style={[S.quotaMeterValue, { color }]} numberOfLines={1}>
-          {group.label}
-        </ThemedText>
-      </View>
-      <View style={S.quotaMiniTrack}>
-        <View style={[S.quotaMiniFill, { width, backgroundColor: color }]} />
-      </View>
-    </View>
-  );
-};
 
 /* ═══════════════════════════════════════════════
    ProfileScreen
@@ -224,16 +173,7 @@ const ProfileScreen = (): React.ReactElement => {
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
-  const {
-    data: aiQuota,
-    isLoading: isAiQuotaLoading,
-    refetch: refetchAiQuota,
-  } = useQuery({
-    queryKey: ['ai-quota', 'me'],
-    queryFn: aiQuotaService.getStatus,
-    staleTime: 60 * 1000,
-    retry: 1,
-  });
+
 
   useEffect(() => {
     fetchProfile().catch((error: any) => {
@@ -262,10 +202,9 @@ const ProfileScreen = (): React.ReactElement => {
     await Promise.all([
       fetchProfile({ force: true }),
       refetchSubscription(),
-      refetchAiQuota(),
     ]);
     setRefreshing(false);
-  }, [fetchProfile, refetchAiQuota, refetchSubscription]);
+  }, [fetchProfile, refetchSubscription]);
 
   /* ═══ Avatar picker ═══ */
   const pickAvatar = useCallback(async (source: 'library' | 'camera') => {
@@ -368,16 +307,7 @@ const ProfileScreen = (): React.ReactElement => {
   const memberLabel = isPremium ? 'Premium' : 'Free';
   const premiumRowLabel = isPremium ? 'EatFitAI Premium đang hoạt động' : 'Nâng cấp EatFitAI Premium';
   const hasProfileGaps = hasProfileCompletionGaps(profile);
-  const aiQuotaFeatures = aiQuota?.features ?? [];
-  const quotaSummary = summarizeAiQuota({
-    features: aiQuotaFeatures,
-    planCode: aiQuota?.planCode,
-    isPremium: aiQuota?.isPremium ?? isPremium,
-    resetAtUtc: aiQuota?.resetAtUtc,
-  });
-  const quotaStatusColor = quotaToneColor(quotaSummary.tone, P);
-  const scanQuotaColor = quotaToneColor(quotaSummary.scan.tone, P);
-  const assistantQuotaColor = quotaToneColor(quotaSummary.assistant.tone, P);
+
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
@@ -438,10 +368,19 @@ const ProfileScreen = (): React.ReactElement => {
           {/* Name */}
           <ThemedText style={[S.heroName, { color: P.onSurface }]}>{displayName}</ThemedText>
 
-          {/* Member badge */}
-          <View style={[S.proBadge, { backgroundColor: P.surfaceHigh }]}>
+          {/* Member badge (Interactive button directing to AI Quota page) */}
+          <Pressable
+            style={({ pressed }) => [
+              S.proBadge,
+              { backgroundColor: P.surfaceHigh },
+              pressed && { opacity: 0.76 },
+            ]}
+            onPress={() => navigation.navigate('AIQuota' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Xem trung tâm AI"
+          >
             <ThemedText style={[S.proBadgeText, { color: P.primary }]}>Thành viên {memberLabel}</ThemedText>
-          </View>
+          </Pressable>
         </Animated.View>
 
         {/* ═══ METRICS STRIP ═══ */}
@@ -510,64 +449,6 @@ const ProfileScreen = (): React.ReactElement => {
           </Pressable>
         )}
 
-        {/* ═══ MENU GROUP 1 — Main actions ═══ */}
-        <Pressable
-          onPress={() => navigation.navigate('AIQuota' as any)}
-          accessibilityRole="button"
-          accessibilityLabel="Xem lượt AI hôm nay"
-        >
-          <Animated.View entering={FadeInUp.delay(280).duration(400)} style={[S.quotaCard, { backgroundColor: P.glassBg, borderTopColor: P.glassBorder }]}>
-            <LinearGradient
-              colors={[P.primary + '12', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-            <View style={S.quotaHeader}>
-              <View style={[S.quotaIconWrap, { backgroundColor: P.primary + '18' }]}>
-                <Ionicons name="sparkles-outline" size={18} color={P.primary} />
-              </View>
-              <View style={S.quotaTitleWrap}>
-                <View style={S.quotaTitleLine}>
-                  <ThemedText style={[S.quotaTitle, { color: P.onSurface }]}>Trung tâm AI hôm nay</ThemedText>
-                  <View style={[S.quotaPlanBadge, { borderColor: P.primary + '38', backgroundColor: P.primary + '14' }]}>
-                    <ThemedText style={[S.quotaPlanText, { color: P.primary }]}>{quotaSummary.planLabel}</ThemedText>
-                  </View>
-                </View>
-                <ThemedText style={[S.quotaSubtitle, { color: P.onSurfaceVariant }]}>
-                  {quotaSummary.resetText}
-                </ThemedText>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
-            </View>
-
-            {isAiQuotaLoading && !aiQuota ? (
-              <View style={S.quotaLoading}>
-                <ActivityIndicator size="small" color={P.primary} />
-              </View>
-            ) : (
-              <View style={S.quotaHubBody}>
-                <View style={S.quotaStatusRow}>
-                  <View style={[S.quotaPulse, { backgroundColor: quotaStatusColor }]} />
-                  <ThemedText style={[S.quotaStatusText, { color: quotaStatusColor }]}>
-                    {quotaSummary.statusText}
-                  </ThemedText>
-                </View>
-                <QuotaMiniMeter
-                  group={quotaSummary.scan}
-                  icon="scan-outline"
-                  color={scanQuotaColor}
-                />
-                <QuotaMiniMeter
-                  group={quotaSummary.assistant}
-                  icon="chatbubbles-outline"
-                  color={assistantQuotaColor}
-                />
-              </View>
-            )}
-          </Animated.View>
-        </Pressable>
 
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={[S.menuGroup, { backgroundColor: P.surfaceLow }]}>
           <MenuRow
