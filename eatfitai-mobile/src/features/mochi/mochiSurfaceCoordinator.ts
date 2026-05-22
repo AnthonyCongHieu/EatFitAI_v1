@@ -75,6 +75,10 @@ const blocksTopOverlayOnRoute = ({
   surface: ActiveMoChiRenderedSurface;
   routeName?: string | null;
 }): boolean => {
+  if (surface.surface === 'bottomDock') {
+    return false;
+  }
+
   if (surface.surface === 'topOverlay') {
     return true;
   }

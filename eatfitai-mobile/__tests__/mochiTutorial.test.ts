@@ -239,10 +239,11 @@ describe('MoChi tutorial system', () => {
       screenHeight: 844,
       topInset: 24,
       bottomInset: 24,
+      cardHeight: 148,
     });
 
-    expect(layout.card.top + layout.card.height).toBeLessThanOrEqual(layout.ring.top - 24);
-    expect(layout.card.height).toBeLessThanOrEqual(112);
+    expect(layout.card.height).toBe(148);
+    expect(layout.card.top + layout.card.height).toBeLessThanOrEqual(layout.ring.top - 20);
   });
 
   it('waits for stable target measurements before spotlighting animated sheet items', () => {
@@ -267,10 +268,16 @@ describe('MoChi tutorial system', () => {
       'Chạm biểu tượng ở giữa thanh dưới.',
     );
     expect(getMoChiTutorialStepById('scan_choose_action')?.body).toBe(
-      'Chọn “Quét thức ăn”.',
+      'Chọn “Nhận diện món ăn”.',
     );
     expect(getMoChiTutorialStepById('add_meal_open_hub')?.body).toBe(
-      'Mở menu thêm nhanh.',
+      'Chạm MoChi để mở menu thêm bữa.',
+    );
+    expect(getMoChiTutorialStepById('add_meal_open_hub')?.title).toBe(
+      'Mở thêm nhanh',
+    );
+    expect(getMoChiTutorialStepById('add_meal_choose_action')?.body).toBe(
+      'Chọn “Ghi lại bữa ăn”.',
     );
     expect(getMoChiTutorialStepById('water_find_card')?.body).toBe(
       'Thẻ Nước ở đây. Bấm + hoặc − khi cần.',
@@ -280,24 +287,42 @@ describe('MoChi tutorial system', () => {
     );
   });
 
+  it('keeps repeated hub steps from using identical visible copy', () => {
+    const visibleCopyKeys = MOCHI_TUTORIAL_STEPS.map((step) => `${step.title}|${step.body}`);
+    expect(new Set(visibleCopyKeys).size).toBe(visibleCopyKeys.length);
+  });
+
   it('renders tutorial as target-owned guidance instead of a fake blocking hit area', () => {
     const hostSource = readSource('src/features/mochi/tutorial/MoChiTutorialHost.tsx');
+    const layoutSource = readSource('src/features/mochi/tutorial/mochiTutorialLayout.ts');
     const targetSource = readSource('src/features/mochi/tutorial/MoChiTutorialTarget.tsx');
     const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
     const sheetSource = readSource('src/components/ui/SmartAddSheet.tsx');
+    const aboutSource = readSource('src/app/screens/profile/AboutScreen.tsx');
 
     expect(hostSource).toContain('SpotlightMask');
+    expect(hostSource).toContain('areMoChiTutorialFramesStable');
+    expect(hostSource).toContain('isValidTargetFrame');
+    expect(hostSource).toContain('setCoachCardHeight');
     expect(hostSource).toContain('pointerEvents="box-none"');
     expect(hostSource).not.toContain('targetHitArea');
     expect(hostSource).not.toContain('MeasuringTargetCard');
     expect(hostSource).not.toContain('SHEET_MODAL_SETTLE_MS');
     expect(hostSource).not.toContain('styles.spotlightRing');
+    expect(layoutSource).toContain('cardHeight');
     expect(targetSource).toContain('highlightProfile');
     expect(targetSource).toContain('isActiveTarget');
     expect(targetSource).toContain('pointerEvents="none"');
     expect(tabBarSource).toContain('notifyTargetActivated');
+    expect(tabBarSource).toContain('isTutorialTargetActive');
+    expect(tabBarSource).toContain('handleTutorialActivate');
     expect(tabBarSource).not.toContain('style={styles.tutorialTarget}');
     expect(sheetSource).toContain('SheetTutorialCoach');
     expect(sheetSource).toContain('notifyTargetActivated');
+    expect(sheetSource).toContain('SHEET_TUTORIAL_SETTLE_MS');
+    expect(sheetSource).toContain('tutorialSheetReady');
+    expect(aboutSource).toContain('Đang phát triển');
+    expect(aboutSource).toContain('Tính năng đang phát triển');
+    expect(aboutSource).not.toContain('https://apps.apple.com/app/eatfitai');
   });
 });

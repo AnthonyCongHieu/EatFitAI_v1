@@ -118,6 +118,7 @@ export const getMoChiTutorialSpotlightLayout = ({
   topInset,
   bottomInset,
   highlightProfile,
+  cardHeight,
 }: {
   frame: MoChiTutorialFrame;
   screenWidth: number;
@@ -125,6 +126,7 @@ export const getMoChiTutorialSpotlightLayout = ({
   topInset: number;
   bottomInset: number;
   highlightProfile?: MoChiTutorialHighlightProfile;
+  cardHeight?: number;
 }): MoChiTutorialSpotlightLayout => {
   const horizontalSafePadding = 12;
   const bubbleWidth = clamp(screenWidth - 56, 236, 336);
@@ -166,13 +168,14 @@ export const getMoChiTutorialSpotlightLayout = ({
     16,
     Math.max(16, screenWidth - bubbleWidth - 16),
   );
-  const cardHeight = 108;
+  const maxAvailableCardHeight = Math.max(96, screenHeight - topInset - bottomInset - 84);
+  const resolvedCardHeight = clamp(cardHeight ?? 128, 96, maxAvailableCardHeight);
   const cardGap = 20;
   const cardLift = frame.y > screenHeight * 0.42 ? 24 : 12;
   const minCardTop = topInset + 54;
-  const maxCardTop = Math.max(minCardTop, screenHeight - bottomInset - cardHeight - 12);
+  const maxCardTop = Math.max(minCardTop, screenHeight - bottomInset - resolvedCardHeight - 12);
   const belowTarget = ringTop + ringHeight + cardGap;
-  const aboveTarget = ringTop - cardGap - cardHeight - cardLift;
+  const aboveTarget = ringTop - cardGap - resolvedCardHeight - cardLift;
   const canFitBelow = belowTarget <= maxCardTop;
   const canFitAbove = aboveTarget >= minCardTop;
   const prefersAbove = frame.y > screenHeight * 0.54;
@@ -197,7 +200,7 @@ export const getMoChiTutorialSpotlightLayout = ({
       left: cardLeft,
       top: clamp(preferredTop, minCardTop, maxCardTop),
       width: bubbleWidth,
-      height: cardHeight,
+      height: resolvedCardHeight,
     },
   };
 };

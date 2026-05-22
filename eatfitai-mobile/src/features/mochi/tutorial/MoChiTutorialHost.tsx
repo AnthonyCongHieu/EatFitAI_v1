@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  type LayoutChangeEvent,
   Modal,
   Pressable,
   StyleSheet,
@@ -22,12 +23,15 @@ import {
   useMoChiTutorial,
 } from './MoChiTutorialContext';
 import {
+  areMoChiTutorialFramesStable,
   getMoChiTutorialSpotlightLayout,
   type MoChiTutorialSpotlightLayout,
 } from './mochiTutorialLayout';
 
 const MEASURE_RETRY_MS = 80;
 const MEASURE_MAX_ATTEMPTS = 16;
+const DEFAULT_COACH_CARD_HEIGHT = 128;
+const MIN_TARGET_SIZE = 24;
 
 type MoChiTutorialHostProps = {
   currentRouteName?: string | null;
@@ -126,7 +130,7 @@ const OverviewCard = ({
       <View style={styles.overviewMascot}>
         <MoChiSprite poseKey="nutritionCoachNotice" size={82} variant="full" animated />
       </View>
-      <ThemedText style={styles.overviewTitle}>MoChi chỉ 4 điểm chính</ThemedText>
+      <ThemedText style={styles.overviewTitle}>MoChi: 4 điểm chính</ThemedText>
       <ThemedText style={styles.overviewBody}>
         Chạm thử từng điểm. Có thể bỏ qua bất cứ lúc nào.
       </ThemedText>
@@ -162,12 +166,22 @@ const SpotlightCard = ({
   step,
   currentFlowIndex,
   onContinue,
+  onMeasured,
 }: {
   step: MoChiTutorialStep;
   currentFlowIndex: number;
   onContinue?: () => void;
-}): React.ReactElement => (
-  <View style={styles.coachCard}>
+  onMeasured?: (height: number) => void;
+}): React.ReactElement => {
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const measuredHeight = event.nativeEvent.layout.height;
+    if (measuredHeight > 0) {
+      onMeasured?.(measuredHeight);
+    }
+  };
+
+  return (
+  <View style={styles.coachCard} onLayout={handleLayout}>
     <View style={styles.coachHeader}>
       <MoChiSprite poseKey={step.poseKey} size={38} variant="full" animated />
       <View style={styles.coachCopy}>
@@ -194,7 +208,8 @@ const SpotlightCard = ({
       </Pressable>
     )}
   </View>
-);
+  );
+};
 
 const TransitionNote = ({
   step,
@@ -243,18 +258,36 @@ const TransitionNote = ({
   </View>
 );
 
-const getFallbackCoachLayout = ({
-  screenWidth,
-  topInset,
-}: {
-  screenWidth: number;
-  topInset: number;
-}): MoChiTutorialSpotlightLayout['card'] => ({
-  left: 18,
-  top: topInset + 96,
-  width: Math.max(236, screenWidth - 36),
-  height: 108,
-});
+const isValidTargetFrame = (
+  frame: MoChiTutorialFrame | null,
+  screenWidth: number,
+  screenHeight: number,
+  topInset: number,
+  bottomInset: number,
+): frame is MoChiTutorialFrame => {
+  if (!frame) {
+    return false;
+  }
+
+  const values = [frame.x, frame.y, frame.width, frame.height];
+  if (values.some((value) => !Number.isFinite(value))) {
+    return false;
+  }
+
+  if (frame.width < MIN_TARGET_SIZE || frame.height < MIN_TARGET_SIZE) {
+    return false;
+  }
+
+  const frameRight = frame.x + frame.width;
+  const frameBottom = frame.y + frame.height;
+
+  return (
+    frameRight > 0
+    && frame.x < screenWidth
+    && frameBottom > topInset
+    && frame.y < screenHeight - bottomInset
+  );
+};
 
 const MoChiTutorialHost = ({
   currentRouteName,
@@ -273,6 +306,7 @@ const MoChiTutorialHost = ({
     activateCurrentTarget,
   } = useMoChiTutorial();
   const [targetFrame, setTargetFrame] = useState<MoChiTutorialFrame | null>(null);
+  const [coachCardHeight, setCoachCardHeight] = useState(DEFAULT_COACH_CARD_HEIGHT);
 
   useEffect(() => {
     if (
@@ -287,22 +321,41 @@ const MoChiTutorialHost = ({
     let isActive = true;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let attempt = 0;
+    let previousFrame: MoChiTutorialFrame | null = null;
+    let lastValidFrame: MoChiTutorialFrame | null = null;
 
     const runMeasure = async () => {
-      const frame = await measureTarget(currentStep.targetId);
+      const measuredFrame = await measureTarget(currentStep.targetId);
       if (!isActive) {
         return;
       }
 
+      const frame = isValidTargetFrame(
+        measuredFrame,
+        width,
+        height,
+        insets.top,
+        insets.bottom,
+      )
+        ? measuredFrame
+        : null;
+
       if (frame) {
-        setTargetFrame(frame);
+        lastValidFrame = frame;
+
+        if (areMoChiTutorialFramesStable(previousFrame, frame)) {
+          setTargetFrame(frame);
+          return;
+        }
+
+        previousFrame = frame;
+      } else {
+        previousFrame = null;
       }
 
       attempt += 1;
       if (attempt >= MEASURE_MAX_ATTEMPTS) {
-        if (!frame) {
-          setTargetFrame(null);
-        }
+        setTargetFrame(lastValidFrame);
         return;
       }
 
@@ -322,6 +375,8 @@ const MoChiTutorialHost = ({
     currentRouteName,
     currentStep,
     height,
+    insets.bottom,
+    insets.top,
     measureTarget,
     phase,
     width,
@@ -339,8 +394,9 @@ const MoChiTutorialHost = ({
       topInset: insets.top,
       bottomInset: insets.bottom,
       highlightProfile: currentStep?.highlightProfile,
+      cardHeight: coachCardHeight,
     });
-  }, [currentStep?.highlightProfile, height, insets.bottom, insets.top, targetFrame, width]);
+  }, [coachCardHeight, currentStep?.highlightProfile, height, insets.bottom, insets.top, targetFrame, width]);
 
   if (!isTutorialVisible) {
     return null;
@@ -399,23 +455,28 @@ const MoChiTutorialHost = ({
     return null;
   }
 
-  const coachLayout = spotlightLayout?.card ?? getFallbackCoachLayout({
-    screenWidth: width,
-    topInset: insets.top,
-  });
   const needsContinue = currentStep.activationMode === 'info_continue';
+
+  if (!spotlightLayout) {
+    return (
+      <View pointerEvents="box-none" style={styles.rootOverlay}>
+        <View pointerEvents="none" style={styles.pendingScrim} />
+        <SkipButton onPress={skipTutorial} top={insets.top + 12} />
+      </View>
+    );
+  }
+
+  const coachLayout = spotlightLayout.card;
 
   return (
     <View pointerEvents="box-none" style={styles.rootOverlay}>
-      {spotlightLayout && (
-        <SpotlightMask
-          ring={spotlightLayout.ring}
-          screenWidth={width}
-          screenHeight={height}
-          color="rgba(4, 8, 18, 0.68)"
-        />
-      )}
-      {spotlightLayout && !needsContinue && (
+      <SpotlightMask
+        ring={spotlightLayout.ring}
+        screenWidth={width}
+        screenHeight={height}
+        color="rgba(4, 8, 18, 0.68)"
+      />
+      {!needsContinue && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Chạm vào ${currentStep?.title || 'mục tiêu'}`}
@@ -435,12 +496,27 @@ const MoChiTutorialHost = ({
       <SkipButton onPress={skipTutorial} top={insets.top + 12} />
       <View
         pointerEvents={needsContinue ? 'auto' : 'none'}
-        style={[styles.spotlightCardWrap, coachLayout]}
+        style={[
+          styles.spotlightCardWrap,
+          {
+            left: coachLayout.left,
+            top: coachLayout.top,
+            width: coachLayout.width,
+            minHeight: coachLayout.height,
+          },
+        ]}
       >
         <SpotlightCard
           step={currentStep}
           currentFlowIndex={currentFlowIndex}
           onContinue={needsContinue ? advanceInformationalStep : undefined}
+          onMeasured={(measuredHeight) => {
+            setCoachCardHeight((previousHeight) => (
+              Math.abs(previousHeight - measuredHeight) > 2
+                ? measuredHeight
+                : previousHeight
+            ));
+          }}
         />
       </View>
     </View>
@@ -458,6 +534,10 @@ const styles = StyleSheet.create({
   overviewScrim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(4, 8, 18, 0.78)',
+  },
+  pendingScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(4, 8, 18, 0.28)',
   },
   centerStage: {
     flex: 1,

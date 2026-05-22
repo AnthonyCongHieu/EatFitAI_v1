@@ -17,8 +17,12 @@ import MeshBackground from '../../../components/ui/MeshBackground';
 import { ThemedText } from '../../../components/ThemedText';
 import {
   aiQuotaService,
-  type AiUsageQuotaFeature,
 } from '../../../services/aiQuotaService';
+import {
+  summarizeAiQuota,
+  type AiQuotaGroup,
+  type AiQuotaTone,
+} from '../../../features/quota/aiQuotaPresentation';
 import { useEN } from '../../../theme/emeraldNebula';
 import type { RootStackParamList } from '../../types';
 
@@ -34,82 +38,27 @@ const P_STATIC = {
   glassBg: 'rgba(26,31,47,0.78)',
   glassBorder: 'rgba(255,255,255,0.08)',
   error: '#ff8c8c',
+  amber: '#f7c052',
+  cyan: '#32d7f0',
 };
 
-const getRemaining = (feature: AiUsageQuotaFeature): number => {
-  if (!feature.isLimited) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  const limit = feature.limit ?? 0;
-  return Math.max(0, feature.remaining ?? limit - feature.used);
-};
-
-const summarizeLimitedQuota = (features: AiUsageQuotaFeature[]) => {
-  const limitedFeatures = features.filter(
-    (feature) => feature.key !== 'vision_scan' && feature.isLimited && feature.limit != null,
-  );
-
-  if (limitedFeatures.length === 0) {
-    return {
-      isUnlimited: true,
-      remaining: Number.POSITIVE_INFINITY,
-      limit: Number.POSITIVE_INFINITY,
-      ratio: 1,
-      label: 'Không giới hạn',
-    };
-  }
-
-  const limit = limitedFeatures.reduce((sum, feature) => sum + (feature.limit ?? 0), 0);
-  const remaining = limitedFeatures.reduce((sum, feature) => sum + getRemaining(feature), 0);
-  const ratio = limit > 0 ? Math.max(0, Math.min(1, remaining / limit)) : 0;
-
-  return {
-    isUnlimited: false,
-    remaining,
-    limit,
-    ratio,
-    label: `Còn ${remaining}/${limit} lượt`,
-  };
-};
-
-const resolveScanQuota = (features: AiUsageQuotaFeature[]) => {
-  const scanQuota = features.find((feature) => feature.key === 'vision_scan');
-
-  if (!scanQuota || !scanQuota.isLimited || scanQuota.limit == null) {
-    return {
-      isUnlimited: true,
-      label: 'Không giới hạn',
-      ratio: 1,
-    };
-  }
-
-  const remaining = getRemaining(scanQuota);
-  const ratio = scanQuota.limit > 0 ? Math.max(0, Math.min(1, remaining / scanQuota.limit)) : 0;
-
-  return {
-    isUnlimited: false,
-    label: `Còn ${remaining}/${scanQuota.limit} lượt`,
-    ratio,
-  };
+const quotaToneColor = (tone: AiQuotaTone, palette: typeof P_STATIC) => {
+  if (tone === 'empty') return palette.error;
+  if (tone === 'low') return palette.amber;
+  if (tone === 'unlimited') return palette.cyan;
+  return palette.primary;
 };
 
 const QuotaBar = ({
   icon,
-  title,
-  subtitle,
-  value,
-  ratio,
+  group,
   color,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle: string;
-  value: string;
-  ratio: number;
+  group: AiQuotaGroup;
   color: string;
 }): React.ReactElement => {
-  const fillWidth = `${Math.round(Math.max(0, Math.min(1, ratio)) * 100)}%` as `${number}%`;
+  const fillWidth = `${Math.round(Math.max(0, Math.min(1, group.ratio)) * 100)}%` as `${number}%`;
 
   return (
     <View style={S.quotaBlock}>
@@ -118,10 +67,15 @@ const QuotaBar = ({
           <Ionicons name={icon} size={18} color={color} />
         </View>
         <View style={S.quotaCopy}>
-          <ThemedText style={S.quotaTitle}>{title}</ThemedText>
-          <ThemedText style={S.quotaSubtitle}>{subtitle}</ThemedText>
+          <View style={S.quotaTitleRow}>
+            <ThemedText style={S.quotaTitle}>{group.title}</ThemedText>
+            <View style={[S.statusPill, { borderColor: color + '38', backgroundColor: color + '14' }]}>
+              <ThemedText style={[S.statusPillText, { color }]}>{group.statusText}</ThemedText>
+            </View>
+          </View>
+          <ThemedText style={S.quotaSubtitle}>{group.subtitle}</ThemedText>
         </View>
-        <ThemedText style={[S.quotaValue, { color }]}>{value}</ThemedText>
+        <ThemedText style={[S.quotaValue, { color }]}>{group.label}</ThemedText>
       </View>
       <View style={S.progressTrack}>
         <View style={[S.progressFill, { width: fillWidth, backgroundColor: color }]} />
@@ -145,11 +99,14 @@ const AIQuotaScreen = (): React.ReactElement => {
     glassBg: EN.glassBg,
     glassBorder: EN.glassBorder,
     error: EN.danger,
+    amber: EN.amber,
+    cyan: EN.cyan,
   };
 
   const {
     data,
     isLoading,
+    isError,
     isRefetching,
     refetch,
   } = useQuery({
@@ -164,10 +121,15 @@ const AIQuotaScreen = (): React.ReactElement => {
   }, [refetch]);
 
   const features = data?.features ?? [];
-  const scanQuota = resolveScanQuota(features);
-  const limitedQuota = summarizeLimitedQuota(features);
-  const limitedColor =
-    !limitedQuota.isUnlimited && limitedQuota.remaining <= 0 ? P.error : P.primary;
+  const quotaSummary = summarizeAiQuota({
+    features,
+    planCode: data?.planCode,
+    isPremium: data?.isPremium ?? false,
+    resetAtUtc: data?.resetAtUtc,
+  });
+  const summaryColor = quotaToneColor(quotaSummary.tone, P);
+  const scanColor = quotaToneColor(quotaSummary.scan.tone, P);
+  const assistantColor = quotaToneColor(quotaSummary.assistant.tone, P);
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.surface }]}>
@@ -195,6 +157,33 @@ const AIQuotaScreen = (): React.ReactElement => {
         }
         showsVerticalScrollIndicator={false}
       >
+        <View style={[S.heroPanel, { backgroundColor: P.glassBg, borderColor: P.glassBorder }]}>
+          <View style={[S.heroIcon, { backgroundColor: P.primary + '18' }]}>
+            <Ionicons name="sparkles" size={24} color={P.primary} />
+          </View>
+          <View style={S.heroCopy}>
+            <View style={S.heroTitleRow}>
+              <ThemedText style={[S.heroTitle, { color: P.onSurface }]}>
+                Trung tâm AI hôm nay
+              </ThemedText>
+              <View style={[S.planBadge, { backgroundColor: P.primary + '14', borderColor: P.primary + '38' }]}>
+                <ThemedText style={[S.planBadgeText, { color: P.primary }]}>
+                  {quotaSummary.planLabel}
+                </ThemedText>
+              </View>
+            </View>
+            <ThemedText style={[S.heroSubtitle, { color: P.onSurfaceVariant }]}>
+              {quotaSummary.resetText}
+            </ThemedText>
+          </View>
+          <View style={[S.heroStatus, { borderColor: summaryColor + '38', backgroundColor: summaryColor + '12' }]}>
+            <View style={[S.heroStatusDot, { backgroundColor: summaryColor }]} />
+            <ThemedText style={[S.heroStatusText, { color: summaryColor }]}>
+              {quotaSummary.statusText}
+            </ThemedText>
+          </View>
+        </View>
+
         <View style={[S.panel, { backgroundColor: P.glassBg, borderColor: P.glassBorder }]}>
           <View style={S.panelHeader}>
             <View style={[S.panelIcon, { backgroundColor: P.primary + '18' }]}>
@@ -214,23 +203,38 @@ const AIQuotaScreen = (): React.ReactElement => {
             <View style={S.loading}>
               <ActivityIndicator size="small" color={P.primary} />
             </View>
+          ) : isError ? (
+            <View style={S.errorState}>
+              <Ionicons name="cloud-offline-outline" size={24} color={P.error} />
+              <ThemedText style={[S.errorTitle, { color: P.onSurface }]}>
+                Chưa tải được quota
+              </ThemedText>
+              <ThemedText style={[S.errorBody, { color: P.onSurfaceVariant }]}>
+                Kiểm tra kết nối rồi thử lại để xem lượt AI mới nhất.
+              </ThemedText>
+              <Pressable
+                style={({ pressed }) => [
+                  S.retryButton,
+                  { backgroundColor: P.primary + '18', borderColor: P.primary + '38' },
+                  pressed && { opacity: 0.76 },
+                ]}
+                onPress={() => void refetch()}
+              >
+                <Ionicons name="refresh" size={16} color={P.primary} />
+                <ThemedText style={[S.retryText, { color: P.primary }]}>Thử lại</ThemedText>
+              </Pressable>
+            </View>
           ) : (
             <View style={S.quotaList}>
               <QuotaBar
                 icon="scan-outline"
-                title="Quét món bằng AI"
-                subtitle="Dùng cho camera và nhận diện món ăn."
-                value={scanQuota.label}
-                ratio={scanQuota.ratio}
-                color={P.primary}
+                group={quotaSummary.scan}
+                color={scanColor}
               />
               <QuotaBar
                 icon="chatbubbles-outline"
-                title="Ghi chú và truy vấn AI"
-                subtitle="Gồm voice, công thức, mục tiêu và phân tích dinh dưỡng."
-                value={limitedQuota.label}
-                ratio={limitedQuota.ratio}
-                color={limitedColor}
+                group={quotaSummary.assistant}
+                color={assistantColor}
               />
             </View>
           )}
@@ -272,6 +276,81 @@ const S = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 12,
+    gap: 14,
+  },
+  heroPanel: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 15,
+    backgroundColor: P_STATIC.glassBg,
+    borderColor: P_STATIC.glassBorder,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  heroIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  heroTitle: {
+    fontSize: 17,
+    lineHeight: 23,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.onSurface,
+  },
+  heroSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: 'BeVietnamPro_500Medium',
+    color: P_STATIC.onSurfaceVariant,
+  },
+  planBadge: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  planBadgeText: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.primary,
+  },
+  heroStatus: {
+    minHeight: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: P_STATIC.primary,
+  },
+  heroStatusText: {
+    maxWidth: 92,
+    fontSize: 10,
+    lineHeight: 13,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.primary,
   },
   panel: {
     borderRadius: 16,
@@ -334,10 +413,28 @@ const S = StyleSheet.create({
   quotaCopy: {
     flex: 1,
   },
+  quotaTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   quotaTitle: {
     fontSize: 14,
     fontFamily: 'BeVietnamPro_700Bold',
     color: P_STATIC.onSurface,
+  },
+  statusPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  statusPillText: {
+    fontSize: 9,
+    lineHeight: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.primary,
   },
   quotaSubtitle: {
     marginTop: 1,
@@ -364,6 +461,44 @@ const S = StyleSheet.create({
     height: '100%',
     borderRadius: 999,
     backgroundColor: P_STATIC.primary,
+  },
+  errorState: {
+    minHeight: 168,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  errorTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.onSurface,
+    textAlign: 'center',
+  },
+  errorBody: {
+    maxWidth: 260,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: 'BeVietnamPro_500Medium',
+    color: P_STATIC.onSurfaceVariant,
+    textAlign: 'center',
+  },
+  retryButton: {
+    minHeight: 38,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  retryText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.primary,
   },
 });
 

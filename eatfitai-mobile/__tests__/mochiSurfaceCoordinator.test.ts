@@ -100,6 +100,26 @@ describe('MoChi surface coordinator', () => {
     expect(isMoChiBusy(active)).toBe(false);
   });
 
+  it('never lets the persistent bottom dock block top overlays', () => {
+    const active = {
+      'dock:main': makeSurface({
+        id: 'dock:main',
+        surface: 'bottomDock',
+        routeName: 'StatsTab',
+        priority: 10,
+        blocks: ['topOverlay'],
+      }),
+    };
+
+    expect(
+      canShowMoChiTopOverlay({
+        active,
+        routeName: 'StatsTab',
+        eventType: 'stats_low_data',
+      }),
+    ).toBe(true);
+  });
+
   it('treats toast, overlay, and inline MoChi as a busy speaking surface', () => {
     expect(
       isMoChiBusy({

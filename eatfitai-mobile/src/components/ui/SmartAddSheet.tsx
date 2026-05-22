@@ -46,6 +46,7 @@ interface SmartAddSheetProps {
 
 const ACTION_DELAY_MS = 220;
 const SHEET_EXIT_MS = 180;
+const SHEET_TUTORIAL_SETTLE_MS = 320;
 const DESIGN_TOKENS = {
   overlay: 'rgba(5, 10, 22, 0.58)',
   glass: 'rgba(13, 23, 39, 0.94)',
@@ -118,11 +119,13 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
     skipTutorial,
   } = useMoChiTutorial();
   const [isMounted, setIsMounted] = useState(visible);
+  const [tutorialSheetReady, setTutorialSheetReady] = useState(false);
   const progress = useSharedValue(visible ? 1 : 0);
   const activeTutorialSheetTarget =
     phase === 'spotlight' && currentStep?.surface === 'smart_add_sheet'
       ? currentStep.targetId
       : null;
+  const activeSheetTargetForRender = tutorialSheetReady ? activeTutorialSheetTarget : null;
 
   useEffect(() => {
     if (visible) {
@@ -143,6 +146,19 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
 
     return () => clearTimeout(timeout);
   }, [progress, visible]);
+
+  useEffect(() => {
+    if (!visible || !activeTutorialSheetTarget) {
+      setTutorialSheetReady(false);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setTutorialSheetReady(true);
+    }, SHEET_TUTORIAL_SETTLE_MS);
+
+    return () => clearTimeout(timeout);
+  }, [activeTutorialSheetTarget, visible]);
 
   const backdropAnimatedStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0, 1]),
@@ -277,7 +293,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                 <Ionicons name="close" size={18} color={DESIGN_TOKENS.label} />
               </Pressable>
             </View>
-            {activeTutorialSheetTarget && currentStep && (
+            {activeSheetTargetForRender && currentStep && (
               <SheetTutorialCoach step={currentStep} onSkip={skipTutorial} />
             )}
 
@@ -288,7 +304,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                   {rowActions.map((action) => {
                     const tutorialTargetId = getTutorialTargetId(action.testID);
                     const isDimmedByTutorial =
-                      !!activeTutorialSheetTarget && tutorialTargetId !== activeTutorialSheetTarget;
+                      !!activeSheetTargetForRender && tutorialTargetId !== activeSheetTargetForRender;
                     const handleActionPress = () => {
                       if (tutorialTargetId) {
                         notifyTargetActivated(tutorialTargetId);
@@ -322,7 +338,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                       </Pressable>
                     );
 
-                    if (tutorialTargetId) {
+                    if (tutorialTargetId && (!activeTutorialSheetTarget || tutorialSheetReady)) {
                       return (
                         <MoChiTutorialTarget
                           key={action.title}

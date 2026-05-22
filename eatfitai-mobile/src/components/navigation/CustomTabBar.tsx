@@ -125,20 +125,30 @@ const CommandButton = ({
   const scale = useSharedValue(1);
   const activeProgress = useSharedValue(isFocused ? 1 : 0);
   const hubProgress = useSharedValue(isHubOpen ? 1 : 0);
-  const { notifyTargetActivated } = useMoChiTutorial();
+  const { currentStep, notifyTargetActivated, phase } = useMoChiTutorial();
+  const tutorialTargetId: MoChiTutorialTargetId | null = command.target === 'MoChiHub'
+    ? 'mochi_hub'
+    : command.target === 'StatsTab'
+      ? 'stats_tab'
+      : null;
+  const isTutorialTargetActive =
+    phase === 'spotlight' && currentStep?.targetId === tutorialTargetId;
   const anim = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: command.isPrimary
-          ? -4 * hubProgress.value
-          : -2 * activeProgress.value,
+        translateY: isTutorialTargetActive
+          ? 0
+          : command.isPrimary
+            ? -4 * hubProgress.value
+            : -2 * activeProgress.value,
       },
       {
-        scale:
-          scale.value *
-          (command.isPrimary
-            ? 1 + hubProgress.value * 0.05
-            : 1 + activeProgress.value * 0.04),
+        scale: isTutorialTargetActive
+          ? 1
+          : scale.value *
+            (command.isPrimary
+              ? 1 + hubProgress.value * 0.05
+              : 1 + activeProgress.value * 0.04),
       },
     ],
   }));
@@ -166,16 +176,14 @@ const CommandButton = ({
     });
   }, [hubProgress, isHubOpen]);
 
-  const tutorialTargetId: MoChiTutorialTargetId | null = command.target === 'MoChiHub'
-    ? 'mochi_hub'
-    : command.target === 'StatsTab'
-      ? 'stats_tab'
-      : null;
   const handlePress = () => {
     if (tutorialTargetId) {
       notifyTargetActivated(tutorialTargetId);
     }
 
+    onPress();
+  };
+  const handleTutorialActivate = () => {
     onPress();
   };
   const inner = (
@@ -254,7 +262,7 @@ const CommandButton = ({
           targetId={tutorialTargetId}
           highlightProfile={command.isPrimary ? 'dock' : 'tab'}
           style={command.isPrimary ? styles.primaryDock : undefined}
-          onTutorialActivate={handlePress}
+          onTutorialActivate={handleTutorialActivate}
         >
           {inner}
         </MoChiTutorialTarget>

@@ -142,6 +142,7 @@ describe('MoChi virtual pet experience', () => {
     const overlayHostSource = readSource('src/features/mochi/MoChiOverlayHost.tsx');
     const inlineNoticeSource = readSource('src/features/mochi/MoChiInlineNotice.tsx');
     const nudgeContextSource = readSource('src/features/mochi/useMoChiNudgeContext.ts');
+    const diaryNoticeSource = readSource('src/features/mochi/mealDiaryMoChiNotice.ts');
     const surfaceDecisionSource = readSource('src/features/mochi/useMoChiSurfaceDecision.ts');
     const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
     const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
@@ -179,9 +180,11 @@ describe('MoChi virtual pet experience', () => {
     expect(diarySource).toContain('tone="calm"');
     expect(inlineNoticeSource).toContain('titleCalm');
     expect(inlineNoticeSource).toContain('tone === \'calm\'');
-    expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.title');
-    expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.message');
-    expect(diarySource).toContain('MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel');
+    expect(diarySource).toContain('resolveMealDiaryMoChiNotice');
+    expect(diarySource).toContain('poseKey={mochiNotice.poseKey}');
+    expect(diaryNoticeSource).toContain('Bữa này đang đợi bạn đó! 🍽️');
+    expect(diaryNoticeSource).toContain('trễ hẹn rồi đó nha! 😤');
+    expect(diaryNoticeSource).toContain("poseKey: 'angry'");
     expect(nudgeContextSource).toContain('Bữa này đang đợi bạn đó! 🍽️');
     expect(nudgeContextSource).toContain('Hãy ghi bữa ăn gần nhất để chúng mình cùng theo dõi ngày hôm nay thật liền mạch nha!');
     expect(nudgeContextSource).toContain('Ghi bữa');

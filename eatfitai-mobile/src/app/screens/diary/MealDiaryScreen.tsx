@@ -44,10 +44,9 @@ import type { RootStackParamList } from '../../types';
 import type { AppTabsParamList } from '../../navigation/AppTabs';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
-import { useSmartReminders } from '../../../hooks/useSmartReminders';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
-import { MEAL_DIARY_INLINE_NUDGE_COPY } from '../../../features/mochi/useMoChiNudgeContext';
+import { resolveMealDiaryMoChiNotice } from '../../../features/mochi/mealDiaryMoChiNotice';
 import { useEN } from '../../../theme/emeraldNebula';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -184,30 +183,12 @@ const MealDiaryScreen = (): React.ReactElement => {
   }, [initialDate]);
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [selectedDate]);
-  const isSelectedDateToday = useMemo(() => isToday(selectedDate), [selectedDate]);
 
   /* ─── Data fetching ─── */
   const { data: daySummary, isLoading, refetch } = useQuery<DaySummary>({
     queryKey: ['meal-diary', dateKey],
     queryFn: () => diaryService.getDayCombined(dateKey),
   });
-
-  const { reminders: mochiReminders } = useSmartReminders({
-    enabled: isSelectedDateToday && !isLoading,
-  });
-
-  const activeMealNudgeType = useMemo<MealTypeId | null>(() => {
-    if (!isSelectedDateToday) {
-      return null;
-    }
-
-    const reminder = mochiReminders.find((item) => item.type === 'meal' && /^meal-\d+$/.test(item.id));
-    const mealType = Number(reminder?.id.replace('meal-', ''));
-
-    return ([1, 2, 3, 4] as MealTypeId[]).includes(mealType as MealTypeId)
-      ? (mealType as MealTypeId)
-      : null;
-  }, [isSelectedDateToday, mochiReminders]);
 
   const entries = useMemo(() => {
     if (!daySummary?.meals) return [];
@@ -494,11 +475,14 @@ const MealDiaryScreen = (): React.ReactElement => {
 
             {/* ── Meal Sections ── */}
             {mealGroups.map((group, gIdx) => {
-              const showInlineMealNudge =
-                group.entries.length === 0 && activeMealNudgeType === group.mealType;
+              const mochiNotice = resolveMealDiaryMoChiNotice({
+                mealType: group.mealType,
+                entryCount: group.entries.length,
+                selectedDate,
+              });
               const mealCardHeight = group.entries.length > 0
                 ? 300
-                : showInlineMealNudge
+                : mochiNotice
                   ? 262
                   : 180;
 
@@ -610,19 +594,20 @@ const MealDiaryScreen = (): React.ReactElement => {
                     ) : (
                       /* Empty state for this meal */
                       <View style={styles.mealEmptyWrap}>
-                        {showInlineMealNudge && (
+                        {mochiNotice && (
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`${MEAL_DIARY_INLINE_NUDGE_COPY.title}. ${MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel}`}
+                            accessibilityLabel={`${mochiNotice.title}. ${mochiNotice.ctaLabel}`}
                             onPress={() => handleAddManual(group.mealType)}
                             style={styles.mealInlineNudge}
                           >
                             <MoChiInlineNotice
-                              mochiEvent="meal_reminder"
+                              mochiEvent={mochiNotice.mochiEvent}
                               routeName="MealDiary"
-                              title={MEAL_DIARY_INLINE_NUDGE_COPY.title}
-                              message={MEAL_DIARY_INLINE_NUDGE_COPY.message}
-                              ctaLabel={MEAL_DIARY_INLINE_NUDGE_COPY.ctaLabel}
+                              title={mochiNotice.title}
+                              message={mochiNotice.message}
+                              ctaLabel={mochiNotice.ctaLabel}
+                              poseKey={mochiNotice.poseKey}
                               compact
                               tone="calm"
                             />

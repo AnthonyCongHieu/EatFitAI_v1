@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { useEN } from '../../theme/emeraldNebula';
 import MoChiSprite from './MoChiSprite';
+import type { MoChiPoseKey } from '../../assets/mascot/mochi/mochiAssets';
 import { getMoChiEventState, type MoChiPetEventType } from './mochiPetEngine';
 import { getMoChiExperience } from './mochiExperienceCatalog';
 import { useMoChiVisibleTargetsStore } from './mochiVisibleTargets';
@@ -19,6 +20,7 @@ type MoChiInlineNoticeProps = {
   hideSprite?: boolean;
   tone?: 'standard' | 'calm';
   registerSurface?: boolean;
+  poseKey?: MoChiPoseKey;
 };
 
 const INLINE_NOTICE_BLOCKS = ['topOverlay'] as const;
@@ -33,6 +35,7 @@ const MoChiInlineNotice = ({
   hideSprite = false,
   tone = 'standard',
   registerSurface = true,
+  poseKey,
 }: MoChiInlineNoticeProps): React.ReactElement => {
   const EN = useEN();
   const state = getMoChiEventState(mochiEvent);
@@ -71,7 +74,7 @@ const MoChiInlineNotice = ({
       ]}
     >
       {!hideSprite && (
-        <MoChiSprite poseKey={state.poseKey} size={spriteSize} animated={!compact} />
+        <MoChiSprite poseKey={poseKey ?? state.poseKey} size={spriteSize} animated={!compact} />
       )}
       <View style={styles.copy}>
         <ThemedText style={[styles.title, isCalm && styles.titleCalm, { color: EN.primary }]}>

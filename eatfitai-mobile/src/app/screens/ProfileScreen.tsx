@@ -32,10 +32,12 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 import { subscriptionService } from '../../services/subscriptionService';
+import { aiQuotaService } from '../../services/aiQuotaService';
 import {
-  aiQuotaService,
-  type AiUsageQuotaFeature,
-} from '../../services/aiQuotaService';
+  summarizeAiQuota,
+  type AiQuotaGroup,
+  type AiQuotaTone,
+} from '../../features/quota/aiQuotaPresentation';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import MoChiInlineNotice from '../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../features/mochi/MoChiScreenState';
@@ -72,30 +74,6 @@ type NavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<AppTabsParamList, 'ProfileTab'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
-
-const summarizeLimitedQuota = (features: AiUsageQuotaFeature[]) => {
-  const limitedFeatures = features.filter(
-    (feature) => feature.key !== 'vision_scan' && feature.isLimited && feature.limit != null,
-  );
-
-  if (limitedFeatures.length === 0) {
-    return {
-      label: 'Không giới hạn',
-      isEmpty: false,
-    };
-  }
-
-  const remaining = limitedFeatures.reduce((sum, feature) => {
-    const limit = feature.limit ?? 0;
-    return sum + Math.max(0, feature.remaining ?? limit - feature.used);
-  }, 0);
-  const limit = limitedFeatures.reduce((sum, feature) => sum + (feature.limit ?? 0), 0);
-
-  return {
-    label: `Còn ${remaining}/${limit} lượt`,
-    isEmpty: remaining <= 0,
-  };
-};
 
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette — resolved dynamically via useEN()
@@ -170,6 +148,52 @@ const MenuRow = ({
         <Ionicons name="chevron-forward" size={18} color={resolvedChevronColor} />
       ) : null}
     </Pressable>
+  );
+};
+
+const quotaToneColor = (
+  tone: AiQuotaTone,
+  palette: { error: string; primary: string; amber?: string; cyan?: string },
+) => {
+  if (tone === 'empty') return palette.error;
+  if (tone === 'low') return palette.amber ?? '#f7c052';
+  if (tone === 'unlimited') return palette.cyan ?? palette.primary;
+  return palette.primary;
+};
+
+const QuotaMiniMeter = ({
+  group,
+  icon,
+  color,
+}: {
+  group: AiQuotaGroup;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+}) => {
+  const width = `${Math.round(Math.max(0, Math.min(1, group.ratio)) * 100)}%` as `${number}%`;
+
+  return (
+    <View style={S.quotaMeter}>
+      <View style={S.quotaMeterTop}>
+        <View style={[S.quotaMeterIcon, { backgroundColor: color + '18' }]}>
+          <Ionicons name={icon} size={16} color={color} />
+        </View>
+        <View style={S.quotaMeterCopy}>
+          <ThemedText style={S.quotaMeterTitle} numberOfLines={1}>
+            {group.title}
+          </ThemedText>
+          <ThemedText style={S.quotaMeterStatus} numberOfLines={1}>
+            {group.statusText}
+          </ThemedText>
+        </View>
+        <ThemedText style={[S.quotaMeterValue, { color }]} numberOfLines={1}>
+          {group.label}
+        </ThemedText>
+      </View>
+      <View style={S.quotaMiniTrack}>
+        <View style={[S.quotaMiniFill, { width, backgroundColor: color }]} />
+      </View>
+    </View>
   );
 };
 
@@ -345,12 +369,15 @@ const ProfileScreen = (): React.ReactElement => {
   const premiumRowLabel = isPremium ? 'EatFitAI Premium đang hoạt động' : 'Nâng cấp EatFitAI Premium';
   const hasProfileGaps = hasProfileCompletionGaps(profile);
   const aiQuotaFeatures = aiQuota?.features ?? [];
-  const scanQuota = aiQuotaFeatures.find((feature) => feature.key === 'vision_scan');
-  const scanQuotaLabel =
-    scanQuota?.isLimited && scanQuota.limit != null
-      ? `Còn ${Math.max(0, scanQuota.remaining ?? scanQuota.limit - scanQuota.used)}/${scanQuota.limit}`
-      : 'Không giới hạn';
-  const limitedQuotaSummary = summarizeLimitedQuota(aiQuotaFeatures);
+  const quotaSummary = summarizeAiQuota({
+    features: aiQuotaFeatures,
+    planCode: aiQuota?.planCode,
+    isPremium: aiQuota?.isPremium ?? isPremium,
+    resetAtUtc: aiQuota?.resetAtUtc,
+  });
+  const quotaStatusColor = quotaToneColor(quotaSummary.tone, P);
+  const scanQuotaColor = quotaToneColor(quotaSummary.scan.tone, P);
+  const assistantQuotaColor = quotaToneColor(quotaSummary.assistant.tone, P);
 
   return (
     <View style={[S.container, { paddingTop: insets.top, backgroundColor: P.bg }]} testID={TEST_IDS.profile.screen}>
@@ -490,14 +517,26 @@ const ProfileScreen = (): React.ReactElement => {
           accessibilityLabel="Xem lượt AI hôm nay"
         >
           <Animated.View entering={FadeInUp.delay(280).duration(400)} style={[S.quotaCard, { backgroundColor: P.glassBg, borderTopColor: P.glassBorder }]}>
+            <LinearGradient
+              colors={[P.primary + '12', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
             <View style={S.quotaHeader}>
               <View style={[S.quotaIconWrap, { backgroundColor: P.primary + '18' }]}>
                 <Ionicons name="sparkles-outline" size={18} color={P.primary} />
               </View>
               <View style={S.quotaTitleWrap}>
-                <ThemedText style={[S.quotaTitle, { color: P.onSurface }]}>Lượt AI hôm nay</ThemedText>
+                <View style={S.quotaTitleLine}>
+                  <ThemedText style={[S.quotaTitle, { color: P.onSurface }]}>Trung tâm AI hôm nay</ThemedText>
+                  <View style={[S.quotaPlanBadge, { borderColor: P.primary + '38', backgroundColor: P.primary + '14' }]}>
+                    <ThemedText style={[S.quotaPlanText, { color: P.primary }]}>{quotaSummary.planLabel}</ThemedText>
+                  </View>
+                </View>
                 <ThemedText style={[S.quotaSubtitle, { color: P.onSurfaceVariant }]}>
-                  Xem 2 nhóm quota chính trong ngày.
+                  {quotaSummary.resetText}
                 </ThemedText>
               </View>
               <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant} />
@@ -508,29 +547,23 @@ const ProfileScreen = (): React.ReactElement => {
                 <ActivityIndicator size="small" color={P.primary} />
               </View>
             ) : (
-              <View style={S.quotaSummaryRow}>
-                <View style={S.quotaSummaryItem}>
-                  <ThemedText style={[S.quotaSummaryLabel, { color: P.onSurfaceVariant }]}>
-                    Quét món
-                  </ThemedText>
-                  <ThemedText style={[S.quotaSummaryValue, { color: P.primary }]}>
-                    {scanQuotaLabel}
+              <View style={S.quotaHubBody}>
+                <View style={S.quotaStatusRow}>
+                  <View style={[S.quotaPulse, { backgroundColor: quotaStatusColor }]} />
+                  <ThemedText style={[S.quotaStatusText, { color: quotaStatusColor }]}>
+                    {quotaSummary.statusText}
                   </ThemedText>
                 </View>
-                <View style={[S.quotaDivider, { backgroundColor: P.glassBorder }]} />
-                <View style={S.quotaSummaryItem}>
-                  <ThemedText style={[S.quotaSummaryLabel, { color: P.onSurfaceVariant }]}>
-                    Ghi chú & truy vấn
-                  </ThemedText>
-                  <ThemedText
-                    style={[
-                      S.quotaSummaryValue,
-                      { color: limitedQuotaSummary.isEmpty ? P.error : P.onSurface },
-                    ]}
-                  >
-                    {limitedQuotaSummary.label}
-                  </ThemedText>
-                </View>
+                <QuotaMiniMeter
+                  group={quotaSummary.scan}
+                  icon="scan-outline"
+                  color={scanQuotaColor}
+                />
+                <QuotaMiniMeter
+                  group={quotaSummary.assistant}
+                  icon="chatbubbles-outline"
+                  color={assistantQuotaColor}
+                />
               </View>
             )}
           </Animated.View>
@@ -1083,10 +1116,28 @@ const S = StyleSheet.create({
   quotaTitleWrap: {
     flex: 1,
   },
+  quotaTitleLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   quotaTitle: {
     fontSize: 15,
     fontFamily: 'BeVietnamPro_700Bold',
     color: P_STATIC.onSurface,
+  },
+  quotaPlanBadge: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  quotaPlanText: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.primary,
   },
   quotaSubtitle: {
     marginTop: 2,
@@ -1101,6 +1152,83 @@ const S = StyleSheet.create({
   },
   quotaRows: {
     gap: 8,
+  },
+  quotaHubBody: {
+    gap: 10,
+  },
+  quotaStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  quotaPulse: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: P_STATIC.primary,
+  },
+  quotaStatusText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.primary,
+  },
+  quotaMeter: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(226,232,240,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.035)',
+    padding: 10,
+    gap: 8,
+  },
+  quotaMeterTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  quotaMeterIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quotaMeterCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  quotaMeterTitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.onSurface,
+  },
+  quotaMeterStatus: {
+    marginTop: 1,
+    fontSize: 10,
+    lineHeight: 13,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    color: P_STATIC.onSurfaceVariant,
+  },
+  quotaMeterValue: {
+    maxWidth: 118,
+    textAlign: 'right',
+    fontSize: 11,
+    lineHeight: 15,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: P_STATIC.primary,
+  },
+  quotaMiniTrack: {
+    height: 7,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(226,232,240,0.12)',
+  },
+  quotaMiniFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: P_STATIC.primary,
   },
   quotaSummaryRow: {
     flexDirection: 'row',
