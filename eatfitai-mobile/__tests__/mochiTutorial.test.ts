@@ -1,10 +1,15 @@
+import React from 'react';
 import fs from 'fs';
 import path from 'path';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { renderHook, act } from '@testing-library/react-native';
+
+import { MoChiTutorialProvider, useMoChiTutorial } from '../src/features/mochi/tutorial/MoChiTutorialContext';
 
 import {
   MOCHI_TUTORIAL_FLOWS,
   MOCHI_TUTORIAL_STEPS,
+  getMoChiTutorialStepPosition,
   getMoChiTutorialStepById,
 } from '../src/features/mochi/tutorial/mochiTutorialCatalog';
 import {
@@ -71,7 +76,9 @@ describe('MoChi tutorial system', () => {
       expect(step.allowSkip).toBe(true);
       expect(step.body.split(/\s+/).length).toBeLessThanOrEqual(12);
       expect(step.surface).toMatch(/^(root|smart_add_sheet)$/);
-      expect(step.coachPlacement).toMatch(/^(topSafe|aboveTarget|sheetHeader|routeChip)$/);
+      expect(step.coachPlacement).toMatch(
+        /^(topSafe|aboveTarget|sheetHeader|routeChip)$/,
+      );
       expect(step.activationMode).toMatch(
         /^(target_press_advance|target_press_destination|info_continue|target_press_complete)$/,
       );
@@ -81,9 +88,13 @@ describe('MoChi tutorial system', () => {
 
   it('keeps tutorial targets stable for production source wiring', () => {
     expect(getMoChiTutorialStepById('scan_open_hub')?.targetId).toBe('mochi_hub');
-    expect(getMoChiTutorialStepById('scan_choose_action')?.targetId).toBe('quick_add_scan');
+    expect(getMoChiTutorialStepById('scan_choose_action')?.targetId).toBe(
+      'quick_add_scan',
+    );
     expect(getMoChiTutorialStepById('add_meal_open_hub')?.targetId).toBe('mochi_hub');
-    expect(getMoChiTutorialStepById('add_meal_choose_action')?.targetId).toBe('quick_add_search');
+    expect(getMoChiTutorialStepById('add_meal_choose_action')?.targetId).toBe(
+      'quick_add_search',
+    );
     expect(getMoChiTutorialStepById('water_find_card')?.targetId).toBe('home_water');
     expect(getMoChiTutorialStepById('stats_open_tab')?.targetId).toBe('stats_tab');
   });
@@ -95,7 +106,7 @@ describe('MoChi tutorial system', () => {
       completionBehavior: 'navigate_then_wait',
       activationMode: 'target_press_destination',
       surface: 'smart_add_sheet',
-      coachPlacement: 'sheetHeader',
+      coachPlacement: 'routeChip',
       highlightProfile: 'sheetAction',
       transitionActionLabel: 'Về Trang chủ',
     });
@@ -105,7 +116,7 @@ describe('MoChi tutorial system', () => {
       completionBehavior: 'navigate_then_wait',
       activationMode: 'target_press_destination',
       surface: 'smart_add_sheet',
-      coachPlacement: 'sheetHeader',
+      coachPlacement: 'routeChip',
       highlightProfile: 'sheetAction',
       transitionActionLabel: 'Về Trang chủ',
     });
@@ -243,64 +254,86 @@ describe('MoChi tutorial system', () => {
     });
 
     expect(layout.card.height).toBe(148);
-    expect(layout.card.top + layout.card.height).toBeLessThanOrEqual(layout.ring.top - 20);
+    expect(layout.card.top + layout.card.height).toBeLessThanOrEqual(
+      layout.ring.top - 20,
+    );
   });
 
   it('waits for stable target measurements before spotlighting animated sheet items', () => {
-    expect(areMoChiTutorialFramesStable(
-      { x: 24, y: 620, width: 190, height: 84 },
-      { x: 24.5, y: 621, width: 190, height: 84 },
-    )).toBe(true);
+    expect(
+      areMoChiTutorialFramesStable(
+        { x: 24, y: 620, width: 190, height: 84 },
+        { x: 24.5, y: 621, width: 190, height: 84 },
+      ),
+    ).toBe(true);
 
-    expect(areMoChiTutorialFramesStable(
-      { x: 24, y: 620, width: 190, height: 84 },
-      { x: 24, y: 698, width: 190, height: 84 },
-    )).toBe(false);
+    expect(
+      areMoChiTutorialFramesStable(
+        { x: 24, y: 620, width: 190, height: 84 },
+        { x: 24, y: 698, width: 190, height: 84 },
+      ),
+    ).toBe(false);
   });
 
   it('uses direct, non-AI copy instead of explanation-heavy labels', () => {
     expect(getMoChiTutorialStepById('scan_open_hub')).toMatchObject({
-      title: 'Mở MoChi',
-      body: 'Chạm biểu tượng ở giữa thanh dưới.',
+      title: 'Quét ảnh',
+      body: 'Mở MoChi ở giữa thanh dưới.',
       primaryActionLabel: 'Mở MoChi',
     });
     expect(getMoChiTutorialStepById('scan_open_hub')?.body).toBe(
-      'Chạm biểu tượng ở giữa thanh dưới.',
+      'Mở MoChi ở giữa thanh dưới.',
     );
     expect(getMoChiTutorialStepById('scan_choose_action')?.body).toBe(
       'Chọn “Nhận diện món ăn”.',
     );
     expect(getMoChiTutorialStepById('add_meal_open_hub')?.body).toBe(
-      'Chạm MoChi để mở menu thêm bữa.',
+      'Mở MoChi để chọn cách ghi bữa.',
     );
-    expect(getMoChiTutorialStepById('add_meal_open_hub')?.title).toBe(
-      'Mở thêm nhanh',
-    );
+    expect(getMoChiTutorialStepById('add_meal_open_hub')?.title).toBe('Thêm bữa');
     expect(getMoChiTutorialStepById('add_meal_choose_action')?.body).toBe(
       'Chọn “Ghi lại bữa ăn”.',
     );
     expect(getMoChiTutorialStepById('water_find_card')?.body).toBe(
       'Thẻ Nước ở đây. Bấm + hoặc − khi cần.',
     );
-    expect(getMoChiTutorialStepById('stats_open_tab')?.body).toBe(
-      'Chạm tab Thống kê.',
-    );
+    expect(getMoChiTutorialStepById('stats_open_tab')?.body).toBe('Chạm tab Thống kê.');
+  });
+
+  it('labels sub-steps distinctly inside multi-step tutorial flows', () => {
+    const labelFor = (stepId: (typeof MOCHI_TUTORIAL_STEPS)[number]['id']) => {
+      const step = getMoChiTutorialStepById(stepId);
+      expect(step).toBeDefined();
+      return getMoChiTutorialStepPosition(step!).displayLabel;
+    };
+
+    expect(labelFor('scan_open_hub')).toBe('1/4 · 1/2');
+    expect(labelFor('scan_choose_action')).toBe('1/4 · 2/2');
+    expect(labelFor('add_meal_open_hub')).toBe('2/4 · 1/2');
+    expect(labelFor('add_meal_choose_action')).toBe('2/4 · 2/2');
+    expect(labelFor('water_find_card')).toBe('3/4');
+    expect(labelFor('stats_open_tab')).toBe('4/4');
   });
 
   it('keeps repeated hub steps from using identical visible copy', () => {
-    const visibleCopyKeys = MOCHI_TUTORIAL_STEPS.map((step) => `${step.title}|${step.body}`);
+    const visibleCopyKeys = MOCHI_TUTORIAL_STEPS.map(
+      (step) => `${step.title}|${step.body}`,
+    );
     expect(new Set(visibleCopyKeys).size).toBe(visibleCopyKeys.length);
   });
 
   it('renders tutorial as target-owned guidance instead of a fake blocking hit area', () => {
     const hostSource = readSource('src/features/mochi/tutorial/MoChiTutorialHost.tsx');
     const layoutSource = readSource('src/features/mochi/tutorial/mochiTutorialLayout.ts');
-    const targetSource = readSource('src/features/mochi/tutorial/MoChiTutorialTarget.tsx');
+    const targetSource = readSource(
+      'src/features/mochi/tutorial/MoChiTutorialTarget.tsx',
+    );
     const tabBarSource = readSource('src/components/navigation/CustomTabBar.tsx');
     const sheetSource = readSource('src/components/ui/SmartAddSheet.tsx');
     const aboutSource = readSource('src/app/screens/profile/AboutScreen.tsx');
 
     expect(hostSource).toContain('SpotlightMask');
+    expect(hostSource).toContain('getMoChiTutorialStepPosition');
     expect(hostSource).toContain('areMoChiTutorialFramesStable');
     expect(hostSource).toContain('isValidTargetFrame');
     expect(hostSource).toContain('setCoachCardHeight');
@@ -313,6 +346,9 @@ describe('MoChi tutorial system', () => {
     expect(targetSource).toContain('highlightProfile');
     expect(targetSource).toContain('isActiveTarget');
     expect(targetSource).toContain('pointerEvents="none"');
+    expect(targetSource.indexOf('styles.highlightHalo')).toBeLessThan(
+      targetSource.indexOf('{children}'),
+    );
     expect(tabBarSource).toContain('notifyTargetActivated');
     expect(tabBarSource).toContain('isTutorialTargetActive');
     expect(tabBarSource).toContain('handleTutorialActivate');
@@ -324,5 +360,71 @@ describe('MoChi tutorial system', () => {
     expect(aboutSource).toContain('Đang phát triển');
     expect(aboutSource).toContain('Tính năng đang phát triển');
     expect(aboutSource).not.toContain('https://apps.apple.com/app/eatfitai');
+  });
+
+  it('rolls back active sheet steps to preceding root steps on notifySheetClosed', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(MoChiTutorialProvider, { enabled: true }, children);
+
+    const { result } = renderHook(() => useMoChiTutorial(), { wrapper });
+
+    // Initially phase is idle
+    expect(result.current.phase).toBe('idle');
+
+    // Start tutorial
+    act(() => {
+      result.current.startTutorial({ source: 'manual' });
+    });
+    expect(result.current.phase).toBe('overview');
+
+    // Move to first step: scan_open_hub
+    act(() => {
+      result.current.nextStep();
+    });
+    expect(result.current.phase).toBe('spotlight');
+    expect(result.current.currentStep?.id).toBe('scan_open_hub');
+
+    // Activate mascot button to move to step 1 (scan_choose_action - requires sheet)
+    act(() => {
+      result.current.notifyTargetActivated('mochi_hub');
+    });
+    expect(result.current.currentStep?.id).toBe('scan_choose_action');
+    expect(result.current.currentStep?.requiresQuickAddSheet).toBe(true);
+
+    // Call notifySheetClosed -> should roll back to step 0
+    act(() => {
+      result.current.notifySheetClosed();
+    });
+    expect(result.current.currentStep?.id).toBe('scan_open_hub');
+
+    // Transition forward again to step 1
+    act(() => {
+      result.current.notifyTargetActivated('mochi_hub');
+    });
+    expect(result.current.currentStep?.id).toBe('scan_choose_action');
+
+    // Complete the action to transition to camera (step 1 -> transition)
+    act(() => {
+      result.current.notifyTargetActivated('quick_add_scan');
+    });
+    expect(result.current.phase).toBe('transition');
+
+    // Continue from transition -> moves to step 2 (add_meal_open_hub)
+    act(() => {
+      result.current.continueFromTransition();
+    });
+    expect(result.current.currentStep?.id).toBe('add_meal_open_hub');
+
+    // Move to step 3 (add_meal_choose_action - requires sheet)
+    act(() => {
+      result.current.notifyTargetActivated('mochi_hub');
+    });
+    expect(result.current.currentStep?.id).toBe('add_meal_choose_action');
+
+    // Call notifySheetClosed -> should roll back to step 2 (add_meal_open_hub)
+    act(() => {
+      result.current.notifySheetClosed();
+    });
+    expect(result.current.currentStep?.id).toBe('add_meal_open_hub');
   });
 });

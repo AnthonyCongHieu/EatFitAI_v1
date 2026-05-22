@@ -59,6 +59,9 @@ type MoChiTutorialContextValue = {
     handle: MoChiTutorialTargetHandle,
   ) => () => void;
   measureTarget: (targetId: MoChiTutorialTargetId) => Promise<MoChiTutorialFrame | null>;
+  requestTargetMeasurement: (targetId: MoChiTutorialTargetId) => void;
+  targetRegistryRevision: number;
+  notifySheetClosed: () => void;
 };
 
 const defaultContextValue: MoChiTutorialContextValue = {
@@ -79,6 +82,9 @@ const defaultContextValue: MoChiTutorialContextValue = {
   continueFromTransition: () => undefined,
   registerTarget: () => () => undefined,
   measureTarget: async () => null,
+  requestTargetMeasurement: () => undefined,
+  targetRegistryRevision: 0,
+  notifySheetClosed: () => undefined,
 };
 
 const MoChiTutorialContext = createContext<MoChiTutorialContextValue>(defaultContextValue);
@@ -96,6 +102,7 @@ export const MoChiTutorialProvider = ({
   const [phase, setPhase] = useState<MoChiTutorialPhase>('idle');
   const [source, setSource] = useState<'auto' | 'manual' | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [targetRegistryRevision, setTargetRegistryRevision] = useState(0);
   const targetsRef = useRef(new Map<MoChiTutorialTargetId, MoChiTutorialTargetHandle>());
   const autoStartCheckedRef = useRef(false);
 
@@ -310,15 +317,29 @@ export const MoChiTutorialProvider = ({
     phase,
   ]);
 
+  const notifySheetClosed = useCallback(() => {
+    if (phase !== 'spotlight' || !currentStep) {
+      return;
+    }
+    if (currentStep.requiresQuickAddSheet) {
+      const prevIndex = currentStepIndex - 1;
+      if (prevIndex >= 0) {
+        setCurrentStepIndex(prevIndex);
+      }
+    }
+  }, [currentStep, currentStepIndex, phase]);
+
   const registerTarget = useCallback((
     targetId: MoChiTutorialTargetId,
     handle: MoChiTutorialTargetHandle,
   ) => {
     targetsRef.current.set(targetId, handle);
+    setTargetRegistryRevision((revision) => revision + 1);
 
     return () => {
       if (targetsRef.current.get(targetId) === handle) {
         targetsRef.current.delete(targetId);
+        setTargetRegistryRevision((revision) => revision + 1);
       }
     };
   }, []);
@@ -326,6 +347,12 @@ export const MoChiTutorialProvider = ({
   const measureTarget = useCallback(async (targetId: MoChiTutorialTargetId) => {
     const handle = targetsRef.current.get(targetId);
     return handle ? handle.measure() : null;
+  }, []);
+
+  const requestTargetMeasurement = useCallback((targetId: MoChiTutorialTargetId) => {
+    if (targetsRef.current.has(targetId)) {
+      setTargetRegistryRevision((revision) => revision + 1);
+    }
   }, []);
 
   useEffect(() => {
@@ -376,6 +403,9 @@ export const MoChiTutorialProvider = ({
     continueFromTransition,
     registerTarget,
     measureTarget,
+    requestTargetMeasurement,
+    targetRegistryRevision,
+    notifySheetClosed,
   }), [
     activeSheetTarget,
     completeTutorial,
@@ -390,9 +420,12 @@ export const MoChiTutorialProvider = ({
     notifyTargetActivated,
     phase,
     registerTarget,
+    requestTargetMeasurement,
     skipTutorial,
     source,
     startTutorial,
+    targetRegistryRevision,
+    notifySheetClosed,
   ]);
 
   return (

@@ -36,13 +36,13 @@ public sealed class AiUsageQuotaServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetStatusAsync_CountsEachFeatureSeparately_AndKeepsScanUnlimited()
+    public async Task GetStatusAsync_UsesSharedFreeQuota_AndKeepsScanUnlimited()
     {
         var userId = Guid.NewGuid();
         var service = CreateService();
         var testTime = _timeProvider.GetUtcNow().UtcDateTime;
         await SeedLogsAsync(userId, "RecipeSuggestion", 20, testTime);
-        await SeedLogsAsync(userId, "NutritionInsight", 19, testTime);
+        await SeedLogsAsync(userId, "NutritionInsight", 10, testTime);
         await SeedLogsAsync(userId, "VisionDetect", 50, testTime);
 
         var status = await service.GetStatusAsync(userId);
@@ -52,19 +52,20 @@ public sealed class AiUsageQuotaServiceTests : IDisposable
         var scan = status.Features.Single(item => item.Key == AiUsageQuotaFeatureKeys.VisionScan);
 
         Assert.True(recipe.IsLimited);
-        Assert.Equal(20, recipe.Limit);
-        Assert.Equal(20, recipe.Used);
+        Assert.Equal(30, recipe.Limit);
+        Assert.Equal(30, recipe.Used);
         Assert.Equal(0, recipe.Remaining);
-        Assert.Equal(19, insight.Used);
-        Assert.Equal(1, insight.Remaining);
+        Assert.Equal(30, insight.Limit);
+        Assert.Equal(30, insight.Used);
+        Assert.Equal(0, insight.Remaining);
         Assert.False(scan.IsLimited);
         Assert.Null(scan.Limit);
         Assert.Null(scan.Remaining);
 
         await Assert.ThrowsAsync<AiUsageQuotaExceededException>(
             () => service.EnsureCanUseAsync(userId, AiUsageQuotaFeatureKeys.RecipeSuggestion));
-
-        await service.EnsureCanUseAsync(userId, AiUsageQuotaFeatureKeys.NutritionInsight);
+        await Assert.ThrowsAsync<AiUsageQuotaExceededException>(
+            () => service.EnsureCanUseAsync(userId, AiUsageQuotaFeatureKeys.VoiceParse));
     }
 
     [Fact]
@@ -81,7 +82,7 @@ public sealed class AiUsageQuotaServiceTests : IDisposable
         var status = await service.GetStatusAsync(userId);
         var voiceParse = status.Features.Single(item => item.Key == AiUsageQuotaFeatureKeys.VoiceParse);
         Assert.Equal(0, voiceParse.Used);
-        Assert.Equal(20, voiceParse.Remaining);
+        Assert.Equal(30, voiceParse.Remaining);
     }
 
     [Fact]
@@ -108,7 +109,7 @@ public sealed class AiUsageQuotaServiceTests : IDisposable
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["AIUsage:FreeDailyLimit"] = "20",
+                ["AIUsage:FreeDailyLimit"] = "30",
             })
             .Build();
 

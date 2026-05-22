@@ -31,7 +31,7 @@ public sealed class AiUsageQuotaExceededException : Exception
 
 public sealed class AiUsageQuotaService : IAiUsageQuotaService
 {
-    private const int DefaultFreeDailyLimit = 20;
+    private const int DefaultFreeDailyLimit = 30;
 
     private static readonly IReadOnlyList<AiUsageQuotaFeatureDefinition> FeatureDefinitions =
     [
@@ -146,8 +146,15 @@ public sealed class AiUsageQuotaService : IAiUsageQuotaService
                 StringComparer.Ordinal,
                 cancellationToken);
 
+        var sharedFreeUsage = GetSharedFreeUsage(counts);
         var features = FeatureDefinitions
-            .Select(feature => BuildFeatureDto(feature, counts, subscription.IsPremium, freeDailyLimit, range.EndUtc))
+            .Select(feature => BuildFeatureDto(
+                feature,
+                counts,
+                subscription.IsPremium,
+                freeDailyLimit,
+                sharedFreeUsage,
+                range.EndUtc))
             .ToList();
 
         return new AiUsageQuotaStatusDto
@@ -209,15 +216,27 @@ public sealed class AiUsageQuotaService : IAiUsageQuotaService
         return configured is > 0 ? configured.Value : DefaultFreeDailyLimit;
     }
 
+    private static int GetSharedFreeUsage(IReadOnlyDictionary<string, int> counts)
+    {
+        var sharedActions = FeatureDefinitions
+            .Where(feature => feature.IsLimitedForFree)
+            .SelectMany(feature => feature.CountedActions)
+            .Distinct(StringComparer.Ordinal);
+
+        return sharedActions.Sum(action => counts.TryGetValue(action, out var count) ? count : 0);
+    }
+
     private static AiUsageQuotaFeatureDto BuildFeatureDto(
         AiUsageQuotaFeatureDefinition feature,
         IReadOnlyDictionary<string, int> counts,
         bool isPremium,
         int freeDailyLimit,
+        int sharedFreeUsage,
         DateTime resetAtUtc)
     {
-        var used = feature.CountedActions.Sum(action => counts.TryGetValue(action, out var count) ? count : 0);
+        var featureUsed = feature.CountedActions.Sum(action => counts.TryGetValue(action, out var count) ? count : 0);
         var isLimited = feature.IsLimitedForFree && !isPremium;
+        var used = isLimited ? sharedFreeUsage : featureUsed;
         var limit = isLimited ? freeDailyLimit : (int?)null;
         var remaining = limit.HasValue ? Math.Max(0, limit.Value - used) : (int?)null;
 

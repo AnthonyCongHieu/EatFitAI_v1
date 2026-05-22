@@ -34,6 +34,7 @@ export type AiQuotaSummary = {
 };
 
 const clampRatio = (value: number): number => Math.max(0, Math.min(1, value));
+const AI_SHARED_QUOTA_FEATURE_KEY = 'ai_shared_quota';
 
 const getRemaining = (feature: AiQuotaPresentationFeature): number => {
   if (!feature.isLimited) {
@@ -102,19 +103,24 @@ export const buildQuotaGroup = ({
   features: AiQuotaPresentationFeature[];
   mode: AiQuotaGroupMode;
 }): AiQuotaGroup => {
-  const title = mode === 'scan' ? 'Quét món' : 'Ghi chú & truy vấn';
+  const title = mode === 'scan' ? 'Quét món' : 'AI khác';
   const subtitle =
     mode === 'scan'
       ? 'Camera, ảnh món ăn và nhận diện AI.'
       : 'Voice, công thức, phân tích và mục tiêu AI.';
 
+  const sharedAiQuota = features.filter(
+    (feature) => feature.key === AI_SHARED_QUOTA_FEATURE_KEY,
+  );
   const selected =
     mode === 'scan'
       ? features.filter((feature) => feature.key === 'vision_scan')
-      : features.filter(
-          (feature) =>
-            feature.key !== 'vision_scan' && feature.isLimited && feature.limit != null,
-        );
+      : sharedAiQuota.length > 0
+        ? sharedAiQuota
+        : features.filter(
+            (feature) =>
+              feature.key !== 'vision_scan' && feature.isLimited && feature.limit != null,
+          );
 
   if (
     selected.length === 0 ||

@@ -9,19 +9,24 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Defs, Mask, Rect } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Mask,
+  RadialGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
 import { ThemedText } from '../../../components/ThemedText';
 import MoChiSprite from '../MoChiSprite';
 import {
   MOCHI_TUTORIAL_FLOWS,
   type MoChiTutorialStep,
-  getMoChiTutorialFlowIndex,
+  type MoChiTutorialTargetId,
+  getMoChiTutorialStepPosition,
 } from './mochiTutorialCatalog';
-import {
-  type MoChiTutorialFrame,
-  useMoChiTutorial,
-} from './MoChiTutorialContext';
+import { type MoChiTutorialFrame, useMoChiTutorial } from './MoChiTutorialContext';
 import {
   areMoChiTutorialFramesStable,
   getMoChiTutorialSpotlightLayout,
@@ -32,6 +37,7 @@ const MEASURE_RETRY_MS = 80;
 const MEASURE_MAX_ATTEMPTS = 16;
 const DEFAULT_COACH_CARD_HEIGHT = 128;
 const MIN_TARGET_SIZE = 24;
+const TAB_ROUTE_NAMES = new Set(['HomeTab', 'MealDiary', 'VoiceTab', 'StatsTab', 'ProfileTab']);
 
 type MoChiTutorialHostProps = {
   currentRouteName?: string | null;
@@ -67,11 +73,7 @@ const SkipButton = ({
     accessibilityLabel="Bỏ qua hướng dẫn MoChi"
     onPress={onPress}
     hitSlop={10}
-    style={({ pressed }) => [
-      styles.skipButton,
-      { top },
-      pressed && styles.pressed,
-    ]}
+    style={({ pressed }) => [styles.skipButton, { top }, pressed && styles.pressed]}
   >
     <Ionicons name="close" size={16} color="#E5E7EB" />
     <ThemedText style={styles.skipText}>Bỏ qua</ThemedText>
@@ -88,32 +90,78 @@ const SpotlightMask = ({
   screenWidth: number;
   screenHeight: number;
   color: string;
-}): React.ReactElement => (
-  <Svg pointerEvents="none" width={screenWidth} height={screenHeight} style={StyleSheet.absoluteFill}>
-    <Defs>
-      <Mask id="mochiTutorialSpotlightMask">
-        <Rect x="0" y="0" width={screenWidth} height={screenHeight} fill="white" />
-        <Rect
-          x={ring.left}
-          y={ring.top}
-          width={ring.width}
-          height={ring.height}
-          rx={ring.borderRadius}
-          ry={ring.borderRadius}
-          fill="black"
-        />
-      </Mask>
-    </Defs>
-    <Rect
-      x="0"
-      y="0"
+}): React.ReactElement => {
+  const shouldRenderCircle =
+    Math.abs(ring.width - ring.height) < 0.5
+    && ring.borderRadius >= ring.width / 2 - 0.5;
+  const maskFeather = shouldRenderCircle ? Math.max(0, ring.maskFeather ?? 0) : 0;
+  const circleRadius = ring.width / 2;
+  const circleCenterX = ring.left + circleRadius;
+  const circleCenterY = ring.top + ring.height / 2;
+  const featherStart = circleRadius > 0
+    ? Math.max(0, Math.min(1, (circleRadius - maskFeather) / circleRadius))
+    : 1;
+
+  const maskHeight = screenHeight + 200;
+
+  return (
+    <Svg
+      pointerEvents="none"
       width={screenWidth}
-      height={screenHeight}
-      fill={color}
-      mask="url(#mochiTutorialSpotlightMask)"
-    />
-  </Svg>
-);
+      height={maskHeight}
+      style={StyleSheet.absoluteFill}
+    >
+      <Defs>
+        {shouldRenderCircle && maskFeather > 0 && (
+          <RadialGradient
+            id="mochiTutorialSpotlightFeather"
+            cx={circleCenterX}
+            cy={circleCenterY}
+            r={circleRadius}
+            gradientUnits="userSpaceOnUse"
+          >
+            <Stop offset="0%" stopColor="black" stopOpacity="1" />
+            <Stop
+              offset={`${Math.round(featherStart * 100)}%`}
+              stopColor="black"
+              stopOpacity="1"
+            />
+            <Stop offset="100%" stopColor="white" stopOpacity="1" />
+          </RadialGradient>
+        )}
+        <Mask id="mochiTutorialSpotlightMask">
+          <Rect x="0" y="0" width={screenWidth} height={maskHeight} fill="white" />
+          {shouldRenderCircle ? (
+            <Circle
+              cx={circleCenterX}
+              cy={circleCenterY}
+              r={circleRadius}
+              fill={maskFeather > 0 ? 'url(#mochiTutorialSpotlightFeather)' : 'black'}
+            />
+          ) : (
+            <Rect
+              x={ring.left}
+              y={ring.top}
+              width={ring.width}
+              height={ring.height}
+              rx={ring.borderRadius}
+              ry={ring.borderRadius}
+              fill="black"
+            />
+          )}
+        </Mask>
+      </Defs>
+      <Rect
+        x="0"
+        y="0"
+        width={screenWidth}
+        height={maskHeight}
+        fill={color}
+        mask="url(#mochiTutorialSpotlightMask)"
+      />
+    </Svg>
+  );
+};
 
 const OverviewCard = ({
   onStart,
@@ -150,10 +198,7 @@ const OverviewCard = ({
         accessibilityRole="button"
         accessibilityLabel="Bắt đầu hướng dẫn MoChi"
         onPress={onStart}
-        style={({ pressed }) => [
-          styles.primaryButton,
-          pressed && styles.pressed,
-        ]}
+        style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
       >
         <ThemedText style={styles.primaryButtonText}>Bắt đầu</ThemedText>
         <Ionicons name="arrow-forward" size={18} color="#082112" />
@@ -164,15 +209,14 @@ const OverviewCard = ({
 
 const SpotlightCard = ({
   step,
-  currentFlowIndex,
   onContinue,
   onMeasured,
 }: {
   step: MoChiTutorialStep;
-  currentFlowIndex: number;
   onContinue?: () => void;
   onMeasured?: (height: number) => void;
 }): React.ReactElement => {
+  const stepPosition = getMoChiTutorialStepPosition(step);
   const handleLayout = (event: LayoutChangeEvent) => {
     const measuredHeight = event.nativeEvent.layout.height;
     if (measuredHeight > 0) {
@@ -181,82 +225,121 @@ const SpotlightCard = ({
   };
 
   return (
-  <View style={styles.coachCard} onLayout={handleLayout}>
-    <View style={styles.coachHeader}>
-      <MoChiSprite poseKey={step.poseKey} size={38} variant="full" animated />
-      <View style={styles.coachCopy}>
-        <ThemedText style={styles.coachStep}>
-          {currentFlowIndex + 1}/{MOCHI_TUTORIAL_FLOWS.length}
-        </ThemedText>
-        <ThemedText style={styles.coachTitle}>{step.title}</ThemedText>
+    <View style={styles.coachCard} onLayout={handleLayout}>
+      <View style={styles.coachHeader}>
+        <MoChiSprite poseKey={step.poseKey} size={38} variant="full" animated />
+        <View style={styles.coachCopy}>
+          <ThemedText style={styles.coachStep}>{stepPosition.displayLabel}</ThemedText>
+          <ThemedText style={styles.coachTitle}>{step.title}</ThemedText>
+        </View>
       </View>
+      <ThemedText style={styles.coachBody}>{step.body}</ThemedText>
+      <StepProgress currentFlowIndex={stepPosition.flowIndex} />
+      {onContinue && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={step.primaryActionLabel}
+          onPress={onContinue}
+          style={({ pressed }) => [styles.inlineButton, pressed && styles.pressed]}
+        >
+          <ThemedText style={styles.inlineButtonText}>
+            {step.primaryActionLabel}
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={16} color="#D9FBE5" />
+        </Pressable>
+      )}
     </View>
-    <ThemedText style={styles.coachBody}>{step.body}</ThemedText>
-    <StepProgress currentFlowIndex={currentFlowIndex} />
-    {onContinue && (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={step.primaryActionLabel}
-        onPress={onContinue}
-        style={({ pressed }) => [
-          styles.inlineButton,
-          pressed && styles.pressed,
-        ]}
-      >
-        <ThemedText style={styles.inlineButtonText}>{step.primaryActionLabel}</ThemedText>
-        <Ionicons name="chevron-forward" size={16} color="#D9FBE5" />
-      </Pressable>
-    )}
-  </View>
   );
 };
 
 const TransitionNote = ({
   step,
-  currentFlowIndex,
   onSkip,
   onContinue,
   topInset,
 }: {
   step: MoChiTutorialStep;
-  currentFlowIndex: number;
   onSkip: () => void;
   onContinue: () => void;
   topInset: number;
-}): React.ReactElement => (
-  <View pointerEvents="box-none" style={styles.transitionRoot}>
-    <SkipButton onPress={onSkip} top={topInset + 12} />
-    <View style={[styles.transitionNote, { top: topInset + 72 }]}>
-      <View style={styles.transitionCopy}>
-        <ThemedText style={styles.coachStep}>
-          {currentFlowIndex + 1}/{MOCHI_TUTORIAL_FLOWS.length}
-        </ThemedText>
-        <ThemedText style={styles.transitionTitle}>{step.title}</ThemedText>
-        <ThemedText style={styles.transitionText}>
-          {step.transitionNote}
-        </ThemedText>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={step.transitionActionLabel ?? 'Tiếp tục hướng dẫn'}
-        onPress={onContinue}
-        style={({ pressed }) => [
-          styles.transitionButton,
-          pressed && styles.pressed,
-        ]}
-      >
-        <ThemedText style={styles.transitionButtonText}>
-          {step.transitionActionLabel ?? 'Tiếp tục'}
-        </ThemedText>
-        <Ionicons
-          name={step.completionBehavior === 'complete' ? 'checkmark' : 'home'}
-          size={16}
-          color="#D9FBE5"
-        />
-      </Pressable>
+}): React.ReactElement => {
+  const stepPosition = getMoChiTutorialStepPosition(step);
+
+  return (
+    <View pointerEvents="box-none" style={styles.transitionRoot}>
+      {step.coachPlacement === 'routeChip' ? (
+        <View style={[styles.routeChip, { top: topInset + 18 }]}>
+          <View style={styles.routeChipCopy}>
+            <ThemedText style={styles.routeChipStep}>
+              {stepPosition.displayLabel}
+            </ThemedText>
+            <ThemedText style={styles.routeChipTitle} numberOfLines={1}>
+              {step.title}
+            </ThemedText>
+            <ThemedText style={styles.routeChipText} numberOfLines={1}>
+              {step.transitionNote}
+            </ThemedText>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={step.transitionActionLabel ?? 'Continue tutorial'}
+            onPress={onContinue}
+            style={({ pressed }) => [styles.routeChipAction, pressed && styles.pressed]}
+          >
+            <ThemedText style={styles.routeChipActionText} numberOfLines={1}>
+              {step.transitionActionLabel ?? 'Continue'}
+            </ThemedText>
+            <Ionicons
+              name={step.completionBehavior === 'complete' ? 'checkmark' : 'home'}
+              size={15}
+              color="#082112"
+            />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip MoChi tutorial"
+            onPress={onSkip}
+            hitSlop={8}
+            style={({ pressed }) => [styles.routeChipSkip, pressed && styles.pressed]}
+          >
+            <Ionicons name="close" size={16} color="#E5E7EB" />
+          </Pressable>
+        </View>
+      ) : (
+        <>
+          <SkipButton onPress={onSkip} top={topInset + 12} />
+          <View style={[styles.transitionNote, { top: topInset + 72 }]}>
+            <View style={styles.transitionCopy}>
+              <ThemedText style={styles.coachStep}>
+                {stepPosition.displayLabel}
+              </ThemedText>
+              <ThemedText style={styles.transitionTitle}>{step.title}</ThemedText>
+              <ThemedText style={styles.transitionText}>{step.transitionNote}</ThemedText>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={step.transitionActionLabel ?? 'Tiếp tục hướng dẫn'}
+              onPress={onContinue}
+              style={({ pressed }) => [
+                styles.transitionButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <ThemedText style={styles.transitionButtonText}>
+                {step.transitionActionLabel ?? 'Tiếp tục'}
+              </ThemedText>
+              <Ionicons
+                name={step.completionBehavior === 'complete' ? 'checkmark' : 'home'}
+                size={16}
+                color="#D9FBE5"
+              />
+            </Pressable>
+          </View>
+        </>
+      )}
     </View>
-  </View>
-);
+  );
+};
 
 const isValidTargetFrame = (
   frame: MoChiTutorialFrame | null,
@@ -282,11 +365,30 @@ const isValidTargetFrame = (
   const frameBottom = frame.y + frame.height;
 
   return (
-    frameRight > 0
-    && frame.x < screenWidth
-    && frameBottom > topInset
-    && frame.y < screenHeight - bottomInset
+    frameRight > 0 &&
+    frame.x < screenWidth &&
+    frameBottom > topInset &&
+    frame.y < screenHeight - bottomInset
   );
+};
+
+const isRouteReadyForRootTarget = (
+  targetId: MoChiTutorialTargetId,
+  currentRouteName?: string | null,
+): boolean => {
+  if (!currentRouteName) {
+    return false;
+  }
+
+  if (targetId === 'home_water') {
+    return currentRouteName === 'HomeTab';
+  }
+
+  if (targetId === 'mochi_hub' || targetId === 'stats_tab') {
+    return TAB_ROUTE_NAMES.has(currentRouteName);
+  }
+
+  return true;
 };
 
 const MoChiTutorialHost = ({
@@ -304,15 +406,23 @@ const MoChiTutorialHost = ({
     skipTutorial,
     measureTarget,
     activateCurrentTarget,
+    targetRegistryRevision,
   } = useMoChiTutorial();
   const [targetFrame, setTargetFrame] = useState<MoChiTutorialFrame | null>(null);
   const [coachCardHeight, setCoachCardHeight] = useState(DEFAULT_COACH_CARD_HEIGHT);
+
+  useEffect(() => {
+    if (phase === 'transition' && currentRouteName && TAB_ROUTE_NAMES.has(currentRouteName)) {
+      continueFromTransition();
+    }
+  }, [phase, currentRouteName, continueFromTransition]);
 
   useEffect(() => {
     if (
       phase !== 'spotlight'
       || !currentStep
       || currentStep.surface !== 'root'
+      || !isRouteReadyForRootTarget(currentStep.targetId, currentRouteName)
     ) {
       setTargetFrame(null);
       return;
@@ -379,8 +489,14 @@ const MoChiTutorialHost = ({
     insets.top,
     measureTarget,
     phase,
+    targetRegistryRevision,
     width,
   ]);
+
+  const spotlightBottomInset =
+    currentStep?.targetId === 'mochi_hub' || currentStep?.targetId === 'stats_tab'
+      ? 0
+      : insets.bottom;
 
   const spotlightLayout = useMemo(() => {
     if (!targetFrame) {
@@ -392,11 +508,19 @@ const MoChiTutorialHost = ({
       screenWidth: width,
       screenHeight: height,
       topInset: insets.top,
-      bottomInset: insets.bottom,
+      bottomInset: spotlightBottomInset,
       highlightProfile: currentStep?.highlightProfile,
       cardHeight: coachCardHeight,
     });
-  }, [coachCardHeight, currentStep?.highlightProfile, height, insets.bottom, insets.top, targetFrame, width]);
+  }, [
+    coachCardHeight,
+    currentStep?.highlightProfile,
+    height,
+    insets.top,
+    spotlightBottomInset,
+    targetFrame,
+    width,
+  ]);
 
   if (!isTutorialVisible) {
     return null;
@@ -414,9 +538,34 @@ const MoChiTutorialHost = ({
       >
         <View style={styles.modalRoot}>
           <View style={styles.overviewScrim} />
-          <OverviewCard
-            onStart={nextStep}
+          <OverviewCard onStart={nextStep} onSkip={skipTutorial} topInset={insets.top} />
+        </View>
+      </Modal>
+    );
+  }
+
+  if (phase === 'transition' && currentStep) {
+    if (
+      currentStep.destinationRouteName &&
+      currentRouteName !== currentStep.destinationRouteName
+    ) {
+      return null;
+    }
+
+    return (
+      <Modal
+        transparent
+        visible
+        animationType="fade"
+        onRequestClose={skipTutorial}
+        statusBarTranslucent
+        presentationStyle="overFullScreen"
+      >
+        <View style={styles.modalRoot}>
+          <TransitionNote
+            step={currentStep}
             onSkip={skipTutorial}
+            onContinue={continueFromTransition}
             topInset={insets.top}
           />
         </View>
@@ -424,33 +573,10 @@ const MoChiTutorialHost = ({
     );
   }
 
-  const currentFlowIndex = currentStep
-    ? Math.max(0, getMoChiTutorialFlowIndex(currentStep.flowId))
-    : 0;
-
-  if (phase === 'transition' && currentStep) {
-    if (
-      currentStep.destinationRouteName
-      && currentRouteName !== currentStep.destinationRouteName
-    ) {
-      return null;
-    }
-
-    return (
-      <TransitionNote
-        step={currentStep}
-        currentFlowIndex={currentFlowIndex}
-        onSkip={skipTutorial}
-        onContinue={continueFromTransition}
-        topInset={insets.top}
-      />
-    );
-  }
-
   if (
-    phase !== 'spotlight'
-    || !currentStep
-    || currentStep.surface === 'smart_add_sheet'
+    phase !== 'spotlight' ||
+    !currentStep ||
+    currentStep.surface === 'smart_add_sheet'
   ) {
     return null;
   }
@@ -459,67 +585,104 @@ const MoChiTutorialHost = ({
 
   if (!spotlightLayout) {
     return (
-      <View pointerEvents="box-none" style={styles.rootOverlay}>
-        <View pointerEvents="none" style={styles.pendingScrim} />
-        <SkipButton onPress={skipTutorial} top={insets.top + 12} />
-      </View>
+      <Modal
+        transparent
+        visible
+        animationType="fade"
+        onRequestClose={skipTutorial}
+        statusBarTranslucent
+        presentationStyle="overFullScreen"
+      >
+        <View style={styles.modalRoot}>
+          <View pointerEvents="box-none" style={styles.rootOverlay}>
+            <View pointerEvents="none" style={styles.pendingScrim} />
+            <SkipButton onPress={skipTutorial} top={insets.top + 12} />
+          </View>
+        </View>
+      </Modal>
     );
   }
 
   const coachLayout = spotlightLayout.card;
+  const shouldRenderFocusOutline = currentStep.highlightProfile !== 'dock';
 
   return (
-    <View pointerEvents="box-none" style={styles.rootOverlay}>
-      <SpotlightMask
-        ring={spotlightLayout.ring}
-        screenWidth={width}
-        screenHeight={height}
-        color="rgba(4, 8, 18, 0.68)"
-      />
-      {!needsContinue && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Chạm vào ${currentStep?.title || 'mục tiêu'}`}
-          onPress={activateCurrentTarget}
-          style={{
-            position: 'absolute',
-            left: spotlightLayout.ring.left,
-            top: spotlightLayout.ring.top,
-            width: spotlightLayout.ring.width,
-            height: spotlightLayout.ring.height,
-            borderRadius: spotlightLayout.ring.borderRadius,
-            backgroundColor: 'rgba(0, 0, 0, 0.01)',
-            zIndex: 42,
-          }}
-        />
-      )}
-      <SkipButton onPress={skipTutorial} top={insets.top + 12} />
-      <View
-        pointerEvents={needsContinue ? 'auto' : 'none'}
-        style={[
-          styles.spotlightCardWrap,
-          {
-            left: coachLayout.left,
-            top: coachLayout.top,
-            width: coachLayout.width,
-            minHeight: coachLayout.height,
-          },
-        ]}
-      >
-        <SpotlightCard
-          step={currentStep}
-          currentFlowIndex={currentFlowIndex}
-          onContinue={needsContinue ? advanceInformationalStep : undefined}
-          onMeasured={(measuredHeight) => {
-            setCoachCardHeight((previousHeight) => (
-              Math.abs(previousHeight - measuredHeight) > 2
-                ? measuredHeight
-                : previousHeight
-            ));
-          }}
-        />
+    <Modal
+      transparent
+      visible
+      animationType="fade"
+      onRequestClose={skipTutorial}
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+    >
+      <View style={styles.modalRoot}>
+        <View pointerEvents="box-none" style={styles.rootOverlay}>
+          <SpotlightMask
+            ring={spotlightLayout.ring}
+            screenWidth={width}
+            screenHeight={height}
+            color="rgba(4, 8, 18, 0.68)"
+          />
+          {shouldRenderFocusOutline && (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.focusTargetOutline,
+                {
+                  left: spotlightLayout.ring.left,
+                  top: spotlightLayout.ring.top,
+                  width: spotlightLayout.ring.width,
+                  height: spotlightLayout.ring.height,
+                  borderRadius: spotlightLayout.ring.borderRadius,
+                },
+              ]}
+            />
+          )}
+          {!needsContinue && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Chạm vào ${currentStep?.title || 'mục tiêu'}`}
+              onPress={activateCurrentTarget}
+              style={{
+                position: 'absolute',
+                left: spotlightLayout.ring.left,
+                top: spotlightLayout.ring.top,
+                width: spotlightLayout.ring.width,
+                height: spotlightLayout.ring.height,
+                borderRadius: spotlightLayout.ring.borderRadius,
+                backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                zIndex: 42,
+              }}
+            />
+          )}
+          <SkipButton onPress={skipTutorial} top={insets.top + 12} />
+          <View
+            pointerEvents={needsContinue ? 'auto' : 'none'}
+            style={[
+              styles.spotlightCardWrap,
+              {
+                left: coachLayout.left,
+                top: coachLayout.top,
+                width: coachLayout.width,
+                minHeight: coachLayout.height,
+              },
+            ]}
+          >
+            <SpotlightCard
+              step={currentStep}
+              onContinue={needsContinue ? advanceInformationalStep : undefined}
+              onMeasured={(measuredHeight) => {
+                setCoachCardHeight((previousHeight) =>
+                  Math.abs(previousHeight - measuredHeight) > 2
+                    ? measuredHeight
+                    : previousHeight,
+                );
+              }}
+            />
+          </View>
+        </View>
       </View>
-    </View>
+    </Modal>
   );
 };
 
@@ -538,6 +701,18 @@ const styles = StyleSheet.create({
   pendingScrim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(4, 8, 18, 0.28)',
+  },
+  focusTargetOutline: {
+    position: 'absolute',
+    zIndex: 40,
+    borderWidth: 2,
+    borderColor: '#4BE277',
+    backgroundColor: 'rgba(75, 226, 119, 0.055)',
+    shadowColor: '#4BE277',
+    shadowOpacity: 0.38,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   centerStage: {
     flex: 1,
@@ -730,6 +905,80 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 14,
+  },
+  routeChip: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    zIndex: 18,
+    minHeight: 48,
+    borderRadius: 18,
+    paddingLeft: 12,
+    paddingRight: 8,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(15, 23, 42, 0.86)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.30)',
+    shadowColor: '#000',
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 14,
+  },
+  routeChipCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  routeChipStep: {
+    color: '#8FE7AE',
+    fontSize: 11,
+    lineHeight: 14,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 0,
+  },
+  routeChipTitle: {
+    color: '#F8FAFC',
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 0,
+  },
+  routeChipText: {
+    display: 'none',
+    color: '#CBD5E1',
+    fontSize: 11,
+    lineHeight: 15,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    letterSpacing: 0,
+  },
+  routeChipAction: {
+    minHeight: 34,
+    maxWidth: 138,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#4BE277',
+  },
+  routeChipActionText: {
+    color: '#082112',
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 0,
+  },
+  routeChipSkip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.16)',
   },
   transitionCopy: {
     flex: 1,

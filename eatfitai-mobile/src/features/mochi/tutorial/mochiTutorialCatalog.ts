@@ -23,10 +23,7 @@ export type MoChiTutorialTargetId =
   | 'home_water'
   | 'stats_tab';
 
-export type MoChiTutorialDestinationRouteName =
-  | 'AiCamera'
-  | 'FoodSearch'
-  | 'StatsTab';
+export type MoChiTutorialDestinationRouteName = 'AiCamera' | 'FoodSearch' | 'StatsTab';
 
 export type MoChiTutorialFlow = {
   id: MoChiTutorialFlowId;
@@ -40,9 +37,7 @@ export type MoChiTutorialCompletionBehavior =
   | 'navigate_then_wait'
   | 'complete';
 
-export type MoChiTutorialSurface =
-  | 'root'
-  | 'smart_add_sheet';
+export type MoChiTutorialSurface = 'root' | 'smart_add_sheet';
 
 export type MoChiTutorialCoachPlacement =
   | 'topSafe'
@@ -56,11 +51,7 @@ export type MoChiTutorialActivationMode =
   | 'info_continue'
   | 'target_press_complete';
 
-export type MoChiTutorialHighlightProfile =
-  | 'dock'
-  | 'tab'
-  | 'sheetAction'
-  | 'homeWater';
+export type MoChiTutorialHighlightProfile = 'dock' | 'tab' | 'sheetAction' | 'homeWater';
 
 export type MoChiTutorialStep = {
   id: MoChiTutorialStepId;
@@ -115,8 +106,8 @@ export const MOCHI_TUTORIAL_STEPS: readonly MoChiTutorialStep[] = [
     id: 'scan_open_hub',
     flowId: 'scan_food_flow',
     targetId: 'mochi_hub',
-    title: 'Mở MoChi',
-    body: 'Chạm biểu tượng ở giữa thanh dưới.',
+    title: 'Quét ảnh',
+    body: 'Mở MoChi ở giữa thanh dưới.',
     primaryActionLabel: 'Mở MoChi',
     completionBehavior: 'advance',
     surface: 'root',
@@ -136,7 +127,7 @@ export const MOCHI_TUTORIAL_STEPS: readonly MoChiTutorialStep[] = [
     primaryActionLabel: 'Nhận diện món ăn',
     completionBehavior: 'navigate_then_wait',
     surface: 'smart_add_sheet',
-    coachPlacement: 'sheetHeader',
+    coachPlacement: 'routeChip',
     activationMode: 'target_press_destination',
     highlightProfile: 'sheetAction',
     transitionNote: 'Quét món bằng ảnh tại đây.',
@@ -151,8 +142,8 @@ export const MOCHI_TUTORIAL_STEPS: readonly MoChiTutorialStep[] = [
     id: 'add_meal_open_hub',
     flowId: 'add_meal_flow',
     targetId: 'mochi_hub',
-    title: 'Mở thêm nhanh',
-    body: 'Chạm MoChi để mở menu thêm bữa.',
+    title: 'Thêm bữa',
+    body: 'Mở MoChi để chọn cách ghi bữa.',
     primaryActionLabel: 'Mở MoChi',
     completionBehavior: 'advance',
     surface: 'root',
@@ -172,7 +163,7 @@ export const MOCHI_TUTORIAL_STEPS: readonly MoChiTutorialStep[] = [
     primaryActionLabel: 'Ghi lại bữa ăn',
     completionBehavior: 'navigate_then_wait',
     surface: 'smart_add_sheet',
-    coachPlacement: 'sheetHeader',
+    coachPlacement: 'routeChip',
     activationMode: 'target_press_destination',
     highlightProfile: 'sheetAction',
     transitionNote: 'Gõ tên món, chọn kết quả rồi lưu.',
@@ -227,3 +218,34 @@ export const getMoChiTutorialStepById = (
 
 export const getMoChiTutorialFlowIndex = (flowId: MoChiTutorialFlowId): number =>
   MOCHI_TUTORIAL_FLOWS.findIndex((flow) => flow.id === flowId);
+
+export const getMoChiTutorialStepPosition = (
+  step: MoChiTutorialStep,
+): {
+  flowIndex: number;
+  stepIndexInFlow: number;
+  flowStepCount: number;
+  displayLabel: string;
+} => {
+  const flowSteps = MOCHI_TUTORIAL_STEPS.filter(
+    (candidate) => candidate.flowId === step.flowId,
+  );
+  const flowIndex = Math.max(0, getMoChiTutorialFlowIndex(step.flowId));
+  const stepIndexInFlow = Math.max(
+    0,
+    flowSteps.findIndex((candidate) => candidate.id === step.id),
+  );
+  const flowStepCount = Math.max(1, flowSteps.length);
+  const baseLabel = `${flowIndex + 1}/${MOCHI_TUTORIAL_FLOWS.length}`;
+  const displayLabel =
+    flowStepCount > 1
+      ? `${baseLabel} · ${stepIndexInFlow + 1}/${flowStepCount}`
+      : baseLabel;
+
+  return {
+    flowIndex,
+    stepIndexInFlow,
+    flowStepCount,
+    displayLabel,
+  };
+};

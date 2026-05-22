@@ -1,11 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Animated, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import type {
   MoChiTutorialHighlightProfile,
@@ -21,6 +15,8 @@ type MoChiTutorialTargetProps = {
   highlightProfile?: MoChiTutorialHighlightProfile;
   highlightRadius?: number;
   highlightInsets?: Partial<Record<'top' | 'right' | 'bottom' | 'left', number>>;
+  measureAdjustment?: Partial<Record<'x' | 'y' | 'width' | 'height', number>>;
+  showHalo?: boolean;
 };
 
 const PROFILE_DEFAULTS: Record<
@@ -39,8 +35,8 @@ const PROFILE_DEFAULTS: Record<
     insets: { top: 5, right: 7, bottom: 5, left: 7 },
   },
   sheetAction: {
-    radius: 24,
-    insets: { top: 4, right: 4, bottom: 4, left: 4 },
+    radius: 20,
+    insets: { top: 2, right: 2, bottom: 2, left: 2 },
   },
   homeWater: {
     radius: 22,
@@ -56,12 +52,19 @@ export const MoChiTutorialTarget = ({
   highlightProfile,
   highlightRadius,
   highlightInsets,
+  measureAdjustment,
+  showHalo = true,
 }: MoChiTutorialTargetProps): React.ReactElement => {
   const ref = useRef<View>(null);
   const focus = useRef(new Animated.Value(0)).current;
-  const { currentStep, phase, registerTarget } = useMoChiTutorial();
+  const activateTargetRef = useRef(onTutorialActivate);
+  const measureAdjustmentRef = useRef(measureAdjustment);
+  const { currentStep, phase, registerTarget, requestTargetMeasurement } =
+    useMoChiTutorial();
   const isActiveTarget = phase === 'spotlight' && currentStep?.targetId === targetId;
-  const activeHighlightProfile = highlightProfile ?? currentStep?.highlightProfile ?? 'sheetAction';
+  const hasTutorialActivate = typeof onTutorialActivate === 'function';
+  const activeHighlightProfile =
+    highlightProfile ?? currentStep?.highlightProfile ?? 'sheetAction';
   const profile = PROFILE_DEFAULTS[activeHighlightProfile];
   const resolvedInsets = {
     top: highlightInsets?.top ?? profile.insets.top,
@@ -71,14 +74,29 @@ export const MoChiTutorialTarget = ({
   };
   const resolvedRadius = highlightRadius ?? profile.radius;
 
-  const [layoutSize, setLayoutSize] = useState<{ width: number; height: number } | null>(null);
+  const [layoutSize, setLayoutSize] = useState<{ width: number; height: number } | null>(
+    null,
+  );
 
   const handleLayout = (e: any) => {
     const { width, height } = e.nativeEvent.layout;
     if (width > 0 && height > 0) {
-      setLayoutSize({ width, height });
+      setLayoutSize((currentSize) => {
+        if (
+          currentSize
+          && Math.abs(currentSize.width - width) < 0.5
+          && Math.abs(currentSize.height - height) < 0.5
+        ) {
+          return currentSize;
+        }
+
+        return { width, height };
+      });
     }
   };
+
+  activateTargetRef.current = onTutorialActivate;
+  measureAdjustmentRef.current = measureAdjustment;
 
   useEffect(() => {
     const scheduleMeasure = (callback: () => void) => {
@@ -91,7 +109,11 @@ export const MoChiTutorialTarget = ({
     };
 
     const unregister = registerTarget(targetId, {
-      activateTarget: onTutorialActivate,
+      activateTarget: hasTutorialActivate
+        ? () => {
+            activateTargetRef.current?.();
+          }
+        : undefined,
       measure: () =>
         new Promise((resolve) => {
           scheduleMeasure(() => {
@@ -106,14 +128,45 @@ export const MoChiTutorialTarget = ({
                 return;
               }
 
-              resolve({ x, y, width, height });
+              const currentAdjustment = measureAdjustmentRef.current;
+              const adjustedFrame = {
+                x: x + (currentAdjustment?.x ?? 0),
+                y: y + (currentAdjustment?.y ?? 0),
+                width: width + (currentAdjustment?.width ?? 0),
+                height: height + (currentAdjustment?.height ?? 0),
+              };
+
+              if (adjustedFrame.width <= 0 || adjustedFrame.height <= 0) {
+                resolve({ x, y, width, height });
+                return;
+              }
+
+              resolve(adjustedFrame);
             });
           });
         }),
     });
 
     return unregister;
-  }, [onTutorialActivate, registerTarget, targetId]);
+  }, [hasTutorialActivate, registerTarget, targetId]);
+
+  useEffect(() => {
+    if (!isActiveTarget) {
+      return;
+    }
+
+    requestTargetMeasurement(targetId);
+  }, [
+    isActiveTarget,
+    layoutSize?.height,
+    layoutSize?.width,
+    measureAdjustment?.height,
+    measureAdjustment?.width,
+    measureAdjustment?.x,
+    measureAdjustment?.y,
+    requestTargetMeasurement,
+    targetId,
+  ]);
 
   useEffect(() => {
     focus.stopAnimation();
@@ -135,8 +188,12 @@ export const MoChiTutorialTarget = ({
   }, [focus, isActiveTarget]);
 
   const highlightStyle = useMemo(() => {
-    const haloWidth = layoutSize ? layoutSize.width + resolvedInsets.left + resolvedInsets.right : undefined;
-    const haloHeight = layoutSize ? layoutSize.height + resolvedInsets.top + resolvedInsets.bottom : undefined;
+    const haloWidth = layoutSize
+      ? layoutSize.width + resolvedInsets.left + resolvedInsets.right
+      : undefined;
+    const haloHeight = layoutSize
+      ? layoutSize.height + resolvedInsets.top + resolvedInsets.bottom
+      : undefined;
 
     return {
       top: -resolvedInsets.top,
@@ -176,16 +233,13 @@ export const MoChiTutorialTarget = ({
       nativeID={`mochi-tutorial-${targetId}`}
       style={[styles.targetRoot, isActiveTarget && styles.activeTarget, style]}
     >
-      {children}
-      {isActiveTarget && (
+      {showHalo && isActiveTarget && (
         <Animated.View
           pointerEvents="none"
-          style={[
-            styles.highlightHalo,
-            highlightStyle,
-          ]}
+          style={[styles.highlightHalo, highlightStyle]}
         />
       )}
+      {children}
     </View>
   );
 };
@@ -202,13 +256,13 @@ const styles = StyleSheet.create({
   },
   highlightHalo: {
     position: 'absolute',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#4BE277',
-    backgroundColor: 'rgba(75, 226, 119, 0.10)',
+    backgroundColor: 'rgba(75, 226, 119, 0.055)',
     shadowColor: '#4BE277',
-    shadowOpacity: 0.56,
-    shadowRadius: 22,
+    shadowOpacity: 0.34,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 18,
+    elevation: 8,
   },
 });

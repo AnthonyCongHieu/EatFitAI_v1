@@ -125,9 +125,24 @@ describe('dailyLoopService', () => {
 
     expect(mockedApiClient.get).toHaveBeenCalledWith('/api/nutrition/daily-loop', {
       params: { date: '2026-05-20' },
+      validateStatus: expect.any(Function),
     });
     expect(loop.date).toBe('2026-05-20');
     expect(loop.dayState.status).toBe('partial');
+    expect(loop.oneJobToday.action).toBe('log_next_meal');
+  });
+
+  it('uses an empty compatible loop when the cloud backend does not expose the endpoint yet', async () => {
+    mockedApiClient.get.mockResolvedValue({
+      status: 404,
+      data: '',
+    });
+
+    const loop = await dailyLoopService.getDailyLoop('2026-05-20');
+
+    expect(loop.date).toBe('2026-05-20');
+    expect(loop.dayState.status).toBe('no_log');
+    expect(loop.mealBudgets).toEqual([]);
     expect(loop.oneJobToday.action).toBe('log_next_meal');
   });
 });

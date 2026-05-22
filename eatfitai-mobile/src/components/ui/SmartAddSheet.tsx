@@ -22,10 +22,9 @@ import { TEST_IDS } from '../../testing/testIds';
 import MoChiTutorialTarget from '../../features/mochi/tutorial/MoChiTutorialTarget';
 import { useMoChiTutorial } from '../../features/mochi/tutorial/MoChiTutorialContext';
 import {
-  MOCHI_TUTORIAL_FLOWS,
   type MoChiTutorialStep,
   type MoChiTutorialTargetId,
-  getMoChiTutorialFlowIndex,
+  getMoChiTutorialStepPosition,
 } from '../../features/mochi/tutorial/mochiTutorialCatalog';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -80,13 +79,13 @@ const SheetTutorialCoach = ({
   step: MoChiTutorialStep;
   onSkip: () => void;
 }): React.ReactElement => {
-  const currentFlowIndex = Math.max(0, getMoChiTutorialFlowIndex(step.flowId));
+  const stepPosition = getMoChiTutorialStepPosition(step);
 
   return (
     <View style={styles.sheetTutorialCoach}>
       <View style={styles.sheetTutorialCopy}>
         <ThemedText style={styles.sheetTutorialStep}>
-          {currentFlowIndex + 1}/{MOCHI_TUTORIAL_FLOWS.length}
+          {stepPosition.displayLabel}
         </ThemedText>
         <ThemedText style={styles.sheetTutorialTitle}>{step.title}</ThemedText>
         <ThemedText style={styles.sheetTutorialBody}>{step.body}</ThemedText>
@@ -108,16 +107,15 @@ const SheetTutorialCoach = ({
   );
 };
 
-export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, testID }) => {
+export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({
+  visible,
+  onClose,
+  testID,
+}) => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
-  const {
-    currentStep,
-    notifyTargetActivated,
-    phase,
-    skipTutorial,
-  } = useMoChiTutorial();
+  const { currentStep, notifyTargetActivated, phase, skipTutorial, notifySheetClosed } = useMoChiTutorial();
   const [isMounted, setIsMounted] = useState(visible);
   const [tutorialSheetReady, setTutorialSheetReady] = useState(false);
   const progress = useSharedValue(visible ? 1 : 0);
@@ -125,7 +123,14 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
     phase === 'spotlight' && currentStep?.surface === 'smart_add_sheet'
       ? currentStep.targetId
       : null;
-  const activeSheetTargetForRender = tutorialSheetReady ? activeTutorialSheetTarget : null;
+  const activeSheetTargetForRender = tutorialSheetReady
+    ? activeTutorialSheetTarget
+    : null;
+
+  const handleClose = () => {
+    notifySheetClosed();
+    onClose();
+  };
 
   useEffect(() => {
     if (visible) {
@@ -235,16 +240,14 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
       transparent
       visible={isMounted}
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       statusBarTranslucent
     >
       <View style={styles.overlay} pointerEvents="box-none">
-        <Animated.View
-          style={[StyleSheet.absoluteFill, backdropAnimatedStyle]}
-        >
+        <Animated.View style={[StyleSheet.absoluteFill, backdropAnimatedStyle]}>
           <Pressable
             style={styles.backdrop}
-            onPress={onClose}
+            onPress={handleClose}
             accessibilityRole="button"
             accessibilityLabel="Đóng thao tác nhanh"
           >
@@ -270,7 +273,11 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
         >
           <View style={styles.sheet}>
             <LinearGradient
-              colors={['rgba(75, 226, 119, 0.14)', 'rgba(23, 32, 51, 0.96)', DESIGN_TOKENS.glass]}
+              colors={[
+                'rgba(75, 226, 119, 0.14)',
+                'rgba(23, 32, 51, 0.96)',
+                DESIGN_TOKENS.glass,
+              ]}
               locations={[0, 0.38, 1]}
               style={StyleSheet.absoluteFill}
             />
@@ -283,7 +290,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Đóng thao tác nhanh"
-                onPress={onClose}
+                onPress={handleClose}
                 hitSlop={8}
                 style={({ pressed }) => [
                   styles.closeButton,
@@ -303,8 +310,12 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                 <View key={rowIndex} style={styles.actionRow}>
                   {rowActions.map((action) => {
                     const tutorialTargetId = getTutorialTargetId(action.testID);
+                    const isFocusedByTutorial =
+                      !!activeSheetTargetForRender &&
+                      tutorialTargetId === activeSheetTargetForRender;
                     const isDimmedByTutorial =
-                      !!activeSheetTargetForRender && tutorialTargetId !== activeSheetTargetForRender;
+                      !!activeSheetTargetForRender &&
+                      tutorialTargetId !== activeSheetTargetForRender;
                     const handleActionPress = () => {
                       if (tutorialTargetId) {
                         notifyTargetActivated(tutorialTargetId);
@@ -320,12 +331,17 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                         onPress={handleActionPress}
                         style={({ pressed }) => [
                           styles.actionCard,
+                          isFocusedByTutorial && styles.actionCardFocused,
                           isDimmedByTutorial && styles.actionCardDimmed,
                           pressed && styles.actionPressed,
                         ]}
                       >
                         <View style={styles.actionIconGlass}>
-                          <Ionicons name={action.icon} size={18} color={theme.colors.primary} />
+                          <Ionicons
+                            name={action.icon}
+                            size={18}
+                            color={theme.colors.primary}
+                          />
                         </View>
                         <View style={styles.actionCopy}>
                           <ThemedText style={styles.actionLabel} numberOfLines={2}>
@@ -338,13 +354,17 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose, 
                       </Pressable>
                     );
 
-                    if (tutorialTargetId && (!activeTutorialSheetTarget || tutorialSheetReady)) {
+                    if (
+                      tutorialTargetId &&
+                      (!activeTutorialSheetTarget || tutorialSheetReady)
+                    ) {
                       return (
                         <MoChiTutorialTarget
                           key={action.title}
                           targetId={tutorialTargetId}
                           style={styles.actionTarget}
                           highlightProfile="sheetAction"
+                          showHalo={false}
                           onTutorialActivate={action.onPress}
                         >
                           {actionCard}
@@ -443,17 +463,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sheetTutorialCoach: {
-    minHeight: 78,
-    borderRadius: 20,
+    minHeight: 66,
+    borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
     borderWidth: 1,
-    borderColor: 'rgba(75, 226, 119, 0.26)',
+    borderColor: 'rgba(75, 226, 119, 0.20)',
   },
   sheetTutorialCopy: {
     flex: 1,
@@ -461,25 +481,25 @@ const styles = StyleSheet.create({
   },
   sheetTutorialStep: {
     color: '#8FE7AE',
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 14,
     fontFamily: 'BeVietnamPro_700Bold',
   },
   sheetTutorialTitle: {
     color: DESIGN_TOKENS.label,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 19,
     fontFamily: 'BeVietnamPro_700Bold',
   },
   sheetTutorialBody: {
     color: DESIGN_TOKENS.meta,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     fontFamily: 'BeVietnamPro_600SemiBold',
-    marginTop: 2,
   },
   sheetTutorialSkip: {
-    minHeight: 34,
-    paddingHorizontal: 10,
+    minHeight: 32,
+    paddingHorizontal: 9,
     borderRadius: DESIGN_TOKENS.radiusFull,
     flexDirection: 'row',
     alignItems: 'center',
@@ -498,28 +518,33 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '100%',
-    minHeight: 80,
+    minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
+    gap: 5,
+    paddingHorizontal: 7,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 18,
     backgroundColor: 'rgba(17, 24, 39, 0.58)',
     borderWidth: 1,
     borderColor: DESIGN_TOKENS.actionBorder,
   },
+  actionCardFocused: {
+    backgroundColor: 'rgba(75, 226, 119, 0.13)',
+    borderColor: 'rgba(75, 226, 119, 0.72)',
+    borderWidth: 1.5,
+  },
   actionCardDimmed: {
-    opacity: 0.32,
+    opacity: 0.28,
   },
   actionPressed: {
     opacity: 0.82,
     transform: [{ scale: 0.98 }],
   },
   actionIconGlass: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: DESIGN_TOKENS.actionTint,
@@ -537,17 +562,17 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     color: DESIGN_TOKENS.label,
-    fontSize: 12.5,
+    fontSize: 12,
     fontFamily: 'BeVietnamPro_700Bold',
-    lineHeight: 15,
-    letterSpacing: -0.3,
+    lineHeight: 14,
+    letterSpacing: 0,
   },
   actionMeta: {
     color: DESIGN_TOKENS.meta,
     fontSize: 10,
     fontFamily: 'BeVietnamPro_700Bold',
     marginTop: 2,
-    letterSpacing: -0.15,
+    letterSpacing: 0,
   },
 });
 

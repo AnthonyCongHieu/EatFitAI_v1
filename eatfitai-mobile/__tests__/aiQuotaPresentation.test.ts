@@ -17,28 +17,41 @@ const feature = (
 });
 
 describe('aiQuotaPresentation', () => {
-  it('marks a limited group as empty when remaining is zero', () => {
+  it('shows free scan as unlimited', () => {
     const group = buildQuotaGroup({
-      features: [feature({ key: 'vision_scan', limit: 5, used: 5, remaining: 0 })],
+      features: [
+        feature({
+          key: 'vision_scan',
+          isLimited: false,
+          limit: null,
+          used: 12,
+          remaining: null,
+        }),
+      ],
       mode: 'scan',
     });
 
-    expect(group.label).toBe('Còn 0/5 lượt');
-    expect(group.tone).toBe('empty');
-    expect(group.statusText).toBe('Đã hết lượt');
-    expect(group.ratio).toBe(0);
+    expect(group.label).toBe('Không giới hạn');
+    expect(group.tone).toBe('unlimited');
+    expect(group.isUnlimited).toBe(true);
   });
 
-  it('summarizes non-scan limited features into one assistant group', () => {
+  it('shows the shared quota for non-scan AI features', () => {
     const group = buildQuotaGroup({
       features: [
-        feature({ key: 'voice_parse', limit: 80, used: 20, remaining: 60 }),
-        feature({ key: 'recipe_suggest', limit: 20, used: 10, remaining: 10 }),
+        feature({
+          key: 'ai_shared_quota',
+          label: 'AI khác',
+          limit: 30,
+          used: 9,
+          remaining: 21,
+        }),
       ],
       mode: 'assistant',
     });
 
-    expect(group.label).toBe('Còn 70/100 lượt');
+    expect(group.title).toBe('AI khác');
+    expect(group.label).toBe('Còn 21/30 lượt');
     expect(group.tone).toBe('healthy');
     expect(group.ratio).toBe(0.7);
   });
@@ -46,8 +59,14 @@ describe('aiQuotaPresentation', () => {
   it('returns a smart summary status for low remaining quota', () => {
     const summary = summarizeAiQuota({
       features: [
-        feature({ key: 'vision_scan', limit: 5, used: 5, remaining: 0 }),
-        feature({ key: 'voice_parse', limit: 100, used: 94, remaining: 6 }),
+        feature({
+          key: 'vision_scan',
+          isLimited: false,
+          limit: null,
+          used: 20,
+          remaining: null,
+        }),
+        feature({ key: 'ai_shared_quota', limit: 30, used: 28, remaining: 2 }),
       ],
       planCode: 'free',
       isPremium: false,
@@ -55,7 +74,9 @@ describe('aiQuotaPresentation', () => {
     });
 
     expect(summary.planLabel).toBe('Free');
-    expect(summary.tone).toBe('empty');
-    expect(summary.statusText).toBe('Đã hết lượt dùng');
+    expect(summary.scan.isUnlimited).toBe(true);
+    expect(summary.assistant.label).toBe('Còn 2/30 lượt');
+    expect(summary.tone).toBe('low');
+    expect(summary.statusText).toBe('Sắp hết lượt dùng');
   });
 });

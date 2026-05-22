@@ -126,11 +126,12 @@ const CommandButton = ({
   const activeProgress = useSharedValue(isFocused ? 1 : 0);
   const hubProgress = useSharedValue(isHubOpen ? 1 : 0);
   const { currentStep, notifyTargetActivated, phase } = useMoChiTutorial();
-  const tutorialTargetId: MoChiTutorialTargetId | null = command.target === 'MoChiHub'
-    ? 'mochi_hub'
-    : command.target === 'StatsTab'
-      ? 'stats_tab'
-      : null;
+  const tutorialTargetId: MoChiTutorialTargetId | null =
+    command.target === 'MoChiHub'
+      ? 'mochi_hub'
+      : command.target === 'StatsTab'
+        ? 'stats_tab'
+        : null;
   const isTutorialTargetActive =
     phase === 'spotlight' && currentStep?.targetId === tutorialTargetId;
   const anim = useAnimatedStyle(() => ({
@@ -190,21 +191,16 @@ const CommandButton = ({
     <Animated.View
       style={[
         styles.commandInner,
-        command.isPrimary && (tutorialTargetId ? styles.primaryDockInner : styles.primaryDock),
+        command.isPrimary &&
+          (tutorialTargetId ? styles.primaryDockInner : styles.primaryDock),
         anim,
       ]}
     >
       {command.isPrimary ? (
-        <View
-          style={styles.primaryDockHalo}
-        >
+        <View style={styles.primaryDockHalo}>
           <View style={styles.primaryDockCore}>
             <View style={styles.primaryDockMascotPlate}>
-              <MoChiSprite
-                poseKey={dockPose}
-                size={62}
-                animated={false}
-              />
+              <MoChiSprite poseKey={dockPose} size={62} animated={false} />
             </View>
           </View>
         </View>
@@ -262,11 +258,15 @@ const CommandButton = ({
           targetId={tutorialTargetId}
           highlightProfile={command.isPrimary ? 'dock' : 'tab'}
           style={command.isPrimary ? styles.primaryDock : undefined}
+          showHalo={!command.isPrimary}
+          measureAdjustment={command.isPrimary ? { y: 36 } : undefined}
           onTutorialActivate={handleTutorialActivate}
         >
           {inner}
         </MoChiTutorialTarget>
-      ) : inner}
+      ) : (
+        inner
+      )}
     </Pressable>
   );
 
@@ -277,7 +277,11 @@ type CustomTabBarProps = BottomTabBarProps & {
   isOverlay?: boolean;
 };
 
-const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverlay = false }) => {
+const CustomTabBar: React.FC<CustomTabBarProps> = ({
+  state,
+  navigation,
+  isOverlay = false,
+}) => {
   const insets = useSafeAreaInsets();
   const { theme } = useAppTheme();
   const [isHubVisible, setIsHubVisible] = React.useState(false);
@@ -299,7 +303,10 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
   const current = state.routes[state.index]?.name ?? '';
   const shouldHideForVoice = !isOverlay && current === 'VoiceTab';
   const mochiDockPose = resolveMoChiDockPose(current);
-  const navigateTab = navigation.navigate as unknown as (name: string, params?: unknown) => void;
+  const navigateTab = navigation.navigate as unknown as (
+    name: string,
+    params?: unknown,
+  ) => void;
 
   useMoChiSurfacePresence({
     id: 'bottomDock:main',
@@ -326,7 +333,9 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
 
     const route = state.routes.find((item) => item.name === command.target);
     if (!route) {
-      console.warn(`[navigation] Tab route is not available for ${command.target} command.`);
+      console.warn(
+        `[navigation] Tab route is not available for ${command.target} command.`,
+      );
       return;
     }
 
@@ -376,8 +385,24 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, isOverla
   }
 
   return (
-    <View style={[styles.outerWrapper, { bottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 12) : 16 }]} pointerEvents="box-none">
-      <View style={[styles.bar, { backgroundColor: isDark ? 'rgba(9, 14, 28, 0.92)' : 'rgba(255, 255, 255, 0.95)', borderColor: isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(0, 0, 0, 0.06)' }]}>
+    <View
+      style={[
+        styles.outerWrapper,
+        { bottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 12) : 16 },
+      ]}
+      pointerEvents="box-none"
+    >
+      <View
+        style={[
+          styles.bar,
+          {
+            backgroundColor: isDark
+              ? 'rgba(9, 14, 28, 0.92)'
+              : 'rgba(255, 255, 255, 0.95)',
+            borderColor: isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(0, 0, 0, 0.06)',
+          },
+        ]}
+      >
         <View style={styles.row}>
           {COMMAND_ITEMS.map((command) => (
             <CommandButton

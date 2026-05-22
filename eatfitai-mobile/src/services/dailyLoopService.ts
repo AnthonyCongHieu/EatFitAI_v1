@@ -143,7 +143,9 @@ const normalizeMealState = (value: unknown): DayMealState => {
     calories: toNumberOr(readField(data, 'calories', 'Calories')),
     isSkipped: toBoolean(readField(data, 'isSkipped', 'IsSkipped')),
     isRough: toBoolean(readField(data, 'isRough', 'IsRough')),
-    confidenceScore: toNumberOrNull(readField(data, 'confidenceScore', 'ConfidenceScore')),
+    confidenceScore: toNumberOrNull(
+      readField(data, 'confidenceScore', 'ConfidenceScore'),
+    ),
   };
 };
 
@@ -159,12 +161,26 @@ const normalizeDayState = (value: unknown, fallbackDate: string): DayState => {
     mainMealCount: toNumberOr(readField(data, 'mainMealCount', 'MainMealCount')),
     snackOnly: toBoolean(readField(data, 'snackOnly', 'SnackOnly')),
     totalCalories: toNumberOr(readField(data, 'totalCalories', 'TotalCalories')),
-    confidenceScore: toNumberOr(readField(data, 'confidenceScore', 'ConfidenceScore'), 100),
-    nutritionStatus: toString(readField(data, 'nutritionStatus', 'NutritionStatus'), 'unknown'),
+    confidenceScore: toNumberOr(
+      readField(data, 'confidenceScore', 'ConfidenceScore'),
+      100,
+    ),
+    nutritionStatus: toString(
+      readField(data, 'nutritionStatus', 'NutritionStatus'),
+      'unknown',
+    ),
     nextAction: normalizeAction(readField(data, 'nextAction', 'NextAction')),
-    requiredMainMeals: toNumberOr(readField(data, 'requiredMainMeals', 'RequiredMainMeals'), 2),
-    minimumCalories: toNumberOr(readField(data, 'minimumCalories', 'MinimumCalories'), 800),
-    missingMealTypes: toStringArray(readField(data, 'missingMealTypes', 'MissingMealTypes')),
+    requiredMainMeals: toNumberOr(
+      readField(data, 'requiredMainMeals', 'RequiredMainMeals'),
+      2,
+    ),
+    minimumCalories: toNumberOr(
+      readField(data, 'minimumCalories', 'MinimumCalories'),
+      800,
+    ),
+    missingMealTypes: toStringArray(
+      readField(data, 'missingMealTypes', 'MissingMealTypes'),
+    ),
     mealStates: Array.isArray(rawMealStates) ? rawMealStates.map(normalizeMealState) : [],
   };
 };
@@ -223,17 +239,20 @@ export const normalizeDailyNutritionLoop = (value: unknown): DailyNutritionLoop 
     dayState: normalizeDayState(readField(data, 'dayState', 'DayState'), date),
     mealBudgets: Array.isArray(rawBudgets) ? rawBudgets.map(normalizeMealBudget) : [],
     remaining: normalizeRemaining(readField(data, 'remaining', 'Remaining')),
-    nutritionStatus: normalizeNutritionStatus(readField(data, 'nutritionStatus', 'NutritionStatus')),
+    nutritionStatus: normalizeNutritionStatus(
+      readField(data, 'nutritionStatus', 'NutritionStatus'),
+    ),
     recoverySuggestion: normalizeRecoverySuggestion(
       readField(data, 'recoverySuggestion', 'RecoverySuggestion'),
     ),
-    weeklyBalanceNote: toString(readField(data, 'weeklyBalanceNote', 'WeeklyBalanceNote')),
-    oneJobToday:
-      normalizeAction(readField(data, 'oneJobToday', 'OneJobToday')) ?? {
-        action: 'log_next_meal',
-        label: 'Log next meal',
-        deepLink: '/diary/add',
-      },
+    weeklyBalanceNote: toString(
+      readField(data, 'weeklyBalanceNote', 'WeeklyBalanceNote'),
+    ),
+    oneJobToday: normalizeAction(readField(data, 'oneJobToday', 'OneJobToday')) ?? {
+      action: 'log_next_meal',
+      label: 'Log next meal',
+      deepLink: '/diary/add',
+    },
   };
 };
 
@@ -242,7 +261,12 @@ export const dailyLoopService = {
     return loadWithOfflineFallback(`${DAILY_LOOP_CACHE_PREFIX}${date}`, async () => {
       const response = await apiClient.get('/api/nutrition/daily-loop', {
         params: { date },
+        validateStatus: (status) => (status >= 200 && status < 300) || status === 404,
       });
+      if (response.status === 404) {
+        return normalizeDailyNutritionLoop({ date });
+      }
+
       return normalizeDailyNutritionLoop(response.data);
     });
   },
