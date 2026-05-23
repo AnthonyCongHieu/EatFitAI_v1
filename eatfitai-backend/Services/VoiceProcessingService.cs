@@ -67,6 +67,45 @@ namespace EatFitAI.Services
             "qua"
         };
 
+        private static readonly Dictionary<string, decimal> NumberWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["khong"] = 0,
+            ["mot"] = 1,
+            ["moot"] = 1,
+            ["một"] = 1,
+            ["hai"] = 2,
+            ["ba"] = 3,
+            ["bon"] = 4,
+            ["tu"] = 4,
+            ["nam"] = 5,
+            ["sau"] = 6,
+            ["bay"] = 7,
+            ["tam"] = 8,
+            ["chin"] = 9
+        };
+
+        private static readonly HashSet<string> NumberGrammarWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "khong",
+            "mot",
+            "moot",
+            "một",
+            "hai",
+            "ba",
+            "bon",
+            "tu",
+            "nam",
+            "sau",
+            "bay",
+            "tam",
+            "chin",
+            "muoi",
+            "muoi",
+            "tram",
+            "ruoi",
+            "nua"
+        };
+
         public VoiceProcessingService(ILogger<VoiceProcessingService> logger)
         {
             _logger = logger;
@@ -154,7 +193,14 @@ namespace EatFitAI.Services
                 }
             }
 
-            return Regex.Replace(builder.ToString(), @"\s+", " ").Trim();
+            var result = builder.ToString();
+            result = Regex.Replace(result, @"\bb\s+u\s+a\b", "bua", RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, @"\bcram\b", "gram", RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, @"\bgam\b", "gram", RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, @"\bbua\s+chua\b", "bua trua", RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, @"[;:!?]+", " ");
+            result = Regex.Replace(result, @"(?<!\d)[\.,](?!\d)", " ");
+            return Regex.Replace(result, @"\s+", " ").Trim();
         }
 
         private static MealType? FindMealType(string normalizedText)
@@ -253,7 +299,8 @@ namespace EatFitAI.Services
             }
 
             var noteText = Regex.Replace(originalText.Trim(), @"^(ghi\s+ch[uú]|note)\s+", "", RegexOptions.IgnoreCase).Trim();
-            noteText = Regex.Replace(noteText, @"\b(?:bữa|bua\s+)?(?:sáng|sang|trưa|trua|tối|toi|phụ|phu)\b", "", RegexOptions.IgnoreCase).Trim();
+            noteText = Regex.Replace(noteText, @"\b(?:bữa\s+|bua\s+)?(?:sáng|sang|trưa|trua|tối|toi|phụ|phu)\b", "", RegexOptions.IgnoreCase).Trim();
+            noteText = Regex.Replace(noteText, @"\b(?:hôm nay|hom nay|hôm qua|hom qua)\b", "", RegexOptions.IgnoreCase).Trim();
             noteText = Regex.Replace(noteText, @"\s+", " ").Trim();
 
             return new ParsedVoiceCommand
@@ -304,12 +351,119 @@ namespace EatFitAI.Services
             };
         }
 
+        private static decimal? ParseVietnameseNumberWords(string phrase)
+        {
+            var tokens = phrase
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+            if (tokens.Count == 0 || tokens.Any(token => !NumberGrammarWords.Contains(token)))
+            {
+                return null;
+            }
+
+            decimal total = 0;
+            decimal current = 0;
+            var recognized = false;
+
+            foreach (var token in tokens)
+            {
+                if (NumberWords.TryGetValue(token, out var value))
+                {
+                    current += value;
+                    recognized = true;
+                    continue;
+                }
+
+                if (token == "muoi")
+                {
+                    current = current == 0 ? 10 : current * 10;
+                    recognized = true;
+                    continue;
+                }
+
+                if (token == "tram")
+                {
+                    current = current == 0 ? 100 : current * 100;
+                    total += current;
+                    current = 0;
+                    recognized = true;
+                    continue;
+                }
+
+                if (token == "ruoi" || token == "nua")
+                {
+                    current += 0.5m;
+                    recognized = true;
+                }
+            }
+
+            return recognized ? total + current : null;
+        }
+
+        private static bool TryConsumeLeadingVietnameseNumber(
+            string text,
+            out decimal value,
+            out string remainder)
+        {
+            var tokens = text
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+            for (var count = Math.Min(tokens.Count, 5); count >= 1; count--)
+            {
+                var phrase = string.Join(" ", tokens.Take(count));
+                var parsed = ParseVietnameseNumberWords(phrase);
+                if (!parsed.HasValue)
+                {
+                    continue;
+                }
+
+                value = parsed.Value;
+                remainder = string.Join(" ", tokens.Skip(count)).Trim();
+                return true;
+            }
+
+            value = 0;
+            remainder = text;
+            return false;
+        }
+
+        private static string BuildNumberWordPattern()
+        {
+            return @"(?:khong|mot|moot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi|tram|ruoi|nua)(?:\s+(?:khong|mot|moot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi|tram|ruoi|nua)){0,5}";
+        }
+
+        private static string RemoveMealAndDatePhrases(string text)
+        {
+            var result = Regex.Replace(
+                text,
+                @"\b(?:vao|cho|trong)?\s*(?:bua\s+)?(?:sang|trua|toi|phu|snack)\b",
+                " ",
+                RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, @"\b(?:sang|trua|toi|chieu)\s+nay\b", " ", RegexOptions.IgnoreCase);
+            result = Regex.Replace(result, @"\b(?:hom\s+nay|hom\s+qua|nay)\b", " ", RegexOptions.IgnoreCase);
+            return Regex.Replace(result, @"\s+", " ").Trim();
+        }
+
         private static FoodItem? ParseFoodPart(string part)
         {
             part = part.Trim();
             if (string.IsNullOrWhiteSpace(part))
             {
                 return null;
+            }
+
+            decimal? embeddedWeight = null;
+            var embeddedWeightPattern = $@"\b(?:khoang\s+)?(?<amount>(?:\d+(?:[\.,]\d+)?)|{BuildNumberWordPattern()})\s*(?:g|gram|grams)\b";
+            var embeddedWeightMatch = Regex.Match(part, embeddedWeightPattern, RegexOptions.IgnoreCase);
+            if (embeddedWeightMatch.Success)
+            {
+                var amountText = embeddedWeightMatch.Groups["amount"].Value.Replace(",", ".");
+                embeddedWeight = decimal.TryParse(amountText, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsedAmount)
+                    ? parsedAmount
+                    : ParseVietnameseNumberWords(amountText);
+                part = Regex.Replace(part, embeddedWeightPattern, " ", RegexOptions.IgnoreCase).Trim();
+                part = Regex.Replace(part, @"\s+", " ").Trim();
             }
 
             var weightMatch = Regex.Match(part, @"^(\d+(?:[\.,]\d+)?)\s*(?:g|gram|grams)\s+(.+)$", RegexOptions.IgnoreCase);
@@ -322,13 +476,39 @@ namespace EatFitAI.Services
                 };
             }
 
+            if (TryConsumeLeadingVietnameseNumber(part, out var wordQuantity, out var wordRemainder))
+            {
+                var wordTokens = wordRemainder.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                if (wordTokens.Length == 2 && PortionUnits.Contains(wordTokens[0]))
+                {
+                    return new FoodItem
+                    {
+                        FoodName = wordTokens[1].Trim(),
+                        Quantity = wordQuantity,
+                        Unit = wordTokens[0],
+                        Weight = embeddedWeight
+                    };
+                }
+
+                if (wordTokens.Length > 0 && !string.IsNullOrWhiteSpace(wordRemainder))
+                {
+                    return new FoodItem
+                    {
+                        FoodName = wordRemainder.Trim(),
+                        Quantity = embeddedWeight.HasValue ? null : wordQuantity,
+                        Weight = embeddedWeight
+                    };
+                }
+            }
+
             var quantityMatch = Regex.Match(part, @"^(\d+(?:[\.,]\d+)?)\s+(.+)$", RegexOptions.IgnoreCase);
             if (!quantityMatch.Success)
             {
                 return new FoodItem
                 {
                     FoodName = part,
-                    Quantity = 1
+                    Quantity = embeddedWeight.HasValue ? null : 1,
+                    Weight = embeddedWeight
                 };
             }
 
@@ -341,30 +521,30 @@ namespace EatFitAI.Services
                 {
                     FoodName = tokens[1].Trim(),
                     Quantity = quantity,
-                    Unit = tokens[0]
+                    Unit = tokens[0],
+                    Weight = embeddedWeight
                 };
             }
 
             return new FoodItem
             {
                 FoodName = remainder,
-                Quantity = quantity
+                Quantity = embeddedWeight.HasValue ? null : quantity,
+                Weight = embeddedWeight
             };
         }
 
         private ParsedVoiceCommand TryParseAddFood(string lowerText, string originalText)
         {
-            var normalizedMatch = Regex.Match(lowerText, @"^(?:ghi|them|an|log)\s+(.+)$", RegexOptions.IgnoreCase);
+            var normalizedMatch = Regex.Match(
+                lowerText,
+                @"(?:^|\b)(?:(?:toi|minh|em|tui)\s+)?(?:(?:da|vua|co)\s+)?(?:ghi|them|an|uong|log)\s+(.+)$",
+                RegexOptions.IgnoreCase);
             if (normalizedMatch.Success)
             {
                 var foodText = normalizedMatch.Groups[1].Value.Trim();
-                var mealType = FindMealType(foodText);
-                foodText = Regex.Replace(
-                        foodText,
-                        @"(?:\s+(?:vao|cho|trong))?\s+(?:bua\s+)?(?:sang|trua|toi|phu|snack)$",
-                        "",
-                        RegexOptions.IgnoreCase)
-                    .Trim();
+                var mealType = FindMealType(lowerText);
+                foodText = RemoveMealAndDatePhrases(foodText);
 
                 var foods = Regex.Split(foodText, @"\s+va\s+", RegexOptions.IgnoreCase)
                     .Select(ParseFoodPart)
@@ -398,6 +578,8 @@ namespace EatFitAI.Services
                         Confidence = 0.88,
                         Entities = entities,
                         SuggestedAction = "Thêm món vào nhật ký",
+                        ReviewRequired = true,
+                        ReviewReason = "Vui lòng kiểm tra lại thông tin trước khi lưu."
                     };
                 }
             }
@@ -457,12 +639,12 @@ namespace EatFitAI.Services
         /// </summary>
         private ParsedVoiceCommand TryParseLogWeight(string lowerText, string originalText)
         {
-            var pattern = @"(?:cân nặng|can nang|cân|can)\s+(?:(?:là|la)\s+)?(\d+(?:\.\d+)?)\s*(?:kg|ký|ky|kí|ki)?";
+            var pattern = @"(?:(?:toi|minh|em|tui)\s+)?(?:nang|can nang|can|ghi can|log can)\s+(?:(?:la)\s+)?(\d+(?:[\.,]\d+)?)\s*(?:kg|ky|ki)?";
             var match = Regex.Match(lowerText, pattern, RegexOptions.IgnoreCase);
 
             if (match.Success)
             {
-                var weight = decimal.Parse(match.Groups[1].Value);
+                var weight = decimal.Parse(match.Groups[1].Value.Replace(",", "."), CultureInfo.InvariantCulture);
 
                 return new ParsedVoiceCommand
                 {

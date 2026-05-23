@@ -30,6 +30,30 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
     }
 
     [Fact]
+    public async Task Commands_AdvertisesAllBackendSupportedVoiceIntents()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/voice/commands");
+
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var intents = body
+            .GetProperty("supportedIntents")
+            .EnumerateArray()
+            .Select(item => item.GetProperty("intent").GetString())
+            .ToHashSet();
+
+        Assert.Contains("ADD_FOOD", intents);
+        Assert.Contains("LOG_WEIGHT", intents);
+        Assert.Contains("ASK_CALORIES", intents);
+        Assert.Contains("ASK_NUTRITION", intents);
+        Assert.Contains("QUERY_MEAL", intents);
+        Assert.Contains("REPEAT_MEAL", intents);
+        Assert.Contains("ADD_NOTE", intents);
+    }
+
+    [Fact]
     public async Task TranscribeWithProvider_ObjectKeyBuildsScopedMediaUrl_ForProvider()
     {
         var userId = Guid.NewGuid();

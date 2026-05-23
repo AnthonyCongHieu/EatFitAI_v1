@@ -687,8 +687,12 @@ namespace EatFitAI.API.Controllers
                 supportedIntents = new[]
                 {
                     new { intent = "ADD_FOOD", description = "Thêm món ăn", examples = new[] { "thêm 1 bát cơm 100g bữa trưa", "ghi phở bò bữa sáng" } },
-                    new { intent = "LOG_WEIGHT", description = "Ghi cân nặng", examples = new[] { "cân nặng 65 kg" } },
-                    new { intent = "ASK_CALORIES", description = "Hỏi calo", examples = new[] { "hôm nay bao nhiêu calo" } }
+                    new { intent = "LOG_WEIGHT", description = "Ghi cân nặng", examples = new[] { "cân nặng 65 kg", "tôi nặng 70 ký" } },
+                    new { intent = "ASK_CALORIES", description = "Hỏi calo", examples = new[] { "hôm nay bao nhiêu calo", "còn bao nhiêu kcal" } },
+                    new { intent = "ASK_NUTRITION", description = "Hỏi dinh dưỡng", examples = new[] { "hôm nay bao nhiêu protein", "tổng carb hôm nay" } },
+                    new { intent = "QUERY_MEAL", description = "Xem bữa đã ghi", examples = new[] { "bữa trưa hôm nay ăn gì", "hôm qua tôi ăn món gì" } },
+                    new { intent = "REPEAT_MEAL", description = "Ăn lại bữa cũ", examples = new[] { "ăn lại bữa trưa hôm qua", "copy bữa sáng hôm qua" } },
+                    new { intent = "ADD_NOTE", description = "Ghi chú bữa ăn", examples = new[] { "ghi chú bữa trưa hơi mặn", "note hôm nay tập nặng" } }
                 },
                 supportedLanguages = new[] { "vi" }
             });

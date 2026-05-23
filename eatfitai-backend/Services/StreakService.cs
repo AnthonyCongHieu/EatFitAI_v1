@@ -90,7 +90,9 @@ namespace EatFitAI.API.Services
             }
 
             // Cập nhật ngày log cuối cùng
-            user.LastLogDate = today.ToDateTime(TimeOnly.MinValue);
+            user.LastLogDate = DateTime.SpecifyKind(
+                today.ToDateTime(TimeOnly.MinValue),
+                DateTimeKind.Utc);
 
             await _context.SaveChangesAsync();
         }
