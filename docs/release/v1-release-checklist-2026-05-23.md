@@ -1,284 +1,175 @@
 # EatFitAI v1 Public APK Release Checklist - 2026-05-23
 
-This file is the resume-safe source of truth for the v1 release run.
-Update it after every gate, deploy, build, install, evidence capture, and video step.
+Last updated: 2026-05-23 15:15 ICT.
 
-## 0. Release Target
+This file is the resume-safe source of truth for the v1 public APK run.
+
+## 1. Release State
 
 | Item | Value | Status |
 | --- | --- | --- |
 | Release type | Public APK v1 | LOCKED |
-| Release source branch | `codex/admin-control-plane-v1` | VERIFIED |
-| Release source SHA | Started at `e97f57ba459562e47f1d0849a143f401f6e4a8f0`; gate fixes are pending commit before deploy | UPDATED |
+| Initial requested source | `e97f57ba459562e47f1d0849a143f401f6e4a8f0` | RECORDED |
+| Deployed/runtime candidate SHA | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | DEPLOYED |
+| Current local HEAD | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | VERIFIED |
+| Current origin SHA | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | VERIFIED |
+| Current worktree | Dirty with release evidence harness and video edits only | IN PROGRESS |
 | Repo root | `E:\tool edit\eatfitai_v1` | VERIFIED |
 | API base URL | `https://eatfitai-api.duckdns.org` | VERIFIED |
 | AI provider URL | `https://eatfitai-ai.duckdns.org` | VERIFIED |
-| Android device | `a12c6888629b`, model `2201116SG`, Android 13 | VERIFIED |
-| Android package | `com.eatfitai.app` | LOCKED |
-| App version | `versionName=1.0.0`, `versionCode=1` | LOCKED |
+| Android target | `a12c6888629b`, `2201116SG`, Android 13 | VERIFIED EARLIER; CURRENTLY OFFLINE |
+| Android package | `com.eatfitai.app` | VERIFIED |
+| APK version | `versionName=1.0.0`, `versionCode=1` | VERIFIED |
 | SSH key | `$HOME\.ssh\eatfitai_lightsail_ap_southeast_1.pem` | VERIFIED |
-| Video style | Hybrid 60-75s, real app footage, Vietnamese text overlay, background music only | LOCKED |
+| Final release decision | Blocked until final device rerun and strict video source policy are satisfied | BLOCKED |
 
-## 1. Current Production Snapshot
+## 2. Production Deploy
 
-Captured before any deploy/build/install.
+Production is split across two hosts. The single-instance deploy script was not used.
 
-| Target | Host | Current SHA | Branch | Service | Restarts | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| Backend API | `ubuntu@18.141.119.165` | `219ac572882217e89778eb7bb576b18c8e81f044` | `codex/admin-control-plane-v1` | `eatfitai-backend` | `0` | DEPLOY REQUIRED |
-| AI provider | `ubuntu@3.0.208.56` | `7eb07fb8cb4dec481b235a10e22f3413693b881d` | `codex/admin-control-plane-v1` | `eatfitai-ai` | `0` | DEPLOY REQUIRED |
+| Target | Host | Before SHA | Deployed SHA | Service | Status |
+| --- | --- | --- | --- | --- | --- |
+| Backend API | `ubuntu@18.141.119.165` | `219ac572882217e89778eb7bb576b18c8e81f044` | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | `eatfitai-backend` | PASS |
+| AI provider | `ubuntu@3.0.208.56` | `7eb07fb8cb4dec481b235a10e22f3413693b881d` | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | `eatfitai-ai` | PASS |
 
-Health snapshot:
+Post-deploy health, rechecked 2026-05-23 15:14 ICT:
 
-| Endpoint | Expected | Observed | Status |
-| --- | --- | --- | --- |
-| `/health/live` | 200 alive | 200 alive | PASS |
-| `/health/ready` | 200 ready with Postgres ready | 200 ready | PASS |
-| AI `/healthz` | 200 ok | 200 ok | PASS |
-| AI `/healthz/gemini` | 200 ok | `gemini_usage_state_store=file` | P0 VERIFY |
+| Endpoint | Result |
+| --- | --- |
+| `https://eatfitai-api.duckdns.org/health/live` | 200 |
+| `https://eatfitai-api.duckdns.org/health/ready` | 200 |
+| `https://eatfitai-ai.duckdns.org/healthz` | 200 |
+| `https://eatfitai-ai.duckdns.org/healthz/gemini` | 200 |
 
-P0 infra item:
+Infra config checks:
 
-- [ ] Decide from gate evidence whether `GEMINI_USAGE_STATE_STORE=file` is acceptable for public v1.
-- [ ] If public v1 requires Postgres quota state, only change provider env when `GEMINI_USAGE_STATE_DATABASE_URL` is present and verified.
-- [ ] If Postgres quota state is required but unavailable, mark release BLOCKED.
+| Item | Result | Notes |
+| --- | --- | --- |
+| Backend private AI provider URL | PASS | Kept on private host URL `http://172.26.11.92:5050`. |
+| R2 public media base URL | PASS | Configured and media egress guard passed. |
+| Health response redaction | PASS | No private AI URL or raw secrets exposed by public health. |
+| Schema bootstrap | PASS | Disabled by config. |
+| AI quota state store | RISK | `GEMINI_USAGE_STATE_STORE=file`; no `GEMINI_USAGE_STATE_DATABASE_URL` was available. If policy requires Postgres quota state, public release remains blocked. |
 
-## 2. Required Environment
+## 3. Code, Cloud, and API Gates
 
-Set these before code, cloud, Android, and evidence gates:
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| UTF-8/mojibake guard | PASS | `python scripts\cloud\check_mojibake.py` inside code gate |
+| Secret guard | PASS | `python scripts\cloud\check_secret_tracking.py`; media egress guard PASS |
+| Mobile typecheck/lint/Jest | PASS | `_logs\public-release-qa\2026-05-23T03-32-47-518Z\public-release-qa-report.json` |
+| Backend `.NET` tests | PASS | 400 tests passed in code gate |
+| AI provider pytest | PASS | 268 passed, 15 skipped in code gate |
+| Cloud/API smoke | PASS | `_logs\public-release-qa\2026-05-23T04-41-49-561Z\public-release-qa-report.json` |
+| Disposable cleanup | PASS | Included in cloud gate |
+| API coverage inventory | PASS WITH MANUAL GAPS | Cloud gate covered public API families; Google login, camera/barcode edges, recipe detail, notification settings, and admin-only paths remain manual/recorded gaps. |
 
-```powershell
-$env:ANDROID_SERIAL = "a12c6888629b"
-$env:EATFITAI_ANDROID_TARGET = "real-device"
-$env:EATFITAI_SMOKE_BACKEND_URL = "https://eatfitai-api.duckdns.org"
-$env:EATFITAI_SMOKE_AI_PROVIDER_URL = "https://eatfitai-ai.duckdns.org"
-$env:EATFITAI_RELEASE_GATE_DISPOSABLE_AUTH = "1"
-$env:EATFITAI_REQUIRE_RELEASE_LIKE_BUILD = "1"
-```
+Cloud/API coverage included auth, profile, diary, food search/detail/custom/recent/favorites, water, summary, analytics, nutrition loop, AI status/quota/vision/nutrition/recipes/labels, voice parse/process/execute, storage/media, notifications, subscription, support feedback, mobile config, telemetry, health/discovery, and admin/control-plane authz/read-only checks.
 
-Production smoke credentials and any mail/test user secrets must come from existing local/CI secret sources only.
-Do not write secrets into this file.
+## 4. APK Build and Install
 
-## 3. Gate Status Board
+| Item | Result |
+| --- | --- |
+| Android release gate report | `_logs\public-release-qa\2026-05-23T04-49-14-933Z\public-release-qa-report.json` |
+| Nested Android gate report | `_logs\public-release-qa\2026-05-23T04-49-14-933Z\production-smoke\release-gate-report.json` |
+| APK artifact | `eatfitai-mobile\android\app\build\outputs\apk\release\app-release.apk` |
+| APK SHA256 | `B6C6CA530F51EE154A2EEFCE4D3C31978295B62E7590A08082B0585587C43F2F` |
+| APK size | `160385277` bytes |
+| Clean install | PASS |
+| Package id | `com.eatfitai.app` |
+| Version | `versionName=1.0.0`, `versionCode=1` |
+| Build flags | Non-debuggable; package flags did not include `DEBUGGABLE` |
+| Launch smoke | PASS; app launched and crash buffer was empty |
 
-| Gate | Command or action | Status | Evidence |
-| --- | --- | --- | --- |
-| Freeze checklist | Create this file before deploy/build/install | PASS | `docs/release/v1-release-checklist-2026-05-23.md` |
-| Git baseline | `git status --short --branch`, `git rev-parse HEAD` | PASS | Clean branch at `e97f57ba` |
-| Device baseline | `adb devices -l` | PASS | `a12c6888629b device` |
-| Encoding gate | UTF-8/mojibake scan | PASS | `python scripts\cloud\check_mojibake.py` |
-| Secret guard | Secret/public health redaction checks | PASS | `python scripts\cloud\check_secret_tracking.py`; media egress guard PASS |
-| Mobile code gate | typecheck, lint, Jest | PASS | `_logs\public-release-qa\2026-05-23T03-32-47-518Z\public-release-qa-report.json` |
-| Backend code gate | `.NET` tests | PASS | 400 passed in code gate |
-| AI provider gate | pytest and import checks | PASS | 268 passed, 15 skipped in code gate |
-| Cloud smoke gate | production smoke with disposable cleanup | PENDING | TBD |
-| API coverage gate | controller/API matrix vs tests/smoke | PENDING | TBD |
-| Infra deploy | AI host then backend host, keep split topology | PENDING | TBD |
-| Post-deploy health | public and private health/status checks | PENDING | TBD |
-| APK build | release-like preview APK from `e97f57ba` | PENDING | TBD |
-| Clean install | uninstall old APK, install new APK on real device | PENDING | TBD |
-| RC proof | real-device P0 proof | PENDING | TBD |
-| Full app P0 | `device:apk-e2e-suite:run -- --only P0 --record` | PENDING | TBD |
-| Visual audit | real-device videos/screenshots/logcat/perf | PENDING | TBD |
-| Video source capture | real app clips/screenshots only | PENDING | TBD |
-| Remotion edit/render | 60-75s final product video | PENDING | TBD |
-| Final release decision | PASS, BLOCKED, or DEFER | PENDING | TBD |
+## 5. Real-Device Evidence
 
-Gate fix log:
+| Gate | Result | Evidence |
+| --- | --- | --- |
+| Demo seed account | PASS | `_logs\device-release-session\2026-05-23T05-41-54Z-seed\demo-seed.json` |
+| RC proof | PASS | `_logs\real-device-adb\2026-05-23T06-16-58-528Z-rc-proof\report.json` |
+| Focused food search/readback after fix | PASS DEGRADED | `_logs\real-device-adb\2026-05-23T06-11-43-011Z-food-search-ui-readback\report.json` |
+| Latest full automated P0 suite | FAIL | `_logs\apk-e2e-full\2026-05-23T07-22-27-180Z\suite-summary.json` |
+| Latest P0 summary | 108 total, 11 pass, 1 fail, 96 not run | Failure: `DIARY-01-open-diary-by-tab` |
+| Latest P0 failure root cause | API readback login returned transport error `fetch failed`; UI reached Diary and marker checks passed | Runner false-negative suspected |
+| Device state after runner fixes | BLOCKED | `adb devices -l` currently returns no devices |
+| Visual audit | PARTIAL | Visual core screenshots exist; official visual audit rerun after recorder fix is blocked by missing ADB device |
+| Screenrecord clips | BLOCKED | Existing `screenrecord*.mp4` files from latest run are 0 bytes; harness now sends SIGINT before pull but needs device reconnect to verify |
+
+Required before final public release:
+
+1. Reconnect/unlock `a12c6888629b` and confirm `adb devices -l`.
+2. Rerun `device:apk-e2e-suite:run -- --id DIARY-01 --record`.
+3. Rerun `device:apk-e2e-suite:run -- --only P0 --record` if DIARY-01 passes.
+4. Rerun `device:visual-ui-audit:android`.
+5. Confirm new MP4 evidence is non-zero and review for private information.
+
+## 6. Fix Log
 
 | Issue | Root cause | Minimal fix | Verification |
 | --- | --- | --- | --- |
-| `mochiTutorial.test.ts` typecheck failed | Test wrapper passed children via `React.createElement` in a way TypeScript rejected for required children | Added a test-local provider type with optional children | `npm --prefix .\eatfitai-mobile run typecheck` PASS |
-| Mobile lint warnings failed max-warnings gate | Several stale unused imports/constants and formatting warnings were present | ESLint autofix plus targeted cleanup of unused code and no-shadow variable | `npm --prefix .\eatfitai-mobile run lint` PASS |
-| AI availability unit test failed | Test expectations used stale copy while source returned current Vietnamese copy | Updated test expectations to match source | Focused Jest PASS, full mobile Jest PASS |
-| AI provider recipe prompt test failed | Prompt required seasoning quantities but missed exact phrase `định lượng gia vị` | Updated prompt wording without changing JSON schema | `python -m pytest -q ai-provider` PASS |
-| Cloud script tests failed | Duplicate stale test definitions overrode the current catalog expectations | Removed duplicate stale test block | `python -m pytest -q scripts\cloud` PASS |
-| Mojibake guard failed | Intentional legacy mojibake replacement literal was present in source | Replaced literal with Unicode escape preserving behavior | `python scripts\cloud\check_mojibake.py` PASS |
+| Mobile type/lint/Jest release gates failed | Stale test helpers, unused imports, stale copy expectations | Targeted test/source cleanup only | Full code gate PASS |
+| AI provider prompt test failed | Prompt missed required Vietnamese phrase | Updated prompt wording, no API schema change | AI pytest PASS |
+| Cloud script tests failed | Duplicate stale test definitions | Removed duplicate stale test block | `scripts\cloud` pytest PASS |
+| Mojibake guard failed | Intentional legacy mojibake literal in source | Replaced literal with Unicode escape | Mojibake guard PASS |
+| Production drift | Backend and AI hosts were behind requested release source | Deployed split hosts to `d367ac67` | Public health PASS |
+| Device auth rate-limit pressure | P0 suite submits repeated auth flows against 10/min auth policy | Added `device-flow-pacing` budget/wait helper | `deviceFlowPacing`, `apkE2eSuite`, `deviceAutomationMarkers` tests PASS |
+| DIARY-02 food search false-negative | UI opened Food Detail; runner expected only search list, and backend write used invalid `sourceMethod` | Added Food Detail submit fallback and allowed source method mapping | Focused food-search readback PASS DEGRADED |
+| DIARY-01 API readback transport false-negative | API login got `fetch failed` after UI success | Added login-only retry on transport failures | Unit/static tests PASS; device rerun blocked by missing ADB |
+| Screenrecord evidence was empty | Host killed `adb shell screenrecord` before Android finalized MP4 | Signal device `screenrecord` with SIGINT before pull and fail 0-byte evidence | Unit/static tests PASS; device rerun blocked by missing ADB |
 
-## 4. Baseline Commands
-
-Run from repo root unless noted.
-
-```powershell
-git status --short --branch
-git rev-parse HEAD
-adb devices -l
-```
-
-Code and release gates:
+Verification after harness fixes:
 
 ```powershell
-npm --prefix .\eatfitai-mobile run qa:public-release:code
-npm --prefix .\eatfitai-mobile run qa:public-release:cloud
-npm --prefix .\eatfitai-mobile run qa:public-release:plan
+node --check .\eatfitai-mobile\scripts\real-device-adb-flow.js
+node --check .\eatfitai-mobile\scripts\apk-e2e-suite.js
+npm --prefix .\eatfitai-mobile test -- --runInBand __tests__/deviceAutomationMarkers.test.js __tests__/deviceFlowPacing.test.js __tests__/apkE2eSuite.test.js
+git diff --check
 ```
 
-If the aggregate scripts fail, run the underlying focused commands and record exact failures before fixing:
+Result: 16 Jest tests passed; syntax checks passed; `git diff --check` passed.
 
-```powershell
-npm --prefix .\eatfitai-mobile run typecheck
-npm --prefix .\eatfitai-mobile run lint
-npm --prefix .\eatfitai-mobile test -- --runInBand
-dotnet test .\eatfitai-backend\EatFitAI.sln --configuration Release --no-restore
-python -m pytest .\ai-provider
-python .\scripts\cloud\check_mojibake.py
-```
+## 7. Product Video
 
-## 5. Deployment Plan
+Target: 60-75s hybrid promo, Vietnamese overlays, background music only, inspired by mobile app/UI promo motion graphics references.
 
-Do not run `infra/lightsail/deploy-native-single-instance.sh` as-is.
-Production is currently split across two hosts.
+| Item | Result |
+| --- | --- |
+| Remotion project | `eatfitai-product-video` |
+| Real app screenshots copied to | `eatfitai-product-video\public\v1-real-app\` |
+| Composition duration | 72 seconds |
+| Render output | `eatfitai-product-video\out\eatfitai-v1-product-intro.mp4` |
+| Video metadata | 1920x1080, 30fps, 72.000s |
+| Output size | `41423449` bytes |
+| Render command | `npm run render` |
+| Video lint/typecheck | `npm run lint` PASS |
+| Source policy | DRAFT ONLY | Uses screenshots from final installed APK; non-zero real screenrecord clips are still blocked |
 
-### 5.1 AI Provider Host
+Storyboard implemented:
 
-Target: `ubuntu@3.0.208.56`
+| Time | Scene | Source |
+| --- | --- | --- |
+| 0-6s | Problem hook/product identity | Launch screenshot |
+| 6-16s | Daily dashboard | Home dashboard screenshot |
+| 16-28s | Diary/search/save | Food detail and diary readback screenshots |
+| 28-43s | AI quick-add | MoChi quick action screenshot; actual scan review/save clip still missing |
+| 43-55s | Voice/text quick add | MoChi quick action and diary screenshot |
+| 55-66s | Stats/profile | Stats and profile screenshots |
+| 66-72s | v1 readiness close | Device/APK proof screenshot and release facts |
 
-Required actions:
+Strict video acceptance remains BLOCKED until at least one non-zero real phone clip captures launch/home, diary, scan/review/save, voice/text, stats/profile, and release proof from the final installed APK.
 
-- [ ] SSH with `$HOME\.ssh\eatfitai_lightsail_ap_southeast_1.pem`.
-- [ ] Back up relevant env/service files before changes.
-- [ ] `git fetch origin codex/admin-control-plane-v1`.
-- [ ] Reset `/opt/eatfitai/repo` to `e97f57ba459562e47f1d0849a143f401f6e4a8f0`.
-- [ ] Install/update Python dependencies in the existing service venv.
-- [ ] Restart `eatfitai-ai`.
-- [ ] Verify `systemctl is-active eatfitai-ai`.
-- [ ] Verify `systemctl show eatfitai-ai -p NRestarts --value`.
-- [ ] Verify private/local health if available.
-- [ ] Verify public `https://eatfitai-ai.duckdns.org/healthz`.
-- [ ] Verify public `https://eatfitai-ai.duckdns.org/healthz/gemini`.
-- [ ] Record `GEMINI_USAGE_STATE_STORE` result and release decision.
-
-### 5.2 Backend API Host
-
-Target: `ubuntu@18.141.119.165`
-
-Required actions:
-
-- [ ] SSH with `$HOME\.ssh\eatfitai_lightsail_ap_southeast_1.pem`.
-- [ ] Back up relevant env/service files before changes.
-- [ ] `git fetch origin codex/admin-control-plane-v1`.
-- [ ] Reset `/opt/eatfitai/repo` to `e97f57ba459562e47f1d0849a143f401f6e4a8f0`.
-- [ ] Publish `eatfitai-backend` in Release mode to the existing production publish path.
-- [ ] Keep backend AI provider URL private: `http://172.26.11.92:5050`.
-- [ ] Keep R2 media public base URL.
-- [ ] Ensure startup schema bootstrap is disabled, or run only an explicit one-shot bootstrap with evidence.
-- [ ] Restart `eatfitai-backend`.
-- [ ] Verify `systemctl is-active eatfitai-backend`.
-- [ ] Verify `systemctl show eatfitai-backend -p NRestarts --value`.
-- [ ] Verify `https://eatfitai-api.duckdns.org/health/live`.
-- [ ] Verify `https://eatfitai-api.duckdns.org/health/ready`.
-- [ ] Verify backend AI status/discovery endpoint without leaking secrets.
-
-## 6. API Coverage Matrix
-
-Every row must be PASS, NOT PUBLIC V1, or BLOCKED before public release.
-
-| Area | Examples | Required coverage | Status |
-| --- | --- | --- | --- |
-| Auth | email login/register/verify/reset, Google auth | Unit/integration plus production disposable smoke | PENDING |
-| User/profile | profile, preferences, body metrics, goals | API read/write/readback | PENDING |
-| Meal diary | diary CRUD, readback, date handling | API and real-device flow | PENDING |
-| Food | search/detail/custom dishes/recent/common meals | API and real-device flow | PENDING |
-| Favorites/user foods | favorites, user food items | API read/write/readback | PENDING |
-| Water intake | CRUD/readback | API smoke | PENDING |
-| Summary/analytics | daily/weekly/monthly summaries | API smoke and app stats tab | PENDING |
-| Nutrition loop | insights/settings/recommendations | API smoke and app flow | PENDING |
-| AI vision/nutrition | scan, review, save, quota/status | API smoke and app scan flow | PENDING |
-| AI recipes/labels/corrections | recipe suggestions/details, label/correction APIs | API smoke or explicit NOT PUBLIC V1 | PENDING |
-| Voice | parse/transcribe/process/review/execute/confirm weight | API smoke and app voice flow | PENDING |
-| Storage/media | presign/verify, private URL rejection | API smoke/security check | PENDING |
-| Notifications | push registration/settings/list | API smoke and app settings flow | PENDING |
-| Subscription | subscription state/endpoints | API smoke or NOT PUBLIC V1 | PENDING |
-| Support feedback | submit/list/admin visibility | API smoke | PENDING |
-| Mobile config | config/version/discovery | API smoke and app launch | PENDING |
-| Telemetry | accepted/rejected event contract | API smoke | PENDING |
-| Health/discovery | live/ready/status | public GET smoke | PASS PARTIAL |
-| Admin/control plane | authz, read-only overview, runtime, quota, audit, master data | admin authz/read-only smoke; mutating only with disposable data | PENDING |
-| Internal Gemini | internal-only routes | authorization/security rejection checks | PENDING |
-
-## 7. Android Build, Install, and Evidence
-
-Build only after deploy and cloud gates pass.
-
-```powershell
-$env:ANDROID_SERIAL = "a12c6888629b"
-$env:EATFITAI_ANDROID_TARGET = "real-device"
-$env:EATFITAI_REQUIRE_RELEASE_LIKE_BUILD = "1"
-npm --prefix .\eatfitai-mobile run release:gate -- android
-```
-
-Clean install because the release request explicitly requires removing the previous APK:
-
-```powershell
-adb -s a12c6888629b uninstall com.eatfitai.app
-npm --prefix .\eatfitai-mobile run install:android:preview
-adb -s a12c6888629b shell dumpsys package com.eatfitai.app
-adb -s a12c6888629b shell monkey -p com.eatfitai.app -c android.intent.category.LAUNCHER 1
-```
-
-Required Android gates:
-
-```powershell
-npm --prefix .\eatfitai-mobile run device:rc-proof:android
-npm --prefix .\eatfitai-mobile run device:apk-e2e-suite:prepare
-npm --prefix .\eatfitai-mobile run device:apk-e2e-suite:run -- --only P0 --record
-npm --prefix .\eatfitai-mobile run device:visual-ui-audit:android
-```
-
-Evidence folders:
-
-- `_logs\public-release-qa\`
-- `_logs\real-device-adb\`
-- `_logs\apk-e2e-full\`
-- `_logs\production-smoke\`
-
-## 8. Product Video Storyboard
-
-Use only the final APK installed on the real phone.
-If a core flow cannot be captured from the real app, mark the video BLOCKED instead of faking footage.
-
-| Time | Scene | Source asset | Text overlay | Status |
-| --- | --- | --- | --- | --- |
-| 0-6s | Problem hook and product identity | Real launch/home clip or screenshot | `Theo dõi dinh dưỡng không cần nhập liệu rườm rà.` | PENDING |
-| 6-16s | Today dashboard | Home clip | `Mục tiêu hôm nay rõ ràng.` | PENDING |
-| 16-28s | Diary/search/save/readback | Diary clip | `Tìm món, lưu bữa ăn, đọc lại kết quả.` | PENDING |
-| 28-43s | AI scan/review/save | Scan clip | `Quét AI: ảnh món ăn -> gợi ý -> xác nhận.` | PENDING |
-| 43-55s | Voice/text quick add | Voice clip | `Ghi nhanh bằng giọng nói hoặc câu lệnh.` | PENDING |
-| 55-66s | Stats/profile/progress | Stats/profile clip | `Thống kê giúp điều chỉnh an toàn.` | PENDING |
-| 66-75s | Trust/release close | Evidence or polished app montage | `EatFitAI v1 - kiểm thử trên máy thật.` | PENDING |
-
-Remotion tasks:
-
-- [ ] Copy approved raw captures to `eatfitai-product-video\public\captures\`.
-- [ ] Update composition duration to 60-75 seconds.
-- [ ] Use real `Video`/`Img` assets inside phone-style frames.
-- [ ] Keep Vietnamese text overlays readable on 1920x1080.
-- [ ] Generate background music at matching duration.
-- [ ] Render `eatfitai-product-video\out\eatfitai-v1-product-intro.mp4`.
-- [ ] Review final video for private information before sharing.
-
-## 9. Failure Policy
-
-- Any P0/P1 test, deploy, health, install, or encoding failure stops the release.
-- Apply the smallest safe fix.
-- Record root cause, minimal fix, regression risk, and verification.
-- Redeploy affected host if backend/AI code or production config changed.
-- Rebuild and reinstall APK after any mobile or environment fix affecting runtime behavior.
-- Rerun failed gate plus adjacent flows before continuing.
-
-## 10. Final Decision Template
-
-Fill this before declaring release readiness.
+## 8. Final Decision
 
 | Decision item | Result |
 | --- | --- |
-| Code gates | TBD |
-| Infra deploy | TBD |
-| Cloud/API smoke | TBD |
-| API coverage matrix | TBD |
-| APK build/install | TBD |
-| Real-device P0 | TBD |
-| Visual/performance evidence | TBD |
-| Product video | TBD |
-| Known deferred items | TBD |
-| Final release decision | TBD |
+| Code gates | PASS |
+| Infra deploy | PASS |
+| Cloud/API smoke | PASS |
+| APK build/install | PASS |
+| RC proof | PASS |
+| Full real-device P0 | BLOCKED: latest suite has 1 fail; rerun blocked by ADB disconnect |
+| Visual/performance evidence | BLOCKED: official rerun blocked by ADB disconnect |
+| Product video | DRAFT RENDERED; final blocked by missing non-zero real phone clips |
+| Known deferred/manual gaps | Google login, camera permission, barcode/scan edges, recipe detail, notification settings, admin-only paths |
+| Infra risk | `GEMINI_USAGE_STATE_STORE=file` must be accepted or replaced with verified Postgres quota state |
+| Final public release decision | BLOCKED |

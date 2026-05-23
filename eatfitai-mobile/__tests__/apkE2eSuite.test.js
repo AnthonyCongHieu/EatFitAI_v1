@@ -70,4 +70,15 @@ describe('APK E2E suite tooling', () => {
     expect(emailFunction).toContain('adb-input-text-email');
     expect(emailFunction).not.toContain('buildAsciiKeyEventArgs');
   });
+
+  it('finalizes manual screenrecord captures before pulling them', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '..', 'scripts', 'apk-e2e-suite.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('function stopDeviceScreenrecord');
+    expect(source).toContain("['shell', 'pkill', '-2', 'screenrecord']");
+    expect(source).toContain('Manual screenrecord video was empty.');
+  });
 });

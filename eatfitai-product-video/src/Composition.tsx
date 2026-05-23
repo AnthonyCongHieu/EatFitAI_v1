@@ -1,1065 +1,461 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Audio } from "@remotion/media";
 import {
   AbsoluteFill,
   Easing,
   Img,
   Sequence,
-  staticFile,
   interpolate,
+  staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 
 export const FPS = 30;
-export const DURATION_IN_FRAMES = 48 * FPS;
+export const DURATION_IN_FRAMES = 72 * FPS;
 
 const colors = {
-  ink: "#10231f",
-  muted: "#60726c",
-  panel: "#ffffff",
-  soft: "#f3faf6",
-  green: "#0f6b57",
-  greenDark: "#064336",
-  mint: "#7ee6b5",
+  bg: "#07120f",
+  bg2: "#101629",
+  panel: "rgba(255,255,255,0.08)",
+  line: "rgba(255,255,255,0.15)",
+  text: "#f7fff9",
+  muted: "#b9c7c1",
+  green: "#24d36b",
+  greenSoft: "#8ff2bf",
+  blue: "#33c7ff",
+  yellow: "#ffd166",
   coral: "#ff7a59",
-  lemon: "#ffd166",
-  blue: "#2f80ed",
-  line: "#d9eee5",
 };
 
-const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const easeInOut = Easing.bezier(0.45, 0, 0.55, 1);
+const sec = (value: number) => Math.round(value * FPS);
+const ease = Easing.bezier(0.16, 1, 0.3, 1);
 
-const fit: CSSProperties = {
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-};
-
-const shadow = "0 28px 70px rgba(16, 35, 31, 0.16)";
-
-const clamp = (
-  frame: number,
-  input: [number, number],
-  output: [number, number],
-  easing = easeOut,
-) =>
+const clamp = (frame: number, input: [number, number], output: [number, number]) =>
   interpolate(frame, input, output, {
-    easing,
+    easing: ease,
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-const scenePresence = (frame: number, duration: number) => {
-  const enter = clamp(frame, [0, 24], [0.35, 1]);
-  const exit = clamp(frame, [duration - 24, duration], [1, 0], Easing.in(Easing.cubic));
-  return Math.min(enter, exit);
-};
-
-const beatPulse = (frame: number, fps: number) => {
-  const beat = (frame % (fps / 2)) / (fps / 2);
-  return interpolate(beat, [0, 0.28, 1], [1, 0.92, 1], {
-    easing: easeInOut,
+const fadeVolume = (frame: number) => {
+  const intro = interpolate(frame, [0, 60], [0, 0.62], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-};
-
-const fadeVolume = (frame: number, duration: number) => {
-  const intro = interpolate(frame, [0, 36], [0, 0.78], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const outro = interpolate(frame, [duration - 72, duration], [1, 0], {
+  const outro = interpolate(frame, [DURATION_IN_FRAMES - 120, DURATION_IN_FRAMES], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   return intro * outro;
 };
 
-const Eyebrow = ({ children, color = colors.green }: { children: ReactNode; color?: string }) => (
-  <div
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 12,
-      color,
-      fontSize: 26,
-      fontWeight: 700,
-      letterSpacing: 0,
-      textTransform: "uppercase",
-    }}
-  >
-    <span
-      style={{
-        width: 44,
-        height: 4,
-        borderRadius: 999,
-        background: color,
-        display: "inline-block",
-      }}
-    />
-    {children}
-  </div>
-);
-
-const TextBlock = ({
-  eyebrow,
-  title,
-  body,
-  frame,
-  color = colors.ink,
-}: {
-  eyebrow: string;
+type Scene = {
+  start: number;
+  duration: number;
+  kicker: string;
   title: string;
   body: string;
-  frame: number;
-  color?: string;
-}) => {
-  const titleIn = clamp(frame, [0, 30], [0.18, 1]);
-  const bodyIn = clamp(frame, [14, 48], [0, 1]);
-
-  return (
-    <div style={{ maxWidth: 770 }}>
-      <div
-        style={{
-          opacity: titleIn,
-          transform: `translateY(${(1 - titleIn) * 28}px)`,
-        }}
-      >
-        <Eyebrow color={color}>{eyebrow}</Eyebrow>
-        <h1
-          style={{
-            margin: "30px 0 0",
-            fontSize: 92,
-            lineHeight: 1,
-            letterSpacing: 0,
-            color: colors.ink,
-            fontWeight: 840,
-          }}
-        >
-          {title}
-        </h1>
-      </div>
-      <p
-        style={{
-          margin: "30px 0 0",
-          maxWidth: 640,
-          color: colors.muted,
-          fontSize: 35,
-          lineHeight: 1.34,
-          letterSpacing: 0,
-          opacity: bodyIn,
-          transform: `translateY(${(1 - bodyIn) * 20}px)`,
-        }}
-      >
-        {body}
-      </p>
-    </div>
-  );
+  primary: string;
+  secondary?: string;
+  assets: string[];
+  accent: string;
+  layout?: "single" | "duo" | "proof";
 };
 
-const ProductMark = ({ frame }: { frame: number }) => {
-  const pulse = beatPulse(frame, FPS);
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 20,
-        transform: `scale(${pulse})`,
-        transformOrigin: "left center",
-      }}
-    >
-      <div
-        style={{
-          width: 90,
-          height: 90,
-          borderRadius: 26,
-          background: colors.panel,
-          boxShadow: "0 18px 42px rgba(15, 107, 87, 0.24)",
-          display: "grid",
-          placeItems: "center",
-          overflow: "hidden",
-        }}
-      >
-        <Img src={staticFile("assets/icon.png")} style={{ width: 88, height: 88 }} />
-      </div>
-      <div>
-        <div
-          style={{
-            color: colors.ink,
-            fontSize: 48,
-            fontWeight: 850,
-            lineHeight: 1,
-            letterSpacing: 0,
-          }}
-        >
-          EatFitAI
-        </div>
-        <div
-          style={{
-            marginTop: 8,
-            color: colors.green,
-            fontSize: 23,
-            fontWeight: 700,
-            letterSpacing: 0,
-          }}
-        >
-          AI nutrition companion
-        </div>
-      </div>
-    </div>
-  );
-};
+const scenes: Scene[] = [
+  {
+    start: 0,
+    duration: 6,
+    kicker: "VẤN ĐỀ MỖI NGÀY",
+    title: "Ăn đúng mục tiêu, không cần đoán mò",
+    body: "EatFitAI gom nhật ký, macro và thói quen ăn uống vào một luồng rõ ràng.",
+    primary: "Launch thật trên APK v1",
+    assets: ["01-launch-intro.png"],
+    accent: colors.green,
+  },
+  {
+    start: 6,
+    duration: 10,
+    kicker: "DASHBOARD",
+    title: "Một màn hình để biết hôm nay còn bao nhiêu",
+    body: "Calo, đạm, tinh bột, chất béo và nước được đặt ngay trước mắt.",
+    primary: "Mục tiêu 2.150 kcal",
+    secondary: "UI tiếng Việt sạch",
+    assets: ["02-home-dashboard.png"],
+    accent: colors.greenSoft,
+  },
+  {
+    start: 16,
+    duration: 12,
+    kicker: "NHẬT KÝ",
+    title: "Tìm món, chỉnh khẩu phần, lưu lại ngay",
+    body: "Luồng thêm món dùng dữ liệu thật từ app và được kiểm chứng bằng API readback.",
+    primary: "Search + detail + save",
+    secondary: "Không lộ private media URL",
+    assets: ["04-food-detail.png", "05-diary-after-add.png"],
+    accent: colors.yellow,
+    layout: "duo",
+  },
+  {
+    start: 28,
+    duration: 15,
+    kicker: "AI QUICK ADD",
+    title: "MoChi mở nhanh scan, công thức và ghi giọng nói",
+    body: "Nguồn ảnh là màn hình quick action thật. Clip scan/review/save cần capture lại khi ADB reconnect.",
+    primary: "Nhận diện món ăn",
+    secondary: "Gợi ý công thức",
+    assets: ["06-quick-actions.png", "02-home-dashboard.png"],
+    accent: colors.blue,
+    layout: "duo",
+  },
+  {
+    start: 43,
+    duration: 12,
+    kicker: "VOICE / TEXT",
+    title: "Ghi nhanh bằng lệnh, rồi đối chiếu lại",
+    body: "Flow voice-text đã có readback qua backend, phù hợp cho thao tác nhanh trong ngày.",
+    primary: "Nói để ghi chép nhanh",
+    secondary: "Backend connected",
+    assets: ["06-quick-actions.png", "03-diary-readback.png"],
+    accent: colors.coral,
+    layout: "duo",
+  },
+  {
+    start: 55,
+    duration: 11,
+    kicker: "TIẾN ĐỘ",
+    title: "Theo dõi macro, hồ sơ và mục tiêu cá nhân",
+    body: "Thống kê theo ngày và hồ sơ cơ thể giúp người dùng hiểu tiến độ thay vì chỉ nhập dữ liệu.",
+    primary: "Stats + Profile",
+    secondary: "Dữ liệu seeded production",
+    assets: ["07-stats.png", "08-profile.png"],
+    accent: colors.green,
+    layout: "duo",
+  },
+  {
+    start: 66,
+    duration: 6,
+    kicker: "V1 RELEASE PROOF",
+    title: "APK v1 sẵn sàng kiểm thử công khai",
+    body: "Package com.eatfitai.app, versionName 1.0.0, versionCode 1, non-debuggable.",
+    primary: "Real device 2201116SG",
+    secondary: "API production healthy",
+    assets: ["09-release-proof.png"],
+    accent: colors.greenSoft,
+    layout: "proof",
+  },
+];
 
-const PhoneFrame = ({
-  children,
+const Screen = ({
+  src,
   frame,
-  tilt = -4,
+  tilt = -3,
+  scale = 1,
 }: {
-  children: ReactNode;
+  src: string;
   frame: number;
   tilt?: number;
+  scale?: number;
 }) => {
-  const enter = clamp(frame, [0, 34], [0.42, 1]);
+  const enter = clamp(frame, [0, 24], [0.78, 1]);
+  const drift = Math.sin((frame / FPS) * 0.9) * 8;
   return (
     <div
       style={{
         width: 430,
-        height: 820,
-        borderRadius: 58,
-        background: "#101614",
-        padding: 18,
-        boxShadow: "0 42px 90px rgba(8, 28, 22, 0.28)",
-        transform: `rotate(${tilt}deg) translateY(${(1 - enter) * 50}px)`,
+        height: 860,
+        borderRadius: 60,
+        padding: 16,
+        background: "linear-gradient(145deg, #18231f, #030807)",
+        boxShadow: "0 44px 120px rgba(0,0,0,0.42)",
+        border: `1px solid ${colors.line}`,
+        transform: `translateY(${(1 - enter) * 48 + drift}px) rotate(${tilt}deg) scale(${scale})`,
         opacity: enter,
       }}
     >
       <div
         style={{
-          position: "relative",
+          width: "100%",
           height: "100%",
-          borderRadius: 44,
+          borderRadius: 46,
           overflow: "hidden",
-          background: "#f8fffb",
+          background: "#07120f",
         }}
       >
-        <div
+        <Img
+          src={staticFile(`v1-real-app/${src}`)}
           style={{
-            position: "absolute",
-            top: 16,
-            left: "50%",
-            width: 118,
-            height: 24,
-            transform: "translateX(-50%)",
-            borderRadius: 999,
-            background: "#101614",
-            zIndex: 5,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
           }}
         />
-        {children}
       </div>
     </div>
   );
 };
 
-const MacroBar = ({
-  label,
-  value,
-  color,
-  frame,
+const Badge = ({
+  children,
+  accent,
   delay,
+  frame,
 }: {
-  label: string;
-  value: number;
-  color: string;
-  frame: number;
+  children: ReactNode;
+  accent: string;
   delay: number;
+  frame: number;
 }) => {
-  const width = clamp(frame, [delay, delay + 30], [0, value]);
+  const shown = clamp(frame, [delay, delay + 18], [0, 1]);
   return (
-    <div style={{ marginTop: 18 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 20, color: colors.muted }}>
-        <span>{label}</span>
-        <strong style={{ color: colors.ink }}>{value}%</strong>
-      </div>
-      <div
+    <div
+      style={{
+        opacity: shown,
+        transform: `translateY(${(1 - shown) * 18}px)`,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "16px 22px",
+        borderRadius: 999,
+        background: colors.panel,
+        border: `1px solid ${colors.line}`,
+        color: colors.text,
+        fontSize: 25,
+        fontWeight: 800,
+        letterSpacing: 0.2,
+      }}
+    >
+      <span
         style={{
-          marginTop: 8,
+          width: 12,
           height: 12,
           borderRadius: 999,
-          background: "#e9f5ef",
-          overflow: "hidden",
+          background: accent,
+          boxShadow: `0 0 24px ${accent}`,
+        }}
+      />
+      {children}
+    </div>
+  );
+};
+
+const CopyBlock = ({ scene, frame }: { scene: Scene; frame: number }) => {
+  const title = clamp(frame, [8, 34], [0, 1]);
+  const body = clamp(frame, [24, 58], [0, 1]);
+  return (
+    <div style={{ width: 760 }}>
+      <div
+        style={{
+          color: scene.accent,
+          fontSize: 26,
+          fontWeight: 900,
+          letterSpacing: 4,
+          opacity: title,
         }}
       >
-        <div
-          style={{
-            width: `${width}%`,
-            height: "100%",
-            borderRadius: 999,
-            background: color,
-          }}
-        />
+        {scene.kicker}
+      </div>
+      <h1
+        style={{
+          margin: "26px 0 0",
+          color: colors.text,
+          fontSize: 82,
+          lineHeight: 1.02,
+          fontWeight: 950,
+          letterSpacing: -2.5,
+          opacity: title,
+          transform: `translateY(${(1 - title) * 34}px)`,
+        }}
+      >
+        {scene.title}
+      </h1>
+      <p
+        style={{
+          margin: "26px 0 0",
+          maxWidth: 690,
+          color: colors.muted,
+          fontSize: 31,
+          lineHeight: 1.36,
+          fontWeight: 560,
+          opacity: body,
+          transform: `translateY(${(1 - body) * 24}px)`,
+        }}
+      >
+        {scene.body}
+      </p>
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 34 }}>
+        <Badge accent={scene.accent} delay={40} frame={frame}>
+          {scene.primary}
+        </Badge>
+        {scene.secondary ? (
+          <Badge accent={colors.green} delay={52} frame={frame}>
+            {scene.secondary}
+          </Badge>
+        ) : null}
       </div>
     </div>
   );
 };
 
-const DashboardPhone = ({ frame }: { frame: number }) => {
-  const calories = Math.round(clamp(frame, [28, 74], [0, 1420]));
-  return (
-    <PhoneFrame frame={frame}>
-      <div style={{ padding: "62px 32px 0" }}>
-        <div style={{ fontSize: 23, color: colors.muted, fontWeight: 700 }}>Nhật ký hôm nay</div>
-        <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 16 }}>
-          <div
-            style={{
-              width: 118,
-              height: 118,
-              borderRadius: "50%",
-              background: `conic-gradient(${colors.green} 0deg ${calories / 5}deg, #e7f4ee ${calories / 5}deg 360deg)`,
-              display: "grid",
-              placeItems: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 82,
-                height: 82,
-                borderRadius: "50%",
-                background: colors.panel,
-                display: "grid",
-                placeItems: "center",
-                color: colors.greenDark,
-                fontWeight: 850,
-                fontSize: 24,
-              }}
-            >
-              {calories}
-            </div>
-          </div>
-          <div>
-            <div style={{ color: colors.ink, fontSize: 34, fontWeight: 840 }}>Còn 680 kcal</div>
-            <div style={{ color: colors.muted, fontSize: 19, marginTop: 8 }}>Theo mục tiêu cá nhân</div>
-          </div>
-        </div>
-        <div
-          style={{
-            marginTop: 28,
-            border: `1px solid ${colors.line}`,
-            borderRadius: 8,
-            padding: 20,
-            background: "#ffffff",
-            boxShadow: "0 18px 45px rgba(18, 56, 42, 0.08)",
-          }}
-        >
-          <div style={{ color: colors.ink, fontSize: 24, fontWeight: 820 }}>Điểm nổi bật từ AI</div>
-          <div style={{ marginTop: 8, color: colors.muted, fontSize: 18, lineHeight: 1.35 }}>
-            Bữa trưa cân bằng tốt. Bổ sung thêm rau xanh cho bữa tối.
-          </div>
-        </div>
-        <MacroBar label="Protein" value={72} color={colors.blue} frame={frame} delay={42} />
-        <MacroBar label="Carbs" value={58} color={colors.lemon} frame={frame} delay={48} />
-        <MacroBar label="Fat" value={41} color={colors.coral} frame={frame} delay={54} />
-        <div style={{ marginTop: 28, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {["Bữa sáng", "Bữa trưa", "Ăn vặt", "Bữa tối"].map((meal, index) => (
-            <div
-              key={meal}
-              style={{
-                padding: "14px 12px",
-                borderRadius: 8,
-                color: index === 1 ? "#ffffff" : colors.greenDark,
-                background: index === 1 ? colors.green : "#edf8f2",
-                fontSize: 18,
-                fontWeight: 760,
-                textAlign: "center",
-              }}
-            >
-              {meal}
-            </div>
-          ))}
-        </div>
-      </div>
-    </PhoneFrame>
-  );
-};
-
-const FloatingFood = ({
-  src,
-  frame,
-  delay,
-  style,
-}: {
-  src: string;
-  frame: number;
-  delay: number;
-  style: CSSProperties;
-}) => {
-  const show = clamp(frame, [delay, delay + 24], [0, 1]);
-  const float = Math.sin((frame - delay) / 24) * 10;
-  return (
+const Background = ({ accent, frame }: { accent: string; frame: number }) => (
+  <AbsoluteFill
+    style={{
+      background:
+        "radial-gradient(circle at 18% 18%, rgba(36,211,107,0.20), transparent 30%), radial-gradient(circle at 84% 28%, rgba(51,199,255,0.16), transparent 34%), linear-gradient(135deg, #07120f 0%, #101629 100%)",
+      overflow: "hidden",
+    }}
+  >
     <div
       style={{
         position: "absolute",
-        borderRadius: 8,
-        overflow: "hidden",
-        boxShadow: shadow,
-        border: "8px solid #ffffff",
-        opacity: show,
-        transform: `translateY(${(1 - show) * 42 + float}px) scale(${0.9 + show * 0.1})`,
-        ...style,
+        inset: -220,
+        background: `conic-gradient(from ${frame * 0.2}deg, transparent, ${accent}33, transparent, #ffffff12, transparent)`,
+        filter: "blur(72px)",
+        opacity: 0.75,
       }}
-    >
-      <Img src={staticFile(src)} style={fit} />
-    </div>
-  );
-};
-
-const HeroScene = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const duration = 8 * fps;
-  const presence = scenePresence(frame, duration);
-
-  return (
-    <AbsoluteFill
+    />
+    <div
       style={{
-        padding: 112,
-        transform: `scale(${0.98 + presence * 0.02})`,
-        opacity: presence,
+        position: "absolute",
+        right: 90,
+        top: 80,
+        width: 210,
+        height: 210,
+        borderRadius: 999,
+        border: `2px solid ${colors.line}`,
+      }}
+    />
+    <div
+      style={{
+        position: "absolute",
+        left: 76,
+        bottom: 78,
+        color: "rgba(255,255,255,0.06)",
+        fontSize: 180,
+        fontWeight: 950,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: "100%" }}>
-        <div>
-          <ProductMark frame={frame} />
-          <div style={{ marginTop: 78 }}>
-            <TextBlock
-              eyebrow="Product intro"
-              title="Dinh dưỡng thông minh, dễ theo dõi."
-              body="EatFitAI giúp người dùng ghi bữa ăn, hiểu macro và nhận gợi ý cá nhân hóa từ AI trong một trải nghiệm mobile gọn gàng."
-              frame={frame}
-            />
-          </div>
-        </div>
-        <div style={{ position: "relative", width: 780, height: 860 }}>
-          <DashboardPhone frame={frame} />
-          <FloatingFood
-            src="assets/pho-bowl.jpg"
-            frame={frame}
-            delay={26}
-            style={{ right: 30, top: 72, width: 290, height: 220 }}
-          />
-          <FloatingFood
-            src="assets/apple.jpg"
-            frame={frame}
-            delay={40}
-            style={{ right: 190, bottom: 96, width: 220, height: 180 }}
-          />
-          <FloatingFood
-            src="assets/broccoli.jpg"
-            frame={frame}
-            delay={54}
-            style={{ right: 0, bottom: 260, width: 210, height: 190 }}
-          />
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
+      EatFitAI
+    </div>
+  </AbsoluteFill>
+);
 
-const ScanPhone = ({ frame }: { frame: number }) => {
-  const scanY = clamp(frame % 90, [0, 90], [82, 560], Easing.inOut(Easing.sin));
-  const confidence = Math.round(clamp(frame, [32, 76], [0, 92]));
-  const labels = [
-    { text: "Cơm", top: 250, left: 62, color: colors.lemon },
-    { text: "Gà", top: 390, left: 220, color: colors.coral },
-    { text: "Rau", top: 500, left: 72, color: colors.mint },
-  ];
+const SceneView = ({ scene }: { scene: Scene }) => {
+  const frame = useCurrentFrame();
+  const presence = Math.min(
+    clamp(frame, [0, 24], [0, 1]),
+    clamp(frame, [sec(scene.duration) - 24, sec(scene.duration)], [1, 0]),
+  );
+  const [first, second] = scene.assets;
+  const proof = scene.layout === "proof";
+  const duo = scene.layout === "duo";
 
   return (
-    <PhoneFrame frame={frame} tilt={3}>
-      <Img src={staticFile("assets/chicken.jpg")} style={fit} />
-      <div style={{ position: "absolute", inset: 0, background: "rgba(4, 32, 25, 0.34)" }} />
+    <AbsoluteFill style={{ opacity: presence }}>
+      <Background accent={scene.accent} frame={frame + sec(scene.start)} />
       <div
         style={{
           position: "absolute",
-          left: 44,
-          right: 44,
-          top: 96,
-          height: 520,
-          borderRadius: 8,
-          border: `3px solid ${colors.mint}`,
-          boxShadow: "0 0 0 999px rgba(4, 32, 25, 0.16)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: 50,
-          right: 50,
-          top: scanY,
-          height: 4,
-          borderRadius: 999,
-          background: colors.mint,
-          boxShadow: "0 0 22px rgba(126, 230, 181, 0.85)",
-        }}
-      />
-      {labels.map((label, index) => {
-        const show = clamp(frame, [42 + index * 12, 64 + index * 12], [0, 1]);
-        return (
-          <div
-            key={label.text}
-            style={{
-              position: "absolute",
-              top: label.top,
-              left: label.left,
-              opacity: show,
-              transform: `scale(${0.88 + show * 0.12})`,
-            }}
-          >
-            <div
-              style={{
-                width: 92,
-                height: 58,
-                border: `3px solid ${label.color}`,
-                borderRadius: 6,
-              }}
-            />
-            <div
-              style={{
-                marginTop: 8,
-                display: "inline-flex",
-                padding: "8px 12px",
-                borderRadius: 999,
-                background: colors.panel,
-                color: colors.ink,
-                fontSize: 17,
-                fontWeight: 820,
-                boxShadow: "0 12px 30px rgba(0,0,0,0.16)",
-              }}
-            >
-              {label.text} {confidence}%
-            </div>
-          </div>
-        );
-      })}
-      <div
-        style={{
-          position: "absolute",
-          left: 30,
-          right: 30,
-          bottom: 34,
-          padding: 20,
-          borderRadius: 8,
-          background: "rgba(255, 255, 255, 0.92)",
+          left: 90,
+          right: 90,
+          top: 70,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          color: colors.text,
+          fontWeight: 900,
+          letterSpacing: 0.8,
+          fontSize: 26,
         }}
       >
-        <div style={{ color: colors.greenDark, fontSize: 23, fontWeight: 850 }}>Nhận diện thực phẩm</div>
-        <div style={{ color: colors.muted, fontSize: 17, marginTop: 6 }}>Xác nhận trước khi thêm vào nhật ký</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <Img src={staticFile("assets/icon.png")} style={{ width: 56, height: 56, borderRadius: 16 }} />
+          EatFitAI v1
+        </div>
+        <div style={{ color: colors.muted, fontSize: 22 }}>Public APK release proof</div>
       </div>
-    </PhoneFrame>
-  );
-};
-
-const ScanScene = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const duration = 8 * fps;
-  const presence = scenePresence(frame, duration);
-
-  return (
-    <AbsoluteFill
-      style={{
-        padding: "104px 112px",
-        opacity: presence,
-        display: "grid",
-        gridTemplateColumns: "0.95fr 1.05fr",
-        alignItems: "center",
-        gap: 72,
-      }}
-    >
-      <div style={{ position: "relative", height: 860, display: "grid", placeItems: "center" }}>
-        <ScanPhone frame={frame} />
+      <div
+        style={{
+          position: "absolute",
+          inset: "150px 90px 88px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 84,
+        }}
+      >
+        <CopyBlock scene={scene} frame={frame} />
         <div
           style={{
-            position: "absolute",
-            right: 30,
-            top: 92,
-            width: 300,
-            padding: 24,
-            borderRadius: 8,
-            background: colors.greenDark,
-            color: "#ffffff",
-            boxShadow: shadow,
-            opacity: clamp(frame, [52, 82], [0, 1]),
+            width: 790,
+            height: 850,
+            position: "relative",
+            display: "grid",
+            placeItems: "center",
           }}
         >
-          <div style={{ fontSize: 22, fontWeight: 850 }}>AI Vision</div>
-          <div style={{ marginTop: 10, fontSize: 18, lineHeight: 1.35, color: "#c9f6df" }}>
-            YOLO phát hiện món ăn, backend chuẩn hóa kết quả trước khi lưu.
-          </div>
-        </div>
-      </div>
-      <TextBlock
-        eyebrow="Quét AI"
-        title="Từ một tấm ảnh thành dữ liệu dinh dưỡng."
-        body="Người dùng chụp món ăn, AI đề xuất thành phần, mức tin cậy và cho phép xác nhận trước khi thêm vào nhật ký."
-        frame={frame}
-        color={colors.coral}
-      />
-    </AbsoluteFill>
-  );
-};
-
-const GoalCard = ({
-  title,
-  value,
-  unit,
-  color,
-  frame,
-  delay,
-}: {
-  title: string;
-  value: number;
-  unit: string;
-  color: string;
-  frame: number;
-  delay: number;
-}) => {
-  const show = clamp(frame, [delay, delay + 22], [0, 1]);
-  const count = Math.round(clamp(frame, [delay, delay + 42], [0, value]));
-  return (
-    <div
-      style={{
-        padding: 28,
-        borderRadius: 8,
-        background: colors.panel,
-        boxShadow: "0 20px 60px rgba(12, 66, 49, 0.1)",
-        border: `1px solid ${colors.line}`,
-        opacity: show,
-        transform: `translateY(${(1 - show) * 34}px)`,
-      }}
-    >
-      <div style={{ color: colors.muted, fontSize: 24, fontWeight: 740 }}>{title}</div>
-      <div style={{ marginTop: 14, color: colors.ink, fontSize: 58, fontWeight: 860 }}>
-        {count}
-        <span style={{ marginLeft: 10, color, fontSize: 28 }}>{unit}</span>
-      </div>
-    </div>
-  );
-};
-
-const PersonalizedScene = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const duration = 10 * fps;
-  const presence = scenePresence(frame, duration);
-
-  return (
-    <AbsoluteFill
-      style={{
-        padding: 112,
-        opacity: presence,
-        display: "grid",
-        gridTemplateColumns: "0.9fr 1.1fr",
-        alignItems: "center",
-        gap: 80,
-      }}
-    >
-      <TextBlock
-        eyebrow="Cá nhân hóa"
-        title="Mục tiêu thay đổi theo cơ thể và tiến độ."
-        body="Calories và macro được tính từ hồ sơ, mức vận động, lịch sử ăn uống và phản hồi thực tế của người dùng."
-        frame={frame}
-        color={colors.blue}
-      />
-      <div style={{ position: "relative", height: 750 }}>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: 8,
-            background: colors.greenDark,
-            transform: "rotate(2deg)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 24,
-            borderRadius: 8,
-            background: "#f8fffb",
-            padding: 34,
-            boxShadow: shadow,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ color: colors.green, fontSize: 24, fontWeight: 820 }}>AI đề xuất mục tiêu</div>
-              <div style={{ marginTop: 10, color: colors.ink, fontSize: 42, fontWeight: 860 }}>Gói dinh dưỡng hôm nay</div>
-            </div>
-            <div
-              style={{
-                padding: "12px 18px",
-                borderRadius: 999,
-                color: colors.greenDark,
-                background: "#dff8ea",
-                fontSize: 22,
-                fontWeight: 850,
-              }}
-            >
-              Tin cậy 91%
-            </div>
-          </div>
-          <div style={{ marginTop: 42, display: "grid", gridTemplateColumns: "1.15fr 1fr", gap: 24 }}>
-            <GoalCard title="Calories" value={2100} unit="kcal" color={colors.green} frame={frame} delay={28} />
-            <GoalCard title="Protein" value={132} unit="g" color={colors.blue} frame={frame} delay={38} />
-            <GoalCard title="Carbs" value={248} unit="g" color={colors.lemon} frame={frame} delay={48} />
-            <GoalCard title="Fat" value={68} unit="g" color={colors.coral} frame={frame} delay={58} />
-          </div>
-          <div
-            style={{
-              marginTop: 32,
-              height: 165,
-              borderRadius: 8,
-              background: "#eef9f3",
-              padding: 22,
-              display: "flex",
-              alignItems: "end",
-              gap: 14,
-            }}
-          >
-            {[46, 62, 58, 70, 66, 82, 76, 88, 91].map((height, index) => {
-              const show = clamp(frame, [70 + index * 4, 90 + index * 4], [0, 1]);
-              return (
-                <div
-                  key={height + index}
-                  style={{
-                    width: 56,
-                    height: `${show * height}%`,
-                    borderRadius: "8px 8px 0 0",
-                    background: index > 5 ? colors.green : "#b7e9d1",
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-const WorkflowCard = ({
-  title,
-  body,
-  color,
-  frame,
-  delay,
-}: {
-  title: string;
-  body: string;
-  color: string;
-  frame: number;
-  delay: number;
-}) => {
-  const show = clamp(frame, [delay, delay + 28], [0, 1]);
-  return (
-    <div
-      style={{
-        minHeight: 360,
-        padding: 34,
-        borderRadius: 8,
-        background: colors.panel,
-        border: `1px solid ${colors.line}`,
-        boxShadow: "0 20px 56px rgba(16, 35, 31, 0.1)",
-        opacity: show,
-        transform: `translateY(${(1 - show) * 46}px)`,
-      }}
-    >
-      <div style={{ width: 66, height: 10, borderRadius: 999, background: color }} />
-      <div style={{ marginTop: 42, color: colors.ink, fontSize: 42, lineHeight: 1.05, fontWeight: 860 }}>
-        {title}
-      </div>
-      <div style={{ marginTop: 22, color: colors.muted, fontSize: 25, lineHeight: 1.36 }}>{body}</div>
-    </div>
-  );
-};
-
-const WorkflowScene = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const duration = 10 * fps;
-  const presence = scenePresence(frame, duration);
-
-  return (
-    <AbsoluteFill style={{ padding: 112, opacity: presence }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 80 }}>
-        <TextBlock
-          eyebrow="Luồng sử dụng"
-          title="Ghi lại bữa ăn theo cách tự nhiên hơn."
-          body="Tìm món, tạo món thủ công, thêm bằng ảnh hoặc giọng nói; mọi dữ liệu quay về nhật ký và thống kê."
-          frame={frame}
-          color={colors.green}
-        />
-        <div
-          style={{
-            width: 390,
-            padding: 26,
-            borderRadius: 8,
-            background: colors.greenDark,
-            color: "#ffffff",
-            boxShadow: shadow,
-            opacity: clamp(frame, [60, 90], [0, 1]),
-          }}
-        >
-          <div style={{ fontSize: 26, fontWeight: 860 }}>Backend proxy</div>
-          <div style={{ marginTop: 10, fontSize: 20, lineHeight: 1.35, color: "#c9f6df" }}>
-            Mobile gọi API chuẩn, AI provider nằm sau lớp kiểm soát.
-          </div>
-        </div>
-      </div>
-      <div style={{ marginTop: 72, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 26 }}>
-        <WorkflowCard
-          title="Nhật ký bữa ăn"
-          body="Theo dõi calories, macro và bữa ăn trong ngày với trạng thái rõ ràng."
-          color={colors.green}
-          frame={frame}
-          delay={36}
-        />
-        <WorkflowCard
-          title="Giọng nói"
-          body="Ghi nhanh ý định như thêm món hoặc xác nhận khẩu phần qua backend voice flow."
-          color={colors.coral}
-          frame={frame}
-          delay={52}
-        />
-        <WorkflowCard
-          title="Thống kê"
-          body="So sánh tuần/tháng, nhận tín hiệu tiến độ và điểm cần điều chỉnh."
-          color={colors.blue}
-          frame={frame}
-          delay={68}
-        />
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-const NodeBox = ({
-  label,
-  detail,
-  color,
-  frame,
-  delay,
-}: {
-  label: string;
-  detail: string;
-  color: string;
-  frame: number;
-  delay: number;
-}) => {
-  const show = clamp(frame, [delay, delay + 24], [0, 1]);
-  return (
-    <div
-      style={{
-        width: 305,
-        minHeight: 178,
-        padding: 26,
-        borderRadius: 8,
-        background: colors.panel,
-        border: `1px solid ${colors.line}`,
-        boxShadow: "0 22px 60px rgba(16, 35, 31, 0.1)",
-        opacity: show,
-        transform: `translateY(${(1 - show) * 28}px)`,
-      }}
-    >
-      <div style={{ width: 54, height: 8, borderRadius: 999, background: color }} />
-      <div style={{ marginTop: 28, color: colors.ink, fontSize: 31, fontWeight: 860 }}>{label}</div>
-      <div style={{ marginTop: 12, color: colors.muted, fontSize: 20, lineHeight: 1.35 }}>{detail}</div>
-    </div>
-  );
-};
-
-const SystemScene = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const duration = 12 * fps;
-  const presence = scenePresence(frame, duration);
-  const logoIn = clamp(frame, [170, 214], [0, 1]);
-
-  return (
-    <AbsoluteFill style={{ padding: 112, opacity: presence }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 0.92fr", gap: 80, alignItems: "center", height: "100%" }}>
-        <div>
-          <TextBlock
-            eyebrow="Sản phẩm hoàn chỉnh"
-            title="Mobile app, API và AI trong cùng một hệ thống."
-            body="EatFitAI được thiết kế cho demo sản phẩm nghiêm túc: dữ liệu có kiểm soát, AI có fallback, và trải nghiệm người dùng tập trung vào hành động hằng ngày."
-            frame={frame}
-            color={colors.coral}
-          />
-          <div style={{ marginTop: 68, display: "flex", alignItems: "center", gap: 18, opacity: logoIn }}>
-            <div
-              style={{
-                width: 88,
-                height: 88,
-                borderRadius: 24,
-                background: colors.panel,
-                overflow: "hidden",
-                boxShadow: "0 18px 42px rgba(15, 107, 87, 0.2)",
-              }}
-            >
-              <Img src={staticFile("assets/icon.png")} style={{ width: 88, height: 88 }} />
-            </div>
-            <div>
-              <div style={{ color: colors.ink, fontSize: 46, fontWeight: 880 }}>EatFitAI</div>
-              <div style={{ color: colors.green, fontSize: 28, fontWeight: 780 }}>
-                Ăn đúng hơn, hiểu cơ thể hơn.
+          {duo ? (
+            <>
+              <div style={{ position: "absolute", left: 44, top: 40 }}>
+                <Screen src={first} frame={frame} tilt={-5} scale={0.92} />
+              </div>
+              <div style={{ position: "absolute", right: 34, top: 12 }}>
+                <Screen src={second || first} frame={frame + 12} tilt={5} scale={0.92} />
+              </div>
+            </>
+          ) : proof ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 34 }}>
+              <Screen src={first} frame={frame} tilt={-2} scale={0.82} />
+              <div
+                style={{
+                  width: 278,
+                  padding: "34px 30px",
+                  borderRadius: 34,
+                  background: colors.panel,
+                  border: `1px solid ${colors.line}`,
+                  color: colors.text,
+                  boxShadow: "0 32px 80px rgba(0,0,0,0.28)",
+                }}
+              >
+                <div style={{ color: scene.accent, fontSize: 23, fontWeight: 900 }}>APK FACTS</div>
+                {["v1.0.0", "versionCode 1", "non-debuggable", "clean install"].map((item, index) => (
+                  <div
+                    key={item}
+                    style={{
+                      marginTop: index === 0 ? 22 : 16,
+                      fontSize: 26,
+                      fontWeight: 820,
+                      color: index === 0 ? colors.text : colors.muted,
+                    }}
+                  >
+                    {item}
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
-        <div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
-            <NodeBox label="Expo Mobile" detail="Ghi bữa ăn, quét AI, giọng nói, thống kê." color={colors.green} frame={frame} delay={42} />
-            <NodeBox label=".NET API" detail="Auth, diary, profile, validation, fallback." color={colors.blue} frame={frame} delay={58} />
-            <NodeBox label="AI Provider" detail="YOLO vision, Gemini nutrition, voice parse." color={colors.coral} frame={frame} delay={74} />
-            <NodeBox label="Supabase" detail="Lưu hồ sơ, nhật ký, mục tiêu và telemetry." color={colors.lemon} frame={frame} delay={90} />
-          </div>
-          <div
-            style={{
-              marginTop: 30,
-              padding: "24px 28px",
-              borderRadius: 8,
-              background: colors.greenDark,
-              color: "#ffffff",
-              boxShadow: shadow,
-              opacity: clamp(frame, [118, 150], [0, 1]),
-            }}
-          >
-            <div style={{ fontSize: 31, fontWeight: 860 }}>Sẵn sàng cho video demo, pitch deck và social teaser.</div>
-            <div style={{ marginTop: 10, fontSize: 21, color: "#c9f6df" }}>
-              MP4 16:9, nhạc nền tự tạo, text tiếng Việt sạch UTF-8.
-            </div>
-          </div>
+          ) : (
+            <Screen src={first} frame={frame} tilt={scene.start === 0 ? 0 : -4} scale={1} />
+          )}
         </div>
       </div>
     </AbsoluteFill>
   );
 };
 
-const Background = () => {
-  const frame = useCurrentFrame();
-  const progress = clamp(frame, [0, DURATION_IN_FRAMES], [0, 1], Easing.linear);
+export const EatFitAIProductIntro: React.FC = () => {
   return (
-    <AbsoluteFill
-      style={{
-        background: `linear-gradient(135deg, #f8fbff 0%, #effcf5 48%, #fff7f2 100%)`,
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "linear-gradient(rgba(15, 107, 87, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 107, 87, 0.06) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-          transform: `translateX(${-progress * 80}px) translateY(${-progress * 40}px)`,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 12,
-          background: `linear-gradient(90deg, ${colors.green}, ${colors.coral}, ${colors.blue}, ${colors.lemon})`,
-        }}
-      />
-    </AbsoluteFill>
-  );
-};
-
-const BeatTicks = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const activeBeat = Math.floor(frame / (fps / 2)) % 16;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: 112,
-        right: 112,
-        bottom: 44,
-        display: "grid",
-        gridTemplateColumns: "repeat(16, 1fr)",
-        gap: 8,
-        opacity: 0.45,
-      }}
-    >
-      {Array.from({ length: 16 }).map((_, index) => (
-        <div
-          key={index}
-          style={{
-            height: 5,
-            borderRadius: 999,
-            background: index === activeBeat ? colors.green : "#badccc",
-            transform: `scaleY(${index === activeBeat ? 1.9 : 1})`,
-          }}
-        />
+    <AbsoluteFill style={{ fontFamily: "Inter, Segoe UI, Arial, sans-serif", background: colors.bg }}>
+      <Audio src={staticFile("audio/eatfitai-beat.wav")} loop volume={fadeVolume} />
+      {scenes.map((scene) => (
+        <Sequence
+          key={`${scene.start}-${scene.title}`}
+          from={sec(scene.start)}
+          durationInFrames={sec(scene.duration)}
+          premountFor={FPS}
+        >
+          <SceneView scene={scene} />
+        </Sequence>
       ))}
-    </div>
-  );
-};
-
-export const EatFitAIProductIntro = () => {
-  const frame = useCurrentFrame();
-
-  return (
-    <AbsoluteFill
-      style={{
-        fontFamily: "'Segoe UI', 'Inter', 'Arial', sans-serif",
-        overflow: "hidden",
-      }}
-    >
-      <Audio
-        src={staticFile("audio/eatfitai-beat.wav")}
-        volume={(audioFrame) => fadeVolume(audioFrame, DURATION_IN_FRAMES)}
-      />
-      <Background />
-      <Sequence durationInFrames={8 * FPS} premountFor={FPS}>
-        <HeroScene />
-      </Sequence>
-      <Sequence from={8 * FPS} durationInFrames={8 * FPS} premountFor={FPS}>
-        <ScanScene />
-      </Sequence>
-      <Sequence from={16 * FPS} durationInFrames={10 * FPS} premountFor={FPS}>
-        <PersonalizedScene />
-      </Sequence>
-      <Sequence from={26 * FPS} durationInFrames={10 * FPS} premountFor={FPS}>
-        <WorkflowScene />
-      </Sequence>
-      <Sequence from={36 * FPS} durationInFrames={12 * FPS} premountFor={FPS}>
-        <SystemScene />
-      </Sequence>
-      <BeatTicks />
-      <div
-        style={{
-          position: "absolute",
-          top: 44,
-          right: 112,
-          color: colors.greenDark,
-          fontSize: 22,
-          fontWeight: 800,
-          opacity: clamp(frame, [0, 40], [0, 0.74]),
-        }}
-      >
-        EatFitAI Product Film
-      </div>
     </AbsoluteFill>
   );
 };

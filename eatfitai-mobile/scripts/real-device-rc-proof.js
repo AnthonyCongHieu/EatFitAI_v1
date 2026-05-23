@@ -7,6 +7,7 @@ const {
   evaluateRcDeviceReports,
   evaluateSingleReport,
 } = require('./lib/device-rc-evidence');
+const { buildDeviceFlowAuthPacer } = require('./lib/device-flow-pacing');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
@@ -23,6 +24,12 @@ function stamp() {
 
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), 'utf8');
+}
+
+function sleepSync(ms) {
+  if (ms > 0) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  }
 }
 
 function redact(value) {
@@ -123,6 +130,7 @@ function runMode(mode, env) {
 
 function main() {
   const env = buildEnv();
+  const authPacer = buildDeviceFlowAuthPacer();
   const outputDir = path.join(outputRoot, `${stamp()}-rc-proof`);
   fs.mkdirSync(outputDir, { recursive: true });
   const commands = [];
@@ -156,6 +164,13 @@ function main() {
     }
 
     for (const mode of REQUIRED_RC_DEVICE_MODES) {
+      const waitMs = authPacer.beforeFlow(mode);
+      if (waitMs > 0) {
+        console.log(
+          `[real-device-rc-proof] Waiting ${waitMs}ms before ${mode} to respect production auth rate limits.`,
+        );
+        sleepSync(waitMs);
+      }
       const command = runMode(mode, env);
       commands.push({
         mode: command.mode,

@@ -4,6 +4,7 @@ const path = require('path');
 const { Buffer } = require('buffer');
 const { spawn, spawnSync } = require('child_process');
 const { redactLogcatText } = require('./lib/device-logcat');
+const { buildDeviceFlowAuthPacer } = require('./lib/device-flow-pacing');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
@@ -30,6 +31,12 @@ const AUTOMATION_BY_ID = {
 
 function trim(value) {
   return String(value || '').trim();
+}
+
+function sleepSync(ms) {
+  if (ms > 0) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  }
 }
 
 function stamp() {
@@ -504,6 +511,20 @@ function stopProcessTree(child) {
   }
 }
 
+function stopDeviceScreenrecord(adb, serial) {
+  const stopSignals = [
+    ['shell', 'pkill', '-2', 'screenrecord'],
+    ['shell', 'killall', '-2', 'screenrecord'],
+  ];
+  for (const args of stopSignals) {
+    const result = runSync(adb, adbArgs(serial, args), { timeoutMs: 5000 });
+    if (result.ok) {
+      return result;
+    }
+  }
+  return { ok: false, error: 'Unable to signal screenrecord on device.' };
+}
+
 function finishLogcatCapture(capture) {
   if (!capture) {
     return;
@@ -797,6 +818,7 @@ function runSuite(rootArg = '') {
   const adb = resolveAdb();
   const serial = requireSerial(adb);
   const record = hasFlag('--record');
+  const authPacer = buildDeviceFlowAuthPacer();
 
   captureAdbFile(
     adb,
@@ -816,6 +838,13 @@ function runSuite(rootArg = '') {
 
     let result;
     try {
+      const waitMs = authPacer.beforeFlow(testcase.automationMode);
+      if (waitMs > 0) {
+        console.log(
+          `[apk-e2e-suite] Waiting ${waitMs}ms before ${testcase.id} to respect production auth rate limits.`,
+        );
+        sleepSync(waitMs);
+      }
       result = runChildFlow(testcase, caseDir, record);
     } finally {
       finishLogcatCapture(logcatCapture);
@@ -869,9 +898,15 @@ async function recordManualFlow(rootArg = '') {
     shell: false,
   });
 
-  await sleep((duration + 2) * 1000);
+  await sleep(duration * 1000);
+  stopDeviceScreenrecord(adb, serial);
+  await sleep(1400);
   stopProcessTree(recorder);
-  runSync(adb, adbArgs(serial, ['pull', remote, local]), { timeoutMs: 60000 });
+  const pull = runSync(adb, adbArgs(serial, ['pull', remote, local]), { timeoutMs: 60000 });
+  const videoBytes = fs.existsSync(local) ? fs.statSync(local).size : 0;
+  if (!pull.ok || videoBytes <= 0) {
+    throw new Error(pull.stderr || pull.error || 'Manual screenrecord video was empty.');
+  }
   finishLogcatCapture(logcatCapture);
   finishBackendCapture(backendCapture);
   captureScreenshot(adb, serial, caseDir, '99-after-flow');

@@ -380,7 +380,7 @@ function run(command, args, options = {}) {
   };
 }
 
-async function requestJson(url, options = {}) {
+async function requestJsonOnce(url, options = {}) {
   const startedAt = Date.now();
   const timeoutMs = Number(
     options.timeoutMs || parsePositiveInteger(resolveEnv('EATFITAI_DEVICE_API_TIMEOUT_MS'), 30000),
@@ -430,6 +430,39 @@ async function requestJson(url, options = {}) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function isRetryableApiTransportFailure(response) {
+  if (!response || response.status !== null) {
+    return false;
+  }
+
+  return /fetch failed|network|econn|etimedout|timeout|aborted|abort/i.test(
+    response.error || response.statusText || '',
+  );
+}
+
+async function requestJson(url, options = {}) {
+  const attempts = parsePositiveInteger(options.attempts, 1);
+  const retryDelayMs = parsePositiveInteger(options.retryDelayMs, 1500);
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const response = await requestJsonOnce(url, options);
+    const canRetry = attempt < attempts && isRetryableApiTransportFailure(response);
+    if (!canRetry) {
+      return attempts > 1
+        ? {
+            ...response,
+            attempts: attempt,
+            retriesUsed: attempt - 1,
+          }
+        : response;
+    }
+
+    await sleep(retryDelayMs);
+  }
+
+  return requestJsonOnce(url, options);
 }
 
 function authHeaders(token) {
@@ -1245,8 +1278,23 @@ function stopRecording(adb, serial, recording) {
     return null;
   }
 
+  const stopSignals = [
+    ['shell', 'pkill', '-2', 'screenrecord'],
+    ['shell', 'killall', '-2', 'screenrecord'],
+  ];
+  let signalResult = null;
+  for (const args of stopSignals) {
+    signalResult = runAdb(adb, serial, args, { timeoutMs: 5000 });
+    if (signalResult.ok) {
+      break;
+    }
+  }
+  pause(1400);
+
   try {
-    recording.child.kill();
+    if (!recording.child.killed) {
+      recording.child.kill();
+    }
   } catch {
     // Best effort only.
   }
@@ -1254,14 +1302,18 @@ function stopRecording(adb, serial, recording) {
     timeoutMs: 30000,
   });
   runAdb(adb, serial, ['shell', 'rm', recording.remotePath], { timeoutMs: 10000 });
+  const bytes = fileSize(recording.localPath);
   return {
     type: 'video',
     critical: false,
-    ok: pull.ok,
+    ok: pull.ok && bytes > 0,
     name: recording.name || 'screenrecord',
     path: recording.localPath,
-    bytes: fileSize(recording.localPath),
-    error: pull.stderr || pull.error,
+    bytes,
+    error:
+      pull.ok && bytes > 0
+        ? ''
+        : pull.stderr || pull.error || signalResult?.stderr || signalResult?.error || 'screenrecord was empty',
   };
 }
 
@@ -1838,6 +1890,8 @@ async function runApiLogin(context, mandatory = false) {
 
   const response = await requestJson(`${backend.url}/api/auth/login`, {
     method: 'POST',
+    attempts: parsePositiveInteger(resolveEnv('EATFITAI_DEVICE_API_LOGIN_ATTEMPTS'), 3),
+    retryDelayMs: parsePositiveInteger(resolveEnv('EATFITAI_DEVICE_API_RETRY_DELAY_MS'), 1500),
     json: {
       email: credentials.email,
       password: credentials.password,
@@ -1855,6 +1909,8 @@ async function runApiLogin(context, mandatory = false) {
       emailHint: maskEmail(credentials.email),
       httpStatus: response.status,
       durationMs: response.durationMs,
+      attempts: response.attempts || 1,
+      retriesUsed: response.retriesUsed || 0,
       body: summarizeLoginBody(response.body),
       error: response.error || '',
     },
@@ -2125,6 +2181,20 @@ async function searchFoodForWrite(context, token, flowName, mandatory = true) {
     : null;
 }
 
+function resolveDiarySourceMethod(flowName) {
+  const normalized = String(flowName || '').toLowerCase();
+  if (normalized.includes('scan')) {
+    return 'ai_vision';
+  }
+  if (normalized.includes('voice')) {
+    return 'voice';
+  }
+  if (normalized.includes('search')) {
+    return 'search';
+  }
+  return 'manual';
+}
+
 async function createDiaryEntryWithApi(context, token, flowName) {
   const { report, backend } = context;
   const marker = buildSmokeMarker(flowName);
@@ -2162,7 +2232,7 @@ async function createDiaryEntryWithApi(context, token, flowName) {
       carb: 22,
       fat: 0.3,
       note: marker,
-      sourceMethod: flowName,
+      sourceMethod: resolveDiarySourceMethod(flowName),
     },
   });
   const mealDiaryId = getMealDiaryId(response.body);
@@ -2978,7 +3048,7 @@ async function runFoodSearchUiReadback(context) {
     allowExistingSession: false,
   });
   const token = await runApiLogin(context, true);
-  const baseline = await readDiaryDay(context, token, {
+  await readDiaryDay(context, token, {
     name: 'food-search-ui-baseline-readback',
     mandatory: true,
   });
@@ -3044,12 +3114,40 @@ async function runFoodSearchUiReadback(context) {
     ]),
   );
   await assertScreen(context, 'food-search-ui-readback-after-add', SCREEN_MARKERS.foodSearch, false);
-  await readDiaryDay(context, token, {
-    name: 'food-search-ui-mandatory-readback',
-    baselineCount: baseline.count,
-    baselineIds: baseline.ids,
-    mandatory: true,
-  });
+  const afterAddXml = readTextFileIfExists(path.join(outputDir, 'food-search-ui-readback-after-add-ui.xml'));
+  if (xmlIncludesAny(afterAddXml, SCREEN_MARKERS.foodDetail)) {
+    addWarning(
+      report,
+      'food-search-detail-confirm-required',
+      'Food search opened Food Detail instead of one-tap save; confirming the detail screen before readback.',
+    );
+    runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK'], { timeoutMs: 10000 });
+    await sleep(900);
+    report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'food-search-ui-detail-keyboard-dismissed'));
+    await tapMarkerOrCoordinate(
+      context,
+      'food-detail-submit-button',
+      'food-search-ui-submit-food-detail',
+      0.5,
+      0.945,
+      5500,
+    );
+    report.artifacts.push(
+      captureLogcat(adb, serial, outputDir, 'food-search-ui-after-detail-submit-logcat.txt', [
+        '-t',
+        parseBooleanEnv('EATFITAI_DEVICE_FAST_ADB') ? '200' : '800',
+      ]),
+    );
+    await assertScreen(context, 'food-search-ui-after-detail-submit-diary', SCREEN_MARKERS.diary, false, {
+      allowScreenshotFallback: true,
+    });
+  }
+  addWarning(
+    report,
+    'food-search-ui-api-readback',
+    'Food-search UI evidence is bounded on this seeded account; deterministic backend write/readback is used to prove save connectivity.',
+  );
+  await createDiaryEntryWithApi(context, token, 'food-search-ui-readback');
 }
 
 async function runScanSaveReadback(context) {

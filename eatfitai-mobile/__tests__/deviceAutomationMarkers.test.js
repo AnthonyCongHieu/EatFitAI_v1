@@ -49,6 +49,24 @@ describe('real-device automation markers', () => {
     expect(source).toContain('nativeID={TEST_IDS.foodDetail.submitButton}');
   });
 
+  it('retries device API login only for transport failures', () => {
+    const source = readSource('scripts/real-device-adb-flow.js');
+
+    expect(source).toContain('function isRetryableApiTransportFailure');
+    expect(source).toContain('response.status !== null');
+    expect(source).toContain('EATFITAI_DEVICE_API_LOGIN_ATTEMPTS');
+    expect(source).toContain('attempts: response.attempts || 1');
+  });
+
+  it('finalizes ADB screenrecord before pulling video evidence', () => {
+    const source = readSource('scripts/real-device-adb-flow.js');
+
+    expect(source).toContain("['shell', 'pkill', '-2', 'screenrecord']");
+    expect(source).toContain("['shell', 'killall', '-2', 'screenrecord']");
+    expect(source).toContain('ok: pull.ok && bytes > 0');
+    expect(source).toContain('screenrecord was empty');
+  });
+
   it('exposes stable quick-add markers before Food Search opens', () => {
     const diarySource = readSource('src/app/screens/diary/MealDiaryScreen.tsx');
     const quickActionsSource = readSource('src/components/home/QuickActionsOverlay.tsx');
