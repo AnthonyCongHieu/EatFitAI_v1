@@ -86,6 +86,7 @@ Cloud/API coverage included auth, profile, diary, food search/detail/custom/rece
 | Gate | Result | Evidence |
 | --- | --- | --- |
 | Demo seed account | PASS | `_logs\device-release-session\2026-05-23T05-41-54Z-seed\demo-seed.json` |
+| Disposable demo cleanup | PASS | Temporary production account deleted after device/video block; local DPAPI credential file removed |
 | RC proof | PASS | `_logs\real-device-adb\2026-05-23T06-16-58-528Z-rc-proof\report.json` |
 | Focused food search/readback after fix | PASS DEGRADED | `_logs\real-device-adb\2026-05-23T06-11-43-011Z-food-search-ui-readback\report.json` |
 | Latest full automated P0 suite | FAIL | `_logs\apk-e2e-full\2026-05-23T07-22-27-180Z\suite-summary.json` |
