@@ -1,30 +1,31 @@
 import type { ReactNode } from "react";
-import { Audio } from "@remotion/media";
+import { Audio, Video } from "@remotion/media";
 import {
   AbsoluteFill,
   Easing,
   Img,
   Sequence,
   interpolate,
+  spring,
   staticFile,
   useCurrentFrame,
+  useVideoConfig,
 } from "remotion";
 
 export const FPS = 30;
-export const DURATION_IN_FRAMES = 72 * FPS;
+export const DURATION_IN_FRAMES = 74 * FPS;
 
 const colors = {
-  bg: "#07120f",
-  bg2: "#101629",
-  panel: "rgba(255,255,255,0.08)",
-  line: "rgba(255,255,255,0.15)",
-  text: "#f7fff9",
-  muted: "#b9c7c1",
-  green: "#24d36b",
-  greenSoft: "#8ff2bf",
-  blue: "#33c7ff",
+  bg: "#04100d",
+  ink: "#f7fff9",
+  muted: "#c6d3cf",
+  line: "rgba(255,255,255,0.16)",
+  glass: "rgba(5,14,18,0.68)",
+  green: "#39e878",
+  mint: "#99ffc4",
+  cyan: "#43d5ff",
   yellow: "#ffd166",
-  coral: "#ff7a59",
+  coral: "#ff7a66",
 };
 
 const sec = (value: number) => Math.round(value * FPS);
@@ -38,156 +39,296 @@ const clamp = (frame: number, input: [number, number], output: [number, number])
   });
 
 const fadeVolume = (frame: number) => {
-  const intro = interpolate(frame, [0, 60], [0, 0.62], {
+  const intro = interpolate(frame, [0, sec(1.2)], [0, 0.82], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const outro = interpolate(frame, [DURATION_IN_FRAMES - 120, DURATION_IN_FRAMES], [1, 0], {
+  const outro = interpolate(frame, [DURATION_IN_FRAMES - sec(3), DURATION_IN_FRAMES], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   return intro * outro;
 };
 
+type Stage = "left" | "right" | "center";
+
 type Scene = {
   start: number;
   duration: number;
-  kicker: string;
+  eyebrow: string;
   title: string;
-  body: string;
-  primary: string;
-  secondary?: string;
-  assets: string[];
+  caption: string;
+  metric: string;
+  clip: string;
+  trim?: number;
+  speed?: number;
   accent: string;
-  layout?: "single" | "duo" | "proof";
+  mochi: string;
+  stage: Stage;
 };
 
 const scenes: Scene[] = [
   {
-    start: 0,
-    duration: 6,
-    kicker: "VẤN ĐỀ MỖI NGÀY",
-    title: "Ăn đúng mục tiêu, không cần đoán mò",
-    body: "EatFitAI gom nhật ký, macro và thói quen ăn uống vào một luồng rõ ràng.",
-    primary: "Launch thật trên APK v1",
-    assets: ["01-launch-intro.png"],
+    start: 5,
+    duration: 8,
+    eyebrow: "TRANG CHỦ",
+    title: "Biết hôm nay còn bao nhiêu",
+    caption: "Calo, macro, nhật ký và MoChi quick-add ở ngay màn hình đầu.",
+    metric: "Dashboard thật",
+    clip: "01-home-mochi-dashboard.mp4",
+    trim: 1,
+    speed: 1.24,
     accent: colors.green,
+    mochi: "meal-coach.png",
+    stage: "right",
   },
   {
-    start: 6,
+    start: 13,
     duration: 10,
-    kicker: "DASHBOARD",
-    title: "Một màn hình để biết hôm nay còn bao nhiêu",
-    body: "Calo, đạm, tinh bột, chất béo và nước được đặt ngay trước mắt.",
-    primary: "Mục tiêu 2.150 kcal",
-    secondary: "UI tiếng Việt sạch",
-    assets: ["02-home-dashboard.png"],
-    accent: colors.greenSoft,
-  },
-  {
-    start: 16,
-    duration: 12,
-    kicker: "NHẬT KÝ",
-    title: "Tìm món, chỉnh khẩu phần, lưu lại ngay",
-    body: "Luồng thêm món dùng dữ liệu thật từ app và được kiểm chứng bằng API readback.",
-    primary: "Search + detail + save",
-    secondary: "Không lộ private media URL",
-    assets: ["04-food-detail.png", "05-diary-after-add.png"],
+    eyebrow: "THỰC ĐƠN",
+    title: "Tìm món, ghi bữa",
+    caption: "Mở MoChi, tìm món ăn, lưu vào nhật ký và thấy macro đổi ngay.",
+    metric: "Search → lưu bữa",
+    clip: "02-menu-search-save.mp4",
+    trim: 1,
+    speed: 1.6,
     accent: colors.yellow,
-    layout: "duo",
+    mochi: "meal-coach.png",
+    stage: "left",
   },
   {
-    start: 28,
-    duration: 15,
-    kicker: "AI QUICK ADD",
-    title: "MoChi mở nhanh scan, công thức và ghi giọng nói",
-    body: "Nguồn ảnh là màn hình quick action thật. Clip scan/review/save cần capture lại khi ADB reconnect.",
-    primary: "Nhận diện món ăn",
-    secondary: "Gợi ý công thức",
-    assets: ["06-quick-actions.png", "02-home-dashboard.png"],
-    accent: colors.blue,
-    layout: "duo",
+    start: 23,
+    duration: 10,
+    eyebrow: "GỢI Ý MÓN",
+    title: "Có nguyên liệu, có ý tưởng",
+    caption: "Nhập đồ đang có trong bếp, EatFitAI gợi ý món phù hợp để nấu ngay.",
+    metric: "Gợi ý từ tủ lạnh",
+    clip: "03-recipe-suggestions.mp4",
+    trim: 7,
+    speed: 1.45,
+    accent: colors.mint,
+    mochi: "meal-coach.png",
+    stage: "center",
   },
   {
-    start: 43,
-    duration: 12,
-    kicker: "VOICE / TEXT",
-    title: "Ghi nhanh bằng lệnh, rồi đối chiếu lại",
-    body: "Flow voice-text đã có readback qua backend, phù hợp cho thao tác nhanh trong ngày.",
-    primary: "Nói để ghi chép nhanh",
-    secondary: "Backend connected",
-    assets: ["06-quick-actions.png", "03-diary-readback.png"],
-    accent: colors.coral,
-    layout: "duo",
+    start: 33,
+    duration: 7,
+    eyebrow: "SCAN ALBUM",
+    title: "Chọn ảnh có sẵn",
+    caption: "Dùng ảnh trong album để AI xử lý khi máy đang cắm cáp.",
+    metric: "Album → AI scan",
+    clip: "04a-scan-entry-clean.mp4",
+    trim: 0.6,
+    speed: 1.12,
+    accent: colors.cyan,
+    mochi: "scan-thinking.png",
+    stage: "left",
   },
   {
-    start: 55,
+    start: 40,
     duration: 11,
-    kicker: "TIẾN ĐỘ",
-    title: "Theo dõi macro, hồ sơ và mục tiêu cá nhân",
-    body: "Thống kê theo ngày và hồ sơ cơ thể giúp người dùng hiểu tiến độ thay vì chỉ nhập dữ liệu.",
-    primary: "Stats + Profile",
-    secondary: "Dữ liệu seeded production",
-    assets: ["07-stats.png", "08-profile.png"],
-    accent: colors.green,
-    layout: "duo",
+    eyebrow: "AI NHẬN DIỆN",
+    title: "MoChi đoán món",
+    caption: "Ảnh gốc, món nhận diện, độ tin cậy và lời nhắc review trước khi ghi bữa.",
+    metric: "Nhận diện từ ảnh thật",
+    clip: "04b-scan-result-clean.mp4",
+    speed: 1.25,
+    accent: colors.cyan,
+    mochi: "scan-success.png",
+    stage: "right",
   },
   {
-    start: 66,
-    duration: 6,
-    kicker: "V1 RELEASE PROOF",
-    title: "APK v1 sẵn sàng kiểm thử công khai",
-    body: "Package com.eatfitai.app, versionName 1.0.0, versionCode 1, non-debuggable.",
-    primary: "Real device 2201116SG",
-    secondary: "API production healthy",
-    assets: ["09-release-proof.png"],
-    accent: colors.greenSoft,
-    layout: "proof",
+    start: 51,
+    duration: 8,
+    eyebrow: "REVIEW",
+    title: "Bạn vẫn kiểm soát",
+    caption: "Chọn món, chỉnh khẩu phần và chọn bữa ăn trước khi lưu vào nhật ký.",
+    metric: "Review trước khi lưu",
+    clip: "04c-scan-review.mp4",
+    trim: 1.2,
+    speed: 1.18,
+    accent: colors.green,
+    mochi: "scan-success.png",
+    stage: "left",
+  },
+  {
+    start: 59,
+    duration: 8,
+    eyebrow: "THỐNG KÊ",
+    title: "Biết mình đang lệch đâu",
+    caption: "Calo, macro và phân bổ bữa ăn được gom lại để xem nhanh.",
+    metric: "Macro + bữa ăn",
+    clip: "05-stats-progress.mp4",
+    trim: 2,
+    speed: 1.42,
+    accent: colors.mint,
+    mochi: "weekly-report.png",
+    stage: "center",
   },
 ];
 
-const Screen = ({
-  src,
-  frame,
-  tilt = -3,
-  scale = 1,
-}: {
-  src: string;
-  frame: number;
-  tilt?: number;
-  scale?: number;
-}) => {
-  const enter = clamp(frame, [0, 24], [0.78, 1]);
-  const drift = Math.sin((frame / FPS) * 0.9) * 8;
+const BrandBar = ({ accent }: { accent: string }) => {
+  const frame = useCurrentFrame();
+  const glow = 0.55 + Math.sin(frame / 18) * 0.2;
   return (
     <div
       style={{
-        width: 430,
-        height: 860,
-        borderRadius: 60,
-        padding: 16,
-        background: "linear-gradient(145deg, #18231f, #030807)",
-        boxShadow: "0 44px 120px rgba(0,0,0,0.42)",
+        position: "absolute",
+        left: 56,
+        right: 56,
+        top: 38,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        color: colors.ink,
+        fontWeight: 900,
+        fontSize: 23,
+        letterSpacing: 0.2,
+        zIndex: 30,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Img src={staticFile("assets/icon.png")} style={{ width: 48, height: 48, borderRadius: 15 }} />
+        EatFitAI
+      </div>
+      <div
+        style={{
+          color: colors.ink,
+          fontSize: 18,
+          fontWeight: 850,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: `1px solid ${accent}`,
+          background: `rgba(57,232,120,${glow * 0.12})`,
+          boxShadow: `0 0 34px ${accent}33`,
+        }}
+      >
+        Public APK v1 · footage thật
+      </div>
+    </div>
+  );
+};
+
+const ClipBackdrop = ({ scene }: { scene: Scene }) => {
+  const frame = useCurrentFrame();
+  const zoom = clamp(frame, [0, sec(scene.duration)], [1, 1.13]);
+  const pan = Math.sin(frame / 36) * 24;
+  return (
+    <AbsoluteFill style={{ background: colors.bg, overflow: "hidden" }}>
+      <Video
+        src={staticFile(`v1-footage/${scene.clip}`)}
+        muted
+        loop
+        objectFit="cover"
+        trimBefore={sec(scene.trim ?? 0)}
+        playbackRate={scene.speed ?? 1}
+        style={{
+          position: "absolute",
+          inset: -90,
+          width: 2100,
+          height: 1260,
+          filter: "blur(34px) saturate(1.35)",
+          opacity: 0.36,
+          transform: `scale(${zoom}) translate(${pan}px, ${-pan * 0.35}px)`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(90deg, rgba(4,16,13,0.95) 0%, rgba(4,16,13,0.62) 42%, rgba(4,16,13,0.86) 100%)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: -140,
+          background: `radial-gradient(circle at 24% 24%, ${scene.accent}45, transparent 28%), radial-gradient(circle at 76% 72%, ${scene.accent}34, transparent 32%)`,
+          filter: "blur(42px)",
+          opacity: 0.78,
+          transform: `rotate(${frame * 0.05}deg)`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.25), transparent 34%, rgba(0,0,0,0.42))",
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+const phoneLayout = (stage: Stage) => {
+  if (stage === "left") return { startX: 110, endX: 160, y: 76, rotate: -4, w: 492, h: 960 };
+  if (stage === "right") return { startX: 1320, endX: 1248, y: 74, rotate: 4, w: 492, h: 960 };
+  return { startX: 728, endX: 728, y: 60, rotate: -1.5, w: 464, h: 944 };
+};
+
+const PhoneFrame = ({
+  scene,
+  compact = false,
+  delay = 0,
+}: {
+  scene: Scene;
+  compact?: boolean;
+  delay?: number;
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const enter = spring({
+    frame: Math.max(0, frame - delay),
+    fps,
+    config: { damping: 18, stiffness: 120, mass: 0.9 },
+  });
+  const layout = phoneLayout(scene.stage);
+  const sceneProgress = clamp(frame, [0, sec(scene.duration)], [0, 1]);
+  const x = interpolate(sceneProgress, [0, 1], [layout.startX, layout.endX]);
+  const float = Math.sin(frame / 19) * 8;
+  const width = compact ? 322 : layout.w;
+  const height = compact ? 705 : layout.h;
+  const scale = compact ? 1 : 0.96 + enter * 0.04;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: compact ? undefined : x,
+        right: compact ? 92 : undefined,
+        top: compact ? 136 : layout.y + float,
+        width,
+        height,
+        borderRadius: compact ? 42 : 64,
+        padding: compact ? 10 : 14,
+        background: "linear-gradient(145deg, #22332d, #020706)",
         border: `1px solid ${colors.line}`,
-        transform: `translateY(${(1 - enter) * 48 + drift}px) rotate(${tilt}deg) scale(${scale})`,
+        boxShadow: `0 46px 120px rgba(0,0,0,0.55), 0 0 80px ${scene.accent}22`,
+        transform: `translateY(${(1 - enter) * 90}px) rotate(${layout.rotate + Math.sin(frame / 45) * 1.2}deg) scale(${scale})`,
         opacity: enter,
+        zIndex: 16,
       }}
     >
       <div
         style={{
           width: "100%",
           height: "100%",
-          borderRadius: 46,
+          borderRadius: compact ? 34 : 50,
           overflow: "hidden",
-          background: "#07120f",
+          background: "#050b10",
         }}
       >
-        <Img
-          src={staticFile(`v1-real-app/${src}`)}
+        <Video
+          src={staticFile(`v1-footage/${scene.clip}`)}
+          muted
+          objectFit="cover"
+          trimBefore={sec(scene.trim ?? 0)}
+          playbackRate={scene.speed ?? 1}
           style={{
             width: "100%",
             height: "100%",
-            objectFit: "cover",
           }}
         />
       </div>
@@ -195,257 +336,411 @@ const Screen = ({
   );
 };
 
-const Badge = ({
-  children,
-  accent,
-  delay,
-  frame,
-}: {
-  children: ReactNode;
-  accent: string;
-  delay: number;
-  frame: number;
-}) => {
-  const shown = clamp(frame, [delay, delay + 18], [0, 1]);
+const GhostPhone = ({ scene, x, y, rotate }: { scene: Scene; x: number; y: number; rotate: number }) => {
+  const frame = useCurrentFrame();
+  const show = clamp(frame, [16, 30], [0, 1]);
   return (
     <div
       style={{
-        opacity: shown,
-        transform: `translateY(${(1 - shown) * 18}px)`,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "16px 22px",
-        borderRadius: 999,
-        background: colors.panel,
+        position: "absolute",
+        left: x + Math.sin(frame / 28) * 12,
+        top: y + Math.cos(frame / 34) * 10,
+        width: 250,
+        height: 520,
+        borderRadius: 42,
+        overflow: "hidden",
+        opacity: show * 0.42,
+        transform: `rotate(${rotate}deg)`,
+        filter: "saturate(0.9)",
         border: `1px solid ${colors.line}`,
-        color: colors.text,
-        fontSize: 25,
-        fontWeight: 800,
-        letterSpacing: 0.2,
+        zIndex: 5,
       }}
     >
-      <span
-        style={{
-          width: 12,
-          height: 12,
-          borderRadius: 999,
-          background: accent,
-          boxShadow: `0 0 24px ${accent}`,
-        }}
+      <Video
+        src={staticFile(`v1-footage/${scene.clip}`)}
+        muted
+        loop
+        objectFit="cover"
+        trimBefore={sec(scene.trim ?? 0)}
+        playbackRate={(scene.speed ?? 1) * 1.2}
+        style={{ width: "100%", height: "100%" }}
       />
+    </div>
+  );
+};
+
+const KineticTitle = ({ children, accent }: { children: string; accent: string }) => {
+  const frame = useCurrentFrame();
+  const words = children.split(" ");
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "0 18px" }}>
+      {words.map((word, index) => {
+        const show = clamp(frame, [5 + index * 3, 18 + index * 3], [0, 1]);
+        return (
+          <span
+            key={`${word}-${index}`}
+            style={{
+              display: "inline-block",
+              color: colors.ink,
+              fontSize: 78,
+              lineHeight: 0.98,
+              fontWeight: 980,
+              letterSpacing: -3.2,
+              textShadow: `0 0 30px ${accent}22`,
+              opacity: show,
+              transform: `translateY(${(1 - show) * 44}px) rotate(${(1 - show) * -3}deg)`,
+            }}
+          >
+            {word}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
+const Caption = ({ scene }: { scene: Scene }) => {
+  const frame = useCurrentFrame();
+  const show = clamp(frame, [12, 28], [0, 1]);
+  const left = scene.stage === "right" ? 110 : scene.stage === "left" ? 840 : 110;
+  const top = scene.stage === "center" ? 656 : 214;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left,
+        top,
+        width: scene.stage === "center" ? 660 : 720,
+        zIndex: 22,
+      }}
+    >
+      <div
+        style={{
+          color: scene.accent,
+          fontSize: 22,
+          fontWeight: 950,
+          letterSpacing: 4,
+          marginBottom: 18,
+          opacity: show,
+        }}
+      >
+        {scene.eyebrow}
+      </div>
+      <KineticTitle accent={scene.accent}>{scene.title}</KineticTitle>
+      <div
+        style={{
+          marginTop: 24,
+          padding: "20px 24px",
+          borderRadius: 30,
+          background: colors.glass,
+          border: `1px solid ${colors.line}`,
+          backdropFilter: "blur(18px)",
+          color: colors.muted,
+          fontSize: 28,
+          lineHeight: 1.28,
+          fontWeight: 720,
+          opacity: show,
+          transform: `translateY(${(1 - show) * 22}px)`,
+        }}
+      >
+        {scene.caption}
+      </div>
+    </div>
+  );
+};
+
+const FloatingChip = ({
+  children,
+  accent,
+  x,
+  y,
+  delay,
+}: {
+  children: ReactNode;
+  accent: string;
+  x: number;
+  y: number;
+  delay: number;
+}) => {
+  const frame = useCurrentFrame();
+  const show = clamp(frame, [delay, delay + 12], [0, 1]);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x + Math.sin((frame + delay) / 18) * 10,
+        top: y + Math.cos((frame + delay) / 22) * 9,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "14px 18px",
+        borderRadius: 999,
+        background: "rgba(255,255,255,0.1)",
+        border: `1px solid ${colors.line}`,
+        color: colors.ink,
+        fontSize: 21,
+        fontWeight: 900,
+        opacity: show,
+        transform: `scale(${0.86 + show * 0.14})`,
+        zIndex: 24,
+        boxShadow: `0 18px 50px ${accent}22`,
+      }}
+    >
+      <span style={{ width: 12, height: 12, borderRadius: 999, background: accent }} />
       {children}
     </div>
   );
 };
 
-const CopyBlock = ({ scene, frame }: { scene: Scene; frame: number }) => {
-  const title = clamp(frame, [8, 34], [0, 1]);
-  const body = clamp(frame, [24, 58], [0, 1]);
+const MoChiSticker = ({ scene }: { scene: Scene }) => {
+  const frame = useCurrentFrame();
+  const show = clamp(frame, [18, 32], [0, 1]);
+  const left = scene.stage === "right" ? 96 : scene.stage === "left" ? 1580 : 1450;
+  const top = scene.stage === "center" ? 612 : 720;
   return (
-    <div style={{ width: 760 }}>
-      <div
-        style={{
-          color: scene.accent,
-          fontSize: 26,
-          fontWeight: 900,
-          letterSpacing: 4,
-          opacity: title,
-        }}
-      >
-        {scene.kicker}
-      </div>
-      <h1
-        style={{
-          margin: "26px 0 0",
-          color: colors.text,
-          fontSize: 82,
-          lineHeight: 1.02,
-          fontWeight: 950,
-          letterSpacing: -2.5,
-          opacity: title,
-          transform: `translateY(${(1 - title) * 34}px)`,
-        }}
-      >
-        {scene.title}
-      </h1>
-      <p
-        style={{
-          margin: "26px 0 0",
-          maxWidth: 690,
-          color: colors.muted,
-          fontSize: 31,
-          lineHeight: 1.36,
-          fontWeight: 560,
-          opacity: body,
-          transform: `translateY(${(1 - body) * 24}px)`,
-        }}
-      >
-        {scene.body}
-      </p>
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 34 }}>
-        <Badge accent={scene.accent} delay={40} frame={frame}>
-          {scene.primary}
-        </Badge>
-        {scene.secondary ? (
-          <Badge accent={colors.green} delay={52} frame={frame}>
-            {scene.secondary}
-          </Badge>
-        ) : null}
-      </div>
+    <div
+      style={{
+        position: "absolute",
+        left,
+        top: top + Math.sin(frame / 9) * 10,
+        width: 194,
+        height: 194,
+        borderRadius: 44,
+        padding: 8,
+        background: "rgba(255,255,255,0.08)",
+        border: `1px solid ${colors.line}`,
+        boxShadow: `0 28px 70px ${scene.accent}33`,
+        opacity: show,
+        transform: `scale(${0.75 + show * 0.25}) rotate(${Math.sin(frame / 17) * 4}deg)`,
+        zIndex: 28,
+      }}
+    >
+      <Img src={staticFile(`mochi/${scene.mochi}`)} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
     </div>
   );
 };
 
-const Background = ({ accent, frame }: { accent: string; frame: number }) => (
-  <AbsoluteFill
-    style={{
-      background:
-        "radial-gradient(circle at 18% 18%, rgba(36,211,107,0.20), transparent 30%), radial-gradient(circle at 84% 28%, rgba(51,199,255,0.16), transparent 34%), linear-gradient(135deg, #07120f 0%, #101629 100%)",
-      overflow: "hidden",
-    }}
-  >
-    <div
-      style={{
-        position: "absolute",
-        inset: -220,
-        background: `conic-gradient(from ${frame * 0.2}deg, transparent, ${accent}33, transparent, #ffffff12, transparent)`,
-        filter: "blur(72px)",
-        opacity: 0.75,
-      }}
-    />
-    <div
-      style={{
-        position: "absolute",
-        right: 90,
-        top: 80,
-        width: 210,
-        height: 210,
-        borderRadius: 999,
-        border: `2px solid ${colors.line}`,
-      }}
-    />
-    <div
-      style={{
-        position: "absolute",
-        left: 76,
-        bottom: 78,
-        color: "rgba(255,255,255,0.06)",
-        fontSize: 180,
-        fontWeight: 950,
-      }}
-    >
-      EatFitAI
-    </div>
-  </AbsoluteFill>
-);
-
-const SceneView = ({ scene }: { scene: Scene }) => {
+const SceneBlock = ({ scene }: { scene: Scene }) => {
   const frame = useCurrentFrame();
-  const presence = Math.min(
-    clamp(frame, [0, 24], [0, 1]),
-    clamp(frame, [sec(scene.duration) - 24, sec(scene.duration)], [1, 0]),
-  );
-  const [first, second] = scene.assets;
-  const proof = scene.layout === "proof";
-  const duo = scene.layout === "duo";
+  const exit = clamp(frame, [sec(scene.duration) - 12, sec(scene.duration)], [1, 0]);
+  const chipX = scene.stage === "right" ? 112 : scene.stage === "left" ? 846 : 1020;
+  const ghostX = scene.stage === "right" ? 1040 : 600;
 
   return (
-    <AbsoluteFill style={{ opacity: presence }}>
-      <Background accent={scene.accent} frame={frame + sec(scene.start)} />
+    <AbsoluteFill style={{ opacity: exit }}>
+      <ClipBackdrop scene={scene} />
+      <BrandBar accent={scene.accent} />
+      <GhostPhone scene={scene} x={ghostX} y={132} rotate={scene.stage === "left" ? 8 : -8} />
+      <PhoneFrame scene={scene} />
+      <Caption scene={scene} />
+      <FloatingChip accent={scene.accent} x={chipX} y={790} delay={30}>
+        {scene.metric}
+      </FloatingChip>
+      <FloatingChip accent={colors.green} x={chipX + 245} y={856} delay={40}>
+        MoChi dẫn luồng
+      </FloatingChip>
+      <MoChiSticker scene={scene} />
       <div
         style={{
           position: "absolute",
-          left: 90,
-          right: 90,
-          top: 70,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          color: colors.text,
-          fontWeight: 900,
-          letterSpacing: 0.8,
-          fontSize: 26,
+          left: 56,
+          right: 56,
+          bottom: 34,
+          height: 5,
+          borderRadius: 999,
+          background: "rgba(255,255,255,0.12)",
+          overflow: "hidden",
+          zIndex: 40,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <Img src={staticFile("assets/icon.png")} style={{ width: 56, height: 56, borderRadius: 16 }} />
-          EatFitAI v1
-        </div>
-        <div style={{ color: colors.muted, fontSize: 22 }}>Public APK release proof</div>
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          inset: "150px 90px 88px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 84,
-        }}
-      >
-        <CopyBlock scene={scene} frame={frame} />
         <div
           style={{
-            width: 790,
-            height: 850,
-            position: "relative",
-            display: "grid",
-            placeItems: "center",
+            height: "100%",
+            width: `${(frame / sec(scene.duration)) * 100}%`,
+            background: `linear-gradient(90deg, ${scene.accent}, ${colors.green})`,
           }}
-        >
-          {duo ? (
-            <>
-              <div style={{ position: "absolute", left: 44, top: 40 }}>
-                <Screen src={first} frame={frame} tilt={-5} scale={0.92} />
-              </div>
-              <div style={{ position: "absolute", right: 34, top: 12 }}>
-                <Screen src={second || first} frame={frame + 12} tilt={5} scale={0.92} />
-              </div>
-            </>
-          ) : proof ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 34 }}>
-              <Screen src={first} frame={frame} tilt={-2} scale={0.82} />
-              <div
-                style={{
-                  width: 278,
-                  padding: "34px 30px",
-                  borderRadius: 34,
-                  background: colors.panel,
-                  border: `1px solid ${colors.line}`,
-                  color: colors.text,
-                  boxShadow: "0 32px 80px rgba(0,0,0,0.28)",
-                }}
-              >
-                <div style={{ color: scene.accent, fontSize: 23, fontWeight: 900 }}>APK FACTS</div>
-                {["v1.0.0", "versionCode 1", "non-debuggable", "clean install"].map((item, index) => (
-                  <div
-                    key={item}
-                    style={{
-                      marginTop: index === 0 ? 22 : 16,
-                      fontSize: 26,
-                      fontWeight: 820,
-                      color: index === 0 ? colors.text : colors.muted,
-                    }}
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <Screen src={first} frame={frame} tilt={scene.start === 0 ? 0 : -4} scale={1} />
-          )}
-        </div>
+        />
       </div>
     </AbsoluteFill>
   );
 };
 
-export const EatFitAIProductIntro: React.FC = () => {
+const MiniPhone = ({
+  scene,
+  x,
+  y,
+  rotate,
+  delay,
+}: {
+  scene: Scene;
+  x: number;
+  y: number;
+  rotate: number;
+  delay: number;
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const pop = spring({ frame: Math.max(0, frame - delay), fps, config: { damping: 16, stiffness: 110 } });
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y + Math.sin((frame + delay) / 24) * 10,
+        width: 292,
+        height: 620,
+        borderRadius: 46,
+        padding: 10,
+        background: "#07110e",
+        border: `1px solid ${colors.line}`,
+        boxShadow: "0 34px 90px rgba(0,0,0,0.45)",
+        transform: `scale(${0.78 + pop * 0.22}) rotate(${rotate}deg)`,
+        opacity: pop,
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ width: "100%", height: "100%", borderRadius: 38, overflow: "hidden" }}>
+        <Video
+          src={staticFile(`v1-footage/${scene.clip}`)}
+          muted
+          objectFit="cover"
+          trimBefore={sec(scene.trim ?? 0)}
+          playbackRate={scene.speed ?? 1}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const Intro = () => {
+  const frame = useCurrentFrame();
+  const show = clamp(frame, [8, 28], [0, 1]);
+  const scene = scenes[0];
+  return (
+    <AbsoluteFill>
+      <ClipBackdrop scene={scene} />
+      <BrandBar accent={colors.green} />
+      <MiniPhone scene={scenes[1]} x={1110} y={180} rotate={-8} delay={6} />
+      <MiniPhone scene={scenes[3]} x={1370} y={110} rotate={5} delay={14} />
+      <MiniPhone scene={scenes[6]} x={890} y={250} rotate={3} delay={22} />
+      <div
+        style={{
+          position: "absolute",
+          left: 96,
+          top: 190,
+          width: 850,
+          zIndex: 20,
+          opacity: show,
+          transform: `translateY(${(1 - show) * 42}px)`,
+        }}
+      >
+        <div style={{ color: colors.green, fontSize: 29, fontWeight: 950, letterSpacing: 5, marginBottom: 22 }}>
+          ĂN ĐÚNG MỤC TIÊU
+        </div>
+        <div style={{ color: colors.ink, fontSize: 108, lineHeight: 0.92, fontWeight: 980, letterSpacing: -5 }}>
+          Scan nhanh.
+          <br />
+          Ghi bữa gọn.
+          <br />
+          Theo dõi rõ.
+        </div>
+        <div
+          style={{
+            marginTop: 32,
+            color: colors.muted,
+            fontSize: 32,
+            lineHeight: 1.25,
+            fontWeight: 780,
+          }}
+        >
+          EatFitAI v1 quay trên điện thoại thật, từ APK release.
+        </div>
+      </div>
+      <Img
+        src={staticFile("mochi/meal-coach.png")}
+        style={{
+          position: "absolute",
+          left: 690 + Math.sin(frame / 12) * 10,
+          bottom: 86 + Math.cos(frame / 9) * 10,
+          width: 250,
+          height: 250,
+          objectFit: "contain",
+          transform: `rotate(${Math.sin(frame / 16) * 5}deg)`,
+          zIndex: 25,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+const Closing = () => {
+  const frame = useCurrentFrame();
+  const show = clamp(frame, [4, 24], [0, 1]);
+  const scene = scenes[6];
+  return (
+    <AbsoluteFill>
+      <ClipBackdrop scene={scene} />
+      <BrandBar accent={colors.green} />
+      <MiniPhone scene={scenes[1]} x={106} y={246} rotate={-6} delay={6} />
+      <MiniPhone scene={scenes[2]} x={390} y={146} rotate={4} delay={14} />
+      <MiniPhone scene={scenes[4]} x={674} y={242} rotate={-3} delay={22} />
+      <MiniPhone scene={scenes[6]} x={1415} y={170} rotate={5} delay={30} />
+      <div
+        style={{
+          position: "absolute",
+          left: 960,
+          top: 208,
+          width: 790,
+          color: colors.ink,
+          opacity: show,
+          transform: `translateY(${(1 - show) * 34}px)`,
+          zIndex: 30,
+        }}
+      >
+        <div style={{ color: colors.green, fontSize: 25, fontWeight: 950, letterSpacing: 4 }}>V1 READY</div>
+        <h2 style={{ margin: "24px 0 0", fontSize: 82, lineHeight: 0.98, fontWeight: 980, letterSpacing: -3 }}>
+          AI hỗ trợ.
+          <br />
+          Bạn kiểm soát.
+        </h2>
+        <div style={{ display: "flex", gap: 14, marginTop: 32, flexWrap: "wrap" }}>
+          {["Thực đơn", "Gợi ý món", "Scan AI", "Thống kê", "MoChi"].map((item, index) => (
+            <FloatingChip
+              key={item}
+              accent={[colors.green, colors.yellow, colors.cyan, colors.mint, colors.coral][index]}
+              x={960 + (index % 2) * 250}
+              y={580 + Math.floor(index / 2) * 76}
+              delay={28 + index * 4}
+            >
+              {item}
+            </FloatingChip>
+          ))}
+        </div>
+      </div>
+      <Img
+        src={staticFile("mochi/scan-success.png")}
+        style={{
+          position: "absolute",
+          right: 100,
+          bottom: 72 + Math.sin(frame / 11) * 10,
+          width: 250,
+          height: 250,
+          objectFit: "contain",
+          zIndex: 36,
+        }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+export const EatFitAIProductIntro = () => {
   return (
     <AbsoluteFill style={{ fontFamily: "Inter, Segoe UI, Arial, sans-serif", background: colors.bg }}>
       <Audio src={staticFile("audio/eatfitai-beat.wav")} loop volume={fadeVolume} />
+      <Sequence durationInFrames={sec(5)}>
+        <Intro />
+      </Sequence>
       {scenes.map((scene) => (
         <Sequence
           key={`${scene.start}-${scene.title}`}
@@ -453,9 +748,12 @@ export const EatFitAIProductIntro: React.FC = () => {
           durationInFrames={sec(scene.duration)}
           premountFor={FPS}
         >
-          <SceneView scene={scene} />
+          <SceneBlock scene={scene} />
         </Sequence>
       ))}
+      <Sequence from={sec(67)} durationInFrames={sec(7)} premountFor={FPS}>
+        <Closing />
+      </Sequence>
     </AbsoluteFill>
   );
 };

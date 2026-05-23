@@ -341,9 +341,14 @@ button, input, select, textarea {
 /* ═══ Page Layout Wrapper ═══ */
 .page-wrapper {
   position: relative;
-  width: min(1200px, calc(100% - 48px));
-  margin: 0 auto;
+  width: 100%;
   padding-top: 100px;
+}
+
+.page-wrapper > .spa-section {
+  width: min(1200px, calc(100% - 48px));
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ═══ Section Headers ═══ */

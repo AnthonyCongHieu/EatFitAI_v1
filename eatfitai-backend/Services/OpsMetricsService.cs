@@ -356,7 +356,7 @@ public sealed class AdminOpsMetricsService
         var totals = Aggregate(rows);
         return new AdminOpsTrafficPointDto
         {
-            BucketStart = bucketStart,
+            BucketStart = NormalizeUtcBucketStart(bucketStart),
             RequestCount = totals.RequestCount,
             ErrorCount = totals.ErrorCount,
             AverageLatencyMs = AverageLatency(totals),
@@ -510,6 +510,16 @@ public sealed class AdminOpsMetricsService
     {
         var utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
         return new DateTime(utc.Year, utc.Month, utc.Day, 0, 0, 0, DateTimeKind.Utc);
+    }
+
+    private static DateTime NormalizeUtcBucketStart(DateTime value)
+    {
+        return value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+        };
     }
 
     private sealed record OpsMetricTotals(long RequestCount, long ErrorCount, long DurationSumMs, long[] Histogram);

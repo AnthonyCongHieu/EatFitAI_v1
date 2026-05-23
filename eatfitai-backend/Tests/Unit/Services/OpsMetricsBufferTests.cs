@@ -4,6 +4,7 @@ using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using Xunit;
 
 namespace EatFitAI.API.Tests.Unit.Services;
@@ -66,6 +67,39 @@ public class OpsMetricsBufferTests
         Assert.Equal(5, Assert.Single(overview.Timeline).RequestCount);
         Assert.Contains(overview.TopRoutes, route => route.Key == "/api/ai/recipes/suggest");
         Assert.Contains(overview.TopRoutes, route => route.Key == "/api/ai/nutrition-targets/current");
+    }
+
+    [Fact]
+    public async Task GetTrafficOverviewAsync_EmitsUtcBucketStartWhenStoredKindIsUnspecified()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase($"ops-utc-kind-{Guid.NewGuid():N}")
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+        var bucketStart = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-1), DateTimeKind.Unspecified);
+
+        context.OpsMetricBuckets.Add(
+            BuildBucket(bucketStart, "/api/ai/recipes/suggest", requestCount: 2, errorCount: 0, durationSumMs: 200));
+        await context.SaveChangesAsync();
+
+        var service = new AdminOpsMetricsService(context);
+        var overview = await service.GetTrafficOverviewAsync(
+            new AdminOpsTrafficQuery
+            {
+                Window = "24h",
+                Granularity = "hour",
+                Source = "ai",
+            },
+            CancellationToken.None);
+
+        var point = Assert.Single(overview.Timeline);
+        Assert.Equal(DateTimeKind.Utc, point.BucketStart.Kind);
+
+        var json = JsonSerializer.Serialize(point, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        });
+        Assert.Matches("\"bucketStart\":\"[^\"]+Z\"", json);
     }
 
     private static OpsMetricBucket BuildBucket(

@@ -8,8 +8,8 @@
     packageName: "com.eatfitai.app",
     releaseTag: "android-v1.0.0",
     fileName: "EatFitAI-android-v1.0.0.apk",
-    fileSize: "153.13 MiB",
-    sha256: "9644b4725aab595a2e46de9d6fb7bd96b503646f399c5314bd7f48d8febe35d5",
+    fileSize: "152.96 MiB",
+    sha256: "ee54bb43412b2be1c1df43a2c0f2da0282f7567c171a7c94d6f78d8935a638b5",
     downloadUrl:
       "https://github.com/anthonyconghieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk",
     releaseUrl: "",
@@ -115,6 +115,16 @@
 
   let isPageTransitioning = false;
 
+  function resetPageScroll() {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    });
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }, 80);
+  }
+
   function switchPage(pageId) {
     if (!pageMap[pageId] || isPageTransitioning) return;
 
@@ -154,6 +164,8 @@
       targetSections.forEach(sec => {
         sec.classList.add("active-page");
       });
+
+      resetPageScroll();
       updateActiveNavLinks(pageId);
 
       // Khởi tạo quét AR khi người dùng truy cập trực tiếp qua deep link (#simulator) nhằm tránh lỗi hiển thị 0 KCAL do thiếu dữ liệu quét ban đầu
@@ -190,7 +202,7 @@
       });
 
       // Scroll window to top instantly
-      window.scrollTo({ top: 0, behavior: "instant" });
+      resetPageScroll();
 
       // Show target sections
       targetSections.forEach(sec => {
