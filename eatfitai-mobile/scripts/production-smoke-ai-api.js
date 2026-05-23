@@ -97,6 +97,25 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value || '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseNonNegativeInteger(value, fallback) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+const AI_PACE_LIMIT = parseNonNegativeInteger(
+  process.env.EATFITAI_SMOKE_AI_PACE_LIMIT,
+  16,
+);
+const AI_PACE_WINDOW_MS = parsePositiveInteger(
+  process.env.EATFITAI_SMOKE_AI_PACE_WINDOW_MS,
+  65000,
+);
+
 function average(values) {
   if (!Array.isArray(values) || values.length === 0) {
     return null;
@@ -237,6 +256,57 @@ function guessMimeType(filePath) {
   }
 }
 
+const aiPaceState = {
+  windowStartedAt: 0,
+  used: 0,
+};
+
+function isAiPolicyEndpoint(url) {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    return (
+      pathname.startsWith('/api/ai/') ||
+      pathname.startsWith('/api/voice/') ||
+      pathname.startsWith('/api/aireview/')
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function paceAiRequest(url) {
+  if (AI_PACE_LIMIT <= 0 || !isAiPolicyEndpoint(url)) {
+    return;
+  }
+
+  const now = Date.now();
+  if (
+    aiPaceState.windowStartedAt === 0 ||
+    now - aiPaceState.windowStartedAt >= AI_PACE_WINDOW_MS
+  ) {
+    aiPaceState.windowStartedAt = now;
+    aiPaceState.used = 0;
+  }
+
+  if (aiPaceState.used >= AI_PACE_LIMIT) {
+    const waitMs = Math.max(
+      0,
+      AI_PACE_WINDOW_MS - (now - aiPaceState.windowStartedAt),
+    );
+    if (waitMs > 0) {
+      console.log(
+        `[production-smoke-ai-api] Waiting ${waitMs}ms to respect production AI rate limits.`,
+      );
+      await sleep(waitMs);
+    }
+
+    aiPaceState.windowStartedAt = Date.now();
+    aiPaceState.used = 0;
+  }
+
+  aiPaceState.used += 1;
+}
+
 async function requestJson(url, options = {}) {
   const retryCount = Math.max(0, Number.parseInt(String(options.retryCount ?? DEFAULT_ATTEMPTS), 10) || 0);
   const retryDelayMs = Math.max(
@@ -246,6 +316,7 @@ async function requestJson(url, options = {}) {
   let lastResult = null;
 
   for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    await paceAiRequest(url);
     const startedAtMs = Date.now();
 
     try {
@@ -495,6 +566,23 @@ async function resolveFoodItemId(backendUrl, token, candidates) {
   }
 
   return null;
+}
+
+async function resolveFoodItemIds(backendUrl, token, candidates) {
+  const ids = [];
+  const seen = new Set();
+
+  for (const candidate of candidates) {
+    const item = await resolveFoodItemId(backendUrl, token, [candidate]);
+    if (!item?.foodItemId || seen.has(item.foodItemId)) {
+      continue;
+    }
+
+    seen.add(item.foodItemId);
+    ids.push(item.foodItemId);
+  }
+
+  return ids;
 }
 
 function createReport(outputDir, backendUrl, credentials) {
@@ -1043,15 +1131,21 @@ async function main() {
     });
 
     const ingredientCandidates = [
+      ...DEFAULT_INGREDIENT_FALLBACKS,
       ...userContext.favorites,
       ...userContext.meals,
-      ...DEFAULT_INGREDIENT_FALLBACKS,
     ];
+    const recipeFoodItemIds = await resolveFoodItemIds(
+      backendUrl,
+      token,
+      DEFAULT_INGREDIENT_FALLBACKS,
+    );
     const recipeSuggestResponse = await requestJson(`${backendUrl}/api/ai/recipes/suggest`, {
       method: 'POST',
       headers: authHeaders(token, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({
-        availableIngredients: [...new Set(ingredientCandidates)].slice(0, 10),
+        availableIngredients: [...new Set(ingredientCandidates)].slice(0, 12),
+        availableFoodItemIds: recipeFoodItemIds,
         maxCookingTimeMinutes: 45,
         minMatchedIngredients: 1,
         maxResults: 5,
@@ -1064,6 +1158,7 @@ async function main() {
       status: recipeSuggestResponse.status,
       latencyMs: recipeSuggestResponse.durationMs,
       count: recipeSuggestions.length,
+      availableFoodItemIds: recipeFoodItemIds,
       firstRecipe: recipeSuggestions[0]
         ? {
             recipeId: recipeSuggestions[0].recipeId || null,

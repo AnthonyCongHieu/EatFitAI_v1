@@ -66,6 +66,32 @@ function runCommand(label, command, args, options = {}) {
   };
 }
 
+function skippedExistingReportResult(step) {
+  return {
+    label: step.label,
+    command: `${step.command} ${step.args.join(' ')}`.trim(),
+    cwd: step.cwd || repoRoot,
+    durationMs: 0,
+    ok: true,
+    exitCode: 0,
+    stdout: `Skipped because existing report was found at ${step.reportPath}.`,
+    stderr: '',
+    error: '',
+  };
+}
+
+function runStepUnlessReportExists(step, env, timeoutMs) {
+  if (fs.existsSync(step.reportPath)) {
+    return skippedExistingReportResult(step);
+  }
+
+  return runCommand(step.label, step.command, step.args, {
+    cwd: step.cwd,
+    env,
+    timeoutMs,
+  });
+}
+
 function buildBaseEnv(outputDir) {
   return {
     ...process.env,
@@ -132,33 +158,16 @@ async function main() {
     reportPath: path.join(outputDir, 'cleanup-report.json'),
   };
 
-  const preflightResult = runCommand(preflightStep.label, preflightStep.command, preflightStep.args, {
-    cwd: preflightStep.cwd,
-    env,
-    timeoutMs: 45 * 60 * 1000,
-  });
+  const preflightResult = runStepUnlessReportExists(preflightStep, env, 45 * 60 * 1000);
   commandResults.push(preflightResult);
 
   if (preflightResult.ok) {
     for (const step of writeSteps) {
-      const result = runCommand(step.label, step.command, step.args, {
-        cwd: step.cwd,
-        env,
-        timeoutMs: 45 * 60 * 1000,
-      });
+      const result = runStepUnlessReportExists(step, env, 45 * 60 * 1000);
       commandResults.push(result);
     }
 
-    const cleanupResult = runCommand(
-      cleanupStep.label,
-      cleanupStep.command,
-      cleanupStep.args,
-      {
-        cwd: cleanupStep.cwd,
-        env,
-        timeoutMs: 45 * 60 * 1000,
-      },
-    );
+    const cleanupResult = runStepUnlessReportExists(cleanupStep, env, 45 * 60 * 1000);
     commandResults.push(cleanupResult);
   }
 

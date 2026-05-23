@@ -219,8 +219,6 @@ function gates() {
         npmCommand('Smoke backend non-UI', 'smoke:backend:non-ui', {
           timeoutMs: 30 * 60 * 1000,
         }),
-        npmCommand('Smoke regression', 'smoke:regression', { timeoutMs: 45 * 60 * 1000 }),
-        npmCommand('Smoke cleanup', 'smoke:cleanup', { timeoutMs: 20 * 60 * 1000 }),
       ],
     },
     android: {

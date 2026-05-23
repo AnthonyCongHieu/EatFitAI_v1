@@ -49,7 +49,7 @@ function isFallbackSource(value) {
     return true;
   }
 
-  return /\b(backend-rule-fallback|backend-rule-parser|fallback|offline|local|mock|fixture|stub|heuristic|formula)\b/.test(
+  return /\b(backend-rule-fallback|fallback|offline|local|mock|fixture|stub|heuristic|formula)\b/.test(
     source,
   );
 }

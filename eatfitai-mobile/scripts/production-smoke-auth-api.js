@@ -41,9 +41,23 @@ function parsePositiveInteger(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function parseNonNegativeInteger(value, fallback) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+const AUTH_PACE_LIMIT = parseNonNegativeInteger(
+  process.env.EATFITAI_SMOKE_AUTH_PACE_LIMIT,
+  6,
+);
+const AUTH_PACE_WINDOW_MS = parsePositiveInteger(
+  process.env.EATFITAI_SMOKE_AUTH_PACE_WINDOW_MS,
+  65000,
+);
 
 function parseArgs(argv) {
   const args = {};
@@ -179,7 +193,55 @@ function collectResponseHeaders(headers) {
   return result;
 }
 
+const authPaceState = {
+  windowStartedAt: 0,
+  used: 0,
+};
+
+function isAuthEndpoint(url) {
+  try {
+    return new URL(url).pathname.startsWith('/api/auth/');
+  } catch {
+    return false;
+  }
+}
+
+async function paceAuthRequest(url) {
+  if (AUTH_PACE_LIMIT <= 0 || !isAuthEndpoint(url)) {
+    return;
+  }
+
+  const now = Date.now();
+  if (
+    authPaceState.windowStartedAt === 0 ||
+    now - authPaceState.windowStartedAt >= AUTH_PACE_WINDOW_MS
+  ) {
+    authPaceState.windowStartedAt = now;
+    authPaceState.used = 0;
+  }
+
+  if (authPaceState.used >= AUTH_PACE_LIMIT) {
+    const waitMs = Math.max(
+      0,
+      AUTH_PACE_WINDOW_MS - (now - authPaceState.windowStartedAt),
+    );
+    if (waitMs > 0) {
+      console.log(
+        `[production-smoke-auth-api] Waiting ${waitMs}ms to respect production auth rate limits.`,
+      );
+      await sleep(waitMs);
+    }
+
+    authPaceState.windowStartedAt = Date.now();
+    authPaceState.used = 0;
+  }
+
+  authPaceState.used += 1;
+}
+
 async function requestJson(url, options = {}) {
+  await paceAuthRequest(url);
+
   const startedAt = Date.now();
   const timeoutMs = Number(options.timeoutMs || DEFAULT_REQUEST_TIMEOUT_MS);
   const controller = new AbortController();
