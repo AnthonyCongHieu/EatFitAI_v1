@@ -363,8 +363,12 @@ describe('MoChi tutorial system', () => {
   });
 
   it('rolls back active sheet steps to preceding root steps on notifySheetClosed', () => {
+    const TestMoChiTutorialProvider = MoChiTutorialProvider as React.ComponentType<{
+      children?: React.ReactNode;
+      enabled?: boolean;
+    }>;
     const wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(MoChiTutorialProvider, { enabled: true }, children);
+      React.createElement(TestMoChiTutorialProvider, { enabled: true }, children);
 
     const { result } = renderHook(() => useMoChiTutorial(), { wrapper });
 

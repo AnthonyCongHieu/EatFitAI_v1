@@ -782,7 +782,7 @@ YÊU CẦU:
 - Chỉ dùng các nguồn công thức nấu ăn đáng tin cậy; ưu tiên các domain: {trusted_domains}.
 - Không tự bịa URL. sourceUrls phải là các URL https thật, chính xác từ nguồn đã tham khảo.
 - Cung cấp danh sách các bước chuẩn bị sơ chế chi tiết (`prepItems`).
-- Liệt kê các gia vị nêm nếm cụ thể, định lượng rõ ràng phù hợp với khẩu vị người Việt (`seasonings` - ví dụ: "1 thìa cà phê nước mắm", "1/2 thìa cà phê tiêu").
+- Liệt kê các gia vị nêm nếm cụ thể, định lượng gia vị rõ ràng phù hợp với khẩu vị người Việt (`seasonings` - ví dụ: "1 thìa cà phê nước mắm", "1/2 thìa cà phê tiêu").
 - Xác định rõ phương pháp nấu ăn chính (`cookingMethod` - ví dụ: "Xào", "Nấu canh", "Luộc", "Hấp", "Nướng", "Kho", "Chiên áp chảo").
 - 3-7 bước nấu ăn cụ thể, trực quan, dễ thực hiện (`steps`).
 - Cung cấp 2-3 mẹo hữu ích khi chế biến hoặc thưởng thức (`tips`).
@@ -1314,7 +1314,7 @@ def preprocess_vietnamese_numbers(text: str) -> str:
 def _fold_vietnamese_text(text: str) -> str:
     folded = unicodedata.normalize("NFD", text.lower())
     folded = "".join(ch for ch in folded if unicodedata.category(ch) != "Mn")
-    return folded.replace("đ", "d").replace("Ä‘", "d")
+    return folded.replace("đ", "d").replace("\u00c4\u2018", "d")
 
 
 def _voice_meal_type(meal_text: str | None) -> str | None:

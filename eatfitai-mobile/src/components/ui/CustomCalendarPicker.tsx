@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Pressable, Modal, Platform } from 'react-native';
+import { View, StyleSheet, Pressable, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../ThemedText';
 import { useEN } from '../../theme/emeraldNebula';
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 
 interface CustomCalendarPickerProps {
   selectedDate: Date;
@@ -16,7 +15,7 @@ interface CustomCalendarPickerProps {
 const VIET_DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const MONTHS = [
   'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
 ];
 
 export const CustomCalendarPicker: React.FC<CustomCalendarPickerProps> = ({
@@ -101,7 +100,7 @@ export const CustomCalendarPicker: React.FC<CustomCalendarPickerProps> = ({
   return (
     <Modal visible={true} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable 
+        <Pressable
           style={[styles.container, { backgroundColor: C.surfaceLow, borderColor: C.outline }]}
           onPress={(e) => e.stopPropagation()}
         >
@@ -135,7 +134,7 @@ export const CustomCalendarPicker: React.FC<CustomCalendarPickerProps> = ({
               const selected = isSameDay(item.date, selectedDate);
               const disabled = isDateDisabled(item.date);
               const today = isSameDay(item.date, new Date());
-              
+
               let textColor: string = C.onSurface;
               if (selected) textColor = '#000';
               else if (disabled) textColor = C.surfaceHighest;
@@ -150,7 +149,7 @@ export const CustomCalendarPicker: React.FC<CustomCalendarPickerProps> = ({
                   style={[
                     styles.dayCell,
                     selected && { backgroundColor: C.primary, borderColor: C.primary },
-                    today && !selected && { borderColor: C.primary, borderWidth: 1 }
+                    today && !selected && { borderColor: C.primary, borderWidth: 1 },
                   ]}
                 >
                   <ThemedText style={[styles.dayText, { color: textColor as string }, selected && { fontWeight: 'bold' }]}>
@@ -160,7 +159,7 @@ export const CustomCalendarPicker: React.FC<CustomCalendarPickerProps> = ({
               );
             })}
           </View>
-          
+
           <Pressable style={[styles.closeBtn, { backgroundColor: C.surfaceHigh }]} onPress={onClose}>
             <ThemedText style={[styles.closeBtnText, { color: C.onSurface }]}>Đóng</ThemedText>
           </Pressable>

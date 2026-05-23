@@ -18,7 +18,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { TEST_IDS } from '../../testing/testIds';
-import { resolveBottomTabSafePadding } from './tabBarSafeArea';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import MoChiSprite from '../../features/mochi/MoChiSprite';
 import SmartAddSheet from '../ui/SmartAddSheet';
@@ -303,7 +302,6 @@ const CustomTabBar: React.FC<CustomTabBarProps> = ({
     borderTop: isDark ? 'rgba(226,232,240,0.08)' : 'rgba(0,0,0,0.06)',
   };
 
-  const safeBottom = 0; // Centered since outerWrapper is raised above home indicator
   const current = state.routes[state.index]?.name ?? '';
   const shouldHideForVoice = !isOverlay && current === 'VoiceTab';
   const mochiDockPose = resolveMoChiDockPose(current);
@@ -449,14 +447,14 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 64,
+    height: TAB_BAR_HEIGHT + 6,
     paddingHorizontal: 16,
   },
   commandButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 64,
+    height: TAB_BAR_HEIGHT + 6,
   },
   commandInner: {
     position: 'relative',

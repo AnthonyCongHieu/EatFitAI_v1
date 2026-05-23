@@ -197,7 +197,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
 ];
 
-const TABS: Array<{ key: LegalTab; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
+const TABS: { key: LegalTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'terms', label: 'Điều khoản', icon: 'document-text-outline' },
   { key: 'privacy', label: 'Bảo mật', icon: 'lock-closed-outline' },
 ];

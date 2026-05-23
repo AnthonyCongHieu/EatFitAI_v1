@@ -383,10 +383,10 @@ const StatsScreen = (): React.ReactElement => {
       const history = await profileService.getBodyMetricsHistory(60);
       if (history.length >= 2) {
         const mapped = history
-          .filter((m) => m.weightKg != null && m.measuredDate)
-          .map((m, idx) => ({
-            measuredDate: m.measuredDate!,
-            weightKg: m.weightKg!,
+          .filter((metric) => metric.weightKg != null && metric.measuredDate)
+          .map((metric, idx) => ({
+            measuredDate: metric.measuredDate!,
+            weightKg: metric.weightKg!,
             originalIndex: idx,
           }));
 

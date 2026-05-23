@@ -260,7 +260,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
           backgroundColor: P.surface,
           borderBottomWidth: 1,
           borderBottomColor: P.glassBorder,
-        }
+        },
       ]}>
         <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />

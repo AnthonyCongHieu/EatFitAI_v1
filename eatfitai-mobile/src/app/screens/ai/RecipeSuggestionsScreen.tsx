@@ -409,7 +409,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             <View style={S.gridCardBody}>
               <ThemedText style={[S.gridTitle, { color: P.onSurface }]} numberOfLines={2}>{item.recipeName}</ThemedText>
               <ThemedText style={[S.gridReason, { color: P.onSurfaceVariant }]} numberOfLines={2}>{getPrimaryReason(item)}</ThemedText>
-              
+
               {/* Nutrition boxes matching detail screen style but smaller */}
               <View style={S.macrosRow}>
                 <View style={[S.macroBox, { backgroundColor: P.primary + '15', borderColor: P.primary + '40' }]}>

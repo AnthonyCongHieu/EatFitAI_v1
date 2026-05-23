@@ -48,7 +48,6 @@ const CHART_PADDING_RIGHT = 16;
 const CHART_PADDING_TOP = 16;
 const CHART_PADDING_BOTTOM = 16;
 const CHART_WIDTH = SCREEN_WIDTH - 72; // card padding 20 + card inner padding 16*2
-const PURPLE_PRIMARY = '#a855f7';
 
 /* ─── Kiểu dữ liệu ─── */
 interface WeightRecord {
@@ -133,13 +132,13 @@ const WeightStatsScreen = (): React.ReactElement => {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
-  
+
   // *** CRITICAL: Sử dụng query key có prefix ['weight-history'] để invalidate đồng bộ ***
   const { data: allRecords, isLoading } = useQuery<WeightRecord[]>({
     queryKey: ['weight-history', 'stats', 365],
     queryFn: async () => {
       const data = await profileService.getBodyMetricsHistory(365);
-      
+
       // Map và gán originalIndex để làm khóa phụ khi sort.
       // Chúng ta KHÔNG khử trùng theo ngày để giữ lại toàn bộ lịch sử đo (kể cả đo nhiều lần trong ngày khi test).
       const mapped = data
@@ -188,7 +187,7 @@ const WeightStatsScreen = (): React.ReactElement => {
 
     // "Ban đầu" = bản ghi cũ nhất (đầu tiên sau khi sort chronologically)
     const starting = allRecords[0]!.weight;
-    // "Hiện tại" = bản ghi mới nhất (cuối cùng sau khi sort chronologically)  
+    // "Hiện tại" = bản ghi mới nhất (cuối cùng sau khi sort chronologically)
     const current = allRecords[allRecords.length - 1]!.weight;
     // "Thay đổi" = hiện tại - ban đầu
     const change = current - starting;
@@ -205,7 +204,7 @@ const WeightStatsScreen = (): React.ReactElement => {
     // để làm dấu chấm hiển thị cuối cùng của ngày đó.
     const seenDates = new Set<string>();
     const chartRecords: WeightRecord[] = [];
-    
+
     // filteredRecords đã được sort từ cũ nhất đến mới nhất,
     // ta duyệt từ cuối về đầu để lấy bản ghi mới nhất cho mỗi ngày.
     for (let i = filteredRecords.length - 1; i >= 0; i--) {
@@ -247,7 +246,7 @@ const WeightStatsScreen = (): React.ReactElement => {
     const points = chartRecords.map((r) => {
       const d = parseDateString(r.date);
       const t = d.getTime();
-      
+
       // Giới hạn t nằm trong khoảng [startTime, endTime] để tránh tràn đồ thị
       const clampedT = Math.max(startTime, Math.min(endTime, t));
       const ratio = (clampedT - startTime) / totalDuration;
@@ -460,7 +459,7 @@ const WeightStatsScreen = (): React.ReactElement => {
                   stroke={isSelected ? '#FFF' : EN.bg}
                   strokeWidth={isSelected ? 2 : 1.5}
                 />
-                
+
                 {/* Vùng hitbox lớn hơn để chạm bấm dễ hơn */}
                 <Circle
                   cx={pt.x}
@@ -510,7 +509,7 @@ const WeightStatsScreen = (): React.ReactElement => {
             style={[
               styles.tooltipContainer,
               {
-                left: selectedPt.x > svgWidth / 2 
+                left: selectedPt.x > svgWidth / 2
                   ? selectedPt.x - 110 // Ở bên trái điểm
                   : selectedPt.x + 15,  // Ở bên phải điểm
                 top: selectedPt.y - 25,

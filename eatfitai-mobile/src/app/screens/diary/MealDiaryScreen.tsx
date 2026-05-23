@@ -9,7 +9,6 @@ import {
   Alert,
   Dimensions,
   Image,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -259,35 +258,6 @@ const MealDiaryScreen = (): React.ReactElement => {
       defaultMealType,
     });
   }, [dateKey, navigation]);
-
-  const handleMarkSkipped = useCallback((mealType: MealTypeId) => {
-    const mealLabel = MEAL_TYPE_LABELS[mealType];
-
-    Alert.alert('Đánh dấu bỏ bữa', `Ghi nhận bạn đã bỏ qua ${mealLabel.toLowerCase()}?`, [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Ghi nhận',
-        onPress: async () => {
-          try {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            await diaryService.markMealSkipped(dateKey, mealType);
-            await invalidateDiaryQueries(queryClient);
-            showAppToast({
-              type: 'success',
-              text1: 'Đã ghi nhận',
-              text2: 'App sẽ phân bổ nhẹ hơn cho các bữa còn lại.',
-            });
-          } catch (err: any) {
-            showAppToast({
-              type: 'error',
-              text1: 'Không thể ghi nhận',
-              text2: err?.message || 'Thử lại sau.',
-            });
-          }
-        },
-      },
-    ]);
-  }, [dateKey, queryClient]);
 
   const navigateToDetail = useCallback((entry: DiaryEntry) => {
     if (entry.recipeId) {

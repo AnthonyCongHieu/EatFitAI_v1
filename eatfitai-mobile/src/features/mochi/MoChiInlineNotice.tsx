@@ -30,7 +30,6 @@ const MoChiInlineNotice = ({
   routeName,
   title,
   message,
-  ctaLabel,
   compact = false,
   hideSprite = false,
   tone = 'standard',

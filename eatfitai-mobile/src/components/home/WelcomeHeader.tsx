@@ -111,7 +111,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
       <View style={styles.right}>
         {displayStreak >= 0 && (
           <Pressable style={[styles.streak, { backgroundColor: palette.surfaceHigh }]} onPress={onStreakPress} hitSlop={8}>
-            <Ionicons name="flame" size={16} color={displayStreak > 0 ? "#ff8c8c" : palette.textMuted} />
+            <Ionicons name="flame" size={16} color={displayStreak > 0 ? '#ff8c8c' : palette.textMuted} />
             <Text style={[styles.streakText, { color: displayStreak > 0 ? getStreakColor(displayStreak) : palette.textMuted }]}>{displayStreak}</Text>
           </Pressable>
         )}

@@ -98,12 +98,12 @@ const WeightCard = ({ onUpdatePress, onCardPress }: WeightCardProps): React.Reac
         {/* Phần bên trái: Icon + Column chứ các nhãn */}
         <View style={styles.leftSection}>
           <MaterialCommunityIcons name="scale-bathroom" size={28} color={AMBER_ICON} />
-          
+
           <View style={styles.labelWrap}>
             <ThemedText style={[styles.title, { color: EN.onSurface }]}>
               Cân nặng gần nhất
             </ThemedText>
-            
+
             <ThemedText style={[styles.weightValue, { color: EN.onSurface }]}>
               {currentWeight != null ? `${formatWeight(currentWeight)} kg` : '— kg'}
             </ThemedText>

@@ -23,8 +23,8 @@ describe('getAiFeatureAvailability', () => {
       state: 'blocked',
       canUseAi: false,
       allowsManualFallback: true,
-      title: 'AI đang kiểm tra',
-      message: 'Vui lòng thử lại sau khi trạng thái AI được cập nhật.',
+      title: 'Đang kết nối AI',
+      message: 'Bạn chờ một chút để mình kết nối với AI rồi thử lại nha!',
     });
   });
 
@@ -59,8 +59,8 @@ describe('getAiFeatureAvailability', () => {
       state: 'blocked',
       canUseAi: false,
       allowsManualFallback: true,
-      title: 'AI tạm offline',
-      message: 'Bạn vẫn có thể nhập hoặc tìm món thủ công.',
+      title: 'AI đang tạm nghỉ',
+      message: 'Đừng lo nha, bạn vẫn có thể nhập tay hoặc tìm món thủ công nè.',
     });
   });
 
@@ -74,8 +74,8 @@ describe('getAiFeatureAvailability', () => {
       state: 'degraded',
       canUseAi: false,
       allowsManualFallback: true,
-      title: 'AI dinh dưỡng chưa sẵn sàng',
-      message: 'Bạn vẫn có thể nhập hoặc tìm món thủ công.',
+      title: 'AI dinh dưỡng đang bận xíu nè',
+      message: 'Đừng lo nha, bạn vẫn có thể nhập tay hoặc tìm món thủ công nè.',
     });
   });
 });
