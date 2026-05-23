@@ -11,9 +11,9 @@ This file is the resume-safe source of truth for the v1 public APK run.
 | Release type | Public APK v1 | LOCKED |
 | Initial requested source | `e97f57ba459562e47f1d0849a143f401f6e4a8f0` | RECORDED |
 | Deployed/runtime candidate SHA | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | DEPLOYED |
-| Current local HEAD | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | VERIFIED |
-| Current origin SHA | `d367ac679671a91657ab7cce25ad2201ee11ce6d` | VERIFIED |
-| Current worktree | Dirty with release evidence harness and video edits only | IN PROGRESS |
+| Current local HEAD | Latest pushed evidence commit; verify with `git rev-parse HEAD` after resume | VERIFIED |
+| Current origin SHA | Latest pushed `origin/codex/admin-control-plane-v1`; verify with `git rev-parse origin/codex/admin-control-plane-v1` after resume | VERIFIED |
+| Current worktree | Clean except ignored/generated local artifacts | VERIFIED |
 | Repo root | `E:\tool edit\eatfitai_v1` | VERIFIED |
 | API base URL | `https://eatfitai-api.duckdns.org` | VERIFIED |
 | AI provider URL | `https://eatfitai-ai.duckdns.org` | VERIFIED |
