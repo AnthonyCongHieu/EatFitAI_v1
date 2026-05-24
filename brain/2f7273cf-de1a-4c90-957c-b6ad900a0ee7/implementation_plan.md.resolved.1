@@ -1,0 +1,246 @@
+# EatFitAI Deep Audit — Logic Bugs, Dead Code & Remediation Plan
+
+Tài liệu này là kết quả rà soát source code thực tế, **không hallucinate**, mỗi phát hiện đều có dẫn chiếu file:line cụ thể.
+
+---
+
+## Phần A: Các BUG LOGIC Nghiêm Trọng
+
+### BUG #1: VoiceInput Component Hoàn Toàn Giả (CRITICAL)
+
+> [!CAUTION]
+> Component `VoiceInput.tsx` **không ghi âm thật**. Nó dùng text ngẫu nhiên từ mảng hardcoded.
+
+**Minh chứng:** [VoiceInput.tsx:93-123](file:///d:/EatFitAI_v1/eatfitai-mobile/src/components/VoiceInput.tsx#L93-L123)
+
+```typescript
+// SIMULATION: Dùng text giả để demo
+const simulatedText = getSimulatedText();
+
+const getSimulatedText = (): string => {
+    const samples: string[] = [
+      'Thêm 1 bát phở bò vào bữa trưa',
+      'Ghi 2 quả trứng bữa sáng',
+      'Cân nặng 65 kg',
+      'Hôm nay bao nhiêu calo',
+    ];
+    const index = Math.floor(Math.random() * samples.length);
+    return samples[index] as string;
+};
+```
+
+**Hậu quả:** User nhấn nút mic → Không ghi âm → Nhận text random → Parse lệnh sai. Tính năng **100% vô dụng** với end-user.
+
+**Trong khi đó:** Phía `voiceService.ts` (line 129-173) đã có logic gửi audio file thật lên backend `/api/voice/transcribe` → Backend cũng đã có endpoint STT hoạt động (Gemini Audio API). **Hai phần này không kết nối nhau.**
+
+---
+
+### BUG #2: Barcode Lookup Luôn Trả `null` (CRITICAL)
+
+> [!CAUTION]
+> Tính năng Barcode scan **luôn fail silently** vì thiếu config.
+
+**Minh chứng:** [FoodService.cs:302-305](file:///d:/EatFitAI_v1/eatfitai-backend/Services/FoodService.cs#L302-L305)
+
+```csharp
+var templateUrl = _configuration["FoodBarcodeProvider:TemplateUrl"];
+if (string.IsNullOrWhiteSpace(templateUrl))
+{
+    return null; // ← Luôn vào đây vì không ai cấu hình key này
+}
+```
+
+**Xác nhận:** Đã grep toàn bộ `*.json` trong `eatfitai-backend/` → **Không tìm thấy key `FoodBarcodeProvider`** trong bất kỳ file `appsettings*.json` nào. Chỉ có trong test file `FoodControllerTests.cs` (line 149).
+
+**Hậu quả:** User quét barcode → Tìm trong catalog DB trước → Không có → Gọi provider → provider URL = null → return null → "Chưa có món cho mã vạch này". User **không bao giờ** tra được barcode từ bên ngoài.
+
+---
+
+### BUG #3: 2 Instance GeminiPoolManager — Lãng Phí Quota (HIGH)
+
+> [!WARNING]
+> `stt_service.py` và `nutrition_llm.py` mỗi file tạo **một GeminiPoolManager riêng biệt**.
+
+**Minh chứng:**
+
+| File | Line | Code |
+|------|------|------|
+| [stt_service.py:38](file:///d:/EatFitAI_v1/ai-provider/stt_service.py#L38) | 38 | `_gemini_pool = GeminiPoolManager.from_env()` |
+| [nutrition_llm.py:76](file:///d:/EatFitAI_v1/ai-provider/nutrition_llm.py#L76) | 76 | `_gemini_pool = GeminiPoolManager.from_env()` |
+
+Comment trong `stt_service.py` line 16 nói: *"Gemini pool instance - chia sẻ với nutrition_llm.py"* — nhưng **thực tế KHÔNG chia sẻ**. Mỗi module tạo pool riêng.
+
+**Hậu quả:**
+- 2 pool tracking rate limit **độc lập** → Nếu pool A xoay key, pool B không biết → **Double-counting** quota
+- Key rotation bị desync → Tăng xác suất `429 Too Many Requests`
+- Memory footprint nhân đôi (mỗi pool giữ list clients riêng)
+
+---
+
+### BUG #4: PyTorch Vẫn Được Import Dù Đã Chuyển ONNX (HIGH)
+
+> [!WARNING]
+> `import torch` vẫn tồn tại trong production code dù hệ thống đã migrate sang ONNX.
+
+**Minh chứng:** [app.py:335](file:///d:/EatFitAI_v1/ai-provider/app.py#L335)
+
+```python
+import torch  # Dòng 335 — vẫn import trong production
+
+def get_optimal_device():
+    if torch.cuda.is_available():
+        ...
+```
+
+Và [requirements.txt:15-16](file:///d:/EatFitAI_v1/ai-provider/requirements.txt#L15-L16):
+
+```
+torch
+torchvision
+```
+
+**Hậu quả trên Render 512MB:**
+- `torch` CPU-only chiếm **~180MB RAM** khi import
+- `torchvision` thêm **~30MB**
+- `ultralytics` (YOLO framework) thêm **~50MB**
+- Tổng: **~260MB chỉ cho 3 thư viện KHÔNG DÙNG** (vì ONNX Runtime đã thay thế)
+- Trên server 512MB, điều này **chiếm 50% RAM** vô ích
+
+---
+
+## Phần B: Dead Code & Technical Debt
+
+### DEAD CODE #1: `parseWithOllama` — Tên Gọi Sai Hoàn Toàn
+
+**Minh chứng:** [voiceService.ts:211-213](file:///d:/EatFitAI_v1/eatfitai-mobile/src/services/voiceService.ts#L211-L213)
+
+```typescript
+async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
+    return this.parseWithProvider(text); // ← Chỉ delegate, Ollama đã bị xóa
+}
+```
+
+Caller: [VoiceInput.tsx:100](file:///d:/EatFitAI_v1/eatfitai-mobile/src/components/VoiceInput.tsx#L100)
+
+```typescript
+const command = await voiceService.parseWithOllama(simulatedText);
+```
+
+**Vấn đề:** Ollama đã bị thay bằng Gemini từ lâu. Tên method gây misleading cho developer khác. Nên rename thành `parseVoiceCommand` hoặc xóa wrapper.
+
+---
+
+### DEAD CODE #2: YOLO PyTorch Fallback Path — Không Bao Giờ Chạy
+
+**Minh chứng:** [app.py:351-395](file:///d:/EatFitAI_v1/ai-provider/app.py#L351-L395) — Hàm `_load_yolo_model()` và [app.py:596-616](file:///d:/EatFitAI_v1/ai-provider/app.py#L596-L616)
+
+Khi `YOLO_ONNX_ENABLED=true` (default) VÀ file `best.onnx` tồn tại → Luồng ONNX chạy (line 588-595). Toàn bộ khối `else` (line 596-616) dùng `_load_yolo_model()` (PyTorch YOLO) **KHÔNG BAO GIỜ execute** trên production.
+
+→ Nhưng `import torch` (line 335), `from ultralytics import YOLO` (line 18), và `_load_yolo_model()` vẫn tồn tại → chiếm RAM.
+
+---
+
+### DEAD CODE #3: `WHISPER_AVAILABLE = False` + `detectIngredients` Deprecated
+
+| Dead Code | File:Line | Lý do |
+|-----------|-----------|-------|
+| `WHISPER_AVAILABLE = False` | [app.py:800](file:///d:/EatFitAI_v1/ai-provider/app.py#L800) | Biến không ai kiểm tra, comment sai |
+| `detectIngredients()` | [aiService.ts:514-519](file:///d:/EatFitAI_v1/eatfitai-mobile/src/services/aiService.ts#L514-L519) | Deprecated, chỉ return `[]` |
+
+---
+
+## Phần C: Vấn Đề Kiến Trúc (Architecture Issues)
+
+### ARCH #1: `YOLO_INFERENCE_LOCK` — Serialization Hoàn Toàn
+
+**Minh chứng:** [app.py:149](file:///d:/EatFitAI_v1/ai-provider/app.py#L149) + [app.py:586](file:///d:/EatFitAI_v1/ai-provider/app.py#L586)
+
+```python
+YOLO_INFERENCE_LOCK = threading.Lock()
+...
+with YOLO_INFERENCE_LOCK:  # ← Toàn bộ inference bị serialize
+    out = _detect_with_onnx(path, ...)
+```
+
+**Vấn đề:** `threading.Lock()` biến toàn bộ YOLO inference thành **single-threaded**. Nếu 5 user upload ảnh cùng lúc, user thứ 5 phải đợi 4 request trước hoàn thành.
+
+**Lý do ban đầu:** PyTorch YOLO không thread-safe. **Nhưng ONNX Runtime đã thread-safe** (theo [Microsoft ONNX Runtime Docs](https://onnxruntime.ai/docs/api/python/api_summary.html)). Lock này có thể loại bỏ khi chỉ dùng ONNX.
+
+---
+
+### ARCH #2: Audio File Proxy — Memory Bomb
+
+**Minh chứng:** [stt_service.py:92-94](file:///d:/EatFitAI_v1/ai-provider/stt_service.py#L92-L94)
+
+```python
+with open(audio_path, "rb") as f:
+    audio_bytes = f.read()           # Đọc toàn bộ file vào RAM
+audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")  # x1.33 kích thước
+```
+
+Luồng: Mobile → C# Backend → Python AI Provider → Gemini API  
+File audio 5MB → Đọc vào RAM = 5MB → base64 = 6.65MB → Tổng ~12MB/request
+
+Trên Render 512MB, **~40 request đồng thời = OOM crash**.
+
+---
+
+### ARCH #3: Data Proxy Anti-Pattern (Image Upload)
+
+**Luồng hiện tại:**
+```
+Mobile ──[upload 1-3MB JPEG]──→ C# Backend ──[forward binary]──→ Python AI Provider
+```
+
+Ảnh đi qua **3 hop** (Mobile → C# → Python) trước khi được xử lý. C# Backend không làm gì với binary ngoài forward.
+
+**Giải pháp chuẩn (Presigned URL):**
+```
+Mobile ──[GET presigned URL]──→ C# Backend
+Mobile ──[PUT image directly]──→ Cloudflare R2
+Mobile ──[POST image_key]──→ C# Backend ──[send key]──→ Python
+Python ──[GET image from R2]──→ Process
+```
+
+---
+
+## Phần D: Kế Hoạch Khắc Phục (Remediation Plan)
+
+### Phase 1: Hotfix (Ngay lập tức — Không cần refactor lớn)
+
+| # | Task | File(s) | Effort |
+|---|------|---------|--------|
+| 1.1 | **Fix Barcode:** Thêm `FoodBarcodeProvider:TemplateUrl` = `https://world.openfoodfacts.org/api/v0/product/{barcode}.json` và `FoodBarcodeProvider:Name` = `OpenFoodFacts` vào `appsettings.Production.json` | [appsettings.Production.json](file:///d:/EatFitAI_v1/eatfitai-backend/appsettings.Production.json) | 5 phút |
+| 1.2 | **Fix VoiceInput:** Tích hợp thực `@jamsch/expo-speech-recognition` hoặc **bỏ component simulation**, chuyển sang text input trực tiếp gọi `voiceService.parseWithProvider()` | [VoiceInput.tsx](file:///d:/EatFitAI_v1/eatfitai-mobile/src/components/VoiceInput.tsx) | 2-4h |
+| 1.3 | **Merge GeminiPool:** Tạo singleton `shared_gemini_pool.py`, import chung cho `stt_service.py` và `nutrition_llm.py` | Cả 3 file Python | 30 phút |
+
+---
+
+### Phase 2: Cleanup (1-2 ngày — Giảm RAM, Tăng throughput)
+
+| # | Task | File(s) | Impact |
+|---|------|---------|--------|
+| 2.1 | **Loại bỏ `torch`, `torchvision`, `ultralytics`** khỏi `requirements.txt` khi xác nhận ONNX ổn định | [requirements.txt](file:///d:/EatFitAI_v1/ai-provider/requirements.txt) | **Giảm ~260MB RAM** |
+| 2.2 | Xóa `import torch`, hàm `get_optimal_device()`, `_load_yolo_model()`, `_detections_from_yolo_result()` | [app.py:335-395](file:///d:/EatFitAI_v1/ai-provider/app.py#L335-L395) | Clean code |
+| 2.3 | **Bỏ `YOLO_INFERENCE_LOCK`** cho ONNX path (ONNX Runtime thread-safe) | [app.py:149](file:///d:/EatFitAI_v1/ai-provider/app.py#L149), [app.py:586](file:///d:/EatFitAI_v1/ai-provider/app.py#L586) | **Tăng throughput** |
+| 2.4 | Xóa dead code: `parseWithOllama`, `detectIngredients`, `WHISPER_AVAILABLE` | Nhiều files | Clean code |
+| 2.5 | Rename `parseWithOllama` → `parseVoiceCommand` trong `voiceService.ts` | [voiceService.ts](file:///d:/EatFitAI_v1/eatfitai-mobile/src/services/voiceService.ts) | Naming accuracy |
+
+---
+
+### Phase 3: Architecture (Roadmap Production)
+
+| # | Task | Impact |
+|---|------|--------|
+| 3.1 | **Presigned URL Upload:** Mobile → R2 trực tiếp, backend chỉ nhận `image_key` | Giảm bandwidth backend ~80% |
+| 3.2 | **Streaming Audio:** Gửi audio trực tiếp lên R2, Python đọc từ R2 | Tránh OOM từ base64 encoding |
+| 3.3 | **Gemini Pay-as-you-go Key:** Thay Pool xoay key free bằng 1 key trả phí | Production-grade reliability |
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **VoiceInput:** Bạn muốn tích hợp STT thật (cần EAS build, không chạy trên Expo Go) hay chuyển sang text-only input trước?
+> 2. **PyTorch removal:** Bạn có cần giữ khả năng chạy `best.pt` (PyTorch model) trên local dev không, hay hoàn toàn commit sang ONNX?
+> 3. **Barcode provider:** OpenFoodFacts là lựa chọn free tốt nhất hiện tại. Bạn có muốn dùng provider khác (ví dụ UPC Database, Nutritionix)?

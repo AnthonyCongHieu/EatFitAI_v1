@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_TASK",
+  "summary": "Task list theo dõi tiến độ import data vào Supabase và setup Render services cho EatFitAI v1 cloud deployment.",
+  "updatedAt": "2026-04-08T02:47:12.630135700Z"
+}

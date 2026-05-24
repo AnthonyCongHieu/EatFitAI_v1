@@ -1,0 +1,59 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+EatFitAI Admin
+[0] (83,92)<a class='block relative' href='/' />
+	[1] (83,92)<div  />
+		[2] (62,92)<span >Overview />
+[3] (83,132)<a class='block relative' href='/users' />
+	[4] (83,132)<div  />
+		[5] (54,132)<span >Users />
+[6] (83,173)<a class='block relative' href='/meals' />
+	[7] (83,173)<div  />
+		[8] (64,173)<span >Meal Logs />
+[9] (83,213)<a class='block relative' href='/foods' />
+	[10] (83,213)<div  />
+		[11] (73,213)<span >Food Database />
+[12] (83,253)<a class='block relative' href='/master-data' />
+	[13] (83,253)<div  />
+		[14] (67,253)<span >Master Data />
+[15] (83,294)<a class='block relative' href='/gemini-keys' />
+	[16] (83,294)<div  />
+		[17] (69,294)<span >Gemini Keys />
+[18] (83,334)<a class='block relative' href='/ai-logs' />
+	[19] (83,334)<div  />
+		[20] (59,334)<span >AI Logs />
+[21] (83,374)<a class='block relative' href='/analytics' />
+	[22] (83,374)<div  />
+		[23] (62,374)<span >Analytics />
+[24] (83,414)<a class='block relative' href='/settings' />
+	[25] (83,414)<div  />
+		[26] (59,414)<span >Settings />
+[27] (83,972)<button class='w-full flex items-center px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors duration-200'>Logout />
+	Logout
+Overview Dashboard
+Welcome back to the EatFitAI administrative panel.
+[28] (841,28)<button class='flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer' title='Backend: OK | AI: OK
+Last: 34s ago' />
+	[29] (847,28)<span >34s ago />
+Admin User
+admin@eatfit.ai
+Total API Requests
+0
+Active Gemini Keys
+0 / 0
+Total Users
+0
+System Status
+Unknown
+All services operational
+[30] (841,193)<button class='mt-2 text-xs font-semibold px-3 py-1.5 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-colors w-fit flex items-center gap-1.5'>Ping Services />
+AI Usage vs Quota Limit
+Daily API consumption tracked across the Gemini pool.
+No chart data available from API.
+Pool Health
+Live status of your Gemini bindings.
+No active pool monitors found.
+
+</current_dom>

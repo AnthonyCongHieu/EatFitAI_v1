@@ -1,0 +1,89 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (62,49)<a aria-label='Google Apps Script' class='gb_ee gb_Wc' href='/home' id='sdgBod' />
+	[1] (25,49)<img class='gb_1c' role='presentation' />
+	[2] (74,47)<span >Apps Script />
+[3] (212,46)<div aria-label='Đổi tên' class='UGZzee KOiXb' role='button'>Dự án không có tiêu đề />
+cloud_done
+[4] (803,46)<div class='U26fgb c7fp5b JvtX2e rGMe1e Gn5yxe' role='button' />
+	[5] (803,45)<span  />
+		[6] (803,46)<span  />
+			[7] (805,46)<div >Triển khai />
+				[8] (829,46)<span > />
+[9] (885,46)<button aria-label='Chia sẻ dự án này với người khác' class='VfPpkd-Bz112c-LgbsSe yHy1rc eT1oJ mN1ivc MNz5Rc' />
+	[10] (885,46)<i >person_add />
+[11] (915,46)<div aria-label='Hỗ trợ' class='U26fgb JRtysb WzwrXb lmSKjb' role='button' />
+	[12] (915,57)<span  />
+		[13] (915,58)<span  />
+			[14] (915,46)<i >help_outline />
+[15] (947,46)<a aria-label='Các ứng dụng của Google' class='gb_B' href='https://www.google.com.vn/intl/vi/about/products' role='button' />
+[16] (978,46)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_B gb_1a gb_2' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://script.google.com/home%3Fpli%3D1&ec=GBRAiwM' role='button' />
+[17] (93,134)<div aria-label='Tổng quan' class='kcW8jf' role='link' />
+	[18] (20,134)<div  />
+		[19] (20,128)<i >info_outline />
+	[20] (60,134)<div >Tổng quan />
+[21] (93,191)<div aria-label='Trình biên tập' class='kcW8jf hcgnWc' role='link' />
+	[22] (20,191)<div  />
+		[23] (20,185)<i >code />
+	[24] (66,191)<div >Trình biên tập />
+[25] (93,249)<div aria-label='Nhật ký dự án' class='kcW8jf' role='link' />
+	[26] (20,249)<div  />
+		[27] (20,243)<i >history />
+	[28] (66,249)<div >Nhật ký dự án />
+[29] (93,306)<div aria-label='Kích hoạt' class='kcW8jf' role='link' />
+	[30] (20,306)<div  />
+		[31] (20,300)<i >alarm />
+	[32] (58,306)<div >Kích hoạt />
+[33] (93,364)<div aria-label='Thực thi' class='kcW8jf' role='link' />
+	[34] (20,364)<div  />
+		[35] (20,358)<i >playlist_play />
+	[36] (55,364)<div >Thực thi />
+[37] (93,421)<div aria-label='Cài đặt dự án' class='kcW8jf' role='link' />
+	[38] (20,421)<div  />
+		[39] (20,416)<i >settings />
+	[40] (65,421)<div >Cài đặt dự án />
+Tệp
+sort_by_alpha
+add
+Mã.gs
+Thư viện
+add
+Dịch vụ
+add
+[41] (186,547)<div  />
+undo
+redo
+play_arrow
+Chạy
+Gỡ lỗi
+Không có hàm nào
+[42] (502,121)<button aria-label='Mở bảng điều khiển nhật ký thực thi' class='VfPpkd-LgbsSe VfPpkd-LgbsSe-OWXEXe-dgl2Hf LjDxcd XhPA0b LQeN7 IVKqHd DOZNHf VieVBd'>Nhật ký thực thi />
+	Nhật ký thực thi
+1
+2
+3
+4
+[43] (613,574)<div class='view-lines monaco-mouse-cursor-text' role='presentation' />
+	[44] (613,197)<div  />
+		function
+		myFunction
+		(
+		)
+		{
+	[45] (613,222)<div  />
+	[46] (613,248)<div  />
+		}
+	[47] (613,274)<div  />
+[48] (385,159)<button aria-label='đóng' class='VfPpkd-Bz112c-LgbsSe yHy1rc eT1oJ mN1ivc' />
+	[49] (385,159)<i >close />
+Xem nhật ký dự án
+Xem các phiên bản đã triển khai trước đây của tập lệnh này và so sánh với phiên bản hiện tại.
+Tìm hiểu thêm
+[50] (307,326)<a aria-label='Tìm hiểu thêm' class='WpHeLc VfPpkd-mRLv6 VfPpkd-RLmnJb' href='https://developers.google.com/apps-script/guides/versions#view-script?authuser=0' />
+[51] (369,325)<button class='VfPpkd-LgbsSe VfPpkd-LgbsSe-OWXEXe-k8QpJ VfPpkd-LgbsSe-OWXEXe-dgl2Hf nCP5yc AjY5Oe DuMIQc LQeN7 PT6xK UFLp3c'>OK />
+	OK
+
+</current_dom>

@@ -1,0 +1,135 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (63,58)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwisteqo7J2UAxWHsK8BHWEjCsoQPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (281,57)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (456,57)<div  />
+	[3] (455,57)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (455,57)<span  />
+	[5] (467,57)<span  />
+[6] (480,57)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (480,57)<span  />
+[8] (501,57)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (522,57)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (546,57)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (542,57)<div  />
+		[12] (542,57)<span  />
+[13] (954,57)<a aria-label='Các ứng dụng của Google' class='gb_C' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (979,57)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_C gb_5a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3Dkaggle%2Bapi%2Bcreate%2Bnew%2Btoken%2Bscreenshot&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (136,125)<a class='XVMlrc C6AK7c' href='/search?q=kaggle+api+create+new+token+screenshot&sca_esv=9eacb8ddfa535336&sxsrf=ANbL-n5BKq0-fd3483TR70RTkXgeoKyDHw:1777836299563&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHhsDKWUlVIzTXlsVKxLm56R7gDOwX3kdppCZiB6zYS8SNuZpl3gslKrx6yLegpUjxlaNbUx8PpiVHpUCPLULE513q_zDQQXsPbHjzPYw46xtBD0LM_C68_pQ0X1YQRiKiJSodBWJ_ussmDUee7MQtI7K4O0tE0qFlFjvx38pyusVPTSMLBWX1Dv5BRHzaNqPBELnrip1cTsIZw7i5TTdLhbgnTAm&aep=1&ntc=1&sa=X&ved=2ahUKEwisteqo7J2UAxWHsK8BHWEjCsoQ2J8OegQIDxAD' />
+	[16] (136,125)<div  />
+		[17] (136,134)<div  />
+			[18] (136,128)<span  />
+				[19] (136,128)<span >Chế độ AI />
+[20] (174,125)<a class='C6AK7c' role='link' />
+	Tất cả
+[21] (206,125)<a class='C6AK7c' href='/search?sca_esv=9eacb8ddfa535336&sxsrf=ANbL-n5BKq0-fd3483TR70RTkXgeoKyDHw:1777836299563&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHhsDKWUlVIzTXlsVKxLm56R7gDOwX3kdppCZiB6zYS8SNuZpl3gslKrx6yLegpUjxlaNbUx8PpiVHpUCPLULE513q_zDQQXsPbHjzPYw46xtBD0LM_C68_pQ0X1YQRiKiJSodBWJ_ussmDUee7MQtI7K4O0tE0qFlFjvx38pyusVPTSMLBWX1Dv5BRHzaNqPBELnrip1cTsIZw7i5TTdLhbgnTAm&q=kaggle+api+create+new+token+screenshot&sa=X&ved=2ahUKEwisteqo7J2UAxWHsK8BHWEjCsoQtKgLegQIFhAB' />
+	[22] (206,125)<div  />
+		[23] (206,134)<span >Video />
+[24] (243,125)<a class='C6AK7c' href='/search?sca_esv=9eacb8ddfa535336&sxsrf=ANbL-n5BKq0-fd3483TR70RTkXgeoKyDHw:1777836299563&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHhsDKWUlVIzTXlsVKxLm56R7gDOwX3kdppCZiB6zYS8SNuZpl3gslKrx6yLegpUjxlaNbUx8PpiVHpUCPLULE513q_zDQQXsPbHjzPYw46xtBD0LM_C68_pQ0X1YQRiKiJSodBWJ_ussmDUee7MQtI7K4O0tE0qFlFjvx38pyusVPTSMLBWX1Dv5BRHzaNqPBELnrip1cTsIZw7i5TTdLhbgnTAm&q=kaggle+api+create+new+token+screenshot&sa=X&ved=2ahUKEwisteqo7J2UAxWHsK8BHWEjCsoQtKgLegQIFRAB' />
+	[25] (243,125)<div  />
+		[26] (243,134)<span >Hình ảnh />
+[27] (281,125)<a class='C6AK7c' href='/search?sca_esv=9eacb8ddfa535336&sxsrf=ANbL-n5BKq0-fd3483TR70RTkXgeoKyDHw:1777836299563&q=kaggle+api+create+new+token+screenshot&tbm=nws&source=lnms&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHhsDKWUlVIzTXlsVKxLm56R7gDOwX3kdppCZiB6zYS8SNuZpl3gslKrx6yLegpUjxlaNbUx8PpiVHpUCPLULE513q_zDQQXsPbHjzPYw46xtBD0LM_C68_pQ0X1YQRiKiJSodBWJ_ussmDUee7MQtI7K4O0tE0qFlFjvx38pyusVPTSMLBWX1Dv5BRHzaNqPBELnrip1cTsIZw7i5TTdLhbgnTAm&sa=X&ved=2ahUKEwisteqo7J2UAxWHsK8BHWEjCsoQ0pQJegQIEhAB' />
+	[28] (281,125)<div  />
+		[29] (281,134)<span >Tin tức />
+[30] (320,125)<a class='C6AK7c' href='/search?sca_esv=9eacb8ddfa535336&sxsrf=ANbL-n5BKq0-fd3483TR70RTkXgeoKyDHw:1777836299563&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHhsDKWUlVIzTXlsVKxLm56R7gDOwX3kdppCZiB6zYS8SNuZpl3gslKrx6yLegpUjxlaNbUx8PpiVHpUCPLULE513q_zDQQXsPbHjzPYw46xtBD0LM_C68_pQ0X1YQRiKiJSodBWJ_ussmDUee7MQtI7K4O0tE0qFlFjvx38pyusVPTSMLBWX1Dv5BRHzaNqPBELnrip1cTsIZw7i5TTdLhbgnTAm&q=kaggle+api+create+new+token+screenshot&ved=1t:220175&ictx=111' />
+	[31] (320,125)<div  />
+		[32] (320,134)<span >Mua sắm />
+[33] (366,125)<a class='C6AK7c' href='/search?sca_esv=9eacb8ddfa535336&sxsrf=ANbL-n5BKq0-fd3483TR70RTkXgeoKyDHw:1777836299563&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHhsDKWUlVIzTXlsVKxLm56R7gDOwX3kdppCZiB6zYS8SNuZpl3gslKrx6yLegpUjxlaNbUx8PpiVHpUCPLULE513q_zDQQXsPbHjzPYw46xtBD0LM_C68_pQ0X1YQRiKiJSodBWJ_ussmDUee7MQtI7K4O0tE0qFlFjvx38pyusVPTSMLBWX1Dv5BRHzaNqPBELnrip1cTsIZw7i5TTdLhbgnTAm&q=kaggle+api+create+new+token+screenshot&sa=X&ved=2ahUKEwisteqo7J2UAxWHsK8BHWEjCsoQs6gLegQIExAB' />
+	[34] (366,125)<div  />
+		[35] (366,134)<span >Video ngắn />
+[36] (411,125)<div class='mTpL7c' role='button' />
+	[37] (411,125)<div  />
+		[38] (411,134)<div  />
+			[39] (406,128)<span >Thêm />
+			[40] (420,128)<span  />
+[41] (456,125)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[42] (456,125)<div  />
+		[43] (456,134)<div  />
+			[44] (451,128)<span >Công cụ />
+			[45] (469,128)<span  />
+Kết quả tìm kiếm
+Thông tin tổng quan do AI tạo
+[46] (688,202)<div aria-label='Thông tin về kết quả này' class='Mtffrd' role='button' />
+To create a new Kaggle API token,
+follow these steps on the
+[47] (373,243)<a class='H23r4e' href='https://www.kaggle.com/'>Kaggle website />
+:
+Navigate to Settings:
+Go to your Kaggle profile by clicking on your profile picture in the top-right corner of any page and selecting
+Settings
+(or
+Account
+in some versions of the interface).
+Locate the API Section:
+Scroll down until you find the section titled
+API
+.
+Generate the Token:
+Click the
+Create New API Token
+button.
+Note:
+If you already have an active token, you may need to click
+Expire API Token
+first to delete the old one before creating a new one.
+Download and Save:
+This action will automatically download a file named
+kaggle.json
+.
+This file contains your authentication credentials (username and API key).
+Crucial Step:
+For the API to work, you must move this file to a folder named
+.kaggle
+in your home directory (e.g.,
+~/.kaggle/kaggle.json
+on Linux/Mac or
+C:\Users\<Windows-username>\.kaggle\kaggle.json
+on Windows).
+[48] (413,687)<a aria-label='Kaggle (+10) – Xem các đường liên kết có liên quan' class='muU3oe' href='https://www.kaggle.com/general/51898#:~:text=Aravinda%20Gayan&text=How%20to%20use%20Kaggle%20datasets%20in%20Google%20Colab?&text=(1)%20Download%20the%20Kaggle%20API,Create%20New%20API%20Token%E2%80%9D%20button.' />
+Kaggle
++10
+For more detailed technical guidance, you can refer to the
+[49] (261,744)<a class='H23r4e' href='https://www.kaggle.com/docs/api'>Kaggle Public API Documentation />
+.
+[50] (186,756)<button aria-label='Xem các đường liên kết có liên quan' class='rBl3me' />
+	[51] (186,756)<span  />
+[52] (581,333)<a aria-label='Easy way to use Kaggle datasets in Google Colab. Mở trong thẻ mới.' class='NDNGvf' href='https://www.kaggle.com/general/51898' />
+Easy way to use Kaggle datasets in Google Colab
+Aravinda Gayan. ... How to use Kaggle datasets in Google Colab? ... (1) Download the Kaggle API token. * Go to “Account”, go down ...
+Kaggle
+[53] (678,382)<div aria-label='Thông tin về kết quả này' class='xXnAhe' id='snui-atr-DKH3aeGvK5aZvr0P8dLD4Qk_8' role='button' />
+[54] (581,470)<a aria-label='Upload models and datasets with kaggle API !. Mở trong thẻ mới.' class='NDNGvf' href='https://www.kaggle.com/code/tareksherif/upload-models-and-datasets-with-kaggle-api' />
+Upload models and datasets with kaggle API !
+Create New API Token. ... Authentication In order to use the Kaggle's public API, you must first authenticate using an API token. ...
+Kaggle
+[55] (678,505)<div aria-label='Thông tin về kết quả này' class='xXnAhe' id='snui-atr-DKH3aeGvK5aZvr0P8dLD4Qk_11' role='button' />
+[56] (581,593)<a aria-label='Get Started with Kaggle's Public API. Mở trong thẻ mới.' class='NDNGvf' href='https://www.kaggle.com/discussions/getting-started/524433' />
+Get Started with Kaggle's Public API
+Installation & Authentication. ... Before accessing the API, you need to authenticate using an API token. To do this: * Go to the ...
+Kaggle
+[57] (678,627)<div aria-label='Thông tin về kết quả này' class='xXnAhe' id='snui-atr-DKH3aeGvK5aZvr0P8dLD4Qk_14' role='button' />
+[58] (581,678)<div aria-label='Hiện tất cả đường liên kết có liên quan' class='BjvG9b' id='rw0ISc' role='button' />
+	[59] (581,678)<span >Hiện tất cả />
+AI có thể mắc sai sót. Vì vậy, hãy xác minh câu trả lời
+[60] (381,823)<div aria-label='Chia sẻ' role='button' />
+	[61] (381,823)<div  />
+		[62] (381,823)<div  />
+			[63] (381,823)<span  />
+[64] (406,823)<div aria-label='Gửi ý kiến phản hồi tích cực' class='X7yl2b btku5b FR7ZSc OJeuxf' role='button' />
+	[65] (406,823)<div  />
+		[66] (406,823)<span  />
+[67] (431,823)<div aria-label='Gửi ý kiến phản hồi tiêu cực' class='X7yl2b btku5b FR7ZSc OJeuxf' role='button' />
+	[68] (431,823)<div  />
+		[69] (431,823)<span  />
+[70] (284,901)<div  />
+	[71] (269,875)<textarea class='ITIRGe' placeholder='Hỏi bất cứ điều gì' />
+	[72] (441,928)<button aria-label='Microphone' class='uMMzHc vpw7Fc' />
+		[73] (441,928)<div  />
+
+</current_dom>

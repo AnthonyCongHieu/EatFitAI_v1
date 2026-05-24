@@ -1,0 +1,42 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Chọn ngôn ngữ
+Vi
+Đặt hàng & giao tận nơi
+1800 6828
+Truy xuất nguồn gốc
+[0] (329,27)<a href='/'>Trang chủ />
+[1] (414,27)<a href='/cau-chuyen-thit-u-mat-meatdeli/'>Câu Chuyện Thịt Ủ Mát />
+[2] (499,27)<a class='active' href='/' />
+	[3] (499,27)<img  />
+[4] (558,27)<a href='https://shop.meatdeli.com.vn/'>Sản phẩm />
+[5] (609,27)<a href='/tin-tuc/'>Tin tức />
+[6] (666,27)<a href='/goc-am-thuc/'>Góc ẩm thực />
+Thông tin
+Nhà máy
+CÔNG TY TRÁCH NHIỆM HỮU HẠN MEATDeli HÀ NAM
+Giấy phép VSATTP
+72/2023/QLCL-HNa, cấp ngày 28-11-2023
+CHI CỤC CHĂN NUÔI VÀ THÚ Y NINH BÌNH
+K.S.G.M
+MÃ SỐ: 15.102.02
+Ngày sản xuất
+07/08/2025
+Hệ thống kiểm soát 3 tuyến kiểm dịch
+Tuyến 1: Đảm bảo không cho lợn nhiễm dịch bệnh được xuất chuồng, xuất trại.
+Tuyến 2: Chỉ lợn khỏe, không nhiễm dịch bệnh mới vào nhà máy giết mổ.
+Tuyến 3: Thịt heo an toàn mới được xuất bán khỏi nhà máy.
+Bạn muốn truy xuất nguồn gốc của sản phẩm khác?
+[7] (747,586)<a class='btn-main white2' href='/txng/'>Truy xuất />
+Liên hệ với tổng đài
+Chăm sóc Khách Hàng
+[8] (242,853)<a class='phone' href='tel:18006828'>1800 6828 />
+Hoặc liên hệ với Công ty
+Cổ Phần Masan MEATLife
+Lầu 10, Tòa nhà Central Plaza, số 17 Lê Duẩn, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh
+[9] (581,917)<a href='javascript:void(0)' />
+	[10] (581,918)<img  />
+
+</current_dom>

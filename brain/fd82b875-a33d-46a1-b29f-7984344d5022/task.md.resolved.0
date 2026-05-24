@@ -1,0 +1,6 @@
+# Tasks
+
+- [ ] Update [OnboardingScreen.tsx](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/app/screens/auth/OnboardingScreen.tsx) to use `aiApiClient` for nutrition recalculation <!-- id: 0 -->
+- [ ] Update [services/nutrition.ts](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/nutrition.ts) to use `aiApiClient` <!-- id: 1 -->
+- [ ] Update [services/aiService.ts](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/aiService.ts) to use `aiApiClient` for recipes and instructions <!-- id: 2 -->
+- [ ] Verify UI Animations in [Modal.tsx](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/components/Modal.tsx) <!-- id: 3 -->

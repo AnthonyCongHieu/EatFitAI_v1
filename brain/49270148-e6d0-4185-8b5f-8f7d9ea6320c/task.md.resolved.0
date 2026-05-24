@@ -1,0 +1,24 @@
+# EatFitAI Admin Implementation Tasks
+
+## Phase 1: Backend Architecture & Database (C# .NET)
+- [ ] Mở rộng Model `User` (thêm field `Role`).
+- [ ] Thêm Model `GeminiKey` để quản lý Pool các token (bao gồm cơ chế track theo ngày và `IsActive`).
+- [ ] Tạo Migration hoặc SQL query (Supabase) để khởi tạo bảng `GeminiKeys`.
+- [ ] Viết `GeminiPoolManager` logic (Xoay vòng Round-Robin, reset token tự động lúc 00:00 UTC, kiểm tra Daily Quota).
+- [ ] Cập nhật Token Service (JWT) để đính kèm `Role = Admin` vào token login.
+- [ ] Khởi tạo `AdminAIController` và `AdminUsersController` (đều gắn `[Authorize(Roles = "Admin")]`).
+
+## Phase 2: Frontend Foundation (Next.js - D:\EatFitAI_Admin)
+- [ ] Khởi tạo dự án Next.js (bỏ qua nếu đã xong), setup Tailwind, Shadcn UI (`npm install @tanstack/react-query recharts` etc).
+- [ ] Cài đặt Zustand để quản lý State auth (Role Admin).
+- [ ] Setup tiện ích API config (Axios hoặc fetch interceptor) chèn JWT token lên Header.
+- [ ] Tạo Layout cho Admin (Sidebar, Header, Menu item).
+
+## Phase 3: Gemini Pool Admin UI
+- [ ] Thiết kế trang Dashboard Thống kê Pool.
+- [ ] Quản lý CRUD AI Keys (Thêm Key mới, Xóa Key).
+- [ ] Làm nút Reset Pool khẩn cấp (Emergency reset).
+
+## Phase 4: Deploy & Verify
+- [ ] Kiểm tra lỗi AI Timeout Error Catcher (ném lỗi 503 khi pool cạn kiệt cho phép End User biết).
+- [ ] Lên kế hoạch ping Cron job giả lập trên Render để giữ cold-start alive.

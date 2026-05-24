@@ -1,0 +1,37 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Apps Script
+help_outline
+Dự án mới
+star_outline
+Dự án có gắn dấu sao
+folder
+Dự án của tôi
+folder
+Tất cả dự án
+group
+Đã chia sẻ với tôi
+delete
+Thùng rác
+Các lần thực thi của tôi
+alarm
+Trình kích hoạt của tôi
+play_circle_outline
+Bắt đầu
+settings
+Cài đặt
+warning_amber
+Trạng thái dịch vụ
+Dự án của tôi
+Đang tải
+[0] (500,500)<span class='PbnGhe oJeWuf fb0g6' scrollable='true' />
+	Quản lý và giám sát tất cả dự án của bạn ở cùng một nơi
+	Chào mừng bạn đến với trang tổng quan Apps Script!
+	Dễ dàng tra cứu và tìm kiếm dự án của bạn. Theo dõi tình trạng và mức sử dụng các dự án mà bạn quan tâm. Gỡ lỗi dự án bằng cách xem các lần thực thi, nhật ký và lỗi.
+	[1] (495,920)<div class='U26fgb O0WRkf zZhnYe C0oVfc XBU8lb M9Bg4d' role='button' />
+		[2] (495,920)<span  />
+			[3] (495,920)<span >Xem trang tổng quan />
+
+</current_dom>

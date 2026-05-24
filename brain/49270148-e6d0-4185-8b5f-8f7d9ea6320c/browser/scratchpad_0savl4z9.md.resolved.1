@@ -1,0 +1,18 @@
+# Task: Verify Gemini Keys Page Load and Error
+
+## Checklist
+- [x] Navigate to http://localhost:3000
+- [ ] Login as admin@eatfit.ai (Currently logged in as eatfitai.admin@example.com, need to logout)
+- [x] Navigate to "Gemini Keys" (Done in previous step, now need to redo after login)
+- [x] Wait for load and error (Confirmed 500 error in console)
+
+## Observations
+- The page is at `http://localhost:3000/`.
+- The user is logged in as `Admin User` (eatfitai.admin@example.com).
+- Resized window to 1280x800 to see the sidebar.
+- "Logout" button is visible but not indexed in DOM. It's likely at the bottom of the sidebar.
+- "Gemini Keys" link is at index [6].
+
+## Next Steps
+- Logout and login as `admin@eatfit.ai`.
+- Navigate to "Gemini Keys" again to confirm the error persists for the specific user.

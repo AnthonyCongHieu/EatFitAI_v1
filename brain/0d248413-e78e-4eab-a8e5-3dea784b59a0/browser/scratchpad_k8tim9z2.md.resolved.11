@@ -1,0 +1,24 @@
+# Task: Set up Keep-Alive ping for Render Backend
+
+## Checklist
+- [x] Navigate to cron-job.org
+- [ ] Sign up for a new account (Email: admin@eatfit.ai)
+    - [!] Failed on cron-job.org due to verification errors.
+- [x] Switch to UptimeRobot as alternative
+    - [x] Navigate to UptimeRobot
+    - [ ] Sign up for UptimeRobot
+        - [!] Encountered Cloudflare "Verify you are a human" captcha.
+- [x] Switch to Google Apps Script (Robust Alternative)
+    - [x] Navigate to script.google.com
+    - [x] Create a new Apps Script project (Name: EatFitAI Keep-Alive)
+    - [x] Add ping logic
+    - [x] Authorize script
+    - [x] Set 10-minute trigger
+- [x] Verify success
+
+## Notes
+- Backend URL: https://eatfitai-backend.onrender.com/discovery
+- Credentials: admin@eatfit.ai / Admin@123!Cron
+- Issue: Traditional cron services (cron-job.org, UptimeRobot) have strong bot detection for new accounts.
+- Resolution: Using user's existing Google account for Apps Script is more reliable and free.
+- Progress: Google Apps Script is now pinging the backend every 10 minutes.

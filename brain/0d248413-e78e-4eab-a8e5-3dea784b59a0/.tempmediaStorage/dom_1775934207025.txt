@@ -1,0 +1,24 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (497,86)<a class='chakra-link css-sheoaq' href='https://uptimerobot.com' />
+	[1] (497,86)<img  />
+Welcome back
+!
+[2] (382,344)<label class='chakra-form__label css-1vmigtj' id='field-_R_2aiav5viv5t9b_-label'>Your e-mail />
+[3] (497,396)<input class='chakra-input mask-me css-10xtles' id='field-_R_2aiav5viv5t9b_' placeholder='E.g. info@example.com' />
+[4] (497,474)<button class='chakra-button css-1e0n1yp'>Log in with email />
+[5] (398,543)<a class='chakra-link css-q1cm7s' href='/auth/forgot-password'>Forgot your password? />
+or
+[6] (497,669)<button class='chakra-button css-1j30tor'>Login with Google />
+	[7] (452,669)<span  />
+[8] (497,750)<button class='chakra-button css-1j30tor'>Login with GitHub />
+	[9] (453,750)<span  />
+[10] (367,851)<label class='chakra-switch css-1bwumkt' />
+	[11] (367,851)<span  />
+		[12] (364,851)<span  />
+[13] (435,851)<label class='chakra-form__label css-1j01x1y' id='field-_R_1eiav5viv5t9b_-label'>Remember me for 30 days />
+Don't have an account yet?
+
+</current_dom>

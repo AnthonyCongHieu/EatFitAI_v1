@@ -1,0 +1,56 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Chọn ngôn ngữ
+[0] (249,27)<a class='lang' href='#'>Vi />
+Đặt hàng & giao tận nơi
+[1] (691,26)<a href='tel:1800 6828'>1800 6828 />
+[2] (769,27)<a class='btn-white' href='/txng/'>Truy xuất nguồn gốc />
+[3] (298,118)<a href='/'>Trang chủ />
+[4] (382,118)<a href='/cau-chuyen-thit-u-mat-meatdeli/'>Câu Chuyện Thịt Ủ Mát />
+[5] (499,118)<a href='/' />
+	[6] (499,118)<img  />
+[7] (590,118)<a href='https://shop.meatdeli.com.vn/'>Sản phẩm />
+[8] (640,118)<a href='/tin-tuc/'>Tin tức />
+[9] (698,118)<a href='/goc-am-thuc/'>Góc ẩm thực />
+Tuyến 2: Chỉ lợn khỏe, không nhiễm dịch bệnh mới vào nhà máy giết mổ.
+Tuyến 3: Thịt heo an toàn mới được xuất bán khỏi nhà máy.
+Bạn muốn truy xuất nguồn gốc của sản phẩm khác?
+[10] (747,238)<a class='btn-main white2' href='/txng/'>Truy xuất />
+Liên hệ với tổng đài
+Chăm sóc Khách Hàng
+[11] (242,505)<a class='phone' href='tel:18006828'>1800 6828 />
+Hoặc liên hệ với Công ty
+Cổ Phần Masan MEATLife
+Lầu 10, Tòa nhà Central Plaza, số 17 Lê Duẩn, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh
+[12] (581,569)<a href='javascript:void(0)' />
+	[13] (581,570)<img  />
+[14] (784,672)<div  />
+	[15] (784,672)<i  />
+		[16] (784,672)<img  />
+[17] (246,762)<a href='javascript:void(0)' />
+	[18] (246,763)<img  />
+[19] (348,740)<a href='/'>Trang chủ />
+[20] (348,768)<a href='/cau-chuyen-thit-u-mat-meatdeli/'>MEATDeli />
+[21] (348,797)<a href='https://shop.meatdeli.com.vn'>Sản phẩm />
+[22] (348,825)<a href='/tin-tuc/'>Tin tức & Sự kiện />
+[23] (348,854)<a href='/tin-tuc/#ho-so-phap-ly'>Hồ sơ pháp lý />
+[24] (449,740)<a href='/goc-am-thuc/'>Góc ẩm thực />
+[25] (449,768)<a href='/txng/'>Truy xuất nguồn gốc />
+[26] (449,797)<a href='/cua-hang/'>Cửa hàng />
+[27] (449,825)<a href='/lien-he/'>Liên hệ />
+Chăm sóc khách hàng
+[28] (576,778)<a href='tel:18006828'>1800 6828 />
+Theo dõi chúng tôi
+[29] (669,786)<a href='https://www.facebook.com/ThitsachMeatDeli/' />
+	[30] (669,786)<i  />
+[31] (692,786)<a href='https://instagram.com' />
+	[32] (692,786)<i  />
+[33] (714,786)<a href='https://www.youtube.com/c/Th%E1%BB%8BtS%E1%BA%A1chMEATDeli?sub_confirmation=1' />
+	[34] (714,786)<i  />
+Bản quyền © 2019 thuộc về MEATDeli. Bảo lưu mọi quyền.
+Chọn ngôn ngữ
+[35] (789,962)<a class='lang active' href='javascript:void(0)'>Vi />
+
+</current_dom>

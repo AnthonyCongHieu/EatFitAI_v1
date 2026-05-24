@@ -1,0 +1,23 @@
+# Task Plan
+
+## 1. Vercel Verification
+- [ ] Navigate to https://eatfitai-admin.vercel.app
+- [ ] Login with admin credentials
+- [ ] Verify Dashboard data
+- [ ] Verify Food Database data
+- [ ] Verify Users data
+- [ ] Record any errors or findings
+
+## 2. Cron-job.org Setup
+- [ ] Navigate to https://cron-job.org
+- [ ] Check if logged in
+- [ ] Create a new cron job for https://eatfitai-backend.onrender.com/discovery
+- [ ] Set schedule to every 10 minutes
+- [ ] Verify cron job activation
+
+# Findings
+- Vercel Login:
+- Dashboard Data:
+- Food Database:
+- Users Data:
+- Cron Job Status:

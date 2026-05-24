@@ -1,0 +1,53 @@
+EatFitAI Admin
+[0] (66,147)<a class='block relative' href='/' />
+	[1] (66,147)<div  />
+		[2] (50,147)<span >Overview />
+[3] (66,212)<a class='block relative' href='/users' />
+	[4] (66,212)<div  />
+		[5] (43,212)<span >Users />
+[6] (66,276)<a class='block relative' href='/meals' />
+	[7] (66,276)<div  />
+		[8] (51,276)<span >Meal Logs />
+[9] (66,341)<a class='block relative' href='/foods' />
+	[10] (66,341)<div  />
+		[11] (58,341)<span >Food Database />
+[12] (66,405)<a class='block relative' href='/master-data' />
+	[13] (66,405)<div  />
+		[14] (54,405)<span >Master Data />
+[15] (66,470)<a class='block relative' href='/gemini-keys' />
+	[16] (66,470)<div  />
+		[17] (55,470)<span >Gemini Keys />
+[18] (66,534)<a class='block relative' href='/ai-logs' />
+	[19] (66,534)<div  />
+		[20] (47,534)<span >AI Logs />
+[21] (66,598)<a class='block relative' href='/analytics' />
+	[22] (66,598)<div  />
+		[23] (49,598)<span >Analytics />
+[24] (66,663)<a class='block relative' href='/settings' />
+	[25] (66,663)<div  />
+		[26] (47,663)<span >Settings />
+[27] (66,954)<button class='w-full flex items-center px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors duration-200'>Logout />
+	Logout
+Overview Dashboard
+Welcome back to the EatFitAI administrative panel.
+[28] (874,45)<button class='flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer' title='Backend: OK | AI: OK
+Last: 24s ago' />
+	[29] (879,45)<span >24s ago />
+Admin User
+admin@eatfit.ai
+Total API Requests
+0
+Active Gemini Keys
+0 / 0
+Total Users
+0
+System Status
+Unknown
+All services operational
+[30] (822,307)<button class='mt-2 text-xs font-semibold px-3 py-1.5 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-colors w-fit flex items-center gap-1.5'>Ping Services />
+AI Usage vs Quota Limit
+Daily API consumption tracked across the Gemini pool.
+No chart data available from API.
+Pool Health
+Live status of your Gemini bindings.
+No active pool monitors found.

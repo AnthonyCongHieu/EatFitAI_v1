@@ -1,0 +1,153 @@
+[0] (74,40)<a class='link-module__Q1NRQq__link no-underline flex-1 flex flex-row items-center gap-2 pl-2.5 md:pr-1 py-2 min-w-0 group/owner-breadcrumb' href='/conghieus-projects' />
+	[1] (18,40)<span class='avatar-module__rHmbGW__avatar !border-0 after:!border-0' role='img' />
+	[2] (85,40)<span  />
+		[3] (66,40)<span >CongHieu's projects />
+		[4] (124,40)<span  />
+			[5] (124,40)<span >Hobby />
+[6] (152,40)<button class='relative group/scope-button flex-none flex flex-row items-center py-2 h-[inherit] text-left [font:inherit] [-webkit-tap-highlight-color:transparent] bg-transparent text-inherit rounded-[inherit] hover:bg-gray-100 focus-visible:bg-gray-100 cursor-pointer min-w-0 z-10 px-0 gap-0 before:absolute before:-inset-2 before:content-[""] font-medium' />
+[7] (83,106)<button class='relative z-[calc(var(--header-zindex)_+_1)] cursor-pointer overflow-visible border-0 bg-transparent p-0 [webkit-tap-highlight-color:transparent] focus-visible:outline-focus focus-visible:outline-2 focus-visible:outline-offset-[3px] rounded-full md:rounded h-9 w-full md:cursor-text pointer-events-auto' />
+	[8] (83,106)<span  />
+		[9] (17,106)<span  />
+		[10] (83,106)<span >Find… />
+		[11] (149,106)<span  />
+			[12] (149,106)<kbd  />
+				[13] (149,106)<span >F />
+[14] (83,444)<nav class='overflow-x-clip overflow-y-auto pt-2 pb-10 md:py-2 md:h-full overscroll-none max-md:h-[628px] max-md:max-h-[calc(100svh_-_108px)] max-md:shadow-modal max-md:rounded-[16px] max-md:bg-background-100 max-md:dark:bg-gray-100 sidebar-module__J4DTiG__hideScrollbar' scrollable='true' />
+	[15] (83,170)<button class='flex flex-row items-center justify-between p-0 w-full gap-1 rounded cursor-pointer transition-colors [-webkit-tap-highlight-color:transparent] bg-transparent text-gray-900 hover:text-gray-1000 focus-visible:text-gray-1000 hover:bg-gray-100 focus-visible:bg-gray-100 active:bg-gray-200' />
+		[16] (17,170)<div  />
+		[17] (83,170)<div >Settings />
+		[18] (149,170)<div  />
+	[19] (83,227)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/general' />
+		[20] (86,227)<span  />
+			[21] (28,227)<span >General />
+	[22] (83,281)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/build-and-deployment' />
+		[23] (86,281)<span  />
+			[24] (57,281)<span >Build and Deployment />
+	[25] (83,334)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/environments' />
+		[26] (86,334)<span  />
+			[27] (40,334)<span >Environments />
+	[28] (83,387)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group bg-gray-200 active:bg-gray-300 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/environment-variables' />
+		[29] (86,387)<span  />
+			[30] (58,387)<span >Environment Variables />
+	[31] (83,440)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/git' />
+		[32] (86,440)<span  />
+			[33] (18,440)<span >Git />
+	[34] (83,494)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/deployment-protection' />
+		[35] (86,494)<span  />
+			[36] (59,494)<span >Deployment Protection />
+	[37] (83,547)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/functions' />
+		[38] (86,547)<span  />
+			[39] (32,547)<span >Functions />
+	[40] (83,600)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/cron-jobs' />
+		[41] (86,600)<span  />
+			[42] (33,600)<span >Cron Jobs />
+	[43] (83,653)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/microfrontends' />
+		[44] (86,653)<span  />
+			[45] (43,653)<span >Microfrontends />
+	[46] (83,706)<a class='link-module__Q1NRQq__link no-underline flex flex-row items-center h-9 origin-left rounded-md @md-page:rounded group text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 data-[shell-active=true]:bg-gray-200 data-[shell-active=true]:active:bg-gray-300 data-[shell-active=true]:hover:bg-gray-200 data-[shell-active=true]:focus-visible:bg-gray-200 pl-2.5' href='/conghieus-projects/eatfitai-admin/settings/project-members' />
+		[47] (86,706)<span  />
+			[48] (47,706)<span >Project Members />
+	Drains
+	Security
+	Connectivity
+	Advanced
+Ship
+26
+[49] (147,789)<button aria-label='Dismiss' class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset !size-5 *:p-0 before:absolute before:-inset-2 before:content-[''] geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__shape button-module__QyrFCa__circle button-module__QyrFCa__tiny button-module__QyrFCa__invert' />
+Built for you to ship what’s next.
+[50] (83,882)<a class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset w-full *:text-copy-13 *:font-medium [&_span:has(svg)]:flex [&_span:has(svg)]:items-center [&_span:has(svg)]:gap-1 button-module__QyrFCa__small button-module__QyrFCa__invert' href='/ship' role='link' />
+	[51] (83,882)<span >Save the date />
+[52] (73,963)<button class='group/row relative flex w-full items-center gap-2 h-9 min-w-0 bg-transparent cursor-pointer rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus focus-visible:-outline-offset-2 pl-2.5 pr-2 after:absolute after:inset-0 after:right-2 after:-bottom-2' />
+	anthonyconghieuu
+[53] (148,963)<button aria-label='10 unseen notifications' class='bell-module__AXcxMG__btn bell-module__AXcxMG__shadow bell-module__AXcxMG__dash' />
+[54] (167,500)<button aria-label='Toggle sidebar' class='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-6 rounded-full bg-background-100 border border-gray-400 grid place-content-center opacity-0 group-hover:opacity-100 cursor-pointer hover:bg-gray-100 hover:border-gray-500 before:absolute before:-inset-x-2 before:-inset-y-6 before:content-[''] [html.sidebar-collapsed_&]:hidden [html.sidebar-gesture-active_&]:!opacity-0 [html.sidebar-gesture-active_&]:pointer-events-none' />
+[55] (220,40)<a class='link-module__Q1NRQq__link no-underline flex-1 flex flex-row items-center gap-2 pl-2.5 md:pr-1 py-2 min-w-0 group/owner-breadcrumb' href='/conghieus-projects/eatfitai-admin' />
+	[56] (189,40)<span aria-label='Other' class='avatar-module__rHmbGW__avatar !border-0 after:!border-0 bg-background-100/80 shadow-[0_0_0_1px] shadow-background-100 backdrop-blur-[2px]' role='img' />
+		[57] (189,40)<img  />
+	[58] (230,40)<span  />
+		[59] (230,40)<span >eatfitai-admin />
+[60] (272,40)<button class='relative group/scope-button flex-none flex flex-row items-center py-2 h-[inherit] text-left [font:inherit] [-webkit-tap-highlight-color:transparent] bg-transparent text-inherit rounded-[inherit] hover:bg-gray-100 focus-visible:bg-gray-100 cursor-pointer min-w-0 z-10 px-0 gap-0 before:absolute before:-inset-2 before:content-[""] font-medium' />
+[61] (294,40)<a aria-label='Back to team view' class='link-module__Q1NRQq__link no-underline rounded flex flex-row items-center px-1.5 py-2 bg-transparent cursor-pointer min-w-0 text-gray-900 hover:bg-gray-100 focus-visible:bg-gray-100 hover:text-gray-1000 focus-visible:text-gray-1000 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-[opacity,transform] delay-75 -translate-x-0.5 group-hover:translate-x-0 focus:translate-x-0' href='/conghieus-projects/~/settings/environment-variables' title='Back to team view' />
+	[62] (294,40)<span  />
+[63] (526,40)<a class='link-module__Q1NRQq__link no-underline text-heading-14 font-medium text-gray-800 hover:text-gray-900 focus-visible:text-gray-900 hover:underline focus-visible:underline active:text-gray-1000 min-w-0 truncate' href='/conghieus-projects/eatfitai-admin/settings'>Project Settings />
+Environment Variables
+[64] (979,40)<button aria-label='Open page actions menu' class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__shape button-module__QyrFCa__small button-module__QyrFCa__invert' />
+	[65] (979,40)<span  />
+Environment Variables
+Store API keys, tokens, and config securely.
+[66] (404,199)<a class='link-module__Q1NRQq__link no-underline link-module__Q1NRQq__external link-module__Q1NRQq__highlight' href='/docs/environment-variables'>Learn more />
+[67] (791,138)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset button-module__QyrFCa__secondary button-module__QyrFCa__small button-module__QyrFCa__invert' />
+	[68] (791,138)<span >Link Shared Variable />
+[69] (911,138)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset button-module__QyrFCa__small button-module__QyrFCa__invert' />
+	[70] (911,138)<span >Add Environment Variable />
+[71] (209,265)<button class='tabs-module__Da1ZWG__tab' id='_r_ak_' role='tab'>Project />
+[72] (257,265)<button class='tabs-module__Da1ZWG__tab' id='_r_am_' role='tab'>Shared />
+[73] (413,351)<input aria-label='Search' class='input-module__q7zwrG__input' id='input-_r_ao_' placeholder='Search…' />
+[74] (206,351)<label  />
+[75] (735,351)<div role='combobox' />
+	[76] (735,351)<input class='combobox-module__Thgw9a__input combobox-module__Thgw9a__truncate combobox-module__Thgw9a__noPrefix' id='combobox-input-_r_aq_' role='searchbox' />
+	[77] (836,351)<button aria-label='Open menu' class='icon-button-module__IwlI7G__iconButton reset-module__ylizOa__reset combobox-module__Thgw9a__iconButton' />
+[78] (914,351)<label  />
+	[79] (914,351)<select class='select-module__nrtrfG__select' id='select-_r_b0_' />
+[80] (583,460)<div  />
+	[81] (307,446)<span class='tooltip-module__VEGyfq__container' />
+		[82] (307,446)<button class='copy-text-module__WvBs7a__button' />
+			[83] (307,446)<span >NEXT_PUBLIC_SUPABASE_ANON_KEY />
+	All Environments
+	[84] (525,460)<button aria-label='Click to reveal' class='button-module__QyrFCa__base reset-module__ylizOa__reset env-variables-table-module__L-jLVG__reveal' title='Click to reveal' />
+		[85] (525,460)<span  />
+	•••••••••••••••
+	[86] (879,460)<div >9h ago />
+		[87] (865,460)<span >Added />
+	[88] (953,460)<button aria-label='Menu' class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset dots-menu-module__9VTPLq__button geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__shape button-module__QyrFCa__small button-module__QyrFCa__invert' id='menu-button-_r_bf_' />
+		[89] (953,460)<span  />
+			[90] (953,460)<span  />
+				[91] (953,460)<span  />
+[92] (583,571)<div  />
+	[93] (295,557)<span class='tooltip-module__VEGyfq__container' />
+		[94] (295,557)<button class='copy-text-module__WvBs7a__button' />
+			[95] (295,557)<span >NEXT_PUBLIC_SUPABASE_URL />
+	All Environments
+	[96] (525,571)<button aria-label='Click to reveal' class='button-module__QyrFCa__base reset-module__ylizOa__reset env-variables-table-module__L-jLVG__reveal' title='Click to reveal' />
+		[97] (525,571)<span  />
+	•••••••••••••••
+	[98] (879,571)<div >9h ago />
+		[99] (865,571)<span >Added />
+	[100] (953,571)<button aria-label='Menu' class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset dots-menu-module__9VTPLq__button geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__shape button-module__QyrFCa__small button-module__QyrFCa__invert' id='menu-button-_r_bp_' />
+		[101] (953,571)<span  />
+			[102] (953,571)<span  />
+				[103] (953,571)<span  />
+[104] (583,682)<div  />
+	[105] (284,667)<span class='tooltip-module__VEGyfq__container' />
+		[106] (284,667)<button class='copy-text-module__WvBs7a__button' />
+			[107] (284,667)<span >NEXT_PUBLIC_APP_NAME />
+	Production
+	[108] (525,682)<button aria-label='Click to reveal' class='button-module__QyrFCa__base reset-module__ylizOa__reset env-variables-table-module__L-jLVG__reveal' title='Click to reveal' />
+		[109] (525,682)<span  />
+	•••••••••••••••
+	[110] (879,682)<div >11h ago />
+		[111] (864,682)<span >Added />
+	[112] (953,682)<button aria-label='Menu' class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset dots-menu-module__9VTPLq__button geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__shape button-module__QyrFCa__small button-module__QyrFCa__invert' id='menu-button-_r_c3_' />
+		[113] (953,682)<span  />
+			[114] (953,682)<span  />
+				[115] (953,682)<span  />
+[116] (583,793)<div  />
+	[117] (274,778)<span class='tooltip-module__VEGyfq__container' />
+		[118] (274,778)<button class='copy-text-module__WvBs7a__button' />
+			[119] (274,778)<span >AUTH_COOKIE_NAME />
+	Production
+	[120] (525,793)<button aria-label='Click to reveal' class='button-module__QyrFCa__base reset-module__ylizOa__reset env-variables-table-module__L-jLVG__reveal' title='Click to reveal' />
+		[121] (525,793)<span  />
+	•••••••••••••••
+	[122] (879,793)<div >11h ago />
+		[123] (864,793)<span >Added />
+	[124] (953,793)<button aria-label='Menu' class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset dots-menu-module__9VTPLq__button geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__shape button-module__QyrFCa__small button-module__QyrFCa__invert' id='menu-button-_r_cd_' />
+		[125] (953,793)<span  />
+			[126] (953,793)<span  />
+				[127] (953,793)<span  />
+[128] (328,938)<label class='flex flex-row items-center justify-start gap-3 flex-initial'>Automatically expose />
+	[129] (209,938)<label class='checkbox-module__Em-o0q__container' />
+		[130] (209,938)<span  />
+			[131] (209,938)<span  />
+	Automatically expose
+	[132] (383,938)<a class='link-module__Q1NRQq__link no-underline link-module__Q1NRQq__external link-module__Q1NRQq__highlight' href='/docs/environment-variables/system-environment-variables'>System Environment Variables />

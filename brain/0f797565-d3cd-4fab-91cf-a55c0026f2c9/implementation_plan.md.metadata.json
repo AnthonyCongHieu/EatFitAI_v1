@@ -1,0 +1,6 @@
+{
+  "artifactType": "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary": "Kế hoạch khắc phục lỗi co cụm và chồng lấn giao diện Header tại các độ phân giải trung gian (1025px - 1180px), bao gồm việc áp dụng flex-shrink và điều chỉnh linh hoạt padding/gap của thanh điều hướng.",
+  "updatedAt": "2026-05-21T21:09:04.723987700Z",
+  "requestFeedback": true
+}

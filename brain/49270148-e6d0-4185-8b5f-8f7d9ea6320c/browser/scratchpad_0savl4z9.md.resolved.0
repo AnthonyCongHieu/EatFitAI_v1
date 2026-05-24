@@ -1,0 +1,17 @@
+# Task: Verify Gemini Keys Page Load and Error
+
+## Checklist
+- [x] Navigate to http://localhost:3000 (Already at /gemini-keys)
+- [ ] Login as admin@eatfit.ai (Currently logged in as eatfitai.admin@example.com?)
+- [x] Navigate to "Gemini Keys" (Already there)
+- [x] Wait for load and error (Confirmed 500 Internal Server Error in console)
+
+## Observations
+- The page is at `http://localhost:3000/gemini-keys`.
+- The user is logged in as `Admin User` (eatfitai.admin@example.com).
+- The network request to `http://localhost:5247/api/admin-ai/keys` failed with a 500 Internal Server Error.
+- The UI shows "No keys found. Add your first Gemini key to start the pool." instead of an explicit error message in the table, but the console shows the 500.
+
+## Next Steps
+- Verify if the login needs to be exactly `admin@eatfit.ai`.
+- Confirm if the 500 error is the expected "success" condition for this step.

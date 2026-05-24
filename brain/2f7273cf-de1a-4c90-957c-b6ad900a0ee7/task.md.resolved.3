@@ -1,0 +1,14 @@
+# EatFitAI Deep Audit — Execution Tracker
+
+## Phase 1: Hotfix (Ngay lập tức)
+
+- [ ] 1.1 Fix Barcode: Thêm `FoodBarcodeProvider` config vào `appsettings.Production.json`
+- [ ] 1.2 Fix VoiceInput: Chuyển từ simulation sang text input thực tế (gọi `parseWithProvider`)
+- [ ] 1.3 Merge GeminiPool: Tạo singleton shared, cập nhật stt_service + nutrition_llm
+
+## Phase 2: Cleanup (Giảm RAM, Tăng throughput)
+
+- [ ] 2.1 Loại bỏ `torch`, `torchvision`, `ultralytics` khỏi requirements.txt
+- [ ] 2.2 Xóa `import torch`, `get_optimal_device()`, `_load_yolo_model()`, dead YOLO code
+- [ ] 2.3 Bỏ `YOLO_INFERENCE_LOCK` cho ONNX path
+- [ ] 2.4 Xóa dead code: `parseWithOllama`, `detectIngredients`, `WHISPER_AVAILABLE`

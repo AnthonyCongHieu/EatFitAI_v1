@@ -1,0 +1,109 @@
+<current_snapshot_explanation>
+This is a temporary snapshot of the current page's accessibility tree structure. The accessibility tree will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the accessibility tree in your trajectory if needed for later reference.
+</current_snapshot_explanation>
+<current_snapshot>
+## Latest page snapshot
+uid=1_0 RootWebArea "Báo cáo thực tập Ken Media - Đinh Công Hiếu - bản chốt 30 trang - Google Tài liệu" url="https://docs.google.com/document/d/1cPyxjWXxdLVzJ8SRp_WvvECpvukVTO6XojuDX4kmzVk/edit?tab=t.0"
+  uid=1_1 banner "Thanh trình đơn"
+    uid=1_2 generic atomic live="assertive" relevant="additions text"
+    uid=1_3 generic atomic live="assertive" relevant="additions text"
+    uid=1_4 generic atomic live="assertive" relevant="additions text"
+    uid=1_5 link "Trang chủ Tài liệu" url="https://docs.google.com/document/u/0/?authuser=0&usp=docs_web"
+    uid=1_6 StaticText "Báo cáo thực tập Ken Media - Đinh Công Hiếu - bản chốt 30 trang"
+    uid=1_7 textbox "Đổi tên" value="Báo cáo thực tập Ken Media - Đinh Công Hiếu - bản chốt 30 trang"
+    uid=1_8 checkbox "Gắn dấu sao"
+    uid=1_9 button "Di chuyển"
+    uid=1_10 button "Trạng thái của tài liệu: Đã lưu vào Drive."
+    uid=1_11 generic live="polite" relevant="additions text"
+    uid=1_12 button "Chỉnh sửa lần cuối được thực hiện vài giây trước bởi Hiếu Đinh Công"
+    uid=1_13 button "Hiện tất cả nhận xét 0 nhận xét mới"
+    uid=1_14 button "Tham gia cuộc gọi tại đây hoặc trình bày thẻ này trong cuộc gọi" expandable haspopup="menu"
+    uid=1_15 button "Chia sẻ. Nội dung chỉ ở chế độ riêng tư đối với tôi. "
+    uid=1_16 button "Thao tác chia sẻ nhanh" expandable haspopup="menu"
+    uid=1_17 button "Hỏi Gemini"
+    uid=1_18 button "Tài khoản Google: Đinh Công Hiếu (dinhconghieudch1610@gmail.com)" expandable haspopup="menu"
+    uid=1_19 menubar orientation="horizontal"
+      uid=1_20 menuitem "Tệp" expandable haspopup="menu"
+      uid=1_21 menuitem "Chỉnh sửa" expandable haspopup="menu"
+      uid=1_22 menuitem "Xem" expandable haspopup="menu"
+      uid=1_23 menuitem "Chèn" expandable haspopup="menu"
+      uid=1_24 menuitem "Định dạng" expandable haspopup="menu"
+      uid=1_25 menuitem "Công cụ" expandable haspopup="menu"
+      uid=1_26 menuitem "Tiện ích" expandable haspopup="menu"
+      uid=1_27 menuitem "Trợ giúp" expandable haspopup="menu"
+    uid=1_28 generic live="polite" relevant="additions text"
+    uid=1_29 toolbar "Tìm kiếm trong menu (Alt+/)" orientation="horizontal"
+      uid=1_30 combobox "Trình đơn" autocomplete="list" haspopup="listbox"
+    uid=1_31 toolbar "Số điện thoại chính" orientation="horizontal"
+      uid=1_32 button "Hoàn tác (Ctrl+Z)"
+      uid=1_33 button "Làm lại (Ctrl+Y)"
+      uid=1_34 button "In (Ctrl+P)"
+      uid=1_35 button "Kiểm tra chính tả và ngữ pháp (Ctrl+Alt+X)"
+      uid=1_36 button "Sao chép định dạng"
+      uid=1_37 combobox "Thu phóng" expandable haspopup="menu"
+        uid=1_38 textbox "Thu phóng" autocomplete="both" value="100%"
+      uid=1_39 listbox "Kiểu" haspopup="menu" orientation="vertical"
+      uid=1_40 listbox "Phông chữ" haspopup="menu" orientation="vertical"
+      uid=1_41 button "Giảm cỡ chữ (Ctrl+Shift+dấu phẩy)"
+      uid=1_42 combobox "Cỡ chữ" expandable haspopup="menu"
+        uid=1_43 textbox "Cỡ chữ" autocomplete="both" value="13"
+      uid=1_44 button "Tăng cỡ chữ (Ctrl+Shift+dấu chấm)"
+      uid=1_45 button "In đậm (Ctrl+B)"
+      uid=1_46 button "In nghiêng (Ctrl+I)"
+      uid=1_47 button "Gạch chân (Ctrl+U)"
+      uid=1_48 button "Màu văn bản" expandable haspopup="menu"
+      uid=1_49 button "Màu đánh dấu" expandable haspopup="menu"
+      uid=1_50 button "Chèn đường liên kết (Ctrl+K)"
+      uid=1_51 button "Thêm nhận xét (Ctrl+Alt+M)" disableable disabled
+      uid=1_52 button "Chèn hình ảnh" expandable haspopup="menu"
+      uid=1_53 button "Căn chỉnh và thụt lề" description="Căn chỉnh" expandable haspopup="menu"
+      uid=1_54 button "Giãn cách dòng và đoạn" expandable haspopup="menu"
+      uid=1_55 button "Danh sách kiểm tra (Ctrl+Shift+9)"
+      uid=1_56 button "Trình đơn danh sách kiểm tra" expandable haspopup="menu"
+      uid=1_57 button "Danh sách có dấu đầu dòng (Ctrl+Shift+8)"
+      uid=1_58 button "Trình đơn danh sách có dấu đầu dòng" expandable haspopup="menu"
+      uid=1_59 button "Danh sách được đánh số (Ctrl+Shift+7)"
+      uid=1_60 button "Trình đơn danh sách được đánh số" expandable haspopup="menu"
+      uid=1_61 button "Giảm thụt lề (Ctrl+dấu ngoặc đơn trái)"
+      uid=1_62 button "Tăng thụt lề (Ctrl+dấu ngoặc đơn phải)"
+      uid=1_63 button "Xóa định dạng (Ctrl+dấu gạch chéo ngược)"
+      uid=1_64 button "Đặt hướng văn bản từ trái sang phải." pressed
+      uid=1_65 button "Đặt hướng văn bản từ phải sang trái."
+      uid=1_66 button "Công cụ nhập liệu (Ctrl+Shift+K)"
+      uid=1_67 button "Chọn công cụ nhập (Ctrl+Alt+Shift+K)" expandable haspopup="menu"
+    uid=1_68 toolbar "Chế độ và chế độ xem" orientation="horizontal"
+      uid=1_69 button "Chế độ chỉnh sửa" expandable haspopup="menu"
+      uid=1_70 button "Ẩn các menu (Ctrl+Shift+F)"
+    uid=1_71 complementary "Bảng điều khiển bên"
+      uid=1_72 tablist orientation="horizontal"
+        uid=1_73 tab "Lịch" selectable
+        uid=1_74 tab "Keep" selectable
+        uid=1_75 tab "Tasks" selectable
+        uid=1_76 tab "Danh bạ" selectable
+        uid=1_77 tab "Maps" selectable
+        uid=1_78 tab "Tải Tiện ích bổ sung" selectable
+    uid=1_79 button "Ẩn bảng điều khiển bên"
+  uid=1_80 generic "Các thẻ trong tài liệu"
+    uid=1_81 button "Ẩn thẻ và đường viền"
+      uid=1_82 button "Quay lại" disableable disabled
+        uid=1_83 button "Quay lại" disableable disabled
+    uid=1_84 heading "Các thẻ trong tài liệu" level="2"
+    uid=1_85 button "Thêm thẻ"
+    uid=1_86 tree "Các thẻ trong tài liệu" orientation="vertical"
+      uid=1_87 treeitem "Thẻ 1" level="1" selectable selected
+        uid=1_88 button "Thao tác khác liên quan đến thẻ" expandable haspopup="menu"
+      uid=1_89 generic
+        uid=1_90 menuitem "BÁO CÁO THỰC TẬP TỐT NGHIỆP cấp 1"
+  uid=1_91 Iframe focusable focused
+    uid=1_92 RootWebArea url="about:blank"
+      uid=1_93 textbox "Nội dung tài liệu" focusable focused multiline
+  uid=1_94 link "Bật chế độ hỗ trợ trình đọc màn hình" url="https://docs.google.com/document/d/1cPyxjWXxdLVzJ8SRp_WvvECpvukVTO6XojuDX4kmzVk/edit?tab=t.0#"
+    uid=1_95 StaticText "Bật chế độ hỗ trợ trình đọc màn hình"
+  uid=1_96 generic atomic live="assertive" relevant="additions text"
+    uid=1_97 StaticText "Để bật chế độ hỗ trợ đọc màn hình, nhấn Ctrl+Alt+Z Để tìm hiểu thêm về các phím tắt, nhấn Ctrl+dấu gạch chéo"
+  uid=1_98 generic
+  uid=1_99 generic atomic live="polite" relevant="additions text"
+    uid=1_100 StaticText "Thông báo bị ẩn "
+  uid=1_101 generic atomic live="assertive" relevant="additions text"
+
+</current_snapshot>

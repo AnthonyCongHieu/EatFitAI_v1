@@ -1,0 +1,75 @@
+# Kế hoạch Thiết kế Giao diện Admin & Hệ thống Gemini Pool Manager (Cập nhật cực kỳ sát sao)
+
+Dựa theo nhu cầu sát sườn của dự án **EatFitAI** và các bằng chứng (Screenshot) từ Google AI Studio đối với model `Gemini 2.5 Flash` bản Free (Niveau sans frais), dưới đây là cấu trúc thiết kế UI và luồng xử lý Backend được điều chỉnh lại chính xác 100%.
+
+## 1. Cấu trúc Layout Giao Diện Web Admin 
+
+Web Admin sẽ áp dụng thiết kế chia đôi cơ bản của hệ thống SaaS (Software as a Service):
+
+### A. Sidebar (Menu Trái)
+- **Dashboard:** Thống kê nhanh toàn bộ hệ thống.
+- **Data Manager:** 
+  - `Users:` Quản lý người dùng.
+  - `Food Master:` Thêm/sửa món ăn cho thuật toán calo.
+- **AI Operations:**
+  - `Model Logs:` Xem chính xác từng ảnh User upload và máy trả kết quả gì.
+  - `Gemini Core:` (Tính năng cốt lõi mới) - Trung tâm điều lệnh các API Keys.
+- **Settings:** Đổi mật khẩu/cài đặt môi trường.
+
+### B. Màn Hình Gemini Core (API Key Manager)
+Đây là màn hình quan trọng nhất, thiết kế riêng để trị vấn đề "Quota Limit" siêu ngặt nghèo của AI Studio bản hiện tại.
+
+#### Giao diện danh sách Key (Card Grid / Table)
+Mỗi API Key sẽ được đại diện bởi 1 thẻ (Card), hiển thị các vạch màu (Progress Bar) giống hệt trang dashboard của Google:
+1. **RPM (Request Per Minute)**: Số yêu cầu trên 1 phút (Max = **5**).
+2. **RPD (Request Per Day)**: Số yêu cầu trên 1 ngày (Max = **20**).
+3. **TPM (Tokens Per Minute)**: Lượng Token tối đa / phút (Max = **250K tokens**).
+
+#### Tiện ích ở Gemini Core:
+- Nút **[+ Thêm API Key mới]**: Trình giả lập thêm N keys vào Pool (Vì 1 account chỉ cho 20 RPD, nếu app có 200 lượt chụp đồ ăn 1 ngày thì phải cần tối thiểu 10 Keys miễn phí cắm sẵn).
+- Trạng thái màu sắc của từng Key:
+  - 🟢 **Khỏe mạnh** (Còn nhiều Quota).
+  - 🟡 **Cảnh báo RPM** (Call nhanh quá 5 lần/phút $\rightarrow$ Phải chờ sập 60 giây).
+  - 🔴 **Kiệt sức - Exhausted** (Đã xài hết 20 requests dứt điểm trong ngày).
+
+---
+
+## 2. Kế Hoạch Hệ Thống Backend cho Gemini Pool
+
+Web chỉ là nơi hiển thị, việc **"Rotate" (Xoay tua)** và **"Đếm" (Count)** phải đặt ở Database/Backend.
+
+### Thay đổi Cấu trúc Database (Data Structure Changes)
+Tạo bảng mới `GeminiKeys`:
+- `KeyId` (Guid, PK)
+- `ApiKey` (String) - Có thể mã hóa bề mặt.
+- `Alias` (String) - Ví dụ: "Acc Clone Số 1".
+- `TierLevel` (Enum) - `Free` / `Level1` / `Level2` / `Level3` (Như trên ảnh).
+- `Status` (Enum) - `Active`, `Cooldown`, `Exhausted`, `Banned`.
+- `RpmUsed` (Int) - Số hit gọi trong phút hiện tại.
+- `RpdUsed` (Int) - Số hit gọi trong ngày.
+- `TpmUsed` (Int) - Số Token gọi trong phút.
+- `LastRequestAt` (DateTime) - Thời điểm xả API cuối cùng để Backend tự phán đoán khi nào Reset 1 phút.
+
+### Kịch Bản Reset & Cooldown
+- **Reset Phút / Timeout**: Khi frontend Mobile yêu cầu API quét ảnh, backend lấy 1 Key ra. Nó đếm `LastRequestAt`. Nếu khác phút hiện tại (chênh lệch > 60 giây), tự động Reset 2 biến `RpmUsed` = 0 và `TpmUsed` = 0.
+- **Reset Ngày**: Vào 00:00 (Giờ UTC), tự động Reset biến `RpdUsed` = 0 của mọi Key về 0. Trạng thái `Exhausted` sẽ nhảy về `Active`. 
+
+### Thuật toán Xoay Tua (Round Robin / Pool Routing Cực Đoan)
+Do RPD chỉ có 20, thuật toán phải vắt kiệt và xoay phanh gắt:
+1. Mobile tải lên đồ ăn cần AI tư vấn $\rightarrow$ .NET Backend lao vào kho `GeminiKeys`.
+2. Lọc ra các thẻ thỏa mãn: `Status == Active` VÀ **`RPM < 5`** VÀ **`RPD < 20`** VÀ **`TPM < 250000`**.
+3. Sắp xếp ưu tiên thẻ nào có `RPD` thấp nhất (hoặc theo tuổi thọ) $\rightarrow$ Rút ra xài.
+4. Lệnh thành công $\rightarrow$ Tăng biến đếm RPD +1, RPM +1, TPM +số token tiêu thụ. Lưu Database ngay lập tức.
+5. Nếu vớt ra mà cái Key đó chạm RPD = 20 $\rightarrow$ Vứt nó vào chuồng `Exhausted`. Chuyển sang con Key khác liền.
+
+---
+
+## 3. Các Câu Hỏi Bắt Buộc Giải Quyết Trước Khi Code (Open Questions)
+
+> [!CAUTION]
+> Xác nhận rõ các cấu trúc dưới đây để kiến trúc C# chốt cú cuối:
+
+1. **Bảo mật của Api Key**: Bạn có bắt buộc **mã hoá (Encrypt)** API Key lúc lưu vào DB SQL không? Hay để dạng Text trần để dễ dò lỗi?
+2. **Kịch bản "Bể Nồi" (Exhausted Pool):** Với RPD chỉ là 20, giả sử Pool bạn dồn vô 10 keys (tổng giới hạn 200 ảnh/ngày). Nếu có 250 lượt request từ End-user, 50 request rớt đài sẽ nhận thông báo lỗi gì từ Backend? ("Hôm nay hệ thống phân tích Calo đã quá tải, vui lòng thử lại vào ngày mai", hay sao?)
+3. **Phân phối Database**: Bảng `GeminiKeys` này bạn sẽ lập trên Database Master của Backend hiện tại (SQL Server bên Azure hay Supabase Postgres)?
+4. **Về Limit Token Tracking**: Quét 1 bức ảnh thường tốn khoảng 500-1000 tokens. TPM là 250K/phút nên dư sức xài, chủ yếu là chết ở RPD. Bạn có cần Backend log thành 1 bảng History lưu chi li từng tấm ảnh tốn bao nhiêu Token, hay chỉ Cộng Dồn vào cái Limit rồi vứt rác?

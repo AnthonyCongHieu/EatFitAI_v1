@@ -1,0 +1,147 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (63,58)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwiijLSugJqUAxUgqVYBHXq0Ir0QPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (281,57)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (456,57)<div  />
+	[3] (455,57)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (455,57)<span  />
+	[5] (467,57)<span  />
+[6] (480,57)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (480,57)<span  />
+[8] (501,57)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (522,57)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (546,57)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (542,57)<div  />
+		[12] (542,57)<span  />
+[13] (954,57)<a aria-label='Các ứng dụng của Google' class='gb_C' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (979,57)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_C gb_5a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3Droboflow%2B%2522Food%2BDetection%2BUnion%2522%2Bclasses%2Blist&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (136,125)<a class='XVMlrc C6AK7c' href='/search?q=roboflow+Food+Detection+Union+classes+list&sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n50fEshLr_Mx3vDS2634M3NieYCKQ:1777704241011&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&aep=1&ntc=1&sa=X&ved=2ahUKEwiijLSugJqUAxUgqVYBHXq0Ir0Q2J8OegQIEhAD' />
+	[16] (136,125)<div  />
+		[17] (136,134)<div  />
+			[18] (136,128)<span >Chế độ AI />
+[19] (176,125)<a class='C6AK7c' role='link' />
+	Tất cả
+[20] (215,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n50fEshLr_Mx3vDS2634M3NieYCKQ:1777704241011&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+Food+Detection+Union+classes+list&sa=X&ved=2ahUKEwiijLSugJqUAxUgqVYBHXq0Ir0QtKgLegQIGBAB' />
+	[21] (215,125)<div  />
+		[22] (215,134)<span >Hình ảnh />
+[23] (262,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n50fEshLr_Mx3vDS2634M3NieYCKQ:1777704241011&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+Food+Detection+Union+classes+list&sa=X&ved=2ahUKEwiijLSugJqUAxUgqVYBHXq0Ir0Qs6gLegQIFxAB' />
+	[24] (262,125)<div  />
+		[25] (262,134)<span >Video ngắn />
+[26] (303,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n50fEshLr_Mx3vDS2634M3NieYCKQ:1777704241011&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+Food+Detection+Union+classes+list&sa=X&ved=2ahUKEwiijLSugJqUAxUgqVYBHXq0Ir0QtKgLegQIFhAB' />
+	[27] (303,125)<div  />
+		[28] (303,134)<span >Video />
+[29] (341,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n50fEshLr_Mx3vDS2634M3NieYCKQ:1777704241011&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+Food+Detection+Union+classes+list&ved=1t:220175&ictx=111' />
+	[30] (341,125)<div  />
+		[31] (341,134)<span >Mua sắm />
+[32] (380,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n50fEshLr_Mx3vDS2634M3NieYCKQ:1777704241011&q=roboflow+Food+Detection+Union+classes+list&tbm=nws&source=lnms&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&sa=X&ved=2ahUKEwiijLSugJqUAxUgqVYBHXq0Ir0Q0pQJegQIFRAB' />
+	[33] (380,125)<div  />
+		[34] (380,134)<span >Tin tức />
+[35] (419,125)<div class='mTpL7c' role='button' />
+	[36] (419,125)<div  />
+		[37] (419,134)<div  />
+			[38] (414,128)<span >Thêm />
+			[39] (429,128)<span  />
+[40] (465,125)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[41] (465,125)<div  />
+		[42] (465,134)<div  />
+			[43] (460,128)<span >Công cụ />
+			[44] (479,128)<span  />
+Kết quả tìm kiếm
+Không tìm thấy kết quả nào cho
+roboflow "Food Detection Union" classes list
+.
+Kết quả cho
+[45] (252,264)<a href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n50fEshLr_Mx3vDS2634M3NieYCKQ:1777704241011&q=roboflow+Food+Detection+Union+classes+list&sa=X&ved=2ahUKEwiijLSugJqUAxUgqVYBHXq0Ir0QgwN6BAgREAE' />
+	[46] (252,264)<b >roboflow Food Detection Union classes list />
+(không có dấu ngặc kép):
+Web results
+[47] (232,334)<a class='zReHs' href='https://universe.roboflow.com/browse/person/food' />
+	[48] (232,358)<h3 >Food Computer Vision Datasets and Models />
+	[49] (193,319)<div  />
+		[50] (193,319)<div  />
+			[51] (127,319)<span  />
+				[52] (127,319)<div  />
+					[53] (127,319)<img  />
+			[54] (203,319)<div  />
+				[55] (203,309)<div  />
+					[56] (203,309)<span >Roboflow Universe />
+				[57] (203,330)<div  />
+					[58] (203,330)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[59] (234,330)<span class='ylgVCe ob9lvb' role='text'>› person />
+·
+[60] (275,330)<a class='dEEN8c' href='https://translate.google.com/translate?u=https://universe.roboflow.com/browse/person/food&hl=vi&sl=en&tl=vi&client=search' />
+	[61] (275,330)<span >Dịch trang này />
+[62] (307,329)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[63] (307,329)<span  />
+		[64] (307,330)<span  />
+Use Roboflows
+food
+datasets to complete
+food
+-related tasks including monitoring
+food
+production processes, and analyzing
+food
+characteristics.
+Bị thiếu:
+Union
+‎
+classes
+‎
+list
+[65] (199,520)<a class='zReHs' href='https://universe.roboflow.com/search?q=class%3Afood+can' />
+	[66] (199,544)<h3 >Top Food Datasets and Models />
+	[67] (193,506)<div  />
+		[68] (193,506)<div  />
+			[69] (127,506)<span  />
+				[70] (127,506)<div  />
+					[71] (127,506)<img  />
+			[72] (203,506)<div  />
+				[73] (203,496)<div  />
+					[74] (203,496)<span >Roboflow Universe />
+				[75] (203,516)<div  />
+					[76] (203,516)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[77] (234,516)<span class='ylgVCe ob9lvb' role='text'>› search />
+·
+[78] (275,516)<a class='dEEN8c' href='https://translate.google.com/translate?u=https://universe.roboflow.com/search?q%3Dclass%253Afood%2Bcan&hl=vi&sl=en&tl=vi&client=search' />
+	[79] (275,516)<span >Dịch trang này />
+[80] (306,515)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[81] (306,515)<span  />
+		[82] (306,516)<span  />
+Guide: How to Train a Computer Vision Model to
+Detect Foods
+. You can use datasets from
+Roboflow
+Universe to train a model to
+detect foods
+in images and videos.
+Bị thiếu:
+Union
+‎
+list
+Thông tin tổng quan do AI tạo
+[83] (429,684)<div aria-label='Xem 2 đường liên kết xác minh' class='QUUgY' role='button' />
+	[84] (433,684)<div  />
+		[85] (428,684)<div  />
+			[86] (428,684)<img  />
+		[87] (435,684)<div  />
+			[88] (435,684)<img  />
+		[89] (441,684)<span  />
+[90] (455,688)<div aria-label='Thông tin về kết quả này' class='Mtffrd' role='button' />
+The
+Food Detection Union
+dataset on Roboflow Universe is a aggregated dataset designed for food image recognition, often including a variety of common food, fruit, vegetable, and dish classes.
+Typical Food Detection Union Classes
+While individual versions of the union dataset may vary based on annotation updates, typical Food Detection Union datasets (such as
+[91] (325,904)<a class='H23r4e' href='https://universe.roboflow.com/food-images/food-detection-union-rhdem/dataset/1'>this example />
+or similar combined efforts) commonly include, but are not limited to, the following classes:
+Fruits/Vegetables:
+Apple (Red/Green), Artichoke, Asparagus, Avocado, Banana, Beans, Bell Pepper, Blackberries, Blueberries, Broccoli, Brussel Sprouts, Cabbage, Carrot, Cucumber, Lemon, Mango, Orange, Papaya, Pineapple.
+
+</current_dom>

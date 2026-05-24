@@ -1,0 +1,8 @@
+# Task: Navigate to Kaggle Settings and screenshot API section
+
+## Plan:
+1. Navigate to https://www.kaggle.com/settings [DONE]
+2. Wait for page load and check login status [IN_PROGRESS]
+3. Locate API section
+4. Capture screenshot
+5. Report to user

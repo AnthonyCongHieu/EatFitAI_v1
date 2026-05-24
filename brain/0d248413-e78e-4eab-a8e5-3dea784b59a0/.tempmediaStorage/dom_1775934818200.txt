@@ -1,0 +1,71 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+EatFitAI Admin
+[0] (83,500)<div class='flex-1 overflow-y-auto py-6 px-4 space-y-2' scrollable='true' />
+	[1] (78,184)<a class='block relative' href='/' />
+		[2] (78,184)<div  />
+			[3] (62,184)<span >Overview />
+	[4] (78,265)<a class='block relative' href='/users' />
+		[5] (78,265)<div  />
+			[6] (54,265)<span >Users />
+	[7] (78,345)<a class='block relative' href='/meals' />
+		[8] (78,345)<div  />
+			[9] (64,345)<span >Meal Logs />
+	[10] (78,426)<a class='block relative' href='/foods' />
+		[11] (78,426)<div  />
+			[12] (73,426)<span >Food Database />
+	[13] (78,506)<a class='block relative' href='/master-data' />
+		[14] (78,506)<div  />
+			[15] (67,506)<span >Master Data />
+	[16] (78,587)<a class='block relative' href='/gemini-keys' />
+		[17] (78,587)<div  />
+			[18] (69,587)<span >Gemini Keys />
+	[19] (78,668)<a class='block relative' href='/ai-logs' />
+		[20] (78,668)<div  />
+			[21] (59,668)<span >AI Logs />
+	[22] (78,748)<a class='block relative' href='/analytics' />
+		[23] (78,748)<div  />
+			[24] (62,748)<span >Analytics />
+	[25] (78,829)<a class='block relative' href='/settings' />
+		[26] (78,829)<div  />
+			[27] (58,829)<span >Settings />
+[28] (83,943)<button class='w-full flex items-center px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors duration-200'>Logout />
+	Logout
+Settings
+Welcome back to the EatFitAI administrative panel.
+[29] (843,57)<button class='flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer' title='Backend: OK | AI: OK
+Last: 2m ago' />
+	[30] (849,57)<span >2m ago />
+Admin User
+admin@eatfit.ai
+[31] (583,558)<main class='flex-1 overflow-y-auto w-full p-8 relative' scrollable='true' />
+	System Settings
+	Monitor service health, manage keep-alive, and view system config.
+	[32] (938,207)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 border-white/10'>Refresh />
+	Backend API
+	Checking...
+	eatfitai-backend.onrender.com
+	Database (Supabase)
+	Checking...
+	PostgreSQL — Supabase Pooler
+	AI Provider
+	Checking...
+	eatfitai-ai-provider.onrender.com
+	Database Overview
+	0
+	Users
+	0
+	Food Items
+	0
+	Gemini Keys
+	Keep-Alive System
+	Auto-ping every
+	13 minutes
+	to keep Render services alive (free tier sleeps after 15 min).
+	Active
+	[33] (238,939)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [a]:hover:bg-primary/80 h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/20'>Manual Ping />
+	Next auto-ping in 13 minutes
+
+</current_dom>

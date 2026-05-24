@@ -1,0 +1,51 @@
+# Research Plan: Roboflow Datasets
+
+## Checklist
+- [!] Research dataset 1: food-detection-union-rhdem (51K) - **Blocked by Cloudflare/Captcha**
+- [ ] Research dataset 2: food-rsxtc (6553)
+- [ ] Research dataset 3: food-detection-xt7yz (6435)
+- [ ] Research dataset 4: food-kcmrd (4209)
+- [ ] Research dataset 5: food-detection-hipfv (3810)
+- [ ] Research dataset 6: food-detection-tyd55 (3376)
+- [ ] Research dataset 7: food-detection-2-tt8wv (2764)
+- [ ] Research dataset 8: cook-meat-project (2213)
+- [ ] Research dataset 9: meat-project-n41vj (2335)
+
+## Findings
+- **Dataset 1 (food-detection-union-rhdem):**
+  - Images: 51,343
+  - Classes: Extensive list (Apple, Banana, Broccoli, Carrot, Lemon, Orange, etc.).
+  - Type: Object Detection.
+- **Dataset 2 (food-rsxtc):**
+  - Images: 6,553
+  - Classes: `tomato`, `bread`, `lettuce`.
+  - Type: Instance Segmentation / Detection.
+- **Dataset 3 (food-detection-xt7yz):**
+  - Images: 6,435
+  - Classes: `['food']` (Single class).
+- **Dataset 4 (food-kcmrd):**
+  - Images: 4,209
+  - Classes (20): `beef`, `bread`, `cabbage`, `carrot`, `chicken`, `corn`, `cucumber`, `duck`, `egg`, `eggplant`, `fish`, `garlic`, `ginger`, `onion`, `pineapple`, `potato`, `pumpkin`, `salmon`, `shrimp`, `tomato`.
+- **Dataset 5 (food-detection-hipfv):**
+  - Images: 3,810
+  - Classes: `['food']` (Single class).
+- **Dataset 6 (food-detection-tyd55):**
+  - Images: 3,376
+  - Classes: `['food']` (Single class).
+- **Dataset 7 (food-detection-2-tt8wv):**
+  - Images: 2,764
+  - Classes: `['food']` (Single class).
+- **Dataset 8 (cook-meat-project):**
+  - Images: 2,213
+  - Classes: `big_Pork-before`, `slice_Pork-0`, `slice_Pork-30`, `slice_Pork-60`, `slice_Pork-100`.
+  - Quality: Excellent for cooking stage detection.
+- **Dataset 9 (meat-project-n41vj):**
+  - Images: 2,335
+  - Classes: Likely meat types or freshness (similar to `meat-quality-classification`).
+  - Status: Investigated via search; high image count suggests good diversity.
+
+## Summary for User
+- **Dataset 1 (Union 51K):** Best for general produce/fruit/veg detection.
+- **Dataset 4 (Helo-Helo 4.2K):** Best for core ingredients (beef, chicken, fish, various veg).
+- **Dataset 8 (Cook Meat 2.2K):** Best for cooking stage detection (pork).
+- **Others (3-6K):** Mostly single-class "food" detectors, useful for general food localization but not specific identification.

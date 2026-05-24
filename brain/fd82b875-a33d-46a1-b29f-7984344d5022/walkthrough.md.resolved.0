@@ -1,0 +1,17 @@
+# Walkthrough - AI Client Timeout Fix
+
+## Changes Overview
+Resolved issues where AI requests (Recipe suggestions, Cooking instructions) would timeout after 10s by switching to specific `aiApiClient` (60s timeout).
+
+### Files Modified
+- **[OnboardingScreen.tsx](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/app/screens/auth/OnboardingScreen.tsx)**: Updated [calculateNutrition](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/app/screens/auth/OnboardingScreen.tsx#202-235) to extract nutrition targets using the 60s timeout client.
+- **[nutrition.ts](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/nutrition.ts)**: Switched [suggestNutrition](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/nutrition.ts#20-27) and [applyNutrition](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/nutrition.ts#28-40) to use `aiApiClient`.
+- **[aiService.ts](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/aiService.ts)**: 
+  - Updated [suggestRecipes](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/aiService.ts#110-139) and [suggestRecipesEnhanced](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/aiService.ts#263-270) to use `aiApiClient`.
+  - Refactored [getCookingInstructions](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/aiService.ts#340-362) to use `aiApiClient` instead of `fetch`, enabling automatic token injection and extending timeout to 60s.
+
+## Verification
+- **Lint Check**: Passed (`npm run lint` with strict typescript checking).
+- **Manual Check Required**:
+  1. Open app > "Thêm món ăn" > "AI Scan" > "Gợi ý món".
+  2. Verify creating cooking instructions does not error out immediately.

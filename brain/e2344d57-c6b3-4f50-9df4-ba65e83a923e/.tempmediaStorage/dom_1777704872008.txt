@@ -1,0 +1,186 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (63,58)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwiD0qWvgpqUAxUsnq8BHeWwGwgQPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (281,57)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (456,57)<div  />
+	[3] (455,57)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (455,57)<span  />
+	[5] (467,57)<span  />
+[6] (480,57)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (480,57)<span  />
+[8] (501,57)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (522,57)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (546,57)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (542,57)<div  />
+		[12] (542,57)<span  />
+[13] (954,57)<a aria-label='Các ứng dụng của Google' class='gb_C' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (979,57)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_C gb_5a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3Droboflow%2B%2522meat-project-n41vj%2522%2Bclasses%2Blist%2Blabels&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (136,125)<a class='XVMlrc C6AK7c' href='/search?q=roboflow+meat-project-n41vj+classes+list+labels&sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n54oNOhkfaPHuvT-KQOCfQLFKly7A:1777704779743&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&aep=1&ntc=1&sa=X&ved=2ahUKEwiD0qWvgpqUAxUsnq8BHeWwGwgQ2J8OegQIEhAD' />
+	[16] (136,125)<div  />
+		[17] (136,134)<div  />
+			[18] (136,128)<span  />
+				[19] (136,128)<span >Chế độ AI />
+[20] (176,125)<a class='C6AK7c' role='link' />
+	Tất cả
+[21] (215,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n54oNOhkfaPHuvT-KQOCfQLFKly7A:1777704779743&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+meat-project-n41vj+classes+list+labels&sa=X&ved=2ahUKEwiD0qWvgpqUAxUsnq8BHeWwGwgQtKgLegQIGBAB' />
+	[22] (215,125)<div  />
+		[23] (215,134)<span >Hình ảnh />
+[24] (262,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n54oNOhkfaPHuvT-KQOCfQLFKly7A:1777704779743&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+meat-project-n41vj+classes+list+labels&sa=X&ved=2ahUKEwiD0qWvgpqUAxUsnq8BHeWwGwgQs6gLegQIFBAB' />
+	[25] (262,125)<div  />
+		[26] (262,134)<span >Video ngắn />
+[27] (303,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n54oNOhkfaPHuvT-KQOCfQLFKly7A:1777704779743&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+meat-project-n41vj+classes+list+labels&sa=X&ved=2ahUKEwiD0qWvgpqUAxUsnq8BHeWwGwgQtKgLegQIFRAB' />
+	[28] (303,125)<div  />
+		[29] (303,134)<span >Video />
+[30] (341,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n54oNOhkfaPHuvT-KQOCfQLFKly7A:1777704779743&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+meat-project-n41vj+classes+list+labels&ved=1t:220175&ictx=111' />
+	[31] (341,125)<div  />
+		[32] (341,134)<span >Mua sắm />
+[33] (380,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n54oNOhkfaPHuvT-KQOCfQLFKly7A:1777704779743&q=roboflow+meat-project-n41vj+classes+list+labels&tbm=nws&source=lnms&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&sa=X&ved=2ahUKEwiD0qWvgpqUAxUsnq8BHeWwGwgQ0pQJegQIFxAB' />
+	[34] (380,125)<div  />
+		[35] (380,134)<span >Tin tức />
+[36] (419,125)<div class='mTpL7c' role='button' />
+	[37] (419,125)<div  />
+		[38] (419,134)<div  />
+			[39] (414,128)<span >Thêm />
+			[40] (429,128)<span  />
+[41] (465,125)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[42] (465,125)<div  />
+		[43] (465,134)<div  />
+			[44] (460,128)<span >Công cụ />
+			[45] (479,128)<span  />
+Kết quả tìm kiếm
+Không tìm thấy kết quả nào cho
+roboflow "meat-project-n41vj" classes list labels
+.
+Kết quả cho
+[46] (259,264)<a href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n54oNOhkfaPHuvT-KQOCfQLFKly7A:1777704779743&q=roboflow+meat-project-n41vj+classes+list+labels&sa=X&ved=2ahUKEwiD0qWvgpqUAxUsnq8BHeWwGwgQgwN6BAgZEAE' />
+	[47] (259,264)<b >roboflow meat-project-n41vj classes list labels />
+(không có dấu ngặc kép):
+Web results
+[48] (199,334)<a class='zReHs' href='https://universe.roboflow.com/search?q=class%3Ameat' />
+	[49] (199,358)<h3 >Top Meat Datasets and Models />
+	[50] (193,319)<div  />
+		[51] (193,319)<div  />
+			[52] (127,319)<span  />
+				[53] (127,319)<div  />
+					[54] (127,319)<img  />
+			[55] (203,319)<div  />
+				[56] (203,309)<div  />
+					[57] (203,309)<span >Roboflow Universe />
+				[58] (203,330)<div  />
+					[59] (203,330)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[60] (234,330)<span class='ylgVCe ob9lvb' role='text'>› search />
+·
+[61] (275,330)<a class='dEEN8c' href='https://universe.roboflow.com/search?q=class%3Ameat' />
+	[62] (275,330)<span >Dịch trang này />
+[63] (306,329)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[64] (306,329)<span  />
+		[65] (306,330)<span  />
+The datasets below can be used to train fine-tuned models for
+meat
+detection. You can explore each dataset in your browser using
+Roboflow
+and export the ...
+Bị thiếu:
+n41vj
+‎
+list
+‎
+labels
+[66] (250,520)<a class='zReHs' href='https://universe.roboflow.com/datasets-vkm5g/meat-quality-classification' />
+	[67] (250,544)<h3 >Meat Quality Classification Computer Vision Model />
+	[68] (196,506)<div  />
+		[69] (196,506)<div  />
+			[70] (127,506)<span  />
+				[71] (127,506)<div  />
+					[72] (127,506)<img  />
+			[73] (206,506)<div  />
+				[74] (206,496)<div  />
+					[75] (206,496)<span >Roboflow Universe />
+				[76] (206,516)<div  />
+					[77] (206,516)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[78] (237,516)<span class='ylgVCe ob9lvb' role='text'>› meat-q... />
+·
+[79] (281,516)<a class='dEEN8c' href='https://universe.roboflow.com/datasets-vkm5g/meat-quality-classification' />
+	[80] (281,516)<span >Dịch trang này />
+[81] (312,515)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[82] (312,515)<span  />
+		[83] (312,516)<span  />
+3297 open source
+Meat
+-types images plus a pre-trained
+Meat
+Quality Classification model and API. Created by Datasets.
+Bị thiếu:
+n41vj
+‎
+list
+‎
+labels
+[84] (199,707)<a class='zReHs' href='https://universe.roboflow.com/search?q=class%3Ameat+slicer' />
+	[85] (199,731)<h3 >Top Meat Datasets and Models />
+	[86] (193,692)<div  />
+		[87] (193,692)<div  />
+			[88] (127,692)<span  />
+				[89] (127,692)<div  />
+					[90] (127,692)<img  />
+			[91] (203,692)<div  />
+				[92] (203,682)<div  />
+					[93] (203,682)<span >Roboflow Universe />
+				[94] (203,703)<div  />
+					[95] (203,703)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[96] (234,703)<span class='ylgVCe ob9lvb' role='text'>› search />
+·
+[97] (275,703)<a class='dEEN8c' href='https://universe.roboflow.com/search?q=class%3Ameat+slicer' />
+	[98] (275,703)<span >Dịch trang này />
+[99] (306,702)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[100] (306,702)<span  />
+		[101] (306,703)<span  />
+Guide: Automatically
+Label Meat
+in an Unlabeled Dataset. You can use foundation models to automatically
+label
+data using Autodistill. Autodistill supports using ...
+Bị thiếu:
+n41vj
+‎
+classes
+‎
+list
+[102] (200,894)<a class='zReHs' href='https://universe.roboflow.com/search?q=class%3Alabel' />
+	[103] (200,918)<h3 >Top Label Datasets and Models />
+	[104] (193,879)<div  />
+		[105] (193,879)<div  />
+			[106] (127,879)<span  />
+				[107] (127,879)<div  />
+					[108] (127,879)<img  />
+			[109] (203,879)<div  />
+				[110] (203,869)<div  />
+					[111] (203,869)<span >Roboflow Universe />
+				[112] (203,890)<div  />
+					[113] (203,890)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[114] (234,890)<span class='ylgVCe ob9lvb' role='text'>› search />
+·
+[115] (275,890)<a class='dEEN8c' href='https://universe.roboflow.com/search?q=class%3Alabel' />
+	[116] (275,890)<span >Dịch trang này />
+[117] (306,889)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[118] (306,889)<span  />
+		[119] (306,890)<span  />
+The datasets below can be used to train fine-tuned models for
+label
+detection. You can explore each dataset in your browser using
+Roboflow
+and export the ...
+Bị thiếu:
+meat-
+‎
+n41vj
+‎
+list
+
+</current_dom>

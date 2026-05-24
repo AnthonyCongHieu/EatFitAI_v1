@@ -1,0 +1,8 @@
+# Task: Test Admin Login and Dashboard
+
+## Plan
+- [ ] Navigate to http://localhost:3000
+- [ ] Log in with admin@eatfit.ai / Admin@123
+- [ ] Verify Dashboard statistics
+- [ ] Check for failed API calls (Network tab/Logs)
+- [ ] Report results with screenshots

@@ -1,0 +1,7 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary":  "Walkthrough tổng hợp 7 thay đổi đã thực hiện: fix 4 bug nghiêm trọng và cleanup dead code PyTorch/Ollama/Whisper. Kèm impact analysis và hướng dẫn verify.",
+  "updatedAt":  "2026-04-28T00:22:40.729989500Z",
+  "version":  "2",
+  "requestFeedback":  true
+}

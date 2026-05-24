@@ -1,0 +1,53 @@
+# EatFitAI Beta Stabilization - Task Tracker
+
+## Phase 5C: Live Service Verification
+- [x] Backend health check (production + dev) - ✅ Both live+ready 200
+- [x] AI provider health check (production + dev) - ✅ Both 200, model loaded
+- [x] Gemini health check - ✅ 6 projects, all available, gemini-2.5-flash
+
+## Phase 1A: Supabase Quota Audit
+- [x] Verify API responses for Supabase Storage URL leaks - ✅ 0 leaks across all tested endpoints
+- [ ] Check Supabase dashboard egress metrics (needs browser check)
+
+## Phase 2A+2B: Cloudflare R2 Verification
+- [x] Verify bucket exists and accessible - ✅ Public URL works
+- [x] Test public read URL - ✅ All objects 200, correct content-type
+- [x] Check cache headers - ✅ `public, max-age=31536000, immutable`
+- [x] Verify image sizes optimized - ✅ thumb 1.7-5.1KB, medium 9.6KB (was 4-5MB!)
+
+## Phase 3B: Gemini Service Health
+- [x] Check pool status - ✅ 6 projects, all available
+- [x] Verify available projects - ✅ 120 RPD total capacity
+- [x] Check model - ✅ gemini-2.5-flash
+
+## Phase 5D: Production Config Fix
+- [x] Fix appsettings.Production.json Media.Provider → r2
+
+## Code Quality Gates
+- [x] Backend tests: 197 passed, 0 failed
+- [x] Mobile lint: passed (includes no-direct-ai-provider guard)
+- [x] Mobile typecheck: passed
+
+## Phase 3A: YOLO Scan Stabilization → DEPLOYED ON DEV ✅
+- [x] Diagnosis complete: Production lacks ONNX, needs redeploy
+- [x] Dev deployed with ONNX enabled - detection smoke test passed (no 502!)
+- [x] ONNX inference confirmed: empty detections for 1px test image → 200 OK
+
+## Phase 4: Voice STT → DEPLOYED ON DEV ✅
+- [x] Replaced Whisper with Gemini Audio API (`stt_service.py`)
+- [x] Added `generate_with_audio()` to `GeminiPoolManager`
+- [x] Enabled `/voice/transcribe` route in `app.py`
+- [x] Updated mobile `voiceService.ts` to send audio to backend
+- [x] `ENABLE_STT=true` env var set on dev AI Provider
+
+## Phase 5B: Dev Deployment ✅
+- [x] Code committed + pushed (`be03398`)
+- [x] Both dev services deployed and LIVE
+  - `eatfitai-backend-dev` → live, postgres healthy
+  - `eatfitai-ai-provider-dev` → live, ONNX enabled, 6 Gemini projects
+
+## Remaining Items
+- [ ] Real-device QA: test chicken scan + voice STT on mobile pointing to dev
+- [ ] Phase 5A: Credential Rotation (user action)
+- [ ] Phase 1B: Supabase URL regression guard script
+- [ ] Deploy to production when Render pipeline quota resets

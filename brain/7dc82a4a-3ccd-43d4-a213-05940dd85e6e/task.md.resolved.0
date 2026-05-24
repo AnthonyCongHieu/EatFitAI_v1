@@ -1,0 +1,66 @@
+# EatFitAI Cleanup — Task Tracker
+
+## Wave 1: 🔴 SECURITY — Xóa file chứa credential
+- [ ] Xóa `test_db.py`
+- [ ] Xóa `test_db2.py`
+- [ ] Xóa `test_db3.py`
+
+## Wave 2: 🟠 DELETE — File tạm/generated
+- [ ] Xóa `_logs/` (toàn bộ)
+- [ ] Xóa `_state/` (toàn bộ)
+- [ ] Xóa `artifacts/` (root)
+- [ ] Xóa `eatfitai-mobile/.expo/`
+- [ ] Xóa `eatfitai-backend/bin/`
+- [ ] Xóa `eatfitai-backend/obj/`
+- [ ] Xóa `commit_backend.txt`
+- [ ] Xóa `scripts/cleanup/__pycache__/`
+- [ ] Xóa `eatfitai-backend/EatFitAI.API.http`
+
+## Wave 3A: 🟡 ARCHIVE — File root không thuộc root
+- [ ] Move `PLAN.md` → `docs/archive/`
+- [ ] Move `task.md` → `docs/archive/`
+- [ ] Move `Bo_cuc_cua_bao_cao.md` → `docs/archive/`
+- [ ] Move `Hinh_thuc_trinh_bay_bao_cao.md` → `docs/archive/`
+- [ ] Move `data_sources.md` → `docs/archive/`
+- [ ] Move `SECRETS_CHECKLIST.md` → `docs/archive/`
+- [ ] Move `JWT_CONFIGURATION.md` → `docs/archive/`
+- [ ] Move `ENVIRONMENT_MANIFEST.example` → `docs/archive/`
+
+## Wave 3B: 🟡 XÓA HOÀN TOÀN — Legacy training scripts
+- [ ] Xóa `1_download_data.py`
+- [ ] Xóa `2_merge_dataset.py`
+- [ ] Xóa `3_train_eatfit_v2.py`
+- [ ] Xóa `master_classes.json`
+
+## Wave 3C: 🟡 ARCHIVE — Docs cũ/evidence
+- [ ] Move 20 docs files → `docs/archive/`
+- [ ] Move `docs/analysis_reports/` → `docs/archive/analysis/`
+- [ ] Move `docs/cleanup/` → `docs/archive/cleanup/`
+
+## Wave 3D: 🟡 ARCHIVE — .serena
+- [ ] Thêm `.serena/` vào `.gitignore`
+
+## Wave 3E: 🟡 ARCHIVE — 14 Mobile Dead Components
+- [ ] Move `GoogleSignInButton.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `AiSummaryBar.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `AvatarPicker.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `FilterChip.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `FoodEntryCard.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `LoadingOverlay.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `MacroProgressCard.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `MetricCard.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `OptionSelector.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `PressableScale.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `QuickRating.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `ScreenHeader.tsx` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `designSystem.ts` → `eatfitai-mobile/src/_archive/`
+- [ ] Move `useHaptics.ts` → `eatfitai-mobile/src/_archive/`
+
+## Wave 4: 🔵 FIX — Sửa file có vấn đề
+- [ ] Fix `sync-ai-provider-model.ps1` (hardcoded path)
+- [ ] Fix `start-stack.ps1` (gọi script không tồn tại)
+
+## Verification
+- [ ] `dotnet build` thành công
+- [ ] `git grep "EatFit@2026Admin"` = 0 results
+- [ ] Git commit cleanup

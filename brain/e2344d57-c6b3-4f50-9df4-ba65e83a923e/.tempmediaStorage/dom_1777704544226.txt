@@ -1,0 +1,161 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (63,58)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwiBwv2ygZqUAxXG48kDHd-xNjYQPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (281,57)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (456,57)<div  />
+	[3] (455,57)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (455,57)<span  />
+	[5] (467,57)<span  />
+[6] (480,57)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (480,57)<span  />
+[8] (501,57)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (522,57)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (546,57)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (542,57)<div  />
+		[12] (542,57)<span  />
+[13] (954,57)<a aria-label='Các ứng dụng của Google' class='gb_C' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (979,57)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_C gb_5a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3Droboflow%2B%2522cook-meat-project%2522%2Bclasses%2Blist%2Blabels&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (136,125)<a class='XVMlrc C6AK7c' href='/search?q=roboflow+cook-meat-project+classes+list+labels&sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4asjozrJdfmT9LFQC_7rgsGdVemA:1777704519037&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&aep=1&ntc=1&sa=X&ved=2ahUKEwiBwv2ygZqUAxXG48kDHd-xNjYQ2J8OegQIERAD' />
+	[16] (136,125)<div  />
+		[17] (136,134)<div  />
+			[18] (136,128)<span >Chế độ AI />
+[19] (176,125)<a class='C6AK7c' role='link' />
+	Tất cả
+[20] (215,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4asjozrJdfmT9LFQC_7rgsGdVemA:1777704519037&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+cook-meat-project+classes+list+labels&sa=X&ved=2ahUKEwiBwv2ygZqUAxXG48kDHd-xNjYQtKgLegQIGBAB' />
+	[21] (215,125)<div  />
+		[22] (215,134)<span >Hình ảnh />
+[23] (262,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4asjozrJdfmT9LFQC_7rgsGdVemA:1777704519037&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+cook-meat-project+classes+list+labels&sa=X&ved=2ahUKEwiBwv2ygZqUAxXG48kDHd-xNjYQs6gLegQIFxAB' />
+	[24] (262,125)<div  />
+		[25] (262,134)<span >Video ngắn />
+[26] (303,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4asjozrJdfmT9LFQC_7rgsGdVemA:1777704519037&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+cook-meat-project+classes+list+labels&sa=X&ved=2ahUKEwiBwv2ygZqUAxXG48kDHd-xNjYQtKgLegQIFhAB' />
+	[27] (303,125)<div  />
+		[28] (303,134)<span >Video />
+[29] (341,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4asjozrJdfmT9LFQC_7rgsGdVemA:1777704519037&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&q=roboflow+cook-meat-project+classes+list+labels&ved=1t:220175&ictx=111' />
+	[30] (341,125)<div  />
+		[31] (341,134)<span >Mua sắm />
+[32] (380,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4asjozrJdfmT9LFQC_7rgsGdVemA:1777704519037&q=roboflow+cook-meat-project+classes+list+labels&tbm=nws&source=lnms&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPza85BBzMhaPG53g-b8d8PKJDN0VhNyH2dBJQx-NuNEBz13vXNbgHB4pQDV7eZCQkaBu9hZ6IcePfnfKKNVeFMILOaQeg16sq_HhiFOneFXzAYCCCrYWOpJUdkTMSL00l7XlhOotpB_69V7BZWpgNqexqO2S9pL5yFG4MuPcUGBznKQLfwTN6MWlUvxl1xLG-dQtCQy&sa=X&ved=2ahUKEwiBwv2ygZqUAxXG48kDHd-xNjYQ0pQJegQIFBAB' />
+	[33] (380,125)<div  />
+		[34] (380,134)<span >Tin tức />
+[35] (419,125)<div class='mTpL7c' role='button' />
+	[36] (419,125)<div  />
+		[37] (419,134)<div  />
+			[38] (414,128)<span >Thêm />
+			[39] (429,128)<span  />
+[40] (465,125)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[41] (465,125)<div  />
+		[42] (465,134)<div  />
+			[43] (460,128)<span >Công cụ />
+			[44] (479,128)<span  />
+Kết quả tìm kiếm
+Không tìm thấy kết quả nào cho
+roboflow "cook-meat-project" classes list labels
+.
+Kết quả cho
+[45] (258,264)<a href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4asjozrJdfmT9LFQC_7rgsGdVemA:1777704519037&q=roboflow+cook-meat-project+classes+list+labels&sa=X&ved=2ahUKEwiBwv2ygZqUAxXG48kDHd-xNjYQgwN6BAgSEAE' />
+	[46] (258,264)<b >roboflow cook-meat-project classes list labels />
+(không có dấu ngặc kép):
+Web results
+[47] (274,334)<a class='zReHs' href='https://universe.roboflow.com/chartproject/cook-meat-project' />
+	[48] (274,358)<h3 >cook-meat-project Object Detection Model by chartproject />
+	[49] (194,319)<div  />
+		[50] (194,319)<div  />
+			[51] (127,319)<span  />
+				[52] (127,319)<div  />
+					[53] (127,319)<img  />
+			[54] (204,319)<div  />
+				[55] (204,309)<div  />
+					[56] (204,309)<span >Roboflow Universe />
+				[57] (204,330)<div  />
+					[58] (204,330)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[59] (235,330)<span class='ylgVCe ob9lvb' role='text'>› cook-... />
+·
+[60] (276,330)<a class='dEEN8c' href='https://universe.roboflow.com/chartproject/cook-meat-project' />
+	[61] (276,330)<span >Dịch trang này />
+[62] (308,329)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[63] (308,329)<span  />
+		[64] (308,330)<span  />
+Select classes: big_Pork-before slice_Pork-0 slice_Pork-100 slice_Pork-30 slice_Pork-60
++ custom. Or try a test image. Example 1. Example 2. Example 3 ...
+Bị thiếu:
+list
+‎
+labels
+[65] (206,520)<a class='zReHs' href='https://universe.roboflow.com/search?q=class%3Acooked+food+meat+with+vegetables' />
+	[66] (206,544)<h3 >Top Cooked Datasets and Models />
+	[67] (193,506)<div  />
+		[68] (193,506)<div  />
+			[69] (127,506)<span  />
+				[70] (127,506)<div  />
+					[71] (127,506)<img  />
+			[72] (203,506)<div  />
+				[73] (203,496)<div  />
+					[74] (203,496)<span >Roboflow Universe />
+				[75] (203,516)<div  />
+					[76] (203,516)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[77] (234,516)<span class='ylgVCe ob9lvb' role='text'>› search />
+·
+[78] (275,516)<a class='dEEN8c' href='https://universe.roboflow.com/search?q=class%3Acooked+food+meat+with+vegetables' />
+	[79] (275,516)<span >Dịch trang này />
+[80] (306,515)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[81] (306,515)<span  />
+		[82] (306,516)<span  />
+Open source computer vision datasets and pre-trained models. Showing
+projects
+matching "
+class
+:
+cooked
+food
+meat
+with vegetables", page 1.
+Bị thiếu:
+list
+‎
+labels
+[83] (199,707)<a class='zReHs' href='https://universe.roboflow.com/search?q=class%3Ameat' />
+	[84] (199,731)<h3 >Top Meat Datasets and Models />
+	[85] (193,692)<div  />
+		[86] (193,692)<div  />
+			[87] (127,692)<span  />
+				[88] (127,692)<div  />
+					[89] (127,692)<img  />
+			[90] (203,692)<div  />
+				[91] (203,682)<div  />
+					[92] (203,682)<span >Roboflow Universe />
+				[93] (203,703)<div  />
+					[94] (203,703)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[95] (234,703)<span class='ylgVCe ob9lvb' role='text'>› search />
+·
+[96] (275,703)<a class='dEEN8c' href='https://universe.roboflow.com/search?q=class%3Ameat' />
+	[97] (275,703)<span >Dịch trang này />
+[98] (306,702)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[99] (306,702)<span  />
+		[100] (306,703)<span  />
+The datasets below can be used to train fine-tuned models for
+meat
+detection. You can explore each dataset in your browser using
+Roboflow
+and export the ...
+Thông tin tổng quan do AI tạo
+[101] (429,847)<div aria-label='Xem 2 đường liên kết xác minh' class='QUUgY' role='button' />
+	[102] (430,847)<div  />
+		[103] (422,847)<div  />
+			[104] (422,847)<img  />
+		[105] (429,847)<div  />
+			[106] (429,847)<img  />
+		[107] (438,847)<span >+1 />
+[108] (455,850)<div aria-label='Thông tin về kết quả này' class='Mtffrd' role='button' />
+Based on the
+Roboflow Universe project "cook-meat-project" created by chartproject
+, the object detection model focuses on identifying pork slices at different stages.
+[109] (181,944)<a aria-label='Roboflow Universe – Xem các đường liên kết có liên quan' class='muU3oe' href='https://universe.roboflow.com/chartproject/cook-meat-project#:~:text=Run%20on%20custom%20image,%2D30%20slice_Pork%2D60%20+%20custom' />
+Roboflow Universe
+The classes/labels listed for the model are:
+
+</current_dom>

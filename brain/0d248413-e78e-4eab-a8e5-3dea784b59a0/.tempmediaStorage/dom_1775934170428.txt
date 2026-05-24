@@ -1,0 +1,23 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (497,86)<a class='chakra-link css-sheoaq' href='https://uptimerobot.com' />
+	[1] (497,86)<img  />
+Register your FREE account
+.
+[2] (497,357)<button class='chakra-button css-1j30tor'>Register with Google />
+	[3] (446,357)<span  />
+[4] (497,438)<button class='chakra-button css-1j30tor'>Register with GitHub />
+	[5] (447,438)<span  />
+or
+[6] (382,562)<label class='chakra-form__label css-1vmigtj' id='field-_R_1kl9av5viv5t9b_-label'>Your e-mail />
+[7] (497,615)<input class='chakra-input mask-me css-10xtles' id='field-_R_1kl9av5viv5t9b_' placeholder='E.g. info@example.com' />
+Register with email
+[8] (497,865)<a class='chakra-link css-sheoaq' href='/login'>Already have an account? />
+By creating account you agree to our
+[9] (531,919)<a class='chakra-link css-lr117x' href='https://uptimerobot.com/terms/'>Terms & Conditions />
+and
+[10] (612,919)<a class='chakra-link css-lr117x' href='https://uptimerobot.com/privacy/'>Privacy Policy />
+
+</current_dom>

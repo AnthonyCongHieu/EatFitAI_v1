@@ -1,0 +1,175 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (63,58)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwiclY2MgJqUAxVU8MkDHYUNIG8QPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (281,57)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (456,57)<div  />
+	[3] (455,57)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (455,57)<span  />
+	[5] (467,57)<span  />
+[6] (480,57)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (480,57)<span  />
+[8] (501,57)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (522,57)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (546,57)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (542,57)<div  />
+		[12] (542,57)<span  />
+[13] (954,57)<a aria-label='Các ứng dụng của Google' class='gb_C' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (979,57)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_C gb_5a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3D%2522food-rsxtc%2522%2Bdata.yaml&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (136,125)<a class='XVMlrc C6AK7c' href='/search?q=food-rsxtc+data.yaml&sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n6BI55fpwHjuwuppSnDZVet73O9uQ:1777704169069&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPw3YyFV9Z2961YYcQ6R3U-Eorz1k5XaeqxAv60d0Vhfp6tyOGp021bvMd5z_TBBIi-QKaSv3PAdGDmO86_mfoQZF3xFBPYSwokyAmNfd75viHz-icrtP7XqkFD_wkx8drwbRTMQ1p7Ao5Uv4Y0NAyzSHQlJd5jIXrAWwHjNzhirEstsEyGHv3gQDoVtgcLTxkLE5HxH&aep=1&ntc=1&sa=X&ved=2ahUKEwiclY2MgJqUAxVU8MkDHYUNIG8Q2J8OegQIExAD' />
+	[16] (136,125)<div  />
+		[17] (136,134)<div  />
+			[18] (136,128)<span >Chế độ AI />
+[19] (176,125)<a class='C6AK7c' role='link' />
+	Tất cả
+[20] (215,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n6BI55fpwHjuwuppSnDZVet73O9uQ:1777704169069&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPw3YyFV9Z2961YYcQ6R3U-Eorz1k5XaeqxAv60d0Vhfp6tyOGp021bvMd5z_TBBIi-QKaSv3PAdGDmO86_mfoQZF3xFBPYSwokyAmNfd75viHz-icrtP7XqkFD_wkx8drwbRTMQ1p7Ao5Uv4Y0NAyzSHQlJd5jIXrAWwHjNzhirEstsEyGHv3gQDoVtgcLTxkLE5HxH&q=food-rsxtc+data.yaml&sa=X&ved=2ahUKEwiclY2MgJqUAxVU8MkDHYUNIG8QtKgLegQIFRAB' />
+	[21] (215,125)<div  />
+		[22] (215,134)<span >Hình ảnh />
+[23] (258,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n6BI55fpwHjuwuppSnDZVet73O9uQ:1777704169069&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPw3YyFV9Z2961YYcQ6R3U-Eorz1k5XaeqxAv60d0Vhfp6tyOGp021bvMd5z_TBBIi-QKaSv3PAdGDmO86_mfoQZF3xFBPYSwokyAmNfd75viHz-icrtP7XqkFD_wkx8drwbRTMQ1p7Ao5Uv4Y0NAyzSHQlJd5jIXrAWwHjNzhirEstsEyGHv3gQDoVtgcLTxkLE5HxH&q=food-rsxtc+data.yaml&ved=1t:220175&ictx=111' />
+	[24] (258,125)<div  />
+		[25] (258,134)<span >Mua sắm />
+[26] (295,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n6BI55fpwHjuwuppSnDZVet73O9uQ:1777704169069&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPw3YyFV9Z2961YYcQ6R3U-Eorz1k5XaeqxAv60d0Vhfp6tyOGp021bvMd5z_TBBIi-QKaSv3PAdGDmO86_mfoQZF3xFBPYSwokyAmNfd75viHz-icrtP7XqkFD_wkx8drwbRTMQ1p7Ao5Uv4Y0NAyzSHQlJd5jIXrAWwHjNzhirEstsEyGHv3gQDoVtgcLTxkLE5HxH&q=food-rsxtc+data.yaml&sa=X&ved=2ahUKEwiclY2MgJqUAxVU8MkDHYUNIG8QtKgLegQIGBAB' />
+	[27] (295,125)<div  />
+		[28] (295,134)<span >Video />
+[29] (337,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n6BI55fpwHjuwuppSnDZVet73O9uQ:1777704169069&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPw3YyFV9Z2961YYcQ6R3U-Eorz1k5XaeqxAv60d0Vhfp6tyOGp021bvMd5z_TBBIi-QKaSv3PAdGDmO86_mfoQZF3xFBPYSwokyAmNfd75viHz-icrtP7XqkFD_wkx8drwbRTMQ1p7Ao5Uv4Y0NAyzSHQlJd5jIXrAWwHjNzhirEstsEyGHv3gQDoVtgcLTxkLE5HxH&q=food-rsxtc+data.yaml&sa=X&ved=2ahUKEwiclY2MgJqUAxVU8MkDHYUNIG8Qs6gLegQIFhAB' />
+	[30] (337,125)<div  />
+		[31] (337,134)<span >Video ngắn />
+[32] (376,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n6BI55fpwHjuwuppSnDZVet73O9uQ:1777704169069&udm=web&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPw3YyFV9Z2961YYcQ6R3U-Eorz1k5XaeqxAv60d0Vhfp6tyOGp021bvMd5z_TBBIi-QKaSv3PAdGDmO86_mfoQZF3xFBPYSwokyAmNfd75viHz-icrtP7XqkFD_wkx8drwbRTMQ1p7Ao5Uv4Y0NAyzSHQlJd5jIXrAWwHjNzhirEstsEyGHv3gQDoVtgcLTxkLE5HxH&q=food-rsxtc+data.yaml&sa=X&ved=2ahUKEwiclY2MgJqUAxVU8MkDHYUNIG8Qs6gLegQIFxAB' />
+	[33] (376,125)<div  />
+		[34] (376,134)<span >Web />
+[35] (411,125)<div class='mTpL7c' role='button' />
+	[36] (411,125)<div  />
+		[37] (411,134)<div  />
+			[38] (406,128)<span >Thêm />
+			[39] (420,128)<span  />
+[40] (456,125)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[41] (456,125)<div  />
+		[42] (456,134)<div  />
+			[43] (452,128)<span >Công cụ />
+			[44] (470,128)<span  />
+Kết quả tìm kiếm
+Thông tin tổng quan do AI tạo
+[45] (688,203)<div aria-label='Thông tin về kết quả này' class='Mtffrd' role='button' />
+Based on the context of Rasa conversational AI development, here is information regarding
+data.yaml
+files, often used for organizing NLU data, stories, and rules.
+[46] (185,296)<a aria-label='legacy-docs-oss.rasa.com – Xem các đường liên kết có liên quan' class='muU3oe' href='https://legacy-docs-oss.rasa.com/docs/rasa/training-data-format/#:~:text=Overview,Legacy%20Formats' />
+legacy-docs-oss.rasa.com
+Structure of a Rasa YAML Data File
+Rasa uses YAML for training data. A typical
+data.yaml
+file should include a version key.
+[47] (160,419)<a aria-label='rasa.com (+2) – Xem các đường liên kết có liên quan' class='muU3oe' href='https://rasa.com/docs/reference/primitives/training-data-format/#:~:text=You%20should%20specify%20the%20version,x%20is%203.1.' />
+rasa.com
++2
+yaml
+version
+:
+"3.1"
+nlu
+:
+  -
+intent
+: order_food
+examples
+:
+|
+      - I want to order pizza
+      - Can I get a burger?
+      - order [sushi](food_type)
+-
+intent
+: greet
+examples
+:
+|
+      - hi
+      - hello
+Hãy thận trọng khi sử dụng mã.
+Key Considerations for Food Data
+Entity Extraction:
+When defining data for ordering food, it is recommended to provide entity examples within the context of intents (e.g.,
+order_food
+) rather than separating them, or to collect entities as part of a form.
+[48] (581,333)<a aria-label='Training Data Format | Rasa Documentation. Mở trong thẻ mới.' class='NDNGvf' href='https://rasa.com/docs/reference/primitives/training-data-format/' />
+Training Data Format | Rasa Documentation
+15 thg 2, 2026 —
+You should specify the version key in all YAML training data files. If you don't specify a version key in your training data file,
+rasa.com
+[49] (678,382)<div aria-label='Thông tin về kết quả này' class='xXnAhe' id='snui-atr-6Zz1aZ6bO5vewN4PqfW6sQs_29' role='button' />
+Training Data Format - Rasa
+25 thg 4, 2025 —
+Overview. Rasa uses YAML as a unified and extendable way to manage all training data, including NLU data, stories and rules. You c...
+legacy-docs-oss.rasa.com
+Training Data Format - Rasa
+25 thg 4, 2025 —
+The | symbol. As shown in the above examples, the user and examples keys are followed by | (pipe) symbol. In YAML | identifies mul...
+legacy-docs-oss.rasa.com
+Hiện tất cả
+[50] (406,558)<div aria-label='Hiện thêm Thông tin tổng quan do AI tạo' class='Jzkafd' role='button' />
+	[51] (284,558)<div  />
+		[52] (284,558)<div >Hiện thêm />
+			Hiện thêm
+			[53] (304,558)<span  />
+Không tìm thấy kết quả nào cho
+"food-rsxtc" data.yaml
+.
+Kết quả cho
+[54] (207,728)<a href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n6BI55fpwHjuwuppSnDZVet73O9uQ:1777704169069&q=food-rsxtc+data.yaml&sa=X&ved=2ahUKEwiclY2MgJqUAxVU8MkDHYUNIG8QgwN6BAgaEAE' />
+	[55] (207,728)<b >food-rsxtc data.yaml />
+(không có dấu ngặc kép):
+Web results
+[56] (231,799)<a class='zReHs' href='https://rasa.com/docs/reference/primitives/training-data-format/' />
+	[57] (231,821)<h3 >Training Data Format | Rasa Documentation />
+	[58] (194,782)<div  />
+		[59] (194,782)<div  />
+			[60] (127,782)<span  />
+				[61] (127,782)<div  />
+					[62] (127,782)<img  />
+			[63] (205,782)<div  />
+				[64] (205,772)<div  />
+					[65] (205,772)<span >rasa.com />
+				[66] (205,793)<div  />
+					[67] (205,793)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://rasa.com />
+						[68] (217,793)<span class='ylgVCe ob9lvb' role='text'>› reference › primitives />
+·
+[69] (277,793)<a class='dEEN8c' href='https://rasa.com/docs/reference/primitives/training-data-format/' />
+	[70] (277,793)<span >Dịch trang này />
+[71] (308,792)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[72] (308,792)<span  />
+		[73] (308,793)<span  />
+Rasa uses
+YAML
+as a unified and extendable way to manage all NLU training
+data
+; intents and entities. Rasa Studio provides an additional layer on top of that.
+Bị thiếu:
+food-
+‎
+rsxtc
+[74] (195,983)<a class='zReHs' href='https://legacy-docs-oss.rasa.com/docs/rasa/training-data-format/'>Training Data Format - Rasa />
+	Training Data Format - Rasa
+	[75] (195,969)<div  />
+		[76] (195,969)<div  />
+			[77] (127,969)<span  />
+				[78] (127,969)<div  />
+					[79] (127,969)<span  />
+			[80] (206,969)<div  />
+				[81] (206,959)<div  />
+					[82] (206,959)<span >rasa.com />
+				[83] (206,980)<div  />
+					[84] (206,980)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://legacy-docs-oss.rasa.com />
+						[85] (241,980)<span class='ylgVCe ob9lvb' role='text'>› docs />
+·
+[86] (279,980)<a class='dEEN8c' href='https://legacy-docs-oss.rasa.com/docs/rasa/training-data-format/' />
+	[87] (279,980)<span >Dịch trang này />
+[88] (311,979)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[89] (311,979)<span  />
+		[90] (311,980)<span  />
+
+</current_dom>

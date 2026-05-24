@@ -1,0 +1,15 @@
+# Task: Synchronize Supabase JWT Secret with Render Jwt__Key
+
+## Plan
+- [ ] Reveal and copy Legacy JWT Secret from Supabase (https://supabase.com/dashboard/project/bjlmndmafrajjysenpbm/settings/jwt/legacy)
+- [ ] Update Jwt__Key on Render (https://dashboard.render.com/web/srv-d7arf2svjg8s73em138g/env)
+- [ ] Save Render environment variables
+- [ ] Verify if the dashboard now loads data correctly (http://localhost:3000/users)
+
+## Findings
+- Supabase Project ID: bjlmndmafrajjysenpbm
+- Render Status: Found incorrect Jwt__Audience ('EatFitAI') and Jwt__Issuer ('EatFitAI'). Updated them to 'authenticated' and Supabase URL respectively. New deploy started at 1:26 AM.
+- [x] Reveal and copy Legacy JWT Secret from Supabase (https://supabase.com/dashboard/project/bjlmndmafrajjysenpbm/settings/jwt/legacy)
+- [x] Update Jwt__Key on Render (https://dashboard.render.com/web/srv-d7arf2svjg8s73em138g/env)
+- [x] Update Jwt__Audience and Jwt__Issuer on Render
+- [x] Save Render environment variables

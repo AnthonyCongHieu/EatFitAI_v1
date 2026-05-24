@@ -1,0 +1,51 @@
+<current_snapshot_explanation>
+This is a temporary snapshot of the current page's accessibility tree structure. The accessibility tree will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the accessibility tree in your trajectory if needed for later reference.
+</current_snapshot_explanation>
+<current_snapshot>
+Emulating viewport: {"deviceScaleFactor":1,"isMobile":true,"hasTouch":true,"isLandscape":false,"width":1024,"height":768}
+## Latest page snapshot
+uid=364_0 RootWebArea "Tải EatFitAI cho Android — Ứng dụng dinh dưỡng Việt" url="http://localhost:3000/#top"
+  uid=364_1 banner
+    uid=364_2 link "EatFitAI EatFitAI DINH DƯỠNG VIỆT" url="http://localhost:3000/#top"
+      uid=364_3 image "EatFitAI" url="http://localhost:3000/assets/icon.png"
+      uid=364_4 StaticText "EatFitAI"
+      uid=364_5 StaticText "DINH DƯỠNG VIỆT"
+    uid=364_6 button "Chuyển chế độ sáng tối"
+    uid=364_7 button "Mở menu"
+  uid=364_8 image "MoChi Welcome" url="http://localhost:3000/assets/mochi/mochi-success.png"
+  uid=364_9 StaticText "Trợ lý MoChi đồng hành cùng sức khỏe Việt! ✨"
+  uid=364_10 heading "Ăn lành sống khỏe, Cá nhân hóa dinh dưỡng. Theo dõi nhẹ nhàng." level="1"
+  uid=364_11 StaticText "Ứng dụng tiên phong tối ưu riêng cho ẩm thực Việt. Nhận diện tức thì các món ăn truyền thống như Phở, Cơm Tấm, Bún Bò qua camera AR thông minh, phân tích calo chuẩn xác và đồng hành cùng mục tiêu thể trạng của bạn mà hoàn toàn không có quảng cáo."
+  uid=364_12 link "Tải APK Miễn Phí" url="http://localhost:3000/#download"
+    uid=364_13 StaticText "Tải APK Miễn Phí"
+  uid=364_14 StaticText "Android 7.0+"
+  uid=364_15 StaticText "Không quảng cáo"
+  uid=364_16 StaticText "Đồng bộ Đám mây Bảo mật"
+  uid=364_17 image "EatFitAI Mockup" url="http://localhost:3000/assets/hero-showcase.png"
+  uid=364_18 StaticText "450+"
+  uid=364_19 StaticText "Lớp Món Ăn Việt"
+  uid=364_20 StaticText "YOLO11m"
+  uid=364_21 StaticText "Mô hình AI Chuyên Biệt"
+  uid=364_22 StaticText "3 Giây"
+  uid=364_23 StaticText "Thời gian Nhận diện AR"
+  uid=364_24 StaticText "Cloud-Sync"
+  uid=364_25 StaticText "Đồng Bộ Thời Gian Thực"
+  uid=364_26 heading "Bắt đầu hành trình sống khỏe cùng MoChi ngay hôm nay!" level="2"
+  uid=364_27 StaticText "Tải xuống ứng dụng EatFitAI hoàn toàn miễn phí, an toàn sạch sẽ để thiết lập thói quen kiểm soát calo và dinh dưỡng tối ưu nhất."
+  uid=364_28 link "Tải APK Android miễn phí" url="http://localhost:3000/#download"
+    uid=364_29 StaticText "Tải APK Android miễn phí"
+  uid=364_30 image "MoChi Ăn Mừng" url="http://localhost:3000/assets/mochi/mochi-celebrate.png"
+  uid=364_31 contentinfo
+    uid=364_32 image "EatFitAI" url="http://localhost:3000/assets/icon.png"
+    uid=364_33 StaticText "EatFitAI"
+    uid=364_34 StaticText " © 2026"
+    uid=364_35 StaticText "Phát triển bởi "
+    uid=364_36 StaticText "Anthony Cong Hieu"
+  uid=364_37 button "Đóng lời khuyên"
+  uid=364_38 StaticText "Chào bạn! Rất vui được đồng hành cùng bạn trên con đường sống khỏe. Click vào tớ để xem lời khuyên nhé! 💚"
+  uid=364_39 image "MoChi Assistant" url="http://localhost:3000/assets/mochi/mochi-success.png"
+  uid=364_40 StaticText "Tip!"
+  uid=364_41 generic live="polite" relevant="additions text"
+    uid=364_42 StaticText "Đã sao chép!"
+
+</current_snapshot>

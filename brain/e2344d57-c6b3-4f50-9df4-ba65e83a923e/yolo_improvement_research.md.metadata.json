@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Tổng hợp research về:\n1. Barcode VN — không có public API nào khả dụng (iCheck chỉ B2B, GS1 VN không public API, OpenFoodFacts coverage gần 0)\n2. Đánh giá 30 datasets người dùng tìm được — phân loại rõ dataset nào dùng được cho YOLO (có bbox) vs chỉ classification (không có bbox)\n3. Hiện trạng multi-object detection trong code (đã hỗ trợ nhưng bị giới hạn bởi best_by_label logic)\n4. 3 hướng tiếp cận phân biệt cách chế biến: separate classes, two-stage, multi-label\n5. Rủi ro khi merge 20+ datasets và quy trình khuyến nghị\n6. Training requirements và action plan",
+  "updatedAt":  "2026-05-02T06:20:33.602934500Z",
+  "requestFeedback":  true
+}

@@ -1,0 +1,35 @@
+# Documentation Refresh — Task Tracker
+
+## Phase 1: Archive snapshot docs + Rename active docs
+- [ ] Move `04_ENVIRONMENT_EXECUTION_PLAN.md` → `archive/`
+- [ ] Move `06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md` → `archive/`
+- [ ] Move `07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md` → `archive/`
+- [ ] Move `11_RESULT_E2E_PRODUCTION_SMOKE.md` → `archive/`
+- [ ] Move `16_AUTH_INFRA_INVESTIGATION_2026-04-14.md` → `archive/`
+- [ ] Move `18_REAL_DEVICE_AUTH_RUNBOOK_AND_GOOGLE_REMEDIATION_2026-04-15.md` → `archive/`
+- [ ] Rename `01_ARCHITECTURE_OVERVIEW.md` → `ARCHITECTURE.md`
+- [ ] Rename `02_USERFLOW.md` → `USERFLOW.md`
+- [ ] Rename `03_AI_FLOW.md` → `AI_FLOW.md`
+- [ ] Move `24_PRODUCT_RELEASE_TEST_PLAN_2026-04-16.md` content → merged into `TESTING_AND_RELEASE.md`
+
+## Phase 2: Tạo docs mới (merge)
+- [ ] Tạo `AUTH_AND_INFRA.md` (gộp từ doc 16 + 18)
+- [ ] Tạo `TESTING_AND_RELEASE.md` (gộp từ doc 24 + 18 + 11)
+- [ ] Archive `24_PRODUCT_RELEASE_TEST_PLAN_2026-04-16.md` sau khi merge
+
+## Phase 3: Cập nhật docs hiện có
+- [ ] Rewrite root `README.md` (relative paths, rút gọn)
+- [ ] Update root `SETUP_GUIDE.md` (Smtp→Brevo, merge từ doc 04)
+- [ ] Rewrite `docs/README.md` (index mới)
+- [ ] Update `docs/ARCHITECTURE.md` (errata, diagrams)
+- [ ] Rewrite `docs/USERFLOW.md` (viết lại hoàn toàn)
+- [ ] Update `docs/AI_FLOW.md` (Gemini pool, cloud path)
+- [ ] Update `docs/SECRETS_SETUP.md` (paths, Google creds)
+
+## Phase 4: Chuẩn hóa ngôn ngữ
+- [ ] Chuyển tất cả docs sang Vietnamese có dấu
+
+## Phase 5: Verification
+- [ ] Kiểm tra không còn absolute paths
+- [ ] Kiểm tra internal links
+- [ ] Kiểm tra mỗi file có timestamp header

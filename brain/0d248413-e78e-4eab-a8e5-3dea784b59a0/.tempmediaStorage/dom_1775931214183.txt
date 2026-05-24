@@ -1,0 +1,135 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (21,40)<a class='flex-shrink-0 flex items-center justify-center w-8 h-8 focus-visible:outline focus:outline-focus-action outline-2' href='/' />
+[1] (102,40)<button class='focus:outline-focus-action type-interface-00 h-8 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center p-1 shell-workspace-background shell-workspace-text hover:shell-workspace-background--hover hover:shell-workspace-text--hover active:shell-workspace-background--active active:shell-workspace-text--active' id='menu-:r2:' />
+	[2] (102,40)<div  />
+		[3] (58,40)<span >M />
+		[4] (105,40)<span >My Workspace />
+[5] (249,40)<a class='flex items-center space-x-2 focus-visible:outline focus:outline-focus-action outline-2 breadcrumbs-text--current hover:underline underline-offset-1 decoration-1 active:breadcrumbs-text--active' href='/web/srv-d7arf2svjg8s73em138g' />
+	[6] (257,40)<span  />
+		[7] (257,40)<span >eatfitai-backend />
+[8] (306,40)<button class='focus:outline-focus-action type-interface-00 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active h-8 py-1.5 px-2 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center -mr-2' id='menu-:r1f:' />
+[9] (772,40)<button class='type-interface-00 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active h-8 py-1.5 px-2 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 items-center hidden small:flex group/button'>Search />
+	[10] (746,40)<div  />
+	[11] (795,40)<kbd >Ctrl
++
+K />
+		Ctrl
+		+
+		[12] (798,40)<span >K />
+		K
+[13] (851,40)<button class='focus:outline-focus-action type-interface-00 button-secondary-text hover:button-secondary-background--hover hover:button-secondary-text--hover active:button-secondary-background--active active:button-secondary-text--hover--active border border-solid button-secondary-border h-8 py-1.5 px-2 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center' id='menu-:r4:' />
+	[14] (851,40)<div  />
+		[15] (858,40)<span >New />
+[16] (906,40)<button class='focus:outline-focus-action type-interface-00 button-secondary-text hover:button-secondary-background--hover hover:button-secondary-text--hover active:button-secondary-background--active active:button-secondary-text--hover--active border border-solid button-secondary-border h-8 py-1.5 px-2 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center' id='menu-:rh:' />
+	[17] (906,40)<div  />
+		[18] (912,40)<span >Upgrade />
+[19] (950,40)<button class='focus:outline-focus-action type-interface-00 button-secondary-text hover:button-secondary-background--hover hover:button-secondary-text--hover active:button-secondary-background--active active:button-secondary-text--hover--active border border-solid button-secondary-border h-8 py-1.5 px-2 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center' id='menu-:r6:' />
+[20] (978,40)<button class='focus:outline-focus-action type-interface-00 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active h-8 py-1.5 px-2 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center md:px-2' id='menu-:r8:' />
+	[21] (978,40)<span  />
+		[22] (978,40)<span >d />
+[23] (95,425)<div class='flex-grow overflow-y-auto min-h-48' scrollable='true' />
+	[24] (90,128)<a class='flex items-center space-x-2 py-1 type-interface-00 shell-side-nav-back-text hover:shell-side-nav-back-text--hover active:shell-side-nav-back-text--active focus-visible:outline focus:outline-focus-action outline-2' href='/' />
+		[25] (46,128)<span >Dashboard />
+	eatfitai-backend
+	[26] (90,247)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-02 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/events' />
+		[27] (45,247)<span >Events />
+	[28] (90,299)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-02 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/settings' />
+		[29] (49,299)<span >Settings />
+	Monitor
+	[30] (90,426)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-02 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/logs' />
+		[31] (41,426)<span >Logs />
+	[32] (90,478)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-02 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/metrics' />
+		[33] (47,478)<span >Metrics />
+	Manage
+	[34] (90,604)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background--active type-interface-02 shell-side-nav-item-text--active focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/env' />
+		[35] (58,604)<span >Environment />
+	[36] (90,656)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-02 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/shell' />
+		[37] (99,656)<span  />
+			[38] (99,656)<span  />
+				[39] (41,656)<span >Shell />
+				[40] (62,656)<span  />
+					[41] (62,656)<span class='inline-flex focus-visible:outline focus:outline-focus-action outline-2' />
+						[42] (62,656)<span class='inline-flex items-center justify-center w-3.5 h-4 badge-plan-pro-icon hover:badge-plan-pro-background' role='status' />
+	[43] (90,708)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-02 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/scaling' />
+		[44] (99,708)<span  />
+			[45] (99,708)<span  />
+				[46] (47,708)<span >Scaling />
+				[47] (73,708)<span  />
+					[48] (73,708)<span class='inline-flex focus-visible:outline focus:outline-focus-action outline-2' />
+						[49] (73,708)<span class='inline-flex items-center justify-center w-3.5 h-4 badge-plan-pro-icon hover:badge-plan-pro-background' role='status' />
+	[50] (90,760)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-02 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2.5 py-1.5' href='/web/srv-d7arf2svjg8s73em138g/previews' />
+		[51] (51,760)<span >Previews />
+	Disk
+	One-Off Jobs
+[52] (173,813)<button aria-label='Collapse items' class='type-interface-00 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active py-1.5 px-2 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center absolute h-[1.75rem] top-0 right-0 group/button' />
+[53] (85,813)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-01 text-secondary hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2 py-1' href='https://render.com/changelog' />
+	[54] (51,813)<span >Changelog />
+[55] (85,854)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-01 text-secondary hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2 py-1' href='/invites' />
+	[56] (55,854)<span >Invite a friend />
+[57] (85,894)<button class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-01 text-secondary hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2 py-1' />
+	[58] (61,894)<span >Contact support />
+[59] (85,957)<a class='group/shell-side-nav-item flex items-center w-full px-2 text-left shell-side-nav-item-background hover:shell-side-nav-item-background--hover type-interface-01 shell-side-nav-item-text hover:shell-side-nav-item-text--hover focus-visible:outline focus:outline-focus-action outline-2 space-x-2 py-1' href='https://status.render.com' />
+	[60] (57,957)<span >Render Status />
+Web Service
+eatfitai-backend
+Docker
+Free
+Upgrade your instance
+Blueprint managed
+Connect
+Manual Deploy
+Service ID
+:
+srv-d7arf2svjg8s73em138g
+[61] (389,104)<button aria-label='Copy' class='type-interface-00 button-tertiary-text hover:button-tertiary-background--hover hover:button-tertiary-text--hover active:button-tertiary-background--active active:button-tertiary-text--active focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center h-auto p-1 ml-0.5' />
+[62] (359,153)<a class='group inline-flex items-center p-1 cursor-pointer focus-visible:outline focus:outline-focus-action outline-2 link-text hover:link-text--hover active:link-text--active type-body-01 no-underline min-w-0 flex-shrink' href='https://github.com/AnthonyCongHieu/EatFitAI_v1/tree/hieu_deploy/production' />
+	[63] (359,153)<span  />
+		[64] (300,153)<span >AnthonyCongHieu
+/
+EatFitAI_v1 />
+		[65] (432,153)<span >hieu_deploy/production />
+[66] (305,197)<span  />
+	[67] (297,197)<a class='font-inherit no-underline link-text--highlight hover:link-text--highlight--hover active:link-text--highlight--active focus-visible:outline focus:outline-focus-action outline-offset-2 outline-2' href='https://eatfitai-backend.onrender.com'>https://eatfitai-backend.onrender.com />
+	[68] (380,197)<button aria-label='Copy' class='type-interface-00 hover:button-tertiary-background--hover hover:button-tertiary-text--hover active:button-tertiary-background--active active:button-tertiary-text--active focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center h-auto p-1 ml-0.5 button-compact-text--highlight' />
+Environment
+[69] (901,337)<button class='type-interface-01 button-secondary-text hover:button-secondary-background--hover hover:button-secondary-text--hover active:button-secondary-background--active active:button-secondary-text--hover--active border border-solid button-secondary-border h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button'>Create environment group />
+	[70] (847,337)<div  />
+Environment Variables
+Set environment-specific config and secrets (such as API keys), then read those values from your code.
+[71] (375,557)<a class='font-inherit text-inherit hover:text-inherit hover:underline relative no-underline link-text--highlight hover:link-text--highlight--hover active:link-text--highlight--active focus-visible:outline focus:outline-focus-action outline-offset-2 outline-2' href='https://render.com/docs/configure-environment-variables'>Learn more. />
+Key
+Value
+Delete
+Key
+[72] (360,732)<input class='h-10 truncate type-mono-01 w-full m-0 py-2.5 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover' id=':r27:' placeholder='NAME_OF_VARIABLE' />
+Value
+[73] (670,732)<textarea class='type-mono-01 w-full m-0 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover min-h-10 py-2 [&[data-state=hidden]]:[color:transparent_!important] [&[data-state=hidden]]:placeholder:[color:transparent_!important]' id=':r28:' placeholder='value' />
+• • • • • • • • • • • •
+[74] (887,732)<button class='type-interface-01 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+[75] (923,732)<button class='type-interface-01 button-critical-ghost-background button-critical-ghost-text hover:button-critical-ghost-background--hover hover:button-critical-ghost-text--hover active:button-critical-ghost-background--active active:button-critical-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+Key
+[76] (360,812)<input class='h-10 truncate type-mono-01 w-full m-0 py-2.5 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover' id=':r29:' placeholder='NAME_OF_VARIABLE' />
+Value
+[77] (670,812)<textarea class='type-mono-01 w-full m-0 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover min-h-10 py-2 [&[data-state=hidden]]:[color:transparent_!important] [&[data-state=hidden]]:placeholder:[color:transparent_!important]' id=':r2a:' placeholder='value' />
+• • • • • • • • • • • •
+[78] (887,812)<button class='type-interface-01 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+[79] (923,812)<button class='type-interface-01 button-critical-ghost-background button-critical-ghost-text hover:button-critical-ghost-background--hover hover:button-critical-ghost-text--hover active:button-critical-ghost-background--active active:button-critical-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+Key
+[80] (360,893)<input class='h-10 truncate type-mono-01 w-full m-0 py-2.5 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover' id=':r2b:' placeholder='NAME_OF_VARIABLE' />
+Value
+[81] (670,893)<textarea class='type-mono-01 w-full m-0 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover min-h-10 py-2 [&[data-state=hidden]]:[color:transparent_!important] [&[data-state=hidden]]:placeholder:[color:transparent_!important]' id=':r2c:' placeholder='value' />
+• • • • • • • • • • • •
+[82] (887,893)<button class='type-interface-01 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+[83] (923,893)<button class='type-interface-01 button-critical-ghost-background button-critical-ghost-text hover:button-critical-ghost-background--hover hover:button-critical-ghost-text--hover active:button-critical-ghost-background--active active:button-critical-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+Key
+[84] (360,973)<input class='h-10 truncate type-mono-01 w-full m-0 py-2.5 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover' id=':r2d:' placeholder='NAME_OF_VARIABLE' />
+Value
+[85] (670,973)<textarea class='type-mono-01 w-full m-0 px-3 input-background placeholder:input-text--placeholder outline-2 focus-visible:outline focus:outline-focus-action border border-solid rounded-none appearance-none input-text input-border hover:input-border--hover min-h-10 py-2 [&[data-state=hidden]]:[color:transparent_!important] [&[data-state=hidden]]:placeholder:[color:transparent_!important]' id=':r2e:' placeholder='value' />
+• • • • • • • • • • • •
+[86] (887,973)<button class='type-interface-01 button-ghost-text hover:button-ghost-background--hover hover:button-ghost-text--hover active:button-ghost-background--active active:button-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+[87] (923,973)<button class='type-interface-01 button-critical-ghost-background button-critical-ghost-text hover:button-critical-ghost-background--hover hover:button-critical-ghost-text--hover active:button-critical-ghost-background--active active:button-critical-ghost-text--active h-10 py-2.5 px-3 focus-visible:outline focus-visible:outline-focus-action outline-offset-2 outline-2 flex items-center group/button' />
+
+</current_dom>

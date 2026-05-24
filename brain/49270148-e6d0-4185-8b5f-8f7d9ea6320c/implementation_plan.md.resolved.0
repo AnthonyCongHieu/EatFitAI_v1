@@ -1,0 +1,65 @@
+# Kế hoạch Triển Khai Hệ Thống EatFitAI Admin
+
+Dựa trên phân tích toàn bộ cấu trúc Backend (`D:\EatFitAI_v1\eatfitai-backend`) và thư mục Frontend Web Admin (`D:\EatFitAI_Admin`), đây là cấu trúc lộ trình để đưa hệ thống Admin vào hoạt động an toàn và trơn tru.
+
+## 1. Mục tiêu cốt lõi
+- Xây dựng thành công 4 module chính: **Dashboard**, **Quản lý User**, **Dữ liệu Thực phẩm (Food DB)**, và **AI Monitoring**.
+- Đảm bảo Backend `.NET` cô lập quyền truy cập của Admin một cách bảo mật tuyệt đối, không để User thông thường can thiệp.
+
+---
+
+## 2. Giai đoạn 1: Nâng cấp Backend (API & Security)
+
+Hiện tại model `User.cs` đang thiếu hoàn toàn thông tin phân quyền.
+
+### Bước 1.1: Cập nhật Schema & Data Structure
+- [NEW] Thêm trường `public string Role { get; set; } = "User";` vào class `User.cs` (hoặc bảng `Users`).
+- Thêm Migration EF Core để thay đổi DB (hoặc chạy SQL Script trên Supabase).
+- Tạo 1 tài khoản `admin@eatfitai.app` (Seed data).
+
+### Bước 1.2: Cấu hình Authorization Policy
+- [MODIFY] Cập nhật `AuthService.cs` để nhồi thêm Claim `Role` khi build JWT Token.
+- [MODIFY] Tại `Program.cs`, khai báo Policy xác thực truy cập cho role Admin.
+
+### Bước 1.3: Khởi tạo cụm Controllers cho Admin
+- [NEW] `AdminDashboardController`: Tổng hợp số liệu thống kê chung (tổng user, tổng AILogs, lượt login hôm nay).
+- [NEW] `AdminUsersController`: Lấy list User (kèm Paging, Filter) và lệnh khóa người dùng.
+- [NEW] `AdminFoodsController`: Quản lý danh sách FoodItem và chức năng chỉnh sửa dữ liệu Master.
+- [NEW] `AdminAIController`: Truy xuất dữ liệu từ `AILog` và `ImageDetection` để xem AI nhận diện.
+
+---
+
+## 3. Giai đoạn 2: Phát triển Frontend (Web Admin - Next.js)
+
+### Bước 2.1: Cấu hình Tooling
+Tại **`D:\EatFitAI_Admin`**:
+- [NEW] Cài đặt các thư viện: `@tanstack/react-query` (Lấy data & caching), `recharts` (Vẽ biểu đồ), `lucide-react`.
+- [NEW] Chạy `npx shadcn@latest init` và cài đặt các components cốt lõi: Button, Table, Card, Dialog, Toast.
+
+### Bước 2.2: Phân luồng Auth (Next.js)
+- [NEW] Tạo Login Page.
+- [NEW] Xây dựng Middleware (ở cấp độ Next.js) bảo vệ các route nội bộ (kiểm tra JWT từ Cookie).
+
+### Bước 2.3: Lắp ráp Giao diện (UI Modules)
+- **Layout**: Lên Master Layout với Sidebar điều hướng và Topbar.
+- **Dashboard Page**: Sử dụng Recharts thể hiện lượng User tăng trưởng, mức độ sử dụng AI API.
+- **User Page**: Lắp DataTable phân trang, cấu hình Action khóa/chỉnh sửa role.
+- **Food Page**: Lắp Form và Table cập nhật Calo/Macros cho món ăn từ Master DB.
+- **AI Monitor Page**: Dạng Card view / Table view để hiển thị lịch sử ảnh mà AI đã detect kèm log sai số.
+
+---
+
+## 4. Phân tích Rủi ro & Cách phòng chống
+
+> [!WARNING]
+> Rủi ro hệ thống
+
+- **Rủi ro phân quyền:** Nếu Frontend chỉ giấu nút/menu khỏi người thường mà Backend API không check JWT Role `[Authorize(Roles = "Admin")]`, User rành kỹ thuật có thể dùng Postman xâm nhập. -> Đảm bảo chặn từ cổng API bằng C#.
+- **Rủi ro cấu hình Next.js Caching:** Vercel server-side cache tĩnh trên `fetch` có thể làm cũ dữ liệu Admin. Lập trình bắt buộc dùng Client-side fetching (React Query) hoặc `export const dynamic = 'force-dynamic'`.
+- **Rủi ro Performance DB khi lấy log lớn:** Bảng `User` hay `AILog` có tốc độ phình rất nhanh. Backend không dùng `.ToList()` chay mà phải phân trang `Skip().Take()` gửi lên View.
+
+---
+
+## 5. Kế hoạch Xác nhận
+
+**Yêu cầu người dùng:** Bạn vui lòng phê duyệt lộ trình. Nếu đồng ý, tôi sẽ ghi file `PLAN.md` theo User Guidelines của bạn và tiến hành bắt tay vào chọc **Backend (Giai đoạn 1)** trước. Khởi đầu với Schema User và cấu trúc JWT.

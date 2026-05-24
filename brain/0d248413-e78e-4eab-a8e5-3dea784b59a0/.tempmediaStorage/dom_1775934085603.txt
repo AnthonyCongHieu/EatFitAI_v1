@@ -1,0 +1,36 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (500,181)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary' href='/' />
+	[1] (500,154)<img  />
+Sign in
+Login failed. Please check your email address and password.
+Email address
+*
+[2] (500,534)<div  />
+	[3] (500,534)<input class='MuiInputBase-input MuiOutlinedInput-input' />
+Password
+*
+[4] (500,650)<div  />
+	[5] (500,650)<input class='MuiInputBase-input MuiOutlinedInput-input' />
+[6] (413,732)<label class='MuiFormControlLabel-root' />
+	[7] (378,732)<span  />
+		[8] (378,732)<span  />
+			[9] (378,732)<input class='jss13' />
+	[10] (426,732)<span >Remember me />
+[11] (500,800)<button class='MuiButtonBase-root MuiButton-root MuiButton-contained jss4 MuiButton-containedPrimary MuiButton-fullWidth' />
+	[12] (500,800)<span >Sign in />
+[13] (408,863)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-body2 MuiTypography-colorPrimary' href='/lostPassword'>Forgot password? />
+[14] (563,863)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-body2 MuiTypography-colorPrimary' href='/signup'>Don't have an account? Sign up />
+[15] (407,983)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover jss16 MuiTypography-colorInherit'>English />
+|
+Contact
+|
+Blog
+|
+Twitter
+|
+[16] (609,983)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorInherit' href='https://github.com/pschlan/cron-job.org'>GitHub />
+
+</current_dom>

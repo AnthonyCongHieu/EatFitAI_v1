@@ -1,0 +1,50 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+EatFitAI Admin
+[0] (80,152)<a class='block relative' href='/' />
+	[1] (80,152)<div  />
+		[2] (60,152)<span >Overview />
+[3] (80,219)<a class='block relative' href='/users' />
+	[4] (80,219)<div  />
+		[5] (52,219)<span >Users />
+[6] (80,286)<a class='block relative' href='/gemini-keys' />
+	[7] (80,286)<div  />
+		[8] (67,286)<span >Gemini Keys />
+[9] (80,352)<a class='block relative' href='/settings' />
+	[10] (80,352)<div  />
+		[11] (57,352)<span >Settings />
+Logout
+Overview Dashboard
+Welcome back to the EatFitAI administrative panel.
+Admin User
+eatfitai.admin@example.com
+Total API Requests
+28,500
++12.5% from last week
+Active Gemini Keys
+3 / 5
+2 Exhausted
+Total Users
+1,204
++48 new today
+System Status
+Healthy
+All services operational
+AI Usage vs Quota Limit
+Daily API consumption tracked across the Gemini pool.
+[12] (445,649)<div  />
+Pool Health
+Live status of your Gemini bindings.
+Key-A1 (Production)
+1500 / 2000 RPM
+Active
+Key-B2 (Fallback)
+0 / 2000 RPM
+Active
+Key-C3 (Main)
+2000 / 2000 RPM
+Exhausted
+
+</current_dom>

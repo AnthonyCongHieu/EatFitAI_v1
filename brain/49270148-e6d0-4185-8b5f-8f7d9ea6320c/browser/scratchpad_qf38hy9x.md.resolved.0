@@ -1,0 +1,16 @@
+# EatFitAI Admin Browser Testing Plan
+
+## Tasks:
+- [ ] Navigate to http://localhost:3000/login
+- [ ] Login with `admin@eatfit.ai` / `Admin@123456`
+- [ ] Verify Dashboard UI
+- [ ] Verify "Quản lý Khóa Gemini" (Gemini Keys) page (/gemini-keys)
+- [ ] Verify "Người dùng" (Users) page (/users)
+- [ ] Report and fix any errors found
+
+## Observations:
+- Login status:
+- Dashboard status:
+- Gemini Keys status:
+- Users status:
+- Backend status (localhost:5247):

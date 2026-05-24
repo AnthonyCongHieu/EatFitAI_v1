@@ -1,0 +1,147 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (63,58)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwjy8IyMgJqUAxUeG9AFHUpSI4kQPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (281,57)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (456,57)<div  />
+	[3] (455,57)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (455,57)<span  />
+	[5] (467,57)<span  />
+[6] (480,57)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (480,57)<span  />
+[8] (501,57)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (522,57)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (546,57)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (542,57)<div  />
+		[12] (542,57)<span  />
+[13] (954,57)<a aria-label='Các ứng dụng của Google' class='gb_C' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (979,57)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_C gb_5a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3D%2522food-detection-xt7yz%2522%2Bdata.yaml&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (136,125)<a class='XVMlrc C6AK7c' href='/search?q=%22food-detection-xt7yz%22+data.yaml&sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPxgqssMzZlYDdfWeNrP4BjNbYzw14qZ2xXDJOMM_HB2xGh5jJiQN778kGc26_sxJrMETIrVQS-87x-tlG_vOQk0a2uyw_agGQo2X2hItPF9Yrn1rqvKF4a_4aLeysA-vFRxT0O80Jx-Q7kN1RsXRWY45gSWZvoZYTF83XQsv7wKq273O-gPZWrJNCsjCppLldexNuW_&aep=1&ntc=1&sa=X&ved=2ahUKEwjy8IyMgJqUAxUeG9AFHUpSI4kQ2J8OegQIDxAD' />
+	[16] (136,125)<div  />
+		[17] (136,134)<div  />
+			[18] (136,128)<span >Chế độ AI />
+[19] (176,125)<a class='C6AK7c' role='link' />
+	Tất cả
+[20] (215,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPxgqssMzZlYDdfWeNrP4BjNbYzw14qZ2xXDJOMM_HB2xGh5jJiQN778kGc26_sxJrMETIrVQS-87x-tlG_vOQk0a2uyw_agGQo2X2hItPF9Yrn1rqvKF4a_4aLeysA-vFRxT0O80Jx-Q7kN1RsXRWY45gSWZvoZYTF83XQsv7wKq273O-gPZWrJNCsjCppLldexNuW_&q=%22food-detection-xt7yz%22+data.yaml&sa=X&ved=2ahUKEwjy8IyMgJqUAxUeG9AFHUpSI4kQtKgLegQIFRAB' />
+	[21] (215,125)<div  />
+		[22] (215,134)<span >Hình ảnh />
+[23] (252,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPxgqssMzZlYDdfWeNrP4BjNbYzw14qZ2xXDJOMM_HB2xGh5jJiQN778kGc26_sxJrMETIrVQS-87x-tlG_vOQk0a2uyw_agGQo2X2hItPF9Yrn1rqvKF4a_4aLeysA-vFRxT0O80Jx-Q7kN1RsXRWY45gSWZvoZYTF83XQsv7wKq273O-gPZWrJNCsjCppLldexNuW_&q=%22food-detection-xt7yz%22+data.yaml&sa=X&ved=2ahUKEwjy8IyMgJqUAxUeG9AFHUpSI4kQtKgLegQIExAB' />
+	[24] (252,125)<div  />
+		[25] (252,134)<span >Video />
+[26] (290,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPxgqssMzZlYDdfWeNrP4BjNbYzw14qZ2xXDJOMM_HB2xGh5jJiQN778kGc26_sxJrMETIrVQS-87x-tlG_vOQk0a2uyw_agGQo2X2hItPF9Yrn1rqvKF4a_4aLeysA-vFRxT0O80Jx-Q7kN1RsXRWY45gSWZvoZYTF83XQsv7wKq273O-gPZWrJNCsjCppLldexNuW_&q=%22food-detection-xt7yz%22+data.yaml&ved=1t:220175&ictx=111' />
+	[27] (290,125)<div  />
+		[28] (290,134)<span >Mua sắm />
+[29] (337,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPxgqssMzZlYDdfWeNrP4BjNbYzw14qZ2xXDJOMM_HB2xGh5jJiQN778kGc26_sxJrMETIrVQS-87x-tlG_vOQk0a2uyw_agGQo2X2hItPF9Yrn1rqvKF4a_4aLeysA-vFRxT0O80Jx-Q7kN1RsXRWY45gSWZvoZYTF83XQsv7wKq273O-gPZWrJNCsjCppLldexNuW_&q=%22food-detection-xt7yz%22+data.yaml&sa=X&ved=2ahUKEwjy8IyMgJqUAxUeG9AFHUpSI4kQs6gLegQIEhAB' />
+	[30] (337,125)<div  />
+		[31] (337,134)<span >Video ngắn />
+[32] (380,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065&q=%22food-detection-xt7yz%22+data.yaml&tbm=nws&source=lnms&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPxgqssMzZlYDdfWeNrP4BjNbYzw14qZ2xXDJOMM_HB2xGh5jJiQN778kGc26_sxJrMETIrVQS-87x-tlG_vOQk0a2uyw_agGQo2X2hItPF9Yrn1rqvKF4a_4aLeysA-vFRxT0O80Jx-Q7kN1RsXRWY45gSWZvoZYTF83XQsv7wKq273O-gPZWrJNCsjCppLldexNuW_&sa=X&ved=2ahUKEwjy8IyMgJqUAxUeG9AFHUpSI4kQ0pQJegQIFBAB' />
+	[33] (380,125)<div  />
+		[34] (380,134)<span >Tin tức />
+[35] (419,125)<div class='mTpL7c' role='button' />
+	[36] (419,125)<div  />
+		[37] (419,134)<div  />
+			[38] (414,128)<span >Thêm />
+			[39] (429,128)<span  />
+[40] (465,125)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[41] (465,125)<div  />
+		[42] (465,134)<div  />
+			[43] (460,128)<span >Công cụ />
+			[44] (479,128)<span  />
+Kết quả tìm kiếm
+Web results
+[45] (194,220)<a class='zReHs' href='https://universe.roboflow.com/science-fair-48u9f/food-detection-xt7yz/dataset/1' />
+	[46] (139,244)<h3 >Version />
+	[47] (194,205)<div  />
+		[48] (194,205)<div  />
+			[49] (127,205)<span  />
+				[50] (127,205)<div  />
+					[51] (127,205)<img  />
+			[52] (204,205)<div  />
+				[53] (204,195)<div  />
+					[54] (204,195)<span >Roboflow Universe />
+				[55] (204,216)<div  />
+					[56] (204,216)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[57] (235,216)<span class='ylgVCe ob9lvb' role='text'>› dataset />
+·
+[58] (276,216)<a class='dEEN8c' href='https://universe.roboflow.com/science-fair-48u9f/food-detection-xt7yz/dataset/1' />
+	[59] (276,216)<span >Dịch trang này />
+[60] (308,215)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[61] (308,215)<span  />
+		[62] (308,216)<span  />
+13 thg 12, 2024
+—
+6435 open source Food images and annotations in multiple formats for training computer vision models. Food detection (v1, 2024-12-13 9:41am) ...
+Thông tin tổng quan do AI tạo
+[63] (429,360)<div aria-label='Xem 2 đường liên kết xác minh' class='QUUgY' role='button' />
+	[64] (429,360)<div  />
+		[65] (421,360)<div  />
+			[66] (421,360)<img  />
+		[67] (428,360)<div  />
+			[68] (428,360)<img  />
+		[69] (438,360)<span >+7 />
+[70] (455,363)<div aria-label='Thông tin về kết quả này' class='Mtffrd' role='button' />
+Based on the
+[71] (271,404)<a class='H23r4e' href='https://universe.roboflow.com/science-fair-48u9f/food-detection-xt7yz/dataset/1'>Roboflow Universe dataset "food-detection-xt7yz" />
+, the
+data.yaml
+file defines the dataset structure for YOLO models.
+[72] (336,430)<a aria-label='Roboflow Universe (+1) – Xem các đường liên kết có liên quan' class='muU3oe' href='https://universe.roboflow.com/science-fair-48u9f/food-detection-xt7yz/dataset/1#:~:text=Popular%20Download%20Formats,Pascal%20VOC%20XML' />
+Roboflow Universe
++1
+Here is the typical configuration file structure for that dataset:
+yaml
+train
+: ../train/images
+val
+: ../valid/images
+test
+: ../test/images
+nc
+:
+1
+# Number of classes
+names
+: [
+'food'
+]
+# Class name
+Hãy thận trọng khi sử dụng mã.
+Key Components:
+Paths:
+The
+train
+,
+val
+, and
+test
+paths point to the respective image folders.
+nc
+: The number of classes is 1 (food).
+names
+: The class label is 'food'.
+Roboflow Universe
++3
+This YAML file is designed to be used with YOLO formats (YOLOv5, v8, v9, v11, etc.) available for export on
+[73] (290,735)<div aria-label='Hiện thêm Thông tin tổng quan do AI tạo' class='Jzkafd' role='button' />
+	[74] (284,735)<div  />
+		[75] (284,735)<div >Hiện thêm />
+			Hiện thêm
+			[76] (304,735)<span  />
+Thông báo về Kết quả bị lọc
+Để hiển thị cho bạn các kết quả có liên quan nhất, chúng tôi đã bỏ đi một số mục nhập rất giống với 1 kết quả đã hiển thị.
+Nếu muốn, bạn có thể
+[77] (305,883)<a href='/search?q=%22food-detection-xt7yz%22+data.yaml&sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065&filter=0'>lặp lại tìm kiếm với các kết quả đã bỏ đi được bao gồm />
+.
+Đường liên kết ở chân trang
+Kết quả được cá nhân hoá
+-
+[78] (266,995)<a href='https://www.google.com/search?q=%22food-detection-xt7yz%22+data.yaml&peek_pws=0&sxsrf=ANbL-n7FfwiUscucoApmy-UyCsTlkszmnQ:1777704169065' />
+	[79] (266,995)<span  />
+		[80] (266,995)<span >Dùng thử mà không cá nhân hoá />
+
+</current_dom>

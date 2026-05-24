@@ -1,0 +1,7 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary":  "Comprehensive documentation refresh plan for EatFitAI project. Categorizes all 35+ documentation files into Keep/Rewrite/Archive/Delete tiers. Proposes a new 7-doc production structure replacing the current 12-file numbered system. Includes detailed analysis of each existing doc's status (current vs stale), specific rewrite instructions, and a phased execution plan. Key decisions needed: whether to merge investigation docs, keep Vietnamese-only or add English headers, and archive threshold date.",
+  "updatedAt":  "2026-04-17T23:32:20.794047500Z",
+  "version":  "1",
+  "requestFeedback":  true
+}

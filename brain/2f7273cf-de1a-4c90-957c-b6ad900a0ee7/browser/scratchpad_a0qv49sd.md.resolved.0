@@ -1,0 +1,12 @@
+# Health Check Progress
+
+- [ ] Backend Live Check: `https://eatfitai-backend-dev.onrender.com/health/live`
+- [ ] Backend Ready Check: `https://eatfitai-backend-dev.onrender.com/health/ready`
+- [ ] AI Provider Health Check: `https://eatfitai-ai-provider-dev.onrender.com/health`
+- [ ] Gemini Health Check: `https://eatfitai-ai-provider-dev.onrender.com/gemini/health`
+
+## Findings
+- Backend Live: 
+- Backend Ready: 
+- AI Provider Health: 
+- Gemini Health: 

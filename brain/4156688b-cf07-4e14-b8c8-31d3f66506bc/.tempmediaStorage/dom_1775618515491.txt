@@ -1,0 +1,96 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+DinhCongHieuFIVECAT22CT113's Org
+Free
+EatFitAI v1
+main
+Production
+Connect
+Feedback
+Search...
+K
+Upgrade to Pro
+Project Overview
+Table Editor
+SQL Editor
+Database
+Authentication
+Storage
+Edge Functions
+Realtime
+Advisors
+Observability
+Logs
+Integrations
+Project Settings
+Database
+[0] (115,569)<div class='flex-grow overflow-y-auto' scrollable='true' />
+	Database Management
+	Schema Visualizer
+	Tables
+	Functions
+	Triggers
+	Enumerated Types
+	Extensions
+	Indexes
+	Publications
+	Configuration
+	Roles
+	Policies
+	Settings
+	Platform
+	Replication
+	Backups
+	Migrations
+	Wrappers
+	Database Webhooks
+[1] (599,535)<main class='h-full flex flex-col flex-1 w-full overflow-y-auto overflow-x-hidden @container' scrollable='true' />
+	Disk management
+	Docs
+	Disk Management has moved
+	Disk configuration is now managed alongside Project Compute on the new Compute and Disk page.
+	Go to Compute and Disk
+	Network restrictions
+	Docs
+	Add restriction
+	Your database can be accessed by all IP addresses
+	You may start limiting access to your database by adding a network restriction.
+	Restrict all access
+	Network bans
+	IP addresses temporarily blocked due to suspicious traffic
+	Docs
+	There are no banned IP addresses for your project
+Connect to your project
+Choose how you want to use Supabase
+[2] (962,570)<div class='flex flex-1 flex-col overflow-y-auto divide-y' scrollable='true' />
+	[3] (790,256)<button class='flex flex-col items-center gap-2 p-4 transition-colors border-r last:border-r-0 bg-surface-200' />
+		[4] (789,221)<span  />
+		[5] (789,273)<div  />
+			[6] (789,258)<p >Framework />
+			[7] (789,287)<p >Use a client library />
+	[8] (901,256)<button class='flex flex-col items-center gap-2 p-4 transition-colors border-r last:border-r-0 border-default hover:border-strong hover:bg-surface-100' />
+		[9] (901,221)<span  />
+		[10] (901,273)<div  />
+			[11] (901,258)<p >Direct />
+			[12] (901,287)<p >Connection string />
+	Third-party library
+	[13] (806,434)<label class='text-sm text peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground flex gap-2 items-center break-words leading-normal'>Framework />
+		Framework
+	Next.js
+	[14] (806,506)<label class='text-sm text peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground flex gap-2 items-center break-words leading-normal'>Variant />
+		Variant
+	App Router
+	[15] (806,578)<label class='text-sm text peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground flex gap-2 items-center break-words leading-normal'>Shadcn />
+		Shadcn
+	[16] (895,577)<button class='peer inline-flex shrink-0 cursor-pointer items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-brand data-[state=checked]:hover:bg-brand-600/90 data-[state=unchecked]:bg-control data-[state=unchecked]:hover:bg-border h-[20px] w-[34px]' id='frameworkUi' role='switch' />
+	Install components via the Supabase shadcn registry.
+	Connect your app
+	Give your agent everything it needs
+	1
+	Install package
+	Run this command to install the required dependencies.
+	npm install @supabase/supabase-js
+
+</current_dom>

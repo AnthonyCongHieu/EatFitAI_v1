@@ -1,0 +1,93 @@
+EatFitAI Admin
+[0] (83,500)<div class='flex-1 overflow-y-auto py-6 px-4 space-y-2' scrollable='true' />
+	[1] (78,184)<a class='block relative' href='/' />
+		[2] (78,184)<div  />
+			[3] (62,184)<span >Overview />
+	[4] (78,265)<a class='block relative' href='/users' />
+		[5] (78,265)<div  />
+			[6] (54,265)<span >Users />
+	[7] (78,345)<a class='block relative' href='/meals' />
+		[8] (78,345)<div  />
+			[9] (64,345)<span >Meal Logs />
+	[10] (78,426)<a class='block relative' href='/foods' />
+		[11] (78,426)<div  />
+			[12] (73,426)<span >Food Database />
+	[13] (78,506)<a class='block relative' href='/master-data' />
+		[14] (78,506)<div  />
+			[15] (67,506)<span >Master Data />
+	[16] (78,587)<a class='block relative' href='/gemini-keys' />
+		[17] (78,587)<div  />
+			[18] (69,587)<span >Gemini Keys />
+	[19] (78,668)<a class='block relative' href='/ai-logs' />
+		[20] (78,668)<div  />
+			[21] (59,668)<span >AI Logs />
+	[22] (78,748)<a class='block relative' href='/analytics' />
+		[23] (78,748)<div  />
+			[24] (62,748)<span >Analytics />
+	[25] (78,829)<a class='block relative' href='/settings' />
+		[26] (78,829)<div  />
+			[27] (58,829)<span >Settings />
+[28] (83,943)<button class='w-full flex items-center px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors duration-200'>Logout />
+	Logout
+Users
+Welcome back to the EatFitAI administrative panel.
+[29] (843,57)<button class='flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer' title='Backend: OK | AI: OK
+Last: 15s ago' />
+	[30] (849,57)<span >15s ago />
+Admin User
+admin@eatfit.ai
+[31] (583,558)<main class='flex-1 overflow-y-auto w-full p-8 relative' scrollable='true' />
+	User Management
+	Manage EatFitAI users, roles, and access permissions.
+	System Users
+	62
+	total
+	Click the action menu to view details, edit role, or suspend.
+	[32] (867,345)<input class='h-8 min-w-0 rounded-lg border px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 w-full md:w-[280px] pl-9 bg-black/20 border-white/10 focus-visible:ring-indigo-500/50' id='base-ui-_r_c0_' placeholder='Search by name or email...' />
+	Name & Email
+	Role
+	Status
+	Joined
+	Actions
+	Scan Demo Reliability
+	eatfitai1775805742812bff6lq@deltajohnsons.com
+	User
+	Active
+	Apr 10, 2026
+	[33] (953,521)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 gap-1.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 h-8 w-8 p-0 hover:bg-white/10 focus-visible:ring-0' id='base-ui-_r_c5_' />
+	Scan Demo Reliability
+	eatfitai1775805672946xjwxla@deltajohnsons.com
+	User
+	Unverified
+	Apr 10, 2026
+	[34] (953,597)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 gap-1.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 h-8 w-8 p-0 hover:bg-white/10 focus-visible:ring-0' id='base-ui-_r_cb_' />
+	Scan Demo Reliability
+	eatfitai1775805361263vzqurz@deltajohnsons.com
+	User
+	Active
+	Apr 10, 2026
+	[35] (953,673)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 gap-1.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 h-8 w-8 p-0 hover:bg-white/10 focus-visible:ring-0' id='base-ui-_r_ch_' />
+	No Name
+	eatfitai177579693607439fybh@deltajohnsons.com
+	User
+	Active
+	Apr 10, 2026
+	[36] (953,749)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 gap-1.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 h-8 w-8 p-0 hover:bg-white/10 focus-visible:ring-0' id='base-ui-_r_cn_' />
+	Scan Demo Reliability
+	eatfitai1775793961392dkeawm@deltajohnsons.com
+	User
+	Active
+	Apr 10, 2026
+	[37] (953,825)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 gap-1.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 h-8 w-8 p-0 hover:bg-white/10 focus-visible:ring-0' id='base-ui-_r_ct_' />
+	Scan Demo Reliability
+	eatfitai1775740240793x4z2md@deltajohnsons.com
+	User
+	Active
+	Apr 09, 2026
+	[38] (953,901)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 gap-1.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 h-8 w-8 p-0 hover:bg-white/10 focus-visible:ring-0' id='base-ui-_r_d3_' />
+	Scan Demo Reliability
+	eatfitai177574005879484q92z@deltajohnsons.com
+	User
+	Active
+	Apr 09, 2026
+	[39] (953,977)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 gap-1.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 h-8 w-8 p-0 hover:bg-white/10 focus-visible:ring-0' id='base-ui-_r_d9_' />

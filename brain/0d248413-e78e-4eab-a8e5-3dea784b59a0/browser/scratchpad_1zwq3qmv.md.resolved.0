@@ -1,0 +1,14 @@
+# EatFitAI Admin Live Verification Plan
+
+- [ ] Navigate to https://eatfitai-admin.vercel.app
+- [ ] Log in (admin@eatfit.ai / Admin@123)
+- [ ] Verify Dashboard data (Overview)
+- [ ] Verify Users page data
+- [ ] Verify Food Database page data
+- [ ] Verify Meal Logs page data
+- [ ] Report final status (Vietnamese)
+
+## Notes
+- Live URL: https://eatfitai-admin.vercel.app
+- Backend URL: https://eatfitai-backend.onrender.com
+- Expected result: Data populated on all pages, no errors.

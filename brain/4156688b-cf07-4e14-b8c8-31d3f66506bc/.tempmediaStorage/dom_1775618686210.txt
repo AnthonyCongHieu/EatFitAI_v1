@@ -1,0 +1,109 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+DinhCongHieuFIVECAT22CT113's Org
+Free
+EatFitAI v1
+main
+Production
+Connect
+Feedback
+Search...
+K
+Upgrade to Pro
+Project Overview
+Table Editor
+SQL Editor
+Database
+Authentication
+Storage
+Edge Functions
+Realtime
+Advisors
+Observability
+Logs
+Integrations
+Project Settings
+Database
+[0] (115,569)<div class='flex-grow overflow-y-auto' scrollable='true' />
+	Database Management
+	Schema Visualizer
+	Tables
+	Functions
+	Triggers
+	Enumerated Types
+	Extensions
+	Indexes
+	Publications
+	Configuration
+	Roles
+	Policies
+	Settings
+	Platform
+	Replication
+	Backups
+	Migrations
+	Wrappers
+	Database Webhooks
+[1] (599,535)<main class='h-full flex flex-col flex-1 w-full overflow-y-auto overflow-x-hidden @container' scrollable='true' />
+	Database password
+	Used for direct Postgres connections
+	Reset database password
+	The database password isn’t viewable after creation. Resetting it will break any existing connections.
+	Reset password
+	Connection pooling
+	Docs
+	Connection poolers
+	Configuration is shared across all connection poolers.
+	Shared
+	connections
+	Connection pool size
+	The maximum number of connections made to the underlying Postgres cluster, per user+db combination. Pool size has a default of
+	15
+	based on your compute size of
+	Nano
+	.
+	clients
+	Max client connections
+	The maximum number of concurrent client connections allowed. This value is fixed at
+	200
+	based on your compute size of
+	Nano
+	and cannot be changed.
+	Learn more
+	Cancel
+	Save
+Connect to your project
+Choose how you want to use Supabase
+[2] (923,570)<div class='flex flex-1 flex-col overflow-y-auto divide-y' scrollable='true' />
+	URI
+	Connect your app
+	Give your agent everything it needs
+	1
+	Connection string
+	Copy the connection details for your database.
+	Shared Pooler
+	[3] (1020,422)<pre class='code-block border border-surface p-4 w-full !my-0 !bg-surface-100 outline-none focus:border-foreground-lighter/50 rounded-md pl-6 [&_code]:text-foreground' scrollable='true' />
+		postgresql://postgres.bjlmndmafrajjysenpbm:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
+	IPv4 compatible
+	Transaction pooler connections are IPv4 proxied for free.
+	host
+	:
+	aws-1-ap-southeast-1.pooler.supabase.com
+	port
+	:
+	6543
+	[4] (966,704)<button class='text-foreground-lighter ml-2 opacity-0 group-hover/param:opacity-100 hover:text-foreground rounded-sm p-1 transition-all' />
+	database
+	:
+	postgres
+	user
+	:
+	postgres.bjlmndmafrajjysenpbm
+	2
+	Install Agent Skills (Optional)
+	Agent Skills give AI coding tools ready-made instructions, scripts, and resources for working with Supabase more accurately and efficiently.
+	npx skills add supabase/agent-skills
+
+</current_dom>

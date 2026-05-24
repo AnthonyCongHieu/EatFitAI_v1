@@ -1,0 +1,74 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+DinhCongHieuFIVECAT22CT113's Org
+Free
+EatFitAI v1
+main
+Production
+Connect
+Feedback
+Search...
+Ctrl K
+Upgrade to Pro
+Project Overview
+Table Editor
+SQL Editor
+Database
+Authentication
+Storage
+Edge Functions
+Realtime
+Advisors
+Observability
+Logs
+Integrations
+Project Settings
+[0] (516,535)<main class='h-full flex flex-col flex-1 w-full overflow-y-auto overflow-x-hidden @container' scrollable='true' />
+	EatFitAI v1
+	nano
+	https://bjlmndmafrajjysenpbm.supabase.co
+	Copy
+	Status
+	Healthy
+	Last migration
+	import_mealdiary_batch_002
+	Last backup
+	No backups
+	Recent branch
+	No branches
+	Primary Database
+	Southeast Asia (Singapore)
+	ap-southeast-1
+	·
+	t4g.nano
+	Get connected
+Command menu
+Type a command or search
+[1] (507,182)<input class='py-3 border-none focus:ring-0 flex h-11 w-full rounded-md bg-transparent px-2 y-4 md:py-7 outline-none focus:shadow-none focus:ring-transparent text-base text-foreground-light placeholder:text-foreground-muted disabled:cursor-not-allowed disabled:opacity-50 border-0' id='radix-:r82:' placeholder='Run a command or search...' role='combobox' />
+API keys
+[2] (500,318)<div class='outline-none data-[selected=true]:bg-overlay-hover data-[selected=true]:text-strong cursor-default select-none items-center gap-2 rounded-md text-sm group py-2 md:py-3 text-foreground-light relative flex px-2 aria-selected:bg-selection/80 aria-selected:backdrop-filter aria-selected:backdrop-blur-md data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50' id='radix-:rdq:' role='option' />
+	Copy publishable key
+	Project:
+	EatFitAI v1
+	publishable
+[3] (500,382)<div class='outline-none data-[selected=true]:bg-overlay-hover data-[selected=true]:text-strong cursor-default select-none items-center gap-2 rounded-md text-sm group py-2 md:py-3 text-foreground-light relative flex px-2 aria-selected:bg-selection/80 aria-selected:backdrop-filter aria-selected:backdrop-blur-md data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50' id='radix-:rdr:' role='option' />
+	Copy secret key (default)
+	Project:
+	EatFitAI v1
+	secret
+[4] (500,445)<div class='outline-none data-[selected=true]:bg-overlay-hover data-[selected=true]:text-strong cursor-default select-none items-center gap-2 rounded-md text-sm group py-2 md:py-3 text-foreground-light relative flex px-2 aria-selected:bg-selection/80 aria-selected:backdrop-filter aria-selected:backdrop-blur-md data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50' id='radix-:rds:' role='option' />
+	Copy anonymous API key
+	Project:
+	EatFitAI v1
+	Public
+	legacy
+[5] (500,508)<div class='outline-none data-[selected=true]:bg-overlay-hover data-[selected=true]:text-strong cursor-default select-none items-center gap-2 rounded-md text-sm group py-2 md:py-3 text-foreground-light relative flex px-2 aria-selected:bg-selection/80 aria-selected:backdrop-filter aria-selected:backdrop-blur-md data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50' id='radix-:rdt:' role='option' />
+	Copy service API key
+	Project:
+	EatFitAI v1
+	Secret
+	legacy
+
+</current_dom>

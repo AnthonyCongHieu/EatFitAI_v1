@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_OTHER",
+  "summary": "Script PowerShell to automate taking screenshots without Vietnamese diacritics to avoid encoding parsing issues.",
+  "updatedAt": "2026-05-21T19:46:40.620968Z"
+}

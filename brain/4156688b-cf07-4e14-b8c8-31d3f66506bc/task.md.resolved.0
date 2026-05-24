@@ -1,0 +1,27 @@
+# EatFitAI - Tiếp tục Cloud Deployment
+
+## Phase 1: Import Data vào Supabase
+- [ ] Fix ServingUnit (6 → 17 rows)
+- [ ] Import FoodItem
+- [ ] Import FoodServing
+- [ ] Import AiLabelMap
+- [ ] Import Users
+- [ ] Import Recipe
+- [ ] Import RecipeIngredient
+- [ ] Import NutritionTarget + BodyMetric
+- [ ] Import UserFoodItem, UserDish, UserDishIngredient
+- [ ] Import MealDiary
+- [ ] Import AILog, AISuggestion, ImageDetection
+- [ ] Import UserFavoriteFood, UserRecentFood
+- [ ] Reset sequences
+
+## Phase 2: Setup Render Services
+- [ ] Tạo service `eatfitai-backend` trên Render
+- [ ] Cấu hình env vars cho backend
+- [ ] Tạo service `eatfitai-ai-provider` trên Render
+- [ ] Cấu hình env vars cho AI provider
+- [ ] Verify build thành công
+
+## Phase 3: Verification
+- [ ] Test health endpoints
+- [ ] Update AIProvider__VisionBaseUrl

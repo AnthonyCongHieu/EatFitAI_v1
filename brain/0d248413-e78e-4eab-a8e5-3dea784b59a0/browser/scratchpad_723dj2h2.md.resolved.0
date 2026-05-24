@@ -1,0 +1,11 @@
+# Task: Synchronize Supabase JWT Secret with Render Jwt__Key
+
+## Plan
+- [ ] Reveal and copy Legacy JWT Secret from Supabase (https://supabase.com/dashboard/project/bjlmndmafrajjysenpbm/settings/jwt/legacy)
+- [ ] Update Jwt__Key on Render (https://dashboard.render.com/web/srv-d7arf2svjg8s73em138g/env)
+- [ ] Save Render environment variables
+- [ ] Verify if the dashboard now loads data correctly (http://localhost:3000/users)
+
+## Findings
+- Supabase Project ID: bjlmndmafrajjysenpbm
+- Render Service: eatfitai-backend

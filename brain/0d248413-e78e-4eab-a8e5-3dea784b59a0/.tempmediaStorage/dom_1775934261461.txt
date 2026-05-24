@@ -1,0 +1,79 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (70,76)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwjokqfVvuaTAxUJiq8BHcGUOvQQPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (344,75)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (562,75)<div  />
+	[3] (561,75)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (561,75)<span  />
+	[5] (577,75)<span  />
+[6] (593,75)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (593,75)<span  />
+[8] (619,75)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (645,75)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (675,75)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (670,75)<div  />
+		[12] (670,75)<span  />
+[13] (945,75)<a aria-label='Các ứng dụng của Google' class='gb_B' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (974,75)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_B gb_1a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3Dfree%2Bonline%2Bcron%2Bjob%2Bservice%2Bno%2Bcaptcha&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (162,164)<a class='XVMlrc C6AK7c' href='/search?q=free+online+cron+job+service+no+captcha&sca_esv=0baaa2d5d8a71e57&sxsrf=ANbL-n66C6HGur2yq0JObdXkoFHRle8wEA:1775934259195&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHqzxv6jg5EvtWQVVL5l-RtsuTSkmYsH8M0nCq9VLI_HrH5dllN69BrJSr4j5a8PRwwPByCr7nICtc4hUBT67JQ8NaR62HKIN1jnLqynnZt7k0SYKnVMhaqIsaimbOmkwL49t4_ZyqNmSmNqyrLPzgZIoFXa1pv7Ms57EAFh4dgooAKOYbERXAd9qUF74uMyWNU60R3jtFs0K9l7y2ePagNy2YgoO&aep=1&ntc=1&sa=X&ved=2ahUKEwjokqfVvuaTAxUJiq8BHcGUOvQQ2J8OegQIEBAE' />
+	[16] (162,164)<div  />
+		[17] (162,177)<div  />
+			[18] (162,169)<span >Chế độ AI />
+[19] (210,164)<a class='C6AK7c' role='link' />
+	Tất cả
+[20] (250,164)<a class='C6AK7c' href='/search?sca_esv=0baaa2d5d8a71e57&sxsrf=ANbL-n66C6HGur2yq0JObdXkoFHRle8wEA:1775934259195&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHqzxv6jg5EvtWQVVL5l-RtsuTSkmYsH8M0nCq9VLI_HrH5dllN69BrJSr4j5a8PRwwPByCr7nICtc4hUBT67JQ8NaR62HKIN1jnLqynnZt7k0SYKnVMhaqIsaimbOmkwL49t4_ZyqNmSmNqyrLPzgZIoFXa1pv7Ms57EAFh4dgooAKOYbERXAd9qUF74uMyWNU60R3jtFs0K9l7y2ePagNy2YgoO&q=free+online+cron+job+service+no+captcha&sa=X&ved=2ahUKEwjokqfVvuaTAxUJiq8BHcGUOvQQtKgLegQIFRAB' />
+	[21] (250,164)<div  />
+		[22] (250,177)<span >Video />
+[23] (300,164)<a class='C6AK7c' href='/search?sca_esv=0baaa2d5d8a71e57&sxsrf=ANbL-n66C6HGur2yq0JObdXkoFHRle8wEA:1775934259195&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHqzxv6jg5EvtWQVVL5l-RtsuTSkmYsH8M0nCq9VLI_HrH5dllN69BrJSr4j5a8PRwwPByCr7nICtc4hUBT67JQ8NaR62HKIN1jnLqynnZt7k0SYKnVMhaqIsaimbOmkwL49t4_ZyqNmSmNqyrLPzgZIoFXa1pv7Ms57EAFh4dgooAKOYbERXAd9qUF74uMyWNU60R3jtFs0K9l7y2ePagNy2YgoO&q=free+online+cron+job+service+no+captcha&sa=X&ved=2ahUKEwjokqfVvuaTAxUJiq8BHcGUOvQQs6gLegQIFhAB' />
+	[24] (300,164)<div  />
+		[25] (300,177)<span >Video ngắn />
+[26] (358,164)<a class='C6AK7c' href='/search?sca_esv=0baaa2d5d8a71e57&sxsrf=ANbL-n66C6HGur2yq0JObdXkoFHRle8wEA:1775934259195&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHqzxv6jg5EvtWQVVL5l-RtsuTSkmYsH8M0nCq9VLI_HrH5dllN69BrJSr4j5a8PRwwPByCr7nICtc4hUBT67JQ8NaR62HKIN1jnLqynnZt7k0SYKnVMhaqIsaimbOmkwL49t4_ZyqNmSmNqyrLPzgZIoFXa1pv7Ms57EAFh4dgooAKOYbERXAd9qUF74uMyWNU60R3jtFs0K9l7y2ePagNy2YgoO&q=free+online+cron+job+service+no+captcha&ved=1t:220175&ictx=111' />
+	[27] (358,164)<div  />
+		[28] (358,177)<span >Mua sắm />
+[29] (406,164)<a class='C6AK7c' href='/search?sca_esv=0baaa2d5d8a71e57&sxsrf=ANbL-n66C6HGur2yq0JObdXkoFHRle8wEA:1775934259195&q=free+online+cron+job+service+no+captcha&tbm=nws&source=lnms&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHqzxv6jg5EvtWQVVL5l-RtsuTSkmYsH8M0nCq9VLI_HrH5dllN69BrJSr4j5a8PRwwPByCr7nICtc4hUBT67JQ8NaR62HKIN1jnLqynnZt7k0SYKnVMhaqIsaimbOmkwL49t4_ZyqNmSmNqyrLPzgZIoFXa1pv7Ms57EAFh4dgooAKOYbERXAd9qUF74uMyWNU60R3jtFs0K9l7y2ePagNy2YgoO&sa=X&ved=2ahUKEwjokqfVvuaTAxUJiq8BHcGUOvQQ0pQJegQIExAB' />
+	[30] (406,164)<div  />
+		[31] (406,177)<span >Tin tức />
+[32] (454,164)<a class='C6AK7c' href='/search?sca_esv=0baaa2d5d8a71e57&sxsrf=ANbL-n66C6HGur2yq0JObdXkoFHRle8wEA:1775934259195&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnb8obTC9Cf43rNKvT_8WoTHqzxv6jg5EvtWQVVL5l-RtsuTSkmYsH8M0nCq9VLI_HrH5dllN69BrJSr4j5a8PRwwPByCr7nICtc4hUBT67JQ8NaR62HKIN1jnLqynnZt7k0SYKnVMhaqIsaimbOmkwL49t4_ZyqNmSmNqyrLPzgZIoFXa1pv7Ms57EAFh4dgooAKOYbERXAd9qUF74uMyWNU60R3jtFs0K9l7y2ePagNy2YgoO&q=free+online+cron+job+service+no+captcha&sa=X&ved=2ahUKEwjokqfVvuaTAxUJiq8BHcGUOvQQtKgLegQIEhAB' />
+	[33] (454,164)<div  />
+		[34] (454,177)<span >Hình ảnh />
+[35] (506,164)<div class='mTpL7c' role='button' />
+	[36] (506,164)<div  />
+		[37] (506,177)<div  />
+			[38] (500,169)<span >Thêm />
+			[39] (517,169)<span  />
+[40] (562,164)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[41] (562,164)<div  />
+		[42] (562,177)<div  />
+			[43] (556,169)<span >Công cụ />
+			[44] (579,169)<span  />
+Kết quả tìm kiếm
+Đang tìm kiếm
+Web results
+[45] (327,895)<a class='zReHs' href='https://cron-job.org/' />
+	[46] (327,928)<h3 >cron-job.org: Free cronjobs - from minutely to once a year. />
+	[47] (200,876)<div  />
+		[48] (200,876)<div  />
+			[49] (151,876)<span  />
+				[50] (151,876)<div  />
+					[51] (151,876)<img  />
+			[52] (213,876)<div  />
+				[53] (213,863)<div  />
+					[54] (213,863)<span >Cron Job />
+				[55] (213,891)<div  />
+					[56] (213,891)<cite class='tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://cron-job.org />
+·
+[57] (269,891)<a class='dEEN8c' href='https://translate.google.com/translate?u=https://cron-job.org/&hl=vi&sl=en&tl=vi&client=search' />
+	[58] (269,890)<span >Dịch trang này />
+[59] (308,889)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[60] (308,889)<span  />
+		[61] (308,891)<span  />
+Scheduled execution of your websites and scripts
+. Just in time or in flexible intervals, from minute-by-minute to once in a year. Absolutely free.
+
+</current_dom>

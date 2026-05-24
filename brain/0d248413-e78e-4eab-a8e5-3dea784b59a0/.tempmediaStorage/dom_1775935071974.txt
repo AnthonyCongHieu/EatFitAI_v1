@@ -1,0 +1,27 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Skip to content
+Sign in to
+GitHub
+to continue to
+Vercel
+[0] (500,363)<label >Username or email address />
+[1] (500,413)<input class='form-control  js-login-field' id='login_field' />
+[2] (500,480)<label >Password />
+[3] (500,529)<input class='form-control form-control js-password-field' id='password' />
+[4] (579,480)<a class='label-link position-absolute top-0 right-0' href='/password_reset' id='forgot-password'>Forgot password? />
+[5] (500,610)<input class='btn btn-primary btn-block js-sign-in-button' />
+or
+[6] (500,755)<button class='Button--secondary Button--medium Button Button--fullWidth mt-2 tmp-mt-2' />
+	[7] (500,755)<span  />
+		[8] (508,755)<span >Continue with Google />
+[9] (500,824)<button class='Button--secondary Button--medium Button Button--fullWidth mt-2 tmp-mt-2' />
+	[10] (500,824)<span  />
+		[11] (508,824)<span >Continue with Apple />
+New to GitHub?
+[12] (533,896)<a href='/join?return_to=%2Flogin%2Foauth%2Fauthorize%3Fclient_id%3DIv1.9d7d662ea00b8481%26scope%3Dread%253Auser%252Cuser%253Aemail%26state%3Db5a24a157cdc387ee051a5e9dba8efa64e4274e658261f1e170d1b39152ad0820713f63ddd9c6389a2537f5a090fae65b9a4c6aab4b2ffcb16a324447ba0cd119f00229d0902b1dae8a641786445b5e693abf9efc7314ed9fcf83878075cc7f2b98becf0824097d9a7ddfc87328b4c726e9025bcaa327830d1a2db03efdbd458753785d766a138bc1b87ce0d6e207ab1e8884c948fa72c9e08283684c5fc1f1dcc00642ea498cded44713b27dfff76951a8018004832f4e8054e0852c826fbcaf5f13169b00147a55d310e9231e35cf3883c3e0e517b452e7b56028083ae9db190c0b29f53818800f1a87629a52674f8abb80c475ca1d977f38735414d96950c99e04db17358064c629c17ded00a11c58b3badea92fe44d64d9159f996ce0faf3ed30d3663e03fa771a905d507a74193a64392203d3b7683673c3bc7b333402af6e089a8e08eb3d6d333b66634d9307b88ed9a123f45220573ab0180e6d297c6d4cb172e79e22bd59e10b50129d6f86373138c8f&source=oauth'>Create an account />
+Sign in with a passkey
+
+</current_dom>

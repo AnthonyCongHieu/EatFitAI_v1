@@ -1,0 +1,11 @@
+# Task Plan: Verify Login and Dashboard Functionality
+
+- [ ] Navigate to `http://127.0.0.1:3000/login`
+- [ ] Log in with `admin@eatfit.ai` / `Admin@123`
+- [ ] Verify transition to Dashboard
+- [ ] Check "Gemini Keys" page for real data (not mock)
+- [ ] Check "User Management" page for real data (not mock)
+- [ ] Report observations
+
+## Observations
+- 

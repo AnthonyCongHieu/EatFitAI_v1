@@ -1,0 +1,135 @@
+EatFitAI Admin
+[0] (83,500)<div class='flex-1 overflow-y-auto py-6 px-4 space-y-2' scrollable='true' />
+	[1] (78,184)<a class='block relative' href='/' />
+		[2] (78,184)<div  />
+			[3] (62,184)<span >Overview />
+	[4] (78,265)<a class='block relative' href='/users' />
+		[5] (78,265)<div  />
+			[6] (54,265)<span >Users />
+	[7] (78,345)<a class='block relative' href='/meals' />
+		[8] (78,345)<div  />
+			[9] (64,345)<span >Meal Logs />
+	[10] (78,426)<a class='block relative' href='/foods' />
+		[11] (78,426)<div  />
+			[12] (73,426)<span >Food Database />
+	[13] (78,506)<a class='block relative' href='/master-data' />
+		[14] (78,506)<div  />
+			[15] (67,506)<span >Master Data />
+	[16] (78,587)<a class='block relative' href='/gemini-keys' />
+		[17] (78,587)<div  />
+			[18] (69,587)<span >Gemini Keys />
+	[19] (78,668)<a class='block relative' href='/ai-logs' />
+		[20] (78,668)<div  />
+			[21] (59,668)<span >AI Logs />
+	[22] (78,748)<a class='block relative' href='/analytics' />
+		[23] (78,748)<div  />
+			[24] (62,748)<span >Analytics />
+	[25] (78,829)<a class='block relative' href='/settings' />
+		[26] (78,829)<div  />
+			[27] (58,829)<span >Settings />
+[28] (83,943)<button class='w-full flex items-center px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors duration-200'>Logout />
+	Logout
+Meals
+Welcome back to the EatFitAI administrative panel.
+[29] (843,57)<button class='flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer' title='Backend: OK | AI: OK
+Last: 40s ago' />
+	[30] (849,57)<span >40s ago />
+Admin User
+admin@eatfit.ai
+[31] (583,558)<main class='flex-1 overflow-y-auto w-full p-8 relative' scrollable='true' />
+	Meal Diaries
+	Monitor all user meals, macros, and source methods.
+	Total Logs
+	1360
+	Logged Today
+	0
+	Camera Scan
+	0
+	Manual / Voice
+	0
+	Log Stream
+	1360
+	total
+	[32] (854,544)<input class='h-8 min-w-0 rounded-lg border px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 w-full md:w-[320px] pl-9 bg-black/20 border-white/10 focus-visible:ring-emerald-500/50' id='base-ui-_r_nt_' placeholder='Search by food name or user email...' />
+	User
+	Food Item
+	Macros (P/C/F) & Cal
+	Source
+	Date Logged
+	Actions
+	Scan Demo Reliability
+	scan-demo@eatfitai.local
+	Chuối (tươi)
+	Ăn nhẹ
+	118
+	g
+	1
+	g
+	/
+	27
+	g
+	/
+	0
+	g
+	105
+	kcal
+	catalog
+	2026-04-04
+	[33] (953,714)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-8 h-8 w-8 hover:bg-red-500/20 hover:text-red-400' />
+	Scan Demo Reliability
+	scan-demo@eatfitai.local
+	Cơm gạo lứt (chín)
+	Tối
+	165
+	g
+	4
+	g
+	/
+	38
+	g
+	/
+	1
+	g
+	183
+	kcal
+	catalog
+	2026-04-04
+	[34] (953,799)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-8 h-8 w-8 hover:bg-red-500/20 hover:text-red-400' />
+	Scan Demo Reliability
+	scan-demo@eatfitai.local
+	Ức gà (luộc)
+	Tối
+	150
+	g
+	47
+	g
+	/
+	0
+	g
+	/
+	5
+	g
+	248
+	kcal
+	catalog
+	2026-04-04
+	[35] (953,884)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-8 h-8 w-8 hover:bg-red-500/20 hover:text-red-400' />
+	Scan Demo Reliability
+	scan-demo@eatfitai.local
+	Rau muống (tươi)
+	Trưa
+	90
+	g
+	2
+	g
+	/
+	3
+	g
+	/
+	0
+	g
+	22
+	kcal
+	catalog
+	2026-04-04
+	[36] (953,968)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50 size-8 h-8 w-8 hover:bg-red-500/20 hover:text-red-400' />

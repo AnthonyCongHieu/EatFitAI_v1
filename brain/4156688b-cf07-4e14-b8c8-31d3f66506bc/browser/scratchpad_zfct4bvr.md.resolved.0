@@ -1,0 +1,13 @@
+# Task: Execute SQL on Supabase SQL Editor
+
+- [ ] Navigate to Supabase SQL Editor
+- [ ] Clear existing text in the editor
+- [ ] Type test SQL: `SELECT COUNT(*) FROM "MealDiary";`
+- [ ] Run the SQL query
+- [ ] Verify the result and report the count
+- [ ] Import the remaining MealDiary data parts (if needed)
+
+## Context
+- User is logged in.
+- Current project: `bjlmndmafrajjysenpbm`
+- Database: Supabase

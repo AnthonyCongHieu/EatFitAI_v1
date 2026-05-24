@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_TASK",
+  "summary":  "Task list to track the implementation of the Food Search optimization, migrating from client-side evaluation to server-side EF Core queries with pagination.",
+  "updatedAt":  "2026-04-28T18:39:12.982992400Z"
+}

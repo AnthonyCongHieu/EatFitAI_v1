@@ -1,0 +1,88 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Apps Script
+EatFitAI Keep-Alive
+Triển khai
+
+person_add
+help_outline
+info_outline
+code
+history
+alarm
+playlist_play
+settings
+Kích hoạt
+Hiển thị 0 trình kích hoạt
+add
+Thêm trình kích hoạt
+
+Thêm bộ lọc
+Chủ sở hữu
+Lần chạy gần đây nhất
+Triển khai
+Sự kiện
+Hàm
+Tỷ lệ lỗi
+Không có kết quả nào
+Thử điều chỉnh tiêu chí lọc hoặc
+tạo trình kích hoạt mới.
+Thêm lần kích hoạt cho EatFitAI Keep-Alive
+[0] (500,557)<span class='PbnGhe oJeWuf fb0g6' scrollable='true' />
+	Chọn hàm sẽ chạy
+	[1] (371,329)<div aria-label='Chọn hàm sẽ chạy' class='jgvuAb' role='listbox' />
+		[2] (371,329)<div role='presentation' />
+			[3] (371,329)<div class='ry3kXd' role='presentation' />
+				[4] (371,329)<div aria-label='keepAlive' class='MocG8c LMgvRb KKjvXb' role='option' />
+					[5] (319,329)<span >keepAlive />
+			[6] (436,329)<div class='e2CuFe eU809d' role='presentation' />
+	Chọn hoạt động triển khai sẽ chạy
+	[7] (371,498)<div aria-label='Chọn hoạt động triển khai sẽ chạy' class='jgvuAb' role='listbox' />
+		[8] (371,498)<div role='presentation' />
+			[9] (371,498)<div class='ry3kXd' role='presentation' />
+				[10] (371,498)<div aria-label='Phần đầu' class='MocG8c LMgvRb KKjvXb' role='option' />
+					[11] (319,498)<span >Phần đầu />
+			[12] (436,499)<div class='e2CuFe eU809d' role='presentation' />
+	Chọn nguồn sự kiện
+	Theo thời gian
+	Từ lịch
+	Chọn loại trình kích hoạt dựa trên thời gian
+	[13] (371,837)<div aria-label='Chọn loại trình kích hoạt dựa trên thời gian' class='jgvuAb iWO5td' role='listbox' />
+		Ngày và giờ cụ thể
+		Đồng hồ đếm phút
+		Đồng hồ đếm giờ
+		Đồng hồ đếm ngày
+		Đồng hồ đếm tuần
+		Đồng hồ đếm tháng
+		[14] (371,782)<div class='OA0qNb ncFHed qs41qe' role='presentation' />
+			[15] (371,635)<div class='MocG8c LMgvRb' role='option' />
+				[16] (337,634)<span >Ngày và giờ cụ thể />
+			[17] (371,694)<div class='MocG8c LMgvRb' role='option' />
+				[18] (337,693)<span >Đồng hồ đếm phút />
+			[19] (371,752)<div class='MocG8c LMgvRb KKjvXb' role='option' />
+				[20] (334,752)<span >Đồng hồ đếm giờ />
+			[21] (371,811)<div class='MocG8c LMgvRb' role='option' />
+				[22] (338,811)<span >Đồng hồ đếm ngày />
+			[23] (371,870)<div class='MocG8c LMgvRb' role='option' />
+				[24] (337,870)<span >Đồng hồ đếm tuần />
+			[25] (371,929)<div class='MocG8c LMgvRb' role='option' />
+				[26] (340,929)<span >Đồng hồ đếm tháng />
+	Chọn khoảng giờ
+	1 giờ một lần
+	Tùy chọn cài đặt thông báo lỗi
+	[27] (685,242)<button aria-label='Thêm tùy chọn cài đặt thông báo lỗi mới' class='VfPpkd-Bz112c-LgbsSe yHy1rc eT1oJ mN1ivc MqSWPe' />
+		[28] (685,242)<i >add />
+	[29] (601,332)<div aria-label='Chọn thời điểm bạn muốn nhận thông báo' class='jgvuAb' role='listbox' />
+		[30] (601,332)<div role='presentation' />
+			[31] (601,332)<div class='ry3kXd' role='presentation' />
+				Thông báo cho tôi ngay lập tức
+				Thông báo cho tôi hằng giờ
+				[32] (601,332)<div class='MocG8c LMgvRb KKjvXb' role='option' />
+					[33] (594,332)<span >Thông báo cho tôi hằng ngày />
+				Thông báo cho tôi hằng tuần
+			[34] (660,332)<div class='e2CuFe eU809d' role='presentation' />
+Đang lưu dự án...
+
+</current_dom>

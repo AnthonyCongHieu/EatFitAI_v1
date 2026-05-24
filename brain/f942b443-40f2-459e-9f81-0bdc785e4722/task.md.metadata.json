@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_TASK",
+  "summary": "Danh sách các tác vụ để di chuyển và xây dựng giao diện AI Studio Local thành 4 tabs (Studio, Library, Normalizer, Benchmark) bằng ReactJS",
+  "updatedAt": "2026-04-14T00:35:10.016535600Z"
+}

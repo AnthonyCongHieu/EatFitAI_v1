@@ -1,0 +1,20 @@
+Overview Dashboard
+Welcome back to the EatFitAI administrative panel.
+Admin User
+eatfitai.admin@example.com
+[0] (500,548)<main class='flex-1 overflow-y-auto w-full p-8 relative' scrollable='true' />
+	Total API Requests
+	28,500
+	+12.5% from last week
+	Active Gemini Keys
+	3 / 5
+	2 Exhausted
+	Total Users
+	1,204
+	+48 new today
+	System Status
+	Healthy
+	All services operational
+	AI Usage vs Quota Limit
+	Daily API consumption tracked across the Gemini pool.
+	[1] (488,844)<div  />

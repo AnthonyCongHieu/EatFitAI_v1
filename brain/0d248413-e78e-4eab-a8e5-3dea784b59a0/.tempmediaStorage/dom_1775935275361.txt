@@ -1,0 +1,80 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+English
+Logout
+Dashboard
+Cronjobs
+Status Pages
+Statistics
+Settings
+[0] (578,500)<main class='jss33' scrollable='true' />
+	Cronjobs
+	/
+	Create cronjob
+	Create cronjob
+	Common
+	Advanced
+	Title
+	URL
+	*
+	Enable job
+	Save responses in job history
+	Execution schedule
+	Every
+	15
+	minutes
+	Every day at
+	0
+	:
+	00
+	Every
+	1
+	.
+	of the month at
+	0
+	:
+	00
+	Every year on
+	1
+	.
+	January
+	at
+	0
+	:
+	00
+	Next executions
+	Friday, January 1, 2027 12:00 AM
+	Saturday, January 1, 2028 12:00 AM
+	Monday, January 1, 2029 12:00 AM
+	Tuesday, January 1, 2030 12:00 AM
+[1] (500,500)<div  />
+[2] (282,318)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>1
+minute />
+[3] (282,370)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>2
+minutes />
+[4] (282,422)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>5
+minutes />
+[5] (282,473)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>10
+minutes />
+[6] (282,525)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root Mui-selected MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button Mui-selected Mui-focusVisible Mui-focusVisible' role='option'>15
+minutes />
+[7] (282,577)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>30
+minutes />
+[8] (282,629)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>1
+hour />
+[9] (282,681)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>2
+hours />
+[10] (282,732)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>3
+hours />
+[11] (282,784)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>4
+hours />
+[12] (282,836)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>6
+hours />
+[13] (282,888)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>8
+hours />
+[14] (282,940)<li class='MuiButtonBase-root MuiListItem-root MuiMenuItem-root MuiMenuItem-gutters MuiListItem-gutters MuiListItem-button' role='option'>12
+hours />
+
+</current_dom>

@@ -1,0 +1,330 @@
+# 🔍 Đánh giá Production Readiness — EatFitAI
+
+> **Ngày đánh giá**: 2026-04-24
+> **Phương pháp**: Đọc toàn bộ 9 tài liệu docs/ + khảo sát cấu trúc codebase thực tế
+> **Kết luận nhanh**: App đang ở mức **~72% production-ready** — code khá chín nhưng vẫn còn nhiều blocker infra/ops/verification
+
+---
+
+## Tổng quan tỉ lệ hoàn thành
+
+| Chiều đánh giá | Hoàn thành | Ghi chú |
+|---|:---:|---|
+| 1. Core Features (UI/UX) | **90%** | Đầy đủ màn hình, navigation, diary, stats, profile |
+| 2. Auth & Security | **80%** | Login/register/Google/forgot-password hoạt động. Còn thiếu reset code persist DB |
+| 3. AI Features | **85%** | 11 AI features hoạt động. 2 logic bug đã fix code nhưng cần verify trên prod |
+| 4. Backend API | **88%** | 25 controllers, health checks, rate limiting, security headers. Vững |
+| 5. Mobile App Quality | **78%** | TypeCheck pass, Jest pass. Còn ScrollView→FlatList, Image optimization chưa làm |
+| 6. Security Hardening | **82%** | ex.Message cleanup, security headers, secure-store, npm audit. Vẫn còn 19 npm vuln (dev) |
+| 7. Telemetry & Analytics | **75%** | Firebase Analytics + Crashlytics code đã viết. **Chưa verify data chạy tới Firebase Console** |
+| 8. Testing Infrastructure | **70%** | Appium framework sẵn sàng, smoke scripts đồ sộ. **Chưa chạy full gate trên device/cloud thật** |
+| 9. Cloud / Infra / DevOps | **40%** | ⚠️ **BLOCKER LỚN NHẤT** — vẫn chạy Render Free, chưa setup keep-alive, chưa paid plan |
+| 10. Data Integrity | **85%** | Timezone fix đã làm. Supabase bypass đã xóa. Water target theo cân nặng |
+| 11. Documentation | **92%** | 9 docs rõ ràng, có cấu trúc, ngày cập nhật rõ |
+| 12. Performance Optimization | **55%** | Cache AI provider ✅. Mobile list virtualization, image opt, staleTime **chưa làm** |
+
+### ⭐ Tỉ lệ tổng hợp: **~72% Production-Ready**
+
+---
+
+## Chi tiết theo từng mảng
+
+### 1. Core Features — 90% ✅
+
+**Đã có đầy đủ:**
+- 30+ screens: auth flow, diary flow, AI flow, stats flow, profile flow
+- Food search, custom dish, meal diary, water tracking
+- Stats/biểu đồ (day/week/month), achievements, notifications
+- Voice input, AI scan, recipe suggestions, nutrition insights
+- Barcode scanner (mới ship), weekly review
+
+**Thiếu (P1-P2):**
+- [ ] Favorites / recent foods / "same as yesterday" (manual logging speed)
+- [ ] Meal planner, grocery list
+- [ ] Intermittent fasting, wearable sync
+- [ ] Premium tiering
+
+---
+
+### 2. Auth & Security — 80% ✅
+
+**Hoạt động tốt:**
+- ✅ Email/password login + registration + email verification
+- ✅ Google Sign-In (verified trên device thật 2026-04-15)
+- ✅ Forgot/reset password qua Brevo (verified trên Gmail thật)
+- ✅ JWT + refresh token (30 ngày) + expo-secure-store
+- ✅ Rate limiting: Auth 10/min, AI 20/min, General 100/min
+
+**Chưa ổn:**
+- ⚠️ Password reset codes lưu `IMemoryCache` — mất khi Render restart/scale
+- ⚠️ Google env vars chưa update trên Render production
+- ⚠️ `GenerateJwtToken()` copy-paste ở 2 controller (rủi ro inconsistency)
+
+---
+
+### 3. AI Features — 85% ✅
+
+**11 tính năng AI đã code:**
+
+| # | Feature | Status |
+|---|---|---|
+| 1 | AI Food Scan (YOLO custom) | ✅ |
+| 2 | Voice input tiếng Việt (STT) | ✅ |
+| 3 | NLP food text parse | ✅ |
+| 4 | Recipe suggestions | ✅ |
+| 5 | Nutrition insights AI | ✅ |
+| 6 | Vision history | ✅ |
+| 7 | Dietary restrictions AI | ✅ |
+| 8 | Cooking Instructions AI | ✅ **UNIQUE** |
+| 9 | Adaptive Nutrition Target | ✅ |
+| 10 | Teach Label (self-learning) | ✅ **UNIQUE** |
+| 11 | Barcode scanner | ✅ |
+
+**3 lợi thế cạnh tranh UNIQUE** vs MyFitnessPal/Yazio/Lose It:
+1. **Cooking Instructions AI** — không app nào có
+2. **Voice tiếng Việt** — không app nào hỗ trợ
+3. **Self-learning label** — user dạy AI nhận diện, không app nào có
+
+**Đã fix (code level):**
+- ✅ Activity level mapping bug (5A)
+- ✅ Goal adjustment parity 3 tầng (5B)
+- ✅ Dead code cleanup (5C)
+- ✅ Upper bound validation (5D)
+- ✅ YOLO confidence env var (5E)
+- ✅ Gemini token optimization (5F)
+
+**⚠️ Chưa verify trên production environment thật**
+
+---
+
+### 4. Backend API — 88% ✅
+
+**Kiến trúc vững:**
+- 25 controllers covering: auth, food, diary, AI, voice, water, nutrition, summary, telemetry, health, admin
+- Clean Architecture: Controllers → Services → Repositories → EF Core
+- Health checks: `/health/live`, `/health/ready` (DB query thật)
+- `EnableRetryOnFailure()`, security headers middleware, connection pool detection
+
+**Build status:**
+- ✅ `dotnet build` pass
+- ✅ Focused `dotnet test` pass (auth, analytics, food, barcode, weekly-review)
+
+---
+
+### 5. Mobile App Quality — 78% ✅
+
+**Tốt:**
+- ✅ TypeScript typecheck pass
+- ✅ Jest unit tests pass (telemetry, AI client retry, AI service, water, summary, food, logger)
+- ✅ 50+ chỗ `useMemo/useCallback` đúng cách
+- ✅ Android preview APK build pass + install emulator pass
+- ✅ Production-safe logger (không leak token/sensitive data)
+- ✅ Offline readonly cache v1
+
+**Chưa làm:**
+- ⚠️ `ScrollView` vẫn dùng ở FoodSearchScreen, MealDiaryScreen — performance kém khi list dài
+- ⚠️ Chưa dùng `expo-image` — không cache ảnh, load chậm
+- ⚠️ Query `staleTime` hầu hết = 0 → refetch mỗi lần focus → API call dư thừa
+
+---
+
+### 6. Security Hardening — 82% ✅
+
+| Hạng mục | Trạng thái |
+|---|---|
+| ex.Message → server log only | ✅ Xong |
+| Security headers (nosniff, X-Frame, HSTS) | ✅ Xong |
+| Rate limiting | ✅ Xong |
+| expo-secure-store (token storage) | ✅ An toàn |
+| `dotnet audit` | ✅ 0 vulnerabilities |
+| `npm audit` | ⚠️ 19 lỗ hổng (hầu hết dev tools) |
+| Secret management | ✅ `.NET User Secrets` + platform env stores |
+| Supabase credential rotation | ✅ Đã rotate |
+
+---
+
+### 7. Telemetry & Analytics — 75% 🟡
+
+**Code đã viết:**
+- ✅ Firebase Analytics (screen views, event tracking)
+- ✅ Firebase Crashlytics (crash reporting, user identification)
+- ✅ `analytics.ts` thay stub bằng Firebase thật
+- ✅ `errorTracking.ts` thay stub bằng Crashlytics thật
+- ✅ Telemetry service với local queue + flush retry
+- ✅ Backend telemetry endpoint
+
+**⚠️ Chưa xác minh:**
+- [ ] Data có thực sự chạy tới Firebase Console không?
+- [ ] Crashlytics có nhận crash report từ release build không?
+- [ ] Telemetry funnel (register → verify → login → onboarding) có đầy đủ event không?
+
+---
+
+### 8. Testing Infrastructure — 70% 🟡
+
+**Sẵn sàng nhưng chưa chạy trọn:**
+
+| Gate | Trạng thái | Ghi chú |
+|---|---|---|
+| Gate 0 — Environment | ✅ Script sẵn | `automation:doctor` |
+| Gate 1 — Code | ✅ Pass | `dotnet test`, `typecheck`, `lint`, `guard:no-direct-ai-provider` |
+| Gate 2 — Android Automation | 🟡 Partial | APK build + install ✅. Appium khởi chạy nhưng chưa chạy trọn flow |
+| Gate 3 — Real Device | ⬜ Chưa chạy | Cần evidence bundle: screenshots, logcat, observations |
+| Gate 4 — Cloud | ⬜ Chưa chạy | Cần backend/AI thật, smoke account, artifact lane |
+
+**Hạ tầng test đồ sộ:**
+- 25 scripts smoke/release trong `eatfitai-mobile/scripts/`
+- Appium framework: `sanity.android.js`, `cloud-proof.android.js`, `common.js` (755 dòng helpers)
+- Release gate script: `product-release-gate.js` (16,700 dòng)
+
+---
+
+### 9. Cloud / Infra / DevOps — 40% 🔴 **BLOCKER LỚN NHẤT**
+
+> [!CAUTION]
+> Đây là khoảng cách LỚN NHẤT tới production. Code có thể tốt 95% nhưng nếu infra không ổn thì app vẫn chết.
+
+| Hạng mục | Trạng thái | Vấn đề |
+|---|---|---|
+| Hosting | 🔴 Render **FREE PLAN** | Spin-down sau 15 phút, cold-start 30-60s |
+| Keep-alive | ⬜ Chưa setup | Chưa có UptimeRobot lẫn Cron-job |
+| Instance hours | 🔴 Vượt budget | 2 services × 720h = 1440h > 750h free |
+| AI Provider | 🔴 Free plan | 1 worker, 2 threads, rate limit 20 req/phút |
+| Database port | 🟡 Đã chốt | Cần đổi 6543→5432 trên Render (manual) |
+| Auto deploy | ✅ | Push `hieu_deploy/production` → auto rollout |
+| Google env vars | ⬜ Chưa update | `Google__*` chưa set trên Render |
+| `render.yaml` | ⚠️ Stale SMTP | Nếu redeploy từ blueprint → email hỏng |
+
+**Thực tế:**
+- User mở app lúc server đang ngủ → chờ 30-60s → trải nghiệm rất tệ
+- AI scan/voice có thể timeout nếu AI provider đang cold-start
+- 2 services always-on trên free tier → **impossible** (vượt 750h/tháng)
+
+---
+
+### 10. Data Integrity — 85% ✅
+
+**Đã fix:**
+- ✅ Timezone bug (`DateTime.Now` → `DateTimeHelper.VietnamNow()`) — 11 chỗ
+- ✅ Supabase direct bypass trong `waterService.ts` — đã xóa
+- ✅ Water target theo cân nặng (×30ml, fallback 2000ml)
+- ✅ Console.log cleanup (115+ → production-safe logger)
+- ✅ `aiApiClient` 401 refresh interceptor
+
+---
+
+### 11. Documentation — 92% ✅
+
+**9 tài liệu chất lượng cao:**
+
+| Doc | Chất lượng | Nhận xét |
+|---|---|---|
+| `ARCHITECTURE.md` | ⭐⭐⭐⭐⭐ | Rõ ràng, cập nhật, đúng thực tế |
+| `STABILIZATION_PLAN.md` | ⭐⭐⭐⭐⭐ | 1215 dòng, chi tiết tới từng dòng code, evidence-based |
+| `TESTING_AND_RELEASE.md` | ⭐⭐⭐⭐⭐ | 5 gate rõ, runbook device thật, smoke contract |
+| `AUTH_AND_INFRA.md` | ⭐⭐⭐⭐ | Rõ trạng thái, ghi nhận rủi ro |
+| `AI_FLOW.md` | ⭐⭐⭐⭐ | Runtime path rõ, non-goals rõ |
+| `USERFLOW.md` | ⭐⭐⭐⭐ | Screen inventory đúng |
+| `SECRETS_SETUP.md` | ⭐⭐⭐⭐⭐ | Per-runtime, team onboarding, incident response |
+| `21_PRODUCT_CHECKLIST.md` | ⭐⭐⭐⭐⭐ | Benchmark competitors, gap analysis, ship order |
+| `README.md` (root + docs/) | ⭐⭐⭐⭐ | Quick start, script table, doc index |
+
+---
+
+### 12. Performance — 55% 🟡
+
+| Hạng mục | Trạng thái |
+|---|---|
+| AI Provider Gemini cache | ✅ SimpleCache, TTL 120-600s |
+| Backend DB pooling | ✅ Supabase connection pool |
+| Backend response compression | ⬜ Chưa làm |
+| Mobile list virtualization | ⬜ ScrollView → FlatList chưa đổi |
+| Mobile image optimization | ⬜ Chưa dùng expo-image |
+| Mobile query staleTime | ⬜ Hầu hết = 0 |
+| YOLO lazy model load | ⬜ Vẫn load khi startup |
+
+---
+
+## 🚦 Khoảng cách tới Production — Phân loại Blockers
+
+### 🔴 CRITICAL (Phải giải quyết trước khi ship)
+
+| # | Blocker | Effort | Impact |
+|---|---|---|---|
+| C1 | **Render Free Plan** — server ngủ, cold-start 30-60s, vượt instance hours | Tốn tiền ($7-14/tháng) | UX chết nếu không fix |
+| C2 | **Keep-alive chưa setup** — UptimeRobot + Cron-job | 30 phút manual | Server ngủ = app dead |
+| C3 | **Full cloud smoke gate chưa chạy** | 2-4 giờ | Không biết prod có hoạt động không |
+| C4 | **Google env vars chưa trên Render** | 15 phút | Google Sign-In chết trên production |
+
+### 🟡 HIGH (Nên giải quyết trước public release)
+
+| # | Issue | Effort |
+|---|---|---|
+| H1 | Password reset → chuyển từ `IMemoryCache` sang DB | 2-3 giờ |
+| H2 | Firebase Analytics/Crashlytics verify trên real build | 1-2 giờ |
+| H3 | Full device smoke gate (Appium trọn flow) | 2-4 giờ |
+| H4 | `render.yaml` sửa Brevo thay SMTP | 30 phút |
+| H5 | Mobile ScrollView → FlatList (FoodSearch, MealDiary) | 2-3 giờ |
+
+### 🟢 MEDIUM (Cải thiện chất lượng, làm sau được)
+
+| # | Issue | Effort |
+|---|---|---|
+| M1 | expo-image thay thế Image component | 1-2 giờ |
+| M2 | Query staleTime optimization | 1 giờ |
+| M3 | Backend response compression | 30 phút |
+| M4 | Manual logging speed (favorites, recent, same-as-yesterday) | 4-6 giờ |
+| M5 | YOLO lazy model load | 1-2 giờ |
+| M6 | JwtService refactor (tách copy-paste) | 1-2 giờ |
+
+---
+
+## 📊 Timeline ước tính tới Production
+
+```
+Hiện tại: 72% production-ready
+
+── Phase 1: Critical Blockers (1-2 ngày) ──────────────
+   C1: Upgrade Render / setup keep-alive
+   C2: UptimeRobot + Cron-job
+   C3: Full cloud smoke gate  
+   C4: Google env vars trên Render
+   → Đạt: ~82%
+
+── Phase 2: High Priority (2-3 ngày) ──────────────────
+   H1: Password reset persist DB
+   H2: Firebase verify real build
+   H3: Full device smoke gate
+   H4: render.yaml fix
+   H5: FlatList migration
+   → Đạt: ~90%
+
+── Phase 3: Polish (3-5 ngày) ─────────────────────────
+   M1-M6: Performance + UX polish
+   → Đạt: ~95%
+
+── Phase 4: Production Launch ─────────────────────────
+   Chạy 3 smoke rehearsals liên tiếp pass
+   → Ship to production: 95-100%
+```
+
+---
+
+## 💡 Nhận định tổng thể
+
+### Điểm mạnh
+1. **Code quality cao** — TypeScript typed, .NET structured, Python AI modular
+2. **Documentation xuất sắc** — 9 docs chi tiết, evidence-based, ngày cập nhật rõ
+3. **AI features độc đáo** — 3 UNIQUE features so với competitors lớn
+4. **Testing infrastructure** — smoke scripts đồ sộ, Appium framework, 5-gate release process
+5. **Security mindset** — secrets management, ex.Message cleanup, rate limiting
+
+### Điểm yếu cốt lõi
+1. **Infra là nút thắt** — code 90%+ nhưng infra chỉ 40%
+2. **Chưa có verification thật** — rất nhiều "code đã viết" nhưng "chưa verify trên environment thật"
+3. **Performance mobile chưa tối ưu** — ScrollView, no image cache, staleTime = 0
+4. **Free tier dependency** — toàn bộ backend + AI đang phụ thuộc free plan không bền vững
+
+### Kết luận
+
+> App EatFitAI có **nền tảng code chắc chắn** và **documentation tốt nhất trong phân khúc dự án cá nhân/startup giai đoạn sớm**. Tuy nhiên, khoảng cách tới production thật sự nằm ở **infra/ops** (Render free plan, keep-alive, env vars) và **verification** (chạy full gate trên môi trường thật). Nếu giải quyết 4 critical blockers trong 1-2 ngày, app có thể đạt mức **soft-launch ready** cho nhóm nhỏ test thực tế.

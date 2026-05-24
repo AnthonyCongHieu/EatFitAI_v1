@@ -1,0 +1,135 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+DinhCongHieuFIVECAT22CT113's Org
+Free
+EatFitAI v1
+main
+Production
+Connect
+Feedback
+Search...
+K
+Upgrade to Pro
+Project Overview
+Table Editor
+SQL Editor
+Database
+Authentication
+Storage
+Edge Functions
+Realtime
+Advisors
+Observability
+Logs
+Integrations
+Project Settings
+Database
+[0] (115,569)<div class='flex-grow overflow-y-auto' scrollable='true' />
+	Database Management
+	Schema Visualizer
+	Tables
+	Functions
+	Triggers
+	Enumerated Types
+	Extensions
+	Indexes
+	Publications
+	Configuration
+	Roles
+	Policies
+	Settings
+	Platform
+	Replication
+	Backups
+	Migrations
+	Wrappers
+	Database Webhooks
+[1] (599,535)<main class='h-full flex flex-col flex-1 w-full overflow-y-auto overflow-x-hidden @container' scrollable='true' />
+	Database password
+	Used for direct Postgres connections
+	Reset database password
+	The database password isn’t viewable after creation. Resetting it will break any existing connections.
+	Reset password
+	Connection pooling
+	Docs
+	Connection poolers
+	Configuration is shared across all connection poolers.
+	Shared
+	connections
+	Connection pool size
+	The maximum number of connections made to the underlying Postgres cluster, per user+db combination. Pool size has a default of
+	15
+	based on your compute size of
+	Nano
+	.
+	clients
+	Max client connections
+	The maximum number of concurrent client connections allowed. This value is fixed at
+	200
+	based on your compute size of
+	Nano
+	and cannot be changed.
+	Learn more
+	Cancel
+	Save
+Connect to your project
+Choose how you want to use Supabase
+[2] (750,570)<div class='flex flex-1 flex-col overflow-y-auto divide-y' scrollable='true' />
+	[3] (578,256)<button class='flex flex-col items-center gap-2 p-4 transition-colors border-r last:border-r-0 border-default hover:border-strong hover:bg-surface-100' />
+		[4] (577,221)<span  />
+		[5] (577,273)<div  />
+			[6] (577,258)<p >Framework />
+			[7] (577,287)<p >Use a client library />
+	[8] (689,256)<button class='flex flex-col items-center gap-2 p-4 transition-colors border-r last:border-r-0 bg-surface-200' />
+		[9] (689,221)<span  />
+		[10] (689,273)<div  />
+			[11] (689,258)<p >Direct />
+			[12] (689,287)<p >Connection string />
+	[13] (801,256)<button class='flex flex-col items-center gap-2 p-4 transition-colors border-r last:border-r-0 border-default hover:border-strong hover:bg-surface-100' />
+		[14] (801,221)<span  />
+		[15] (801,273)<div  />
+			[16] (801,258)<p >ORM />
+			[17] (801,287)<p >Third-party library />
+	[18] (913,256)<button class='flex flex-col items-center gap-2 p-4 transition-colors border-r last:border-r-0 border-default hover:border-strong hover:bg-surface-100' />
+		[19] (913,221)<span  />
+		[20] (913,273)<div  />
+			[21] (913,258)<p >MCP />
+			[22] (913,287)<p >Connect your agent />
+	[23] (594,434)<label class='text-sm text peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground flex gap-2 items-center break-words leading-normal'>Connection Method />
+		Connection Method
+	[24] (821,495)<button class='flex flex-col gap-2 bg-overlay/50 border shadow-sm first-of-type:rounded-t-lg last-of-type:rounded-b-lg disabled:opacity-50 disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-surface-300 enabled:hover:border-foreground-muted hover:z-[1] focus-visible:z-[1] data-[state=checked]:z-[1] data-[state=checked]:ring-1 data-[state=checked]:ring-border data-[state=checked]:bg-surface-300 data-[state=checked]:border-foreground-muted transition group w-full text-left' id='connect-connectionMethod-direct' role='radio' />
+		[25] (821,495)<div  />
+			[26] (692,449)<div  />
+			[27] (830,495)<div  />
+				[28] (830,493)<div  />
+					[29] (830,448)<div  />
+						[30] (741,448)<span >Direct connection />
+					[31] (830,509)<span >Ideal for applications with persistent and long-lived connections, such as those running on virtual machines or long-standing containers. />
+	[32] (821,630)<button class='flex flex-col gap-2 bg-overlay/50 border shadow-sm first-of-type:rounded-t-lg last-of-type:rounded-b-lg disabled:opacity-50 disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-surface-300 enabled:hover:border-foreground-muted hover:z-[1] focus-visible:z-[1] data-[state=checked]:z-[1] data-[state=checked]:ring-1 data-[state=checked]:ring-border data-[state=checked]:bg-surface-300 data-[state=checked]:border-foreground-muted transition group w-full text-left' id='connect-connectionMethod-transaction' role='radio' />
+		[33] (821,630)<div  />
+			[34] (692,599)<div  />
+				[35] (692,599)<span  />
+			[36] (830,630)<div  />
+				[37] (830,628)<div  />
+					[38] (830,598)<div  />
+						[39] (743,598)<span >Transaction pooler />
+					[40] (830,644)<span >Ideal for stateless applications like serverless functions where each interaction with Postgres is brief and isolated. />
+	[41] (821,751)<button class='flex flex-col gap-2 bg-overlay/50 border shadow-sm first-of-type:rounded-t-lg last-of-type:rounded-b-lg disabled:opacity-50 disabled:cursor-not-allowed enabled:cursor-pointer enabled:hover:bg-surface-300 enabled:hover:border-foreground-muted hover:z-[1] focus-visible:z-[1] data-[state=checked]:z-[1] data-[state=checked]:ring-1 data-[state=checked]:ring-border data-[state=checked]:bg-surface-300 data-[state=checked]:border-foreground-muted transition group w-full text-left' id='connect-connectionMethod-session' role='radio' />
+		[42] (821,751)<div  />
+			[43] (692,720)<div  />
+			[44] (830,751)<div  />
+				[45] (830,750)<div  />
+					[46] (830,719)<div  />
+						[47] (735,719)<span >Session pooler />
+					[48] (830,765)<span >Only recommended as an alternative to Direct Connection, when connecting via an IPv4 network. />
+	[49] (594,851)<label class='text-sm text peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground flex gap-2 items-center break-words leading-normal'>Type />
+		Type
+	[50] (821,860)<button class='flex w-full items-center justify-between rounded-md border border-strong hover:border-stronger bg-alternative dark:bg-muted hover:bg-selection ring-offset-background-control data-[placeholder]:text-foreground-lighter focus:outline-none ring-border-control focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 data-[state=open]:bg-selection data-[state=open]:border-stronger gap-2 [&>span]:truncate text-left text-sm leading-4 px-3 py-2 h-[34px] [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:gap-x-2' role='combobox'>URI />
+		URI
+	Connect your app
+[51] (984,35)<button class='absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary before:content-[""] before:block before:absolute before:top-1/2 before:left-1/2 before:w-full before:h-full before:outline-red-500 before:outline-2 before:min-w-6 before:min-h-6 before:z-50 before:-translate-x-1/2 before:-translate-y-1/2'>Close />
+	Close
+
+</current_dom>

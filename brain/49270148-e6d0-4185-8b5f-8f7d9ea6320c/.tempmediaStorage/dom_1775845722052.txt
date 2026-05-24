@@ -1,0 +1,52 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+1
+/
+1
+Next.js 16.2.3
+Turbopack
+Runtime Error
+[0] (697,190)<button aria-label='Copy Error Info' class='copy-error-button nextjs-data-copy-button nextjs-data-copy-button--initial' title='Copy Error Info' />
+[1] (732,190)<button class='nodejs-inspector-button' title='Attach Node.js inspector' />
+Your
+project's
+URL
+and
+Key
+are
+required
+to
+create
+a
+Supabase
+client!
+Check
+your
+Supabase
+project's
+API
+settings
+to
+find
+these
+values
+[2] (369,343)<a class='external-link' href='https://supabase.com/dashboard/project/_/settings/api'>https://supabase.com/dashboard/project/_/settings/api />
+1
+2
+[3] (677,408)<a href='https://nextjs.org/telemetry#error-feedback'>Was this helpful? />
+[4] (716,408)<button aria-label='Mark as helpful' class='feedback-button' />
+[5] (733,408)<button aria-label='Mark as not helpful' class='feedback-button' />
+[6] (41,956)<div  />
+	[7] (41,956)<div  />
+		[8] (41,956)<div  />
+			[9] (20,956)<button aria-label='Open Next.js Dev Tools' id='next-logo' />
+			[10] (50,956)<div  />
+				[11] (44,956)<button aria-label='Open issues overlay' />
+					[12] (35,956)<div  />
+						[13] (35,956)<div >1 />
+					[14] (47,956)<div >Issue />
+				[15] (63,956)<button aria-label='Collapse issues badge' />
+
+</current_dom>

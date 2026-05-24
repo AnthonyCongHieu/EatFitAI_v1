@@ -1,0 +1,13 @@
+# Task: Verify Gemini Keys Page
+
+## Progress
+- [x] Navigate to http://localhost:3000/gemini-keys
+- [/] Login if necessary (admin@eatfit.ai / pass123456) - *Currently logged in as eatfitai.admin@example.com*
+- [ ] Verify keys load successfully without 401 error
+- [ ] Check console/network logs if errors occur
+
+## Findings
+## Findings
+- Page loaded, but network request to `http://localhost:5247/api/admin-ai/keys` failed with **403 Forbidden**.
+- Currently logged in as `eatfitai.admin@example.com`.
+- Planning to logout and login with `admin@eatfit.ai / pass123456`.

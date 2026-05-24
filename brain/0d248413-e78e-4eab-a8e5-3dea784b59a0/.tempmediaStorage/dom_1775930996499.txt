@@ -1,0 +1,167 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (500,500)<div  />
+	[1] (16,34)<a class='items-center justify-center flex-shrink-0 flex' href='/dashboard/org/ycicnpvzkftpeznasexd' />
+		[2] (16,34)<img  />
+	[3] (141,34)<a class='flex items-center gap-2 flex-shrink-0 text-sm' href='/dashboard/org/ycicnpvzkftpeznasexd' />
+		[4] (134,34)<span >DinhCongHieuFIVECAT22CT113's Org />
+		[5] (228,34)<div >Free />
+	[6] (252,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs h-[26px] px-1.5 py-4 [&_svg]:w-5 [&_svg]:h-5 ml-1' />
+		[7] (252,34)<div  />
+	[8] (305,34)<a class='flex items-center gap-2 flex-shrink-0 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm' />
+		[9] (312,34)<span >EatFitAI v1 />
+	[10] (345,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs h-[26px] px-1.5 py-4 [&_svg]:w-5 [&_svg]:h-5 ml-1 flex-shrink-0' />
+		[11] (345,34)<div  />
+	[12] (408,34)<a class='flex items-center gap-2 flex-shrink-0' href='/dashboard/project/bjlmndmafrajjysenpbm' />
+		[13] (379,34)<span >main />
+		[14] (420,35)<div >Production />
+	[15] (458,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs h-[26px] px-1.5 py-4 [&_svg]:w-5 [&_svg]:h-5 ml-1' />
+		[16] (458,34)<div  />
+	[17] (504,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-brand-400 dark:bg-brand-500 hover:bg-brand/80 dark:hover:bg-brand/50 text-foreground border-brand-500/75 dark:border-brand/30 hover:border-brand-600 dark:hover:border-brand focus-visible:outline-brand-600 data-[state=open]:bg-brand-400/80 dark:data-[state=open]:bg-brand-500/80 data-[state=open]:outline-brand-600 text-xs px-2.5 py-1 h-[26px] rounded-full pointer-events-auto' />
+		[18] (486,34)<div  />
+		[19] (511,34)<span  />
+			[20] (511,33)<span >Connect />
+	[21] (676,34)<span class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs px-2.5 py-1 rounded-full h-[32px] text-foreground-light hover:text-foreground' />
+		[22] (676,34)<span >Feedback />
+	[23] (747,34)<button class='px-4 py-2 whitespace-nowrap border-input text-sm hover:bg-accent hover:text-accent-foreground ring-offset-background disabled:pointer-events-none disabled:opacity-50 group flex-grow h-[30px] pl-1.5 md:pl-2 pr-1 items-center justify-between text-foreground-lighter border hover:bg-opacity-100 hover:border-stronger focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-border-strong focus-visible:ring-offset-1 focus-visible:ring-offset-background transition hidden md:flex md:min-w-32 xl:min-w-32 rounded-full bg-transparent [&_.command-shortcut]:border-none [&_.command-shortcut]:pr-2 [&_.command-shortcut]:bg-transparent [&_.command-shortcut]:text-foreground-lighter [&_.command-shortcut]:shadow-none' />
+		[24] (736,34)<div  />
+			[25] (743,34)<p >Search... />
+		[26] (774,34)<span  />
+			[27] (774,36)<span >Ctrl K />
+	[28] (805,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 group pointer-events-auto' id='help-dropdown-button' />
+		[29] (805,34)<span  />
+	[30] (831,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 group pointer-events-auto' id='advisor-center-trigger' />
+		[31] (831,34)<span  />
+	[32] (857,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 text-foreground-light hover:text-foreground pointer-events-auto' id='editor-trigger' />
+		[33] (857,34)<span  />
+	[34] (883,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 pointer-events-auto' id='assistant-trigger' />
+		[35] (883,34)<span  />
+			[36] (883,34)<div  />
+				[37] (883,34)<div  />
+	[38] (933,34)<a class='relative justify-center cursor-pointer items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-brand-400 dark:bg-brand-500 hover:bg-brand/80 dark:hover:bg-brand/50 text-foreground border-brand-500/75 dark:border-brand/30 hover:border-brand-600 dark:hover:border-brand focus-visible:outline-brand-600 data-[state=open]:bg-brand-400/80 dark:data-[state=open]:bg-brand-500/80 data-[state=open]:outline-brand-600 text-xs px-2.5 py-1 h-[26px] hidden md:flex' href='/dashboard/org/ycicnpvzkftpeznasexd/billing?panel=subscriptionPlan&source=headerUpgradeCta' />
+		[39] (933,34)<span >Upgrade to Pro />
+	[40] (982,34)<button class='relative justify-center cursor-pointer items-center space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs border flex-shrink-0 hidden md:flex [&>span]:flex px-0 py-0 rounded-full overflow-hidden h-8 w-8 pointer-events-auto' id='radix-:r1f:' />
+		[41] (982,34)<span  />
+			[42] (982,34)<img  />
+	[43] (44,104)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm' />
+		[44] (53,104)<span >Project Overview />
+	[45] (44,153)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/editor' />
+		[46] (52,153)<span >Table Editor />
+	[47] (44,201)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/sql' />
+		[48] (50,201)<span >SQL Editor />
+	[49] (44,283)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/database/schemas' />
+		[50] (47,283)<span >Database />
+	[51] (44,332)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/auth/users' />
+		[52] (53,332)<span >Authentication />
+	[53] (44,381)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/storage/files' />
+		[54] (44,381)<span >Storage />
+	[55] (44,430)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/functions' />
+		[56] (53,430)<span >Edge Functions />
+	[57] (44,479)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/realtime/inspector' />
+		[58] (45,479)<span >Realtime />
+	[59] (44,561)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/advisors/security' />
+		[60] (45,561)<span >Advisors />
+	[61] (44,610)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/observability' />
+		[62] (53,610)<span >Observability />
+	[63] (44,659)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/logs/explorer' />
+		[64] (37,659)<span >Logs />
+	[65] (44,708)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/integrations' />
+		[66] (52,708)<span >Integrations />
+	[67] (44,790)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/general' />
+		[68] (53,790)<span >Project Settings />
+	[69] (15,970)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs py-1 h-[26px] w-min px-1.5 mx-0.5' id='radix-:r1p:' />
+		[70] (15,970)<div  />
+	Storage
+	Manage
+	[71] (115,222)<a href='/dashboard/project/bjlmndmafrajjysenpbm/storage/files' />
+		[72] (115,222)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-semibold bg-sidebar-accent text-foreground-lighter z-10 rounded-md' role='menuitem' />
+			[73] (115,222)<span  />
+				[74] (115,222)<div >Files />
+					Files
+	[75] (115,262)<a href='/dashboard/project/bjlmndmafrajjysenpbm/storage/analytics' />
+		[76] (115,262)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[77] (115,262)<span  />
+				[78] (115,262)<div >Analytics />
+					Analytics
+					[79] (171,262)<div >New />
+	[80] (115,302)<a href='/dashboard/project/bjlmndmafrajjysenpbm/storage/vectors' />
+		[81] (115,302)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[82] (115,302)<span  />
+				[83] (115,302)<div >Vectors />
+					Vectors
+	Configuration
+	[84] (115,430)<a href='/dashboard/project/bjlmndmafrajjysenpbm/storage/s3' />
+		[85] (115,430)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[86] (115,430)<span  />
+				[87] (115,430)<p >S3 />
+	Files
+	General file storage for most types of digital content
+	[88] (941,181)<a class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px]' href='https://supabase.com/docs/guides/storage/buckets/fundamentals' />
+		[89] (929,181)<div  />
+		[90] (948,181)<span >Docs />
+	[91] (251,271)<a href='/dashboard/project/bjlmndmafrajjysenpbm/storage/files'>Buckets />
+	[92] (297,271)<a href='/dashboard/project/bjlmndmafrajjysenpbm/storage/files/settings'>Settings />
+	[93] (342,271)<a href='/dashboard/project/bjlmndmafrajjysenpbm/storage/files/policies'>Policies />
+	[94] (300,385)<input class='flex file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-foreground-muted read-only:text-foreground-light focus:ring-background-control focus-visible:outline-none focus-visible:ring-background-control focus-visible:ring-offset-foreground-muted disabled:cursor-not-allowed disabled:text-foreground-muted aria-[] h-[26px] flex-1 rounded-none border border-transparent -m-px bg-transparent shadow-none focus:border-transparent focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0 read-only:border-transparent aria-[invalid=true]:border-transparent aria-[invalid=true]:bg-transparent aria-[invalid=true]:focus:border-transparent aria-[invalid=true]:focus-visible:border-transparent text-xs px-2.5 py-1 flex-grow lg:flex-grow-0 w-52' placeholder='Search for a bucket' />
+	[95] (243,385)<div class='text-foreground-light flex h-auto cursor-text select-none items-center justify-center gap-2 text-sm group-data-[disabled=true]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4 order-first pl-2 has-[>button]:ml-[-0.45rem] has-[>kbd]:ml-[-0.35rem]' role='group' />
+	[96] (441,385)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px]' id='radix-:r9l:' />
+		[97] (402,385)<div  />
+		[98] (448,385)<span >Sorted by
+created at />
+	[99] (929,385)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-brand-400 dark:bg-brand-500 hover:bg-brand/80 dark:hover:bg-brand/50 text-foreground border-brand-500/75 dark:border-brand/30 hover:border-brand-600 dark:hover:border-brand focus-visible:outline-brand-600 data-[state=open]:bg-brand-400/80 dark:data-[state=open]:bg-brand-500/80 data-[state=open]:outline-brand-600 flex items-center justify-center text-xs px-2.5 py-1 h-[26px] w-fit pointer-events-auto' />
+		[100] (905,385)<div  />
+		[101] (936,385)<span >New bucket />
+	Icon
+	Name
+	Policies
+	File size limit
+	Allowed MIME types
+	Actions
+	[102] (599,531)<tr class='border-b [&>td]:hover:bg-surface-200 data-[state=selected]:bg-muted relative cursor-pointer h-16 group inset-focus' />
+		[103] (247,531)<td  />
+		[104] (351,531)<td  />
+			[105] (351,531)<div  />
+				[106] (291,531)<p >ml-models />
+		[107] (494,531)<td  />
+			[108] (494,531)<p >0 />
+		[109] (627,531)<td  />
+			[110] (627,531)<p >50 MB />
+		[111] (811,531)<td  />
+			[112] (811,531)<p >application/octet-stream />
+		[113] (938,531)<td >Go to bucket details />
+			[114] (938,531)<div  />
+			Go to bucket details
+	[115] (599,623)<tr class='border-b [&>td]:hover:bg-surface-200 data-[state=selected]:bg-muted relative cursor-pointer h-16 group inset-focus' />
+		[116] (247,623)<td  />
+		[117] (351,623)<td  />
+			[118] (351,623)<div  />
+				[119] (295,623)<p >food-images />
+				[120] (342,623)<div >Public />
+		[121] (494,623)<td  />
+			[122] (494,623)<p >1 />
+		[123] (627,623)<td  />
+			[124] (627,623)<p >Unset (50 MB) />
+		[125] (811,623)<td  />
+			[126] (811,623)<p >Any />
+		[127] (938,623)<td >Go to bucket details />
+			[128] (938,623)<div  />
+			Go to bucket details
+	[129] (599,715)<tr class='border-b [&>td]:hover:bg-surface-200 data-[state=selected]:bg-muted relative cursor-pointer h-16 group inset-focus' />
+		[130] (247,715)<td  />
+		[131] (351,715)<td  />
+			[132] (351,716)<div  />
+				[133] (289,716)<p >user-food />
+				[134] (331,716)<div >Public />
+		[135] (494,715)<td  />
+			[136] (494,716)<p >1 />
+		[137] (627,715)<td  />
+			[138] (627,716)<p >Unset (50 MB) />
+		[139] (811,715)<td  />
+			[140] (811,716)<p >Any />
+		[141] (938,715)<td >Go to bucket details />
+			[142] (938,716)<div  />
+			Go to bucket details
+
+</current_dom>

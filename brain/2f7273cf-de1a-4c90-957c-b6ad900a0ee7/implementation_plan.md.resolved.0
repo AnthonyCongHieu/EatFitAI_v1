@@ -1,0 +1,292 @@
+# EatFitAI Beta Stabilization & Cloud Optimization Plan
+
+Ngày: 2026-04-27
+Branch: `hieu_deploy/production`
+
+## Background
+
+EatFitAI hiện là production candidate nhưng còn nhiều rủi ro mở. User yêu cầu rà soát toàn diện 5 mảng: Supabase quota, Cloudflare R2, AI scan/services, Voice, và tổng thể chất lượng beta.
+
+Credentials đã được cung cấp (Render, Supabase, Cloudflare R2) để verify trực tiếp. **Tất cả credentials này cần được rotate sau khi dùng xong** vì đã exposed trong chat (SR-01 trong risk register).
+
+---
+
+## User Review Required
+
+> [!CAUTION]
+> **Credentials Exposure**: Bạn đã paste Render API key, Supabase token, Cloudflare R2 token/access key vào chat. Tất cả PHẢI được rotate/revoke sau khi hoàn thành audit. Đây là P0.
+
+> [!IMPORTANT]
+> **Render Pipeline Minutes**: Production deploy đang bị block do `pipeline_minutes_exhausted`. Mọi code fix sẽ chỉ deploy được trên dev services cho đến khi quota reset hoặc upgrade plan. Cần quyết định: chờ reset hay upgrade?
+
+> [!WARNING]
+> **YOLO vs Gemini Vision**: User muốn YOLO cho scan (tốc độ + accuracy). Hiện tại hệ thống đã đúng hướng này - YOLO ONNX cho `/detect`, Gemini cho mọi thứ khác. Không cần thay đổi kiến trúc AI, chỉ cần stabilize.
+
+## Open Questions
+
+1. **Render Plan**: Chờ pipeline minutes reset (đầu tháng 5) hay nâng lên Starter ($7/tháng/service)?
+2. **Voice STT**: Hiện Whisper bị disable. Bạn muốn:
+   - (A) Dùng **Google Cloud Speech-to-Text API** (free 60 phút/tháng, sau đó $0.006/15s) - tốt nhất cho Vietnamese
+   - (B) Dùng **Gemini Audio API** (dùng chung quota Gemini đang có) - đơn giản nhất
+   - (C) Bỏ qua STT cho beta, chỉ giữ text-based voice parse
+3. **R2 Custom Domain**: Bạn đã có domain riêng chưa? Cần custom domain cho R2 trước public production.
+4. **Supabase Project Tách**: Dev và prod đang dùng chung 1 Supabase project. Chấp nhận cho beta hay cần tách ngay?
+
+---
+
+## Proposed Changes
+
+### Workstream 1: Supabase Quota Audit & Fix
+
+**Mục tiêu**: Đảm bảo Supabase cached egress không tăng thêm từ media path.
+
+#### Phase 1A: Live API Audit (Không thay đổi code)
+
+Dùng Supabase token để check dashboard metrics:
+- Kiểm tra cached egress hiện tại so với quota (5GB/cycle)
+- So sánh với số ghi nhận trước đó (7.71 GB / 5 GB = 154%)
+- Billing cycle reset: 2026-04-30 → chỉ còn ~3 ngày
+
+Dùng browser subagent để:
+- Truy cập Supabase dashboard và screenshot egress metrics
+- Gọi production API endpoints để verify 0 Supabase Storage URLs
+
+#### Phase 1B: Code Guard - Recurring Supabase URL Check
+
+#### [MODIFY] [production-smoke-regression.js](file:///d:/EatFitAI_v1/eatfitai-mobile/scripts/production-smoke-regression.js)
+- Thêm regression test: assert 0 URLs matching `supabase.co/storage` trong responses từ `/api/food/search-all`, `/api/user-food-items`, `/api/food/recent`, `/api/favorites`
+
+#### Phase 1C: Backend Media URL Resolver Audit
+
+#### [MODIFY] [MediaUrlResolver.cs](file:///d:/EatFitAI_v1/eatfitai-backend/Services/MediaUrlResolver.cs)
+- Verify resolver đang cover tất cả code paths trả media URLs
+- Kiểm tra edge cases: null URLs, relative paths, mixed format
+
+---
+
+### Workstream 2: Cloudflare R2 Verification
+
+**Mục tiêu**: Xác nhận R2 setup hoàn chỉnh, upload/read cycle hoạt động, cache headers đúng.
+
+#### Phase 2A: R2 Bucket Verification (Không thay đổi code)
+
+Dùng Cloudflare credentials đã cung cấp:
+- Verify bucket `eatfitai-media` tồn tại và accessible
+- List objects để confirm có catalog thumbnails (`food-images/v2/thumb/*.webp`)
+- Test public read URL: `https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev/food-images/v2/thumb/{sample}.webp`
+- Check cache headers trên objects (`Cache-Control: public, max-age=31536000, immutable`)
+
+#### Phase 2B: Upload/Read Cycle Test
+
+Dùng S3 API credentials để:
+- Upload test object qua S3 compatible API
+- Read back và verify content
+- Delete test object
+- Confirm R2 token permissions đúng (read, write, list cho bucket `eatfitai-media`)
+
+#### Phase 2C: Backend R2 Service Audit
+
+#### [MODIFY] [R2MediaStorageService.cs](file:///d:/EatFitAI_v1/eatfitai-backend/Services/R2MediaStorageService.cs)
+- Verify upload logic set đúng `Cache-Control` headers
+- Verify `Content-Type` đúng cho WebP images
+- Audit error handling khi R2 unavailable
+
+#### Phase 2D: Document R2 Production Readiness
+
+Ghi nhận:
+- `r2.dev` URL chỉ dùng cho dev/beta, cần custom domain cho production
+- Class A/B operation budgets cần monitor
+- R2 access key cần rotate (đã exposed)
+
+---
+
+### Workstream 3: AI Architecture Verification & Stabilization
+
+**Mục tiêu**: Xác nhận YOLO-only cho scan, Gemini cho mọi AI khác, stabilize chicken detection.
+
+#### Current State (Đã đúng hướng):
+| Feature | Engine | Status |
+|---|---|---|
+| Food scan `/detect` | YOLO ONNX (`best.onnx`, 320px) | ✅ Hoạt động, ~0.2-0.4s local |
+| Food scan recovery | YOLO ONNX (low conf 0.05, 320px) | ✅ Beef/chicken recovery |
+| Nutrition advice | Gemini (`gemini-2.5-flash`) | ✅ Hoạt động |
+| Meal insight | Gemini | ✅ Hoạt động |
+| Cooking instructions | Gemini | ✅ Hoạt động |
+| Voice parse (text) | Gemini | ✅ Hoạt động |
+| Voice transcribe (audio) | ❌ Disabled (Whisper too heavy) | ❌ No solution |
+
+#### Phase 3A: YOLO Scan Stabilization
+
+**Vấn đề P1**: Chicken scan intermittent 502/reset trên live provider.
+
+Nguyên nhân có thể:
+1. Render free-tier gateway timeout (30s) + model inference > 30s cho ảnh lớn
+2. Image preprocessing 1024px quá nặng cho free-tier RAM
+
+#### [MODIFY] [app.py](file:///d:/EatFitAI_v1/ai-provider/app.py)
+- Audit ONNX inference path cho chicken detection
+- Ensure ONNX is used first (đã có, verify)
+- Add timing logs cho từng step: file save, ONNX load, inference, cleanup
+- Reduce max image size cho cloud: cap at 640px if ONNX
+
+#### Phase 3B: Gemini Service Health Audit
+
+Dùng browser subagent hoặc curl:
+- Check `/healthz/gemini` trên live AI provider
+- Verify pool size, available projects, failover state
+- Check `GEMINI_RPD_LIMIT=20` có đủ cho beta testing
+
+#### Phase 3C: AI Label Mapping Audit
+
+#### [MODIFY] [AiFoodMapService.cs](file:///d:/EatFitAI_v1/eatfitai-backend/Services/AiFoodMapService.cs)
+- Verify chicken/beef mapping sau teach labels
+- Audit mapping fallback khi label không match catalog
+
+---
+
+### Workstream 4: Voice Solution
+
+**Mục tiêu**: Đánh giá và đề xuất giải pháp STT cho beta.
+
+#### Current State:
+- `stt_service.py` có Whisper code nhưng DISABLED (`ENABLE_STT=false`)
+- Voice parse (text → food items) hoạt động qua Gemini
+- Voice transcribe (audio → text) KHÔNG hoạt động
+
+#### Phase 4A: Evaluate Options
+
+| Option | Pros | Cons | Cost |
+|---|---|---|---|
+| Google Cloud STT | Best Vietnamese support, proven | New dependency, billing | 60 min free/month |
+| Gemini Audio API | Same infra, no new dep | Shares Gemini quota, less proven for STT | 0 (quota shared) |
+| Skip for beta | No work needed | Voice-to-text unusable | 0 |
+
+#### Phase 4B: Implement Chosen Solution (Sau khi user chọn)
+
+Nếu Google Cloud STT:
+#### [MODIFY] [stt_service.py](file:///d:/EatFitAI_v1/ai-provider/stt_service.py)
+- Replace Whisper với Google Cloud Speech-to-Text v2
+- Support Vietnamese (`vi-VN`)
+- Lightweight: no model download, API call only
+
+Nếu Gemini Audio:
+#### [MODIFY] [stt_service.py](file:///d:/EatFitAI_v1/ai-provider/stt_service.py)
+- Use existing Gemini pool infrastructure
+- Send audio as file attachment to Gemini
+- Parse transcript from response
+
+Nếu Skip:
+- Document in README/AI_FLOW that STT is not available in beta
+- Ensure mobile UI handles gracefully
+
+---
+
+### Workstream 5: Beta Quality Assurance
+
+**Mục tiêu**: Đạt mức chất lượng tối thiểu cho beta release.
+
+#### Phase 5A: Credential Rotation (Manual - User action)
+
+> [!CAUTION]
+> Các credentials sau cần rotate ngay:
+
+| Credential | Where to rotate | Status |
+|---|---|---|
+| Render API key `rnd_8WrBwR...` | Render Dashboard → Account Settings → API Keys | ❌ Must rotate |
+| Supabase token `sbp_688e95...` | Supabase Dashboard → Account → Access Tokens | ❌ Must rotate |
+| Cloudflare R2 token `cfat_PZaD0...` | Cloudflare Dashboard → R2 → API Tokens | ❌ Must rotate |
+| R2 Access Key `c098aaeb...` | Cloudflare Dashboard → R2 → API Tokens | ❌ Must rotate |
+
+#### Phase 5B: Render Deploy Unblock
+
+Cần 1 trong 3:
+1. Chờ đến 2026-05-01 (pipeline minutes reset)
+2. Thêm payment method trên Render → auto-unlock
+3. Nâng lên Starter plan ($7/service/month)
+
+#### Phase 5C: Live Service Verification
+
+Dùng browser/curl verify:
+- `https://eatfitai-backend.onrender.com/health/ready` → 200
+- `https://eatfitai-backend.onrender.com/health/live` → 200
+- `https://eatfitai-ai-provider.onrender.com/healthz` → 200, `model_loaded=true`
+- `https://eatfitai-ai-provider.onrender.com/healthz/gemini` → 200, `gemini_configured=true`
+
+#### Phase 5D: Production Config Fix
+
+#### [MODIFY] [appsettings.Production.json](file:///d:/EatFitAI_v1/eatfitai-backend/appsettings.Production.json)
+- Change `Media.Provider` from `"supabase"` to `"r2"` (render.yaml overrides this, but file should match intent)
+
+#### Phase 5E: Mobile Build & Real-Device Test
+
+Sau khi backend deploy thành công:
+1. Build preview APK: `eas build --profile preview --platform android`
+2. Install trên thiết bị thật `a12c6888629b`
+3. Test flows: login → home → food search → AI scan (beef/chicken gallery) → save diary → readback
+4. Test notification permission/schedule/cancel
+5. Screenshot/logcat evidence
+
+---
+
+## Risk Summary
+
+| Risk | Severity | Mitigation |
+|---|---|---|
+| Credentials exposed in chat | Critical | Rotate all keys immediately after audit |
+| Render pipeline blocked | Critical | Wait for reset or upgrade plan |
+| Chicken scan 502 on live | P1 | ONNX path, reduce image size, warm-up |
+| Supabase egress still climbing | High | Billing cycle resets 04/30, R2 migration done |
+| No STT for voice | Medium | Text-based parse works, STT is enhancement |
+| R2 using dev URL | Medium | OK for beta, need custom domain for production |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```powershell
+# Backend tests
+dotnet test .\EatFitAI_v1.sln --no-restore --nologo --verbosity minimal
+
+# AI provider tests
+cd ai-provider && python -m pytest tests -q
+
+# Mobile lint + typecheck
+npm --prefix .\eatfitai-mobile run lint
+npm --prefix .\eatfitai-mobile run typecheck
+
+# Mobile Jest
+npm --prefix .\eatfitai-mobile test
+```
+
+### Service Verification
+```powershell
+# Cloud smoke sequence
+npm --prefix .\eatfitai-mobile run smoke:render:verify
+npm --prefix .\eatfitai-mobile run smoke:preflight
+npm --prefix .\eatfitai-mobile run smoke:auth:api
+npm --prefix .\eatfitai-mobile run smoke:user:api
+npm --prefix .\eatfitai-mobile run smoke:ai:api
+```
+
+### Manual Verification
+- Supabase dashboard: egress metrics screenshot
+- Cloudflare R2 dashboard: bucket objects, usage metrics
+- Render dashboard: deploy status, health checks
+- Real device: gallery scan beef/chicken, notification, full user journey
+
+---
+
+## Execution Order
+
+1. **Phase 5C** - Live service verification (ngay lập tức, không cần code change)
+2. **Phase 1A** - Supabase quota audit (dashboard check)
+3. **Phase 2A+2B** - R2 bucket verification
+4. **Phase 3B** - Gemini health check
+5. **Phase 5D** - Fix `appsettings.Production.json`
+6. **Phase 1B** - Add Supabase URL regression guard
+7. **Phase 3A** - YOLO scan stabilization (nếu cần)
+8. **Phase 4** - Voice decision + implementation
+9. **Phase 5A** - Credential rotation (user action)
+10. **Phase 5B** - Render deploy unblock (user action)
+11. **Phase 5E** - Mobile build & real-device test (sau deploy)

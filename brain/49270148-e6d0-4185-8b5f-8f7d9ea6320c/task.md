@@ -1,0 +1,38 @@
+# EatFitAI Admin Implementation Tasks
+
+## Phase 1: Backend Architecture & Database (C# .NET)
+- [x] Mở rộng Model `User` (thêm field `Role`).
+- [x] Thêm Model `GeminiKey` để quản lý Pool các token (bao gồm cơ chế track theo ngày và `IsActive`).
+- [x] Tạo Migration hoặc SQL query (Supabase) để khởi tạo bảng `GeminiKeys`.
+- [x] Viết `GeminiPoolManager` logic (Xoay vòng Round-Robin, reset token tự động lúc 00:00 UTC, kiểm tra Daily Quota).
+- [x] Cập nhật Token Service (JWT) để đính kèm `Role = Admin` vào token login.
+- [x] Khởi tạo `AdminAIController` và `AdminUsersController` (đều gắn `[Authorize(Roles = "Admin")]`).
+- [x] Refactor `VoiceController` để sử dụng `IGeminiPoolManager`.
+
+# EatFitAI Admin Dashboard Deployment & Integration Tasks
+
+- [x] Project Setup & Dependencies
+  - [x] Initialize Shadcn UI and install base components
+  - [x] Install Lucide-React, Recharts, @supabase/supabase-js, Zustand, and Tanstack Query
+- [x] Base Layout & Routing
+  - [x] Implement Sidebar Navigation (Overview, Users, Gemini Keys)
+  - [x] Integrate Supabase Auth UI (Login Page) & Protected Route
+- [x] Service Layer
+  - [x] Setup `apiClient.ts` with Supabase JWT integration
+- [x] UI Views Implementation
+  - [x] Dashboard Page: Data stats, widgets, AI usage charts
+  - [x] Gemini Keys Management: Key table, analytics, CRUD forms
+  - [x] Users Management Page
+- [x] Final Testing & Deploy Prep
+  - [x] Fix Base UI and React markup linting issues preventing build completion.
+  - [x] Verify Build Compilation Success.
+  - [ ] End-to-end test UI with Backend REST APIs
+
+## Phase 3: Gemini Pool Admin UI
+- [ ] Thiết kế trang Dashboard Thống kê Pool.
+- [ ] Quản lý CRUD AI Keys (Thêm Key mới, Xóa Key).
+- [ ] Làm nút Reset Pool khẩn cấp (Emergency reset).
+
+## Phase 4: Deploy & Verify
+- [ ] Kiểm tra lỗi AI Timeout Error Catcher (ném lỗi 503 khi pool cạn kiệt cho phép End User biết).
+- [ ] Lên kế hoạch ping Cron job giả lập trên Render để giữ cold-start alive.

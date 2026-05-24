@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary":  "Hướng dẫn chi tiết từng bước setup training YOLO11m trên Kaggle Free Tier:\n- Step 1: Merge dataset trên Colab CPU (miễn phí)\n- Step 2: Upload merged dataset lên Kaggle (3 cách: Web UI, API, trực tiếp từ Colab)\n- Step 3: Tạo và config notebook Kaggle (GPU T4 x2, add dataset)\n- Step 4: Chạy training với auto-resume\n- Step 5: Checkpoint persistence flow giữa các sessions (save → commit → new dataset → add input)\n- Step 6: Validate + Export ONNX khi training xong\nBao gồm FAQ, bảng quota, troubleshooting OOM, và sơ đồ Mermaid minh họa workflow.",
+  "updatedAt":  "2026-05-03T17:36:44.712565200Z",
+  "requestFeedback":  true
+}

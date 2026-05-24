@@ -1,0 +1,18 @@
+# AI Studio Migration Task List
+
+- [/] Bước 1: Routing & Layout Core
+  - [x] Cài đặt `react-router-dom`
+  - [ ] Refactor `App.tsx` thành các Route
+  - [ ] Create `MainLayout.tsx` với Sidebar cho Navigation
+- [ ] Bước 2: Chia tách các Page Components
+  - [ ] Tách `Studio` component (đã có từ App.tsx hiện tại) 
+  - [ ] Tạo `Library.tsx` (Quản lý giọng/Clone)
+  - [ ] Tạo `Normalizer.tsx` (Chuẩn hoá văn bản)
+  - [ ] Tạo `Benchmark.tsx` (Research & Test)
+- [ ] Bước 3: Hoàn thiện tính năng trên các tab mới
+  - [ ] Xây dựng khung giao diện Library (table, action buttons)
+  - [ ] Xây dựng khung giao diện Normalizer (Text input, normalized view)
+  - [ ] Xây dựng khung giao diện Benchmark (Recharts, Table metrics)
+- [ ] Bước 4: Validation
+  - [ ] Test Navigation
+  - [ ] Test Layout responsive

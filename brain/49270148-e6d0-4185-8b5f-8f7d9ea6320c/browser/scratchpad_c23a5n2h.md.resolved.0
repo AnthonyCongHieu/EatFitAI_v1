@@ -1,0 +1,8 @@
+# Task: Verify EatFit AI Admin Portal
+
+- [ ] Navigate to http://localhost:3000
+- [ ] Login with admin@eatfit.ai / Admin@123
+- [ ] Verify Dashboard landing
+- [ ] Check 'Users' menu for real users
+- [ ] Check 'Gemini Keys' for API connection
+- [ ] Final summary and screenshot

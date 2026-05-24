@@ -1,0 +1,51 @@
+# EatFitAI Beta Stabilization - Task Tracker
+
+## Phase 5C: Live Service Verification
+- [x] Backend health check (production + dev) - ✅ Both live+ready 200
+- [x] AI provider health check (production + dev) - ✅ Both 200, model loaded
+- [x] Gemini health check - ✅ 6 projects, all available, gemini-2.5-flash
+
+## Phase 1A: Supabase Quota Audit
+- [x] Verify API responses for Supabase Storage URL leaks - ✅ 0 leaks across all tested endpoints
+- [ ] Check Supabase dashboard egress metrics (needs browser check)
+
+## Phase 2A+2B: Cloudflare R2 Verification
+- [x] Verify bucket exists and accessible - ✅ Public URL works
+- [x] Test public read URL - ✅ All objects 200, correct content-type
+- [x] Check cache headers - ✅ `public, max-age=31536000, immutable`
+- [x] Verify image sizes optimized - ✅ thumb 1.7-5.1KB, medium 9.6KB (was 4-5MB!)
+
+## Phase 3B: Gemini Service Health
+- [x] Check pool status - ✅ 6 projects, all available
+- [x] Verify available projects - ✅ 120 RPD total capacity
+- [x] Check model - ✅ gemini-2.5-flash
+
+## Phase 5D: Production Config Fix
+- [x] Fix appsettings.Production.json Media.Provider → r2
+
+## Code Quality Gates
+- [x] Backend tests: 197 passed, 0 failed
+- [x] Mobile lint: passed (includes no-direct-ai-provider guard)
+- [x] Mobile typecheck: passed
+
+## Key Finding: Production vs Dev AI Provider
+- ⚠️ Production: YOLO PyTorch (best.pt) - ONNX NOT enabled → slow inference → chicken 502
+- ✅ Dev: YOLO ONNX (best.onnx) enabled - fast inference (~0.2-0.4s)
+- Root cause: Production needs redeploy to get ONNX code
+
+## Phase 1B: Supabase URL Regression Guard
+- [ ] Add regression test to smoke scripts
+
+## Phase 3A: YOLO Scan Stabilization
+- [x] Diagnosis complete: Production lacks ONNX, needs redeploy
+
+## Phase 4: Voice Solution
+- [ ] Pending user decision (Google STT / Gemini Audio / Skip)
+
+## Phase 5A: Credential Rotation
+- [ ] User action: Rotate Render API key
+- [ ] User action: Rotate Supabase token
+- [ ] User action: Rotate Cloudflare R2 token/access key
+
+## Phase 5B: Render Deploy Unblock
+- [ ] User action: Wait for reset or upgrade plan

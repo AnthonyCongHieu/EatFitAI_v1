@@ -1,0 +1,41 @@
+# EatFitAI Beta Stabilization - Task Tracker
+
+## Phase 5C: Live Service Verification
+- [/] Backend health check (production + dev)
+- [/] AI provider health check (production + dev)
+- [ ] Gemini health check
+
+## Phase 1A: Supabase Quota Audit
+- [/] Check current egress metrics
+- [ ] Verify API responses for Supabase Storage URL leaks
+
+## Phase 2A+2B: Cloudflare R2 Verification
+- [/] Verify bucket exists and accessible
+- [ ] Test public read URL
+- [ ] Upload/read cycle test
+- [ ] Check cache headers
+
+## Phase 3B: Gemini Service Health
+- [ ] Check pool status
+- [ ] Verify available projects
+
+## Phase 5D: Production Config Fix
+- [ ] Fix appsettings.Production.json Media.Provider
+
+## Phase 1B: Supabase URL Regression Guard
+- [ ] Add regression test to smoke scripts
+
+## Phase 3A: YOLO Scan Stabilization
+- [ ] Audit ONNX inference timing
+- [ ] Review chicken detection path
+
+## Phase 4: Voice Solution
+- [ ] Waiting for user decision (Google STT / Gemini Audio / Skip)
+
+## Phase 5A: Credential Rotation
+- [ ] User action: Rotate Render API key
+- [ ] User action: Rotate Supabase token
+- [ ] User action: Rotate Cloudflare R2 token/access key
+
+## Phase 5B: Render Deploy Unblock
+- [ ] User action: Wait for reset or upgrade plan

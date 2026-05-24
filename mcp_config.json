@@ -1,0 +1,38 @@
+{
+  "mcpServers": {
+    "supabase-mcp-server": {
+      "$typeName": "exa.cascade_plugins_pb.CascadePluginCommandTemplate",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_688e95370371dcb111ba95d7d28c1f07fe6c6be1"
+      ],
+      "env": {}
+    },
+    "StitchMCP": {
+      "$typeName": "exa.cascade_plugins_pb.CascadePluginCommandTemplate",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://stitch.googleapis.com/mcp",
+        "--header",
+        "X-Goog-Api-Key: AQ.Ab8RN6KU9dK0xbQVLU3s-9bQw1uUbJ1_L2OcXERIxFkwGKdn_g"
+      ],
+      "env": {}
+    },
+    "notion-mcp-server": {
+      "$typeName": "exa.cascade_plugins_pb.CascadePluginCommandTemplate",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@notionhq/notion-mcp-server"
+      ],
+      "env": {
+        "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer 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\", \"Notion-Version\": \"2022-06-28\"}"
+      }
+    }
+  }
+}

@@ -1,0 +1,177 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+Bỏ qua để đến phần nội dung chính
+Hỗ trợ truy cập
+Phản hồi về hỗ trợ truy cập
+[0] (63,58)<a aria-label='Đến trang chủ Google' href='https://www.google.com/webhp?hl=vi&sa=X&ved=0ahUKEwiy3dCPgZqUAxWSrlYBHVzpKm0QPAgJ' id='logo' title='Đến trang chủ Google' />
+[1] (281,57)<textarea aria-label='Tìm kiếm' class='gLFyf' id='APjFqb' role='combobox' />
+[2] (456,57)<div  />
+	[3] (455,57)<div aria-label='Xóa' class='vOY7J M2vV3' role='button' />
+		[4] (455,57)<span  />
+	[5] (467,57)<span  />
+[6] (480,57)<div aria-label='Công cụ nhập' class='Umvnrc' role='button' />
+	[7] (480,57)<span  />
+[8] (501,57)<div aria-label='Tìm kiếm bằng giọng nói' class='XDyW0e' role='button' />
+[9] (522,57)<div aria-label='Tìm kiếm bằng hình ảnh' class='nDcEnd' role='button' />
+[10] (546,57)<button aria-label='Tìm kiếm' class='HZVG1b Tg7LZd' />
+	[11] (542,57)<div  />
+		[12] (542,57)<span  />
+[13] (954,57)<a aria-label='Các ứng dụng của Google' class='gb_C' href='https://www.google.com.vn/intl/vi/about/products?tab=wh' role='button' />
+[14] (979,57)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_C gb_5a' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://www.google.com/search%3Fq%3Droboflow%2B3376%2Bimages%2Bfood%2Bdetection%2Bclasses&ec=futura_srp_og_si_72236_p' role='button' />
+[15] (136,125)<a class='XVMlrc C6AK7c' href='/search?q=roboflow+3376+images+food+detection+classes&sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4OyliCzxW2ct4SpAScKNYA2HpPwQ:1777704444905&udm=50&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPz3O3zU3fjTRfoWaNolfm19Ezk2ferLlV5FyrRF5YBbijw-ZR-zIFxNfNAr-QEpW3B02E20xbgdQaI2AWg0egahQ0vFCxvOCQVaPVmnaQc793Icbx4R_W7h7mPltMhV2La6rjEnp_JhRHXhwDweEUiOboD13AMUjAKzbd77hruiFDUv6ctsy3l6tYCatrz-ZtQOMRPA&aep=1&ntc=1&sa=X&ved=2ahUKEwiy3dCPgZqUAxWSrlYBHVzpKm0Q2J8OegQIDRAD' />
+	[16] (136,125)<div  />
+		[17] (136,134)<div  />
+			[18] (136,128)<span >Chế độ AI />
+[19] (176,125)<a class='C6AK7c' role='link' />
+	Tất cả
+[20] (215,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4OyliCzxW2ct4SpAScKNYA2HpPwQ:1777704444905&udm=2&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPz3O3zU3fjTRfoWaNolfm19Ezk2ferLlV5FyrRF5YBbijw-ZR-zIFxNfNAr-QEpW3B02E20xbgdQaI2AWg0egahQ0vFCxvOCQVaPVmnaQc793Icbx4R_W7h7mPltMhV2La6rjEnp_JhRHXhwDweEUiOboD13AMUjAKzbd77hruiFDUv6ctsy3l6tYCatrz-ZtQOMRPA&q=roboflow+3376+images+food+detection+classes&sa=X&ved=2ahUKEwiy3dCPgZqUAxWSrlYBHVzpKm0QtKgLegQIFBAB' />
+	[21] (215,125)<div  />
+		[22] (215,134)<span >Hình ảnh />
+[23] (252,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4OyliCzxW2ct4SpAScKNYA2HpPwQ:1777704444905&udm=7&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPz3O3zU3fjTRfoWaNolfm19Ezk2ferLlV5FyrRF5YBbijw-ZR-zIFxNfNAr-QEpW3B02E20xbgdQaI2AWg0egahQ0vFCxvOCQVaPVmnaQc793Icbx4R_W7h7mPltMhV2La6rjEnp_JhRHXhwDweEUiOboD13AMUjAKzbd77hruiFDUv6ctsy3l6tYCatrz-ZtQOMRPA&q=roboflow+3376+images+food+detection+classes&sa=X&ved=2ahUKEwiy3dCPgZqUAxWSrlYBHVzpKm0QtKgLegQIEhAB' />
+	[24] (252,125)<div  />
+		[25] (252,134)<span >Video />
+[26] (294,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4OyliCzxW2ct4SpAScKNYA2HpPwQ:1777704444905&udm=39&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPz3O3zU3fjTRfoWaNolfm19Ezk2ferLlV5FyrRF5YBbijw-ZR-zIFxNfNAr-QEpW3B02E20xbgdQaI2AWg0egahQ0vFCxvOCQVaPVmnaQc793Icbx4R_W7h7mPltMhV2La6rjEnp_JhRHXhwDweEUiOboD13AMUjAKzbd77hruiFDUv6ctsy3l6tYCatrz-ZtQOMRPA&q=roboflow+3376+images+food+detection+classes&sa=X&ved=2ahUKEwiy3dCPgZqUAxWSrlYBHVzpKm0Qs6gLegQIExAB' />
+	[27] (294,125)<div  />
+		[28] (294,134)<span >Video ngắn />
+[29] (337,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4OyliCzxW2ct4SpAScKNYA2HpPwQ:1777704444905&q=roboflow+3376+images+food+detection+classes&tbm=nws&source=lnms&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPz3O3zU3fjTRfoWaNolfm19Ezk2ferLlV5FyrRF5YBbijw-ZR-zIFxNfNAr-QEpW3B02E20xbgdQaI2AWg0egahQ0vFCxvOCQVaPVmnaQc793Icbx4R_W7h7mPltMhV2La6rjEnp_JhRHXhwDweEUiOboD13AMUjAKzbd77hruiFDUv6ctsy3l6tYCatrz-ZtQOMRPA&sa=X&ved=2ahUKEwiy3dCPgZqUAxWSrlYBHVzpKm0Q0pQJegQIERAB' />
+	[30] (337,125)<div  />
+		[31] (337,134)<span >Tin tức />
+[32] (377,125)<a class='C6AK7c' href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4OyliCzxW2ct4SpAScKNYA2HpPwQ:1777704444905&udm=28&fbs=ADc_l-ZXQWBHI_L0epjkf31fijnbXSPRt3UPEhp-KmUrvgDudp8REbOZqjulWRZWTin-MPz3O3zU3fjTRfoWaNolfm19Ezk2ferLlV5FyrRF5YBbijw-ZR-zIFxNfNAr-QEpW3B02E20xbgdQaI2AWg0egahQ0vFCxvOCQVaPVmnaQc793Icbx4R_W7h7mPltMhV2La6rjEnp_JhRHXhwDweEUiOboD13AMUjAKzbd77hruiFDUv6ctsy3l6tYCatrz-ZtQOMRPA&q=roboflow+3376+images+food+detection+classes&ved=1t:220175&ictx=111' />
+	[33] (377,125)<div  />
+		[34] (377,134)<span >Mua sắm />
+[35] (419,125)<div class='mTpL7c' role='button' />
+	[36] (419,125)<div  />
+		[37] (419,134)<div  />
+			[38] (414,128)<span >Thêm />
+			[39] (429,128)<span  />
+[40] (465,125)<div class='mOKdDc' id='hdtb-tls' role='button' />
+	[41] (465,125)<div  />
+		[42] (465,134)<div  />
+			[43] (460,128)<span >Công cụ />
+			[44] (479,128)<span  />
+Kết quả tìm kiếm
+Web results
+[45] (194,220)<a class='zReHs' href='https://universe.roboflow.com/hypertensive-ai-training/training-xqkgd/dataset/2' />
+	[46] (139,244)<h3 >Version />
+	[47] (194,205)<div  />
+		[48] (194,205)<div  />
+			[49] (127,205)<span  />
+				[50] (127,205)<div  />
+					[51] (127,205)<img  />
+			[52] (204,205)<div  />
+				[53] (204,195)<div  />
+					[54] (204,195)<span >Roboflow Universe />
+				[55] (204,216)<div  />
+					[56] (204,216)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[57] (235,216)<span class='ylgVCe ob9lvb' role='text'>› dataset />
+·
+[58] (276,216)<a class='dEEN8c' href='https://universe.roboflow.com/hypertensive-ai-training/training-xqkgd/dataset/2' />
+	[59] (276,216)<span >Dịch trang này />
+[60] (308,215)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[61] (308,215)<span  />
+		[62] (308,216)<span  />
+29 thg 1, 2026
+—
+4659 open source
+food images
+and annotations in multiple formats for
+training
+computer vision models.
+Training
+(v2, 2026-01-29 12:30am), ...
+[63] (195,383)<a class='zReHs' href='https://universe.roboflow.com/food-detection-dataset' />
+	[64] (181,407)<h3 >Food Detection Dataset />
+	[65] (195,368)<div  />
+		[66] (195,368)<div  />
+			[67] (127,368)<span  />
+				[68] (127,368)<div  />
+					[69] (127,368)<img  />
+			[70] (205,368)<div  />
+				[71] (205,358)<div  />
+					[72] (205,358)<span >Roboflow Universe />
+				[73] (205,379)<div  />
+					[74] (205,379)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[75] (236,379)<span class='ylgVCe ob9lvb' role='text'>› food-d... />
+·
+[76] (279,379)<a class='dEEN8c' href='https://universe.roboflow.com/food-detection-dataset' />
+	[77] (279,379)<span >Dịch trang này />
+[78] (311,378)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[79] (311,378)<span  />
+		[80] (311,379)<span  />
+Food Detection Dataset
+. @food-detection-dataset. 2 projects· 269 images· 0 stars· 1.65k views· 57 downloads. Projects2Starred0. Projects by Food Detection ...
+[81] (245,545)<a class='zReHs' href='https://universe.roboflow.com/food-classification-lcmbu/food-classification-azsi4' />
+	[82] (245,569)<h3 >Food Classification Object Detection Model by ... />
+	[83] (195,530)<div  />
+		[84] (195,530)<div  />
+			[85] (127,530)<span  />
+				[86] (127,530)<div  />
+					[87] (127,530)<img  />
+			[88] (205,530)<div  />
+				[89] (205,520)<div  />
+					[90] (205,520)<span >Roboflow Universe />
+				[91] (205,541)<div  />
+					[92] (205,541)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[93] (236,541)<span class='ylgVCe ob9lvb' role='text'>› food-c... />
+·
+[94] (279,541)<a class='dEEN8c' href='https://universe.roboflow.com/food-classification-lcmbu/food-classification-azsi4' />
+	[95] (279,541)<span >Dịch trang này />
+[96] (310,540)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[97] (310,540)<span  />
+		[98] (310,541)<span  />
+205 open source Banana
+images
+plus a pre-trained
+Food
+Classification model and API. Created by
+Food
+Classification.
+Bị thiếu:
+3376
+‎| Phải có:
+[99] (207,651)<a href='/search?sca_esv=3b6d4900261f3af2&sxsrf=ANbL-n4OyliCzxW2ct4SpAScKNYA2HpPwQ:1777704444905&q=roboflow+%223376%22+images+food+detection+classes&sa=X&ved=2ahUKEwiy3dCPgZqUAxWSrlYBHVzpKm0Q5t4CegQIHBAB' />
+	[100] (207,651)<span >3376 />
+[101] (194,732)<a class='zReHs' href='https://universe.roboflow.com/food-recognition' />
+	[102] (165,756)<h3 >Food Recognition />
+	[103] (194,717)<div  />
+		[104] (194,717)<div  />
+			[105] (127,717)<span  />
+				[106] (127,717)<div  />
+					[107] (127,717)<img  />
+			[108] (204,717)<div  />
+				[109] (204,707)<div  />
+					[110] (204,707)<span >Roboflow Universe />
+				[111] (204,728)<div  />
+					[112] (204,728)<cite class='qLRx3b tjvcx GvPZzd dTxz9 cHaqb' role='text'>https://universe.roboflow.com />
+						[113] (235,728)<span class='ylgVCe ob9lvb' role='text'>› food-r... />
+·
+[114] (277,728)<a class='dEEN8c' href='https://universe.roboflow.com/food-recognition' />
+	[115] (277,728)<span >Dịch trang này />
+[116] (309,727)<div aria-label='Thông tin về kết quả này' class='MJ8UF iTPLzd rNSxBe eY4mx lUn2nc' role='button' />
+	[117] (309,727)<span  />
+		[118] (309,728)<span  />
+3 computer vision projects by
+Food
+Recognition (
+food
+-recognition).
+Thông tin tổng quan do AI tạo
+[119] (429,847)<div aria-label='Xem 2 đường liên kết xác minh' class='QUUgY' role='button' />
+	[120] (429,847)<div  />
+		[121] (419,847)<div  />
+			[122] (419,847)<img  />
+		[123] (426,847)<div  />
+			[124] (426,847)<img  />
+		[125] (437,847)<span >+11 />
+[126] (455,851)<div aria-label='Thông tin về kết quả này' class='Mtffrd' role='button' />
+Based on a search of Roboflow Universe, the dataset containing approximately 3,376 images is a version of the
+"food-detection"
+project created by a user with the username "hypertensive-ai-training". This dataset is used for computer vision tasks and has been updated as of January 2026.
+[127] (266,970)<a aria-label='Roboflow Universe (+1) – Xem các đường liên kết có liên quan' class='muU3oe' href='https://universe.roboflow.com/hypertensive-ai-training/training-xqkgd/dataset/3' />
+Roboflow Universe
++1
+
+</current_dom>

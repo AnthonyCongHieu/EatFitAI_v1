@@ -1,0 +1,57 @@
+<current_snapshot_explanation>
+This is a temporary snapshot of the current page's accessibility tree structure. The accessibility tree will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the accessibility tree in your trajectory if needed for later reference.
+</current_snapshot_explanation>
+<current_snapshot>
+Emulating viewport: {"deviceScaleFactor":3,"isMobile":true,"hasTouch":true,"isLandscape":false,"width":375,"height":812}
+## Latest page snapshot
+uid=208_0 RootWebArea "Tải EatFitAI cho Android — Ứng dụng dinh dưỡng Việt" url="http://localhost:3000/#simulator"
+  uid=208_1 banner
+    uid=208_2 link "EatFitAI EatFitAI DINH DƯỠNG VIỆT" url="http://localhost:3000/#top"
+      uid=208_3 image "EatFitAI" url="http://localhost:3000/assets/icon.png"
+      uid=208_4 StaticText "EatFitAI"
+      uid=208_5 StaticText "DINH DƯỠNG VIỆT"
+    uid=208_6 button "Mở menu"
+  uid=221_0 StaticText "TRẢI NGHIỆM TRỰC QUAN"
+  uid=221_1 heading "Trình Mô Phỏng AR Nhận Diện Dinh Dưỡng" level="2"
+  uid=221_2 StaticText "Hãy thử nghiệm cách ứng dụng phân tích món ăn Việt chỉ bằng hình ảnh trực tiếp ngay tại đây."
+  uid=221_3 heading "1. CHỌN MỘT MÓN ĂN MẪU" level="3"
+  uid=221_4 button "Phở Bò"
+  uid=221_5 button "Bún Bò Huế"
+  uid=221_6 button "Cơm Tấm"
+  uid=221_7 button "Bánh Mì"
+  uid=221_8 StaticText "HOẶC THỬ VỚI ẢNH CỦA BẠN"
+  uid=221_9 button "Tải ảnh món ăn của bạn lên Hỗ trợ JPG, PNG" value="No file chosen"
+  uid=221_10 StaticText "Tải ảnh món ăn của bạn lên"
+  uid=221_11 StaticText "Hỗ trợ JPG, PNG"
+  uid=221_12 button "Bật Camera Quét Thật"
+  uid=221_13 image "Món ăn mô phỏng" url="http://localhost:3000/assets/pho-bowl.jpg"
+  uid=221_14 StaticText "Bánh Phở (150g)"
+  uid=221_15 button "Chụp & Phân Tích"
+  uid=221_16 StaticText "Thả ảnh tại đây"
+  uid=221_17 StaticText "AI sẽ tự động quét dinh dưỡng"
+  uid=221_18 StaticText "Quét AR hoàn tất!"
+  uid=221_19 heading "2. PHÂN TÍCH DINH DƯỠNG" level="3"
+  uid=221_20 StaticText "95% Khớp"
+  uid=221_21 heading "Phở Bò Hà Nội" level="4"
+  uid=221_22 StaticText "Phần ăn tiêu chuẩn (~530g)"
+  uid=221_23 StaticText "0"
+  uid=221_24 StaticText "KCAL"
+  uid=221_25 StaticText "Protein"
+  uid=221_26 StaticText "0g"
+  uid=221_27 StaticText "Carbs"
+  uid=221_28 StaticText "0g"
+  uid=221_29 StaticText "Fat"
+  uid=221_30 StaticText "0g"
+  uid=221_31 image "MoChi" url="http://localhost:3000/assets/mochi/mochi-success.png"
+  uid=221_32 StaticText "Trợ lý dinh dưỡng MoChi khuyên"
+  uid=221_33 StaticText "Phở bò cung cấp lượng đạm lý tưởng và cân đối dinh dưỡng. Để bữa ăn hoàn hảo hơn, hãy vắt thêm chanh để vitamin C giúp hấp thụ sắt trong thịt bò tốt hơn. Hạn chế uống cạn nước dùng nếu bạn đang cần kiểm soát lượng natri (muối)."
+  uid=208_94 contentinfo
+    uid=208_95 image "EatFitAI" url="http://localhost:3000/assets/icon.png"
+    uid=208_96 StaticText "EatFitAI"
+    uid=208_97 StaticText " © 2026"
+    uid=208_98 StaticText "Phát triển bởi "
+    uid=208_99 StaticText "Anthony Cong Hieu"
+  uid=208_100 generic live="polite" relevant="additions text"
+    uid=208_101 StaticText "Đã sao chép!"
+
+</current_snapshot>

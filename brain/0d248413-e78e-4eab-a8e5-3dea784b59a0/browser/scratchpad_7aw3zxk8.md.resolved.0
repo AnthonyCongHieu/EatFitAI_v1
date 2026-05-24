@@ -1,0 +1,7 @@
+# Task: Finish Cronjob setup on cron-job.org
+
+## Steps:
+- [ ] Click CREATE button on cron-job.org form.
+- [ ] Verify cronjob creation.
+- [ ] Check if cronjob is active in the list.
+- [ ] (Bonus) Verify Vercel env var if needed (primary task is cronjob).

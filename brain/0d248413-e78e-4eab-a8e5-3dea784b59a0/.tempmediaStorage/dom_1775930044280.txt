@@ -1,0 +1,53 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+EatFitAI Admin
+[0] (111,123)<a class='block relative' href='/' />
+	[1] (111,123)<div  />
+		[2] (83,123)<span >Overview />
+[3] (111,177)<a class='block relative' href='/users' />
+	[4] (111,177)<div  />
+		[5] (71,177)<span >Users />
+[6] (111,230)<a class='block relative' href='/meals' />
+	[7] (111,230)<div  />
+		[8] (86,230)<span >Meal Logs />
+[9] (111,284)<a class='block relative' href='/foods' />
+	[10] (111,284)<div  />
+		[11] (97,284)<span >Food Database />
+[12] (111,338)<a class='block relative' href='/master-data' />
+	[13] (111,338)<div  />
+		[14] (90,338)<span >Master Data />
+[15] (111,391)<a class='block relative' href='/gemini-keys' />
+	[16] (111,391)<div  />
+		[17] (93,391)<span >Gemini Keys />
+[18] (111,445)<a class='block relative' href='/ai-logs' />
+	[19] (111,445)<div  />
+		[20] (79,445)<span >AI Logs />
+[21] (111,499)<a class='block relative' href='/analytics' />
+	[22] (111,499)<div  />
+		[23] (82,499)<span >Analytics />
+[24] (111,553)<a class='block relative' href='/settings' />
+	[25] (111,553)<div  />
+		[26] (78,553)<span >Settings />
+[27] (111,962)<button class='w-full flex items-center px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors duration-200'>Logout />
+	Logout
+Overview Dashboard
+Welcome back to the EatFitAI administrative panel.
+[28] (810,38)<button class='flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer' title='Backend: Down | AI: Down
+Last: ' />
+Admin User
+Loading...
+Total API Requests
+Active Gemini Keys
+Total Users
+System Status
+Checking status...
+[29] (872,249)<button class='mt-2 text-xs font-semibold px-3 py-1.5 rounded-md bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-colors w-fit flex items-center gap-1.5'>Ping Services />
+AI Usage vs Quota Limit
+Daily API consumption tracked across the Gemini pool.
+Gathering analytics data...
+Pool Health
+Live status of your Gemini bindings.
+
+</current_dom>

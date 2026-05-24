@@ -1,0 +1,16 @@
+# Task: Verify Gemini Keys Page Load and Error
+
+## Checklist
+- [x] Navigate to http://localhost:3000
+- [x] Login as admin@eatfit.ai (Entered credentials, email in UI still shows eatfitai.admin@example.com)
+- [ ] Navigate to "Gemini Keys"
+- [ ] Wait for load and error
+
+## Observations
+- Logged in at `http://localhost:3000/`.
+- UI email shows `eatfitai.admin@example.com` despite logging in as `admin@eatfit.ai`. This might be a hardcoded UI element or a bug in the frontend.
+- Sidebar "Gemini Keys" is at index [6].
+
+## Next Steps
+- Navigate to "Gemini Keys" by clicking index [6].
+- Confirm the 500 internal server error.

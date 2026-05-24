@@ -1,0 +1,28 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (497,86)<a class='chakra-link css-sheoaq' href='https://uptimerobot.com' />
+	[1] (497,86)<img  />
+[2] (42,60)<button class='chakra-button css-jdmk5i'>Back />
+	[3] (30,60)<span  />
+Enter your details
+.
+[4] (388,344)<label class='chakra-form__label css-1vmigtj' id='field-_r_1_-label'>Your full name />
+[5] (497,396)<input class='chakra-input mask-me css-10xtles' id='field-_r_1_' placeholder='E.g. John Doe' />
+[6] (410,460)<label class='chakra-form__label css-1vmigtj' id='field-_r_2_-label'>Password
+min. 8 characters />
+	min. 8 characters
+[7] (497,513)<input class='chakra-input mask-me css-10xtles' id='field-_r_2_' placeholder='******' />
+[8] (462,577)<label class='chakra-form__label css-1vmigtj' id='field-_r_3_-label'>How did you find out about UptimeRobot?
+(optional) />
+	(optional)
+[9] (497,629)<select class='chakra-select css-21sxtv' id='field-_r_3_' />
+[10] (367,693)<label class='chakra-switch css-1bwumkt' />
+	[11] (367,693)<span  />
+		[12] (364,693)<span  />
+[13] (500,693)<label class='chakra-form__label css-1j01x1y' id='field-_r_5_-label'>Email me about new features and updates (max 2x/month) />
+[14] (497,795)<button class='chakra-button css-1e0n1yp'>Register now />
+Already have an account?
+
+</current_dom>

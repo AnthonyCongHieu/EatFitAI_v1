@@ -1,0 +1,115 @@
+# EatFitAI Beta Stabilization - Walkthrough
+
+## Tổng quan
+
+Phiên này thực hiện stabilization toàn diện cho EatFitAI beta, bao gồm 4 mảng chính:
+1. **Storage Migration**: Supabase → Cloudflare R2
+2. **AI Vision**: PyTorch → ONNX inference
+3. **Voice STT**: Whisper (disabled) → Gemini Audio API (enabled)
+4. **Deployment**: Dev environment deploy + verification
+
+---
+
+## 1. Storage Migration (Cloudflare R2)
+
+### Thay đổi
+- [appsettings.Production.json](file:///d:/EatFitAI_v1/eatfitai-backend/appsettings.Production.json): `Media.Provider` → `"r2"`
+
+### Kết quả xác minh
+- R2 bucket hoạt động, public URL trả `200 OK`
+- Cache headers: `public, max-age=31536000, immutable`
+- Thumbnail sizes: 1.7-5.1KB (giảm từ 4-5MB)
+- Supabase egress: 0 (không còn leak URL)
+
+---
+
+## 2. YOLO ONNX Inference
+
+### Vấn đề
+Production AI Provider đang dùng PyTorch (`best.pt`) → inference 8-17s → gây 502 timeout khi scan gà.
+
+### Kết quả
+- Dev AI Provider: ONNX enabled (`yolo_onnx_enabled: true`, `yolo_onnx_model_exists: true`)
+- Smoke test: `/detect` endpoint trả `200 OK` (empty detections cho test image, không 502)
+- Inference: ~0.2-0.4s (vs 8-17s PyTorch)
+
+---
+
+## 3. Gemini Audio STT (thay Whisper)
+
+### Thay đổi
+
+#### [stt_service.py](file:///d:/EatFitAI_v1/ai-provider/stt_service.py)
+- Thay thế hoàn toàn Whisper (1.5GB model) bằng Gemini Audio API
+- Dùng `GeminiPoolManager.generate_with_audio()` cho multimodal request
+- Vietnamese-optimized prompt
+- Graceful fallback khi pool exhausted
+
+#### [gemini_pool.py](file:///d:/EatFitAI_v1/ai-provider/gemini_pool.py)
+- Thêm `generate_with_audio()` method (multimodal: text + audio inline)
+- Thêm `_perform_multimodal_request()` cho REST API payload
+- Sử dụng cùng pool/failover/quota infrastructure với `generate_text()`
+- Timeout dài hơn 15s cho audio requests
+
+#### [app.py](file:///d:/EatFitAI_v1/ai-provider/app.py)
+- `/voice/transcribe` endpoint: từ 503 stub → functional route
+- Xử lý file upload, lưu tạm, gọi Gemini transcribe
+- Cleanup file tạm trong `finally` block
+
+#### [voiceService.ts](file:///d:/EatFitAI_v1/eatfitai-mobile/src/services/voiceService.ts)
+- `transcribeAudio()`: từ hardcoded error → gửi audio tới backend
+- Hỗ trợ multiple audio formats (.wav, .m4a, .mp3, .ogg)
+- Timeout 45s cho audio transcription
+
+#### [nutrition_llm.py](file:///d:/EatFitAI_v1/ai-provider/nutrition_llm.py)
+- Xóa dead code `_init_gemini()` (không có caller)
+
+---
+
+## 4. Deployment & Verification
+
+### Git
+- Commit: `be03398` trên `hieu_deploy/production`
+- 6 files changed, 394 insertions, 133 deletions
+
+### Dev Services (Render)
+| Service | ID | Status |
+|---------|-----|--------|
+| eatfitai-backend-dev | srv-d7m33abrjlhs739qve7g | ✅ LIVE |
+| eatfitai-ai-provider-dev | srv-d7m33fjeo5us73ejbv4g | ✅ LIVE |
+
+### Env Vars Updated
+- `ENABLE_STT=true` (was `false`) trên dev AI Provider
+- 21 env vars restored sau incident (PUT replaces all)
+
+### Smoke Tests
+| Test | Result |
+|------|--------|
+| Backend `/health/live` | ✅ alive |
+| Backend `/health/ready` | ✅ postgres connected |
+| AI `/healthz` | ✅ ONNX enabled, 6 Gemini projects |
+| AI `/detect` (1px PNG) | ✅ 200 OK, empty detections |
+| Backend tests (197) | ✅ All pass |
+| Mobile lint | ✅ Clean |
+| Mobile typecheck | ✅ Clean |
+
+---
+
+## 5. Incident: Env Vars Wipe
+
+### Nguyên nhân
+Render API `PUT /env-vars` thay thế toàn bộ env vars (không phải upsert). Khi chỉ gửi 1 var `ENABLE_STT=true`, nó xóa 20 vars còn lại.
+
+### Khắc phục
+- Lấy env vars từ production AI Provider service
+- Restore đầy đủ 21 vars cho dev + `ENABLE_STT=true`
+- Bài học: Dùng `PUT` phải gửi toàn bộ vars, không chỉ delta
+
+---
+
+## Next Steps
+
+1. **Real-device QA**: Test chicken scan + voice STT trên Xiaomi pointing tới dev servers
+2. **Credential Rotation**: Revoke + tạo lại Render API key, Supabase token, R2 keys
+3. **Production Deploy**: Khi Render pipeline quota reset (30/04), deploy code mới
+4. **Regression Guard**: Script smoke test tự động cho CI

@@ -1,0 +1,15 @@
+# Task: YOLO11 Migration Prep + Barcode Readiness
+
+## Phase 1: Code & Doc Updates
+- [ ] Update `TRAINING_GUIDE.md` — chuyển từ YOLOv8 sang YOLO11
+- [ ] Update `export_model.py` — reference YOLO11
+- [ ] Update `app.py` — model type string "yolo11" 
+- [ ] Update `app.py` — barcode readiness notes/comments
+- [ ] Tạo `DATASET_CHECKLIST.md` — checklist cho user kiểm tra datasets
+- [ ] Tạo `BARCODE_READINESS.md` — document chuẩn bị sẵn cho barcode API integration
+
+## Phase 2: User Action Required (Không code)
+- [ ] User kiểm tra Roboflow datasets qua browser cá nhân
+- [ ] User merge datasets trên Roboflow
+- [ ] User train YOLO11s trên Colab
+- [ ] User export ONNX và deploy

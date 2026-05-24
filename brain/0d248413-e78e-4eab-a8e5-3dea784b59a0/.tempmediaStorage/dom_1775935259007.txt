@@ -1,0 +1,159 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (180,46)<button aria-label='Menu' class='MuiButtonBase-root MuiIconButton-root jss26 MuiIconButton-colorInherit MuiIconButton-edgeStart' />
+	[1] (180,46)<span  />
+[2] (866,46)<button class='MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-colorInherit' />
+	[3] (866,46)<span >English />
+		[4] (833,46)<span  />
+		[5] (899,46)<span  />
+[6] (951,46)<button class='MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-colorInherit' />
+	[7] (951,46)<span >Logout />
+		[8] (927,46)<span  />
+[9] (135,46)<button class='MuiButtonBase-root MuiIconButton-root' />
+	[10] (135,46)<span  />
+[11] (78,140)<a class='MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-button' href='/dashboard' role='button' />
+	[12] (29,140)<div  />
+	[13] (96,140)<div  />
+		[14] (96,140)<span >Dashboard />
+[15] (78,209)<a class='MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-button Mui-selected' href='/jobs' role='button' />
+	[16] (29,209)<div  />
+	[17] (96,209)<div  />
+		[18] (96,209)<span >Cronjobs />
+[19] (78,278)<a class='MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-button' href='/statuspages' role='button' />
+	[20] (29,278)<div  />
+	[21] (96,278)<div  />
+		[22] (96,278)<span >Status Pages />
+[23] (78,347)<a class='MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-button' href='/statistics' role='button' />
+	[24] (29,347)<div  />
+	[25] (96,347)<div  />
+		[26] (96,347)<span >Statistics />
+[27] (78,440)<a class='MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-button' href='/settings' role='button' />
+	[28] (29,440)<div  />
+	[29] (96,440)<div  />
+		[30] (96,440)<span >Settings />
+[31] (578,500)<main class='jss33' scrollable='true' />
+	[32] (573,141)<fieldset  />
+		Title
+		[33] (204,124)<label class='MuiFormLabel-root MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-shrink MuiFormLabel-filled Mui-required Mui-required'>URL
+* />
+			*
+		[34] (573,159)<div  />
+			[35] (561,159)<input class='MuiInputBase-input MuiInput-input MuiInputBase-inputAdornedEnd' />
+			[36] (943,159)<button class='MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall' />
+				[37] (943,159)<span  />
+		[38] (230,233)<label class='MuiFormControlLabel-root' />
+			[39] (205,233)<span  />
+				[40] (212,233)<span  />
+					[41] (212,233)<span  />
+						[42] (212,233)<input class='jss83 MuiSwitch-input' />
+			[43] (249,233)<span >Enable job />
+		[44] (366,233)<label class='MuiFormControlLabel-root' />
+			[45] (296,233)<span  />
+				[46] (290,233)<span  />
+					[47] (290,233)<span  />
+						[48] (290,233)<input class='jss83 MuiSwitch-input' />
+			[49] (385,233)<span >Save responses in job history />
+	[50] (573,589)<fieldset  />
+		[51] (245,319)<legend >Execution schedule />
+		[52] (450,384)<label class='MuiFormControlLabel-root' />
+			[53] (200,384)<span  />
+				[54] (200,384)<span  />
+					[55] (200,384)<input class='jss83' />
+			[56] (266,384)<span  />
+				[57] (266,378)<span  />
+					[58] (266,384)<div  />
+						[59] (227,384)<span >Every />
+						[60] (280,384)<div  />
+							[61] (280,384)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>15
+minutes />
+		[62] (450,444)<label class='MuiFormControlLabel-root' />
+			[63] (200,444)<span  />
+				[64] (200,444)<span  />
+					[65] (200,444)<input class='jss83' />
+			[66] (282,444)<span  />
+				[67] (282,438)<span  />
+					[68] (261,444)<div  />
+						[69] (243,444)<span >Every day at />
+						[70] (291,444)<div  />
+							[71] (291,444)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>0 />
+					[72] (330,444)<div  />
+						[73] (311,444)<span >: />
+						[74] (331,444)<div  />
+							[75] (331,444)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>00 />
+		[76] (450,504)<label class='MuiFormControlLabel-root' />
+			[77] (200,504)<span  />
+				[78] (200,504)<span  />
+					[79] (200,504)<input class='jss83' />
+			[80] (320,504)<span  />
+				[81] (320,499)<span  />
+					[82] (245,504)<div  />
+						[83] (227,504)<span >Every />
+						[84] (259,504)<div  />
+							[85] (259,504)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>1
+. />
+					[86] (331,504)<div  />
+						[87] (313,504)<span >of the month at />
+						[88] (366,504)<div  />
+							[89] (366,504)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>0 />
+					[90] (405,504)<div  />
+						[91] (386,504)<span >: />
+						[92] (407,504)<div  />
+							[93] (407,504)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>00 />
+		[94] (450,565)<label class='MuiFormControlLabel-root' />
+			[95] (200,565)<span  />
+				[96] (200,565)<span  />
+					[97] (200,565)<input class='jss83' />
+			[98] (337,565)<span  />
+				[99] (337,559)<span  />
+					[100] (265,565)<div  />
+						[101] (246,565)<span >Every year on />
+						[102] (297,565)<div  />
+							[103] (297,565)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>1
+. />
+					[104] (345,565)<div  />
+						[105] (342,565)<div  />
+							[106] (342,565)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>January />
+					[107] (397,565)<div  />
+						[108] (379,565)<span >at />
+						[109] (401,565)<div  />
+							[110] (401,565)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>0 />
+					[111] (440,565)<div  />
+						[112] (421,565)<span >: />
+						[113] (441,565)<div  />
+							[114] (441,565)<div class='MuiSelect-root MuiSelect-select MuiSelect-selectMenu MuiInputBase-input MuiInput-input' role='button'>00 />
+		[115] (450,625)<label class='MuiFormControlLabel-root' />
+			[116] (200,625)<span  />
+				[117] (200,625)<span  />
+					[118] (200,625)<input class='jss83' />
+			[119] (232,625)<span  />
+				[120] (232,625)<span  />
+					[121] (232,625)<span >Custom />
+		[122] (842,365)<legend >Next executions />
+		Friday, January 1, 2027 12:00 AM
+		Saturday, January 1, 2028 12:00 AM
+		Monday, January 1, 2029 12:00 AM
+		Tuesday, January 1, 2030 12:00 AM
+		Wednesday, January 1, 2031 12:00 AM
+		In this job's individual timezone (UTC).
+		Crontab expression
+		[123] (573,740)<div  />
+			[124] (556,740)<input class='MuiInputBase-input MuiOutlinedInput-input MuiInputBase-inputAdornedEnd MuiOutlinedInput-inputAdornedEnd MuiInputBase-inputMarginDense MuiOutlinedInput-inputMarginDense' />
+			[125] (934,740)<button class='MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall' title='Copy to clipboard' />
+				[126] (934,740)<span  />
+		[127] (564,819)<label class='MuiFormControlLabel-root' />
+			[128] (205,819)<span  />
+				[129] (199,819)<span  />
+					[130] (199,819)<span  />
+						[131] (199,819)<input class='jss83 MuiSwitch-input' />
+			[132] (265,819)<span >Schedule expires />
+	[133] (240,905)<legend >Notify me when... />
+	[134] (205,967)<span  />
+		[135] (199,967)<span  />
+			[136] (199,967)<span  />
+				[137] (199,967)<input class='jss83 MuiSwitch-input' />
+	[138] (292,967)<span >execution of the cronjob fails />
+	Notify after
+
+</current_dom>

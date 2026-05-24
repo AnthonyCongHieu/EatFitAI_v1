@@ -1,0 +1,10 @@
+# Tasks
+
+- [x] Update [OnboardingScreen.tsx](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/app/screens/auth/OnboardingScreen.tsx) to use `aiApiClient` for nutrition recalculation <!-- id: 0 -->
+- [x] Update [services/nutrition.ts](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/nutrition.ts) to use `aiApiClient` <!-- id: 1 -->
+- [x] Update [services/aiService.ts](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/aiService.ts) to use `aiApiClient` for recipes and instructions <!-- id: 2 -->
+- [x] Verify UI Animations in [Modal.tsx](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/components/Modal.tsx) <!-- id: 3 -->
+- [x] Create [services/voiceService.ts](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/services/voiceService.ts) <!-- id: 4 -->
+- [x] Update [VoiceInput.tsx](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/components/VoiceInput.tsx) to use service <!-- id: 5 -->
+- [ ] Add Voice option to [SmartAddSheet.tsx](file:///d:/Project/PTUD%20eatfitAL/coding/EatFitAI_v1/eatfitai-mobile/src/components/ui/SmartAddSheet.tsx) <!-- id: 6 -->
+- [ ] Implement navigation logic for Voice commands <!-- id: 7 -->

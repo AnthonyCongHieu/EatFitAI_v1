@@ -1,0 +1,58 @@
+<current_snapshot_explanation>
+This is a temporary snapshot of the current page's accessibility tree structure. The accessibility tree will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the accessibility tree in your trajectory if needed for later reference.
+</current_snapshot_explanation>
+<current_snapshot>
+Emulating viewport: {"deviceScaleFactor":3,"isMobile":true,"hasTouch":true,"isLandscape":false,"width":375,"height":812}
+## Latest page snapshot
+uid=80_0 RootWebArea "Tải EatFitAI cho Android — Ứng dụng dinh dưỡng Việt" url="http://localhost:3000/#download"
+  uid=80_1 banner
+    uid=80_2 link "EatFitAI EatFitAI DINH DƯỠNG VIỆT" url="http://localhost:3000/#top"
+      uid=80_3 image "EatFitAI" url="http://localhost:3000/assets/icon.png"
+      uid=80_4 StaticText "EatFitAI"
+      uid=80_5 StaticText "DINH DƯỠNG VIỆT"
+    uid=80_6 button "Mở menu"
+  uid=151_0 StaticText "PHIÊN BẢN ỔN ĐỊNH"
+  uid=151_1 heading "Sẵn sàng tải xuống" level="2"
+  uid=151_2 StaticText "Ứng dụng được biên dịch và đóng gói hoàn toàn sạch sẽ, đảm bảo tính an toàn và bảo mật tối đa cho tệp tin cài đặt APK."
+  uid=151_3 StaticText "Phiên bản:"
+  uid=151_4 StaticText "1.0.0"
+  uid=151_5 StaticText "Tên Package:"
+  uid=151_6 StaticText "com.eatfitai.app"
+  uid=151_7 StaticText "Dung lượng file:"
+  uid=151_8 StaticText "153.13 MiB"
+  uid=151_9 StaticText "Đã tải xuống:"
+  uid=151_10 StaticText "2 lượt"
+  uid=151_11 StaticText "Yêu cầu hệ thống:"
+  uid=151_12 StaticText "Android 7.0+ (Nougat trở lên)"
+  uid=151_13 link "Tải APK Android" url="https://github.com/anthonyconghieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk"
+    uid=151_14 StaticText "Tải APK Android"
+  uid=151_15 image "EatFitAI" url="http://localhost:3000/assets/icon.png"
+  uid=151_16 image "QR tải xuống" url="https://api.qrserver.com/v1/create-qr-code/?size=220x220&format=svg&margin=14&data=https%3A%2F%2Fgithub.com%2Fanthonyconghieu%2FEatFitAI_v1%2Freleases%2Fdownload%2Fandroid-v1.0.0%2FEatFitAI-android-v1.0.0.apk"
+  uid=151_17 StaticText "Quét mã QR bằng điện thoại Android để tải xuống trực tiếp file cài đặt APK"
+  uid=151_18 StaticText "Ổn định & Sẵn sàng"
+  uid=151_19 StaticText "HƯỚNG DẪN NHANH"
+  uid=151_20 heading "3 bước cài đặt APK an toàn" level="2"
+  uid=151_21 StaticText "1"
+  uid=151_22 heading "Tải tệp tin" level="3"
+  uid=151_23 StaticText "Nhấp vào nút "Tải APK" trên máy tính và chép sang điện thoại, hoặc dùng điện thoại quét mã QR để tải trực tiếp."
+  uid=151_24 StaticText "2"
+  uid=151_25 heading "Cho phép nguồn này" level="3"
+  uid=151_26 StaticText "Khi mở tệp cài đặt, nếu hệ thống Android hỏi, hãy bật tùy chọn "
+  uid=151_27 StaticText ""Cho phép từ nguồn này""
+  uid=151_28 StaticText " (Allow from this source) hoặc vào Cài đặt > Bảo mật > bật "Ứng dụng không rõ nguồn gốc"."
+  uid=151_29 StaticText "3"
+  uid=151_30 heading "Mở & Cấu hình mục tiêu" level="3"
+  uid=151_31 StaticText "Nhấn "Cài đặt", đợi vài giây và mở EatFitAI lên. Đăng nhập bằng tài khoản Google để bắt đầu đồng bộ và ghi nhật ký dinh dưỡng ngay!"
+  uid=151_32 image "MoChi Bảo Mật" url="http://localhost:3000/assets/mochi/mochi-secure.png"
+  uid=151_33 heading "Lưu ý bảo mật từ MoChi" level="4"
+  uid=151_34 StaticText "Ứng dụng EatFitAI chỉ phát hành tệp APK chính thức và an toàn ngay tại trang tải xuống này. Để phòng ngừa các nguy cơ nhiễm mã độc hoặc phiên bản giả mạo, tuyệt đối không cài đặt từ các liên kết chia sẻ không chính thức khác trên mạng xã hội."
+  uid=80_42 contentinfo
+    uid=80_43 image "EatFitAI" url="http://localhost:3000/assets/icon.png"
+    uid=80_44 StaticText "EatFitAI"
+    uid=80_45 StaticText " © 2026"
+    uid=80_46 StaticText "Phát triển bởi "
+    uid=80_47 StaticText "Anthony Cong Hieu"
+  uid=80_48 generic live="polite" relevant="additions text"
+    uid=80_49 StaticText "Đã sao chép!"
+
+</current_snapshot>

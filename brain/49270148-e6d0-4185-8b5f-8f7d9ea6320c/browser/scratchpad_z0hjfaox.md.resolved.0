@@ -1,0 +1,13 @@
+# Kế hoạch Kiểm tra Luồng Đăng nhập Admin
+
+## Danh sách công việc
+- [ ] Truy cập trang đăng nhập (http://localhost:3000/login)
+- [ ] Nhập thông tin Admin: `admin@eatfit.ai` / `Admin@123456`
+- [ ] Nhấn nút "Sign In"
+- [ ] Kiểm tra có lỗi hay không và xác nhận chuyển hướng về dashboard (`/`)
+- [ ] Kiểm tra dữ liệu trên dashboard là thật từ backend (localhost:5247)
+- [ ] Fix các lỗi phát sinh trong quá trình tương tác
+
+## Ghi chú
+- Tài khoản Admin đã được tạo trực tiếp trong DB Supabase.
+- Backend cần hoạt động ở cổng 5247.

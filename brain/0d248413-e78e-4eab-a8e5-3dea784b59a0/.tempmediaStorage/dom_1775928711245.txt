@@ -1,0 +1,52 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+EatFitAI Admin
+[0] (111,123)<a class='block relative' href='/' />
+	[1] (111,123)<div  />
+		[2] (83,123)<span >Overview />
+[3] (111,177)<a class='block relative' href='/users' />
+	[4] (111,177)<div  />
+		[5] (71,177)<span >Users />
+[6] (111,230)<a class='block relative' href='/meals' />
+	[7] (111,230)<div  />
+		[8] (86,230)<span >Meal Logs />
+[9] (111,284)<a class='block relative' href='/foods' />
+	[10] (111,284)<div  />
+		[11] (97,284)<span >Food Database />
+[12] (111,338)<a class='block relative' href='/master-data' />
+	[13] (111,338)<div  />
+		[14] (90,338)<span >Master Data />
+[15] (111,391)<a class='block relative' href='/gemini-keys' />
+	[16] (111,391)<div  />
+		[17] (93,391)<span >Gemini Keys />
+[18] (111,445)<a class='block relative' href='/ai-logs' />
+	[19] (111,445)<div  />
+		[20] (79,445)<span >AI Logs />
+[21] (111,499)<a class='block relative' href='/analytics' />
+	[22] (111,499)<div  />
+		[23] (82,499)<span >Analytics />
+[24] (111,553)<a class='block relative' href='/settings' />
+	[25] (111,553)<div  />
+		[26] (78,553)<span >Settings />
+[27] (111,962)<button class='w-full flex items-center px-4 py-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors duration-200'>Logout />
+	Logout
+Foods
+Welcome back to the EatFitAI administrative panel.
+[28] (790,38)<button class='flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer' title='Backend: OK | AI: OK
+Last: 2m ago' />
+	[29] (798,38)<span >2m ago />
+Admin User
+admin@eatfit.ai
+Food Database
+Create, edit, verify, and delete food items.
+[30] (926,138)<button class='group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 text-primary-foreground [a]:hover:bg-primary/80 h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 bg-primary hover:bg-primary/90 shadow-[0_0_15px_rgba(37,99,235,0.4)]'>Add Food />
+[31] (432,227)<input class='w-full pl-9 pr-4 py-2 bg-background border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all' placeholder='Search foods...' />
+0
+/
+0
+items
+Failed to load food database.
+
+</current_dom>

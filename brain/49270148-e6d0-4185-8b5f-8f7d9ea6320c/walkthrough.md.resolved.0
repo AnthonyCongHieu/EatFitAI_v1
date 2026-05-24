@@ -1,0 +1,26 @@
+# EatFitAI Admin Dashboard - UI Completion Walkthrough
+
+Giao diện Frontend của hệ thống Admin Dashboard đã được xây dựng thành công bằng Next.js (Tailwind V4 + Shadcn UI).
+Bản demo này cho thấy luồng điều hướng mượt mà, hiệu ứng Glassmorphism & 3D, và chuẩn bị sẵn sàng dữ liệu giả định để phục vụ kết nối Backend.
+
+## 🎥 Video Trải Nghiệm Giao Diện
+Video dưới đây được hệ thống tự động ghi lại khi tôi tương tác với các trang:
+- **Dashboard Overview** (Biểu đồ Recharts, Thẻ thống kê Glass)
+- **Gemini Keys Management** (Bảng theo dõi Quota, Add Key)
+- **Users Management** (Hover effects, Tương tác với Action Menu)
+
+![Trải nghiệm UI Dashboard](file:///C:/Users/PC/.gemini/antigravity/brain/49270148-e6d0-4185-8b5f-8f7d9ea6320c/dashboard_ui_demo_1775846098324.webp)
+
+## 📸 Ảnh Chụp Màn Hình (Tương Tác Click)
+Menu Dropdown (Action) trên trang quản lý User hoạt động hoàn hảo 100%.
+![User Action Menu dropdown](file:///C:/Users/PC/.gemini/antigravity/brain/49270148-e6d0-4185-8b5f-8f7d9ea6320c/.system_generated/click_feedback/click_feedback_1775846149121.png)
+
+## Các bước đã Verification
+1. [x] Khởi chạy Localhost:3000 ở mode Turbopack.
+2. [x] Không còn lỗi ESLint nào cản trở.
+3. [x] Các component phức tạp như `DropdownMenu`, `Card`, `Table` đều hiển thị chính xác.
+4. [x] Dark mode default chuẩn màu sắc đã yêu cầu.
+
+## Vấn Đề Tiếp Theo Cần Giải Quyết
+- **Bạn hãy mở Backend (.NET) lên.**
+- Sau đó, thông báo cho tôi để bắt đầu inject React Query kết nối các Backend API này vào Dashboard thay cho mock data hiện tại!

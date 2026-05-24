@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Research so sánh chi tiết:\n1. Benchmark COCO chính thức — YOLO11 thắng YOLOv8 ở mọi model size (+2.1 mAP cho small, -16% params)\n2. So sánh kiến trúc YOLOv8/v9/v10/v11\n3. Đánh giá alternatives: RT-DETR (quá nặng CPU), YOLO-World (accuracy thấp), Florence/DINO (quá lớn)\n4. Phân tích code migration cost — gần như ZERO vì dùng ONNX Runtime\n5. Phản biện 5 rủi ro chuyển đổi với evidence\n6. Kết luận: YOLO11s là lựa chọn tối ưu",
+  "updatedAt":  "2026-05-02T07:04:54.374428400Z",
+  "requestFeedback":  true
+}

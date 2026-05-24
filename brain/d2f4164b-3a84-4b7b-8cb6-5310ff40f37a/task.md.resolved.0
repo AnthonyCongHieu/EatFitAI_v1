@@ -1,0 +1,12 @@
+# EatFitAI Production Stabilization — Task List
+
+## Scope: Chỉ làm những gì code-verified là cần thiết
+
+- [ ] **T1: Response Compression** — Thêm gzip/brotli compression cho backend API (15 phút)
+- [ ] **T2: Docs Cleanup** — Sửa claims sai trong AUTH_AND_INFRA.md + STABILIZATION_PLAN.md (30 phút)
+- [ ] **T3: staleTime micro-tune** — Home 30s→120s, Stats water 30s→120s (5 phút)
+
+## Không làm (lý do)
+- Firebase verify → Manual device test, chỉ user làm được
+- CI/CD → Scope lớn, cần discussion riêng
+- Cloud plan → Vấn đề tiền, user đã bỏ qua

@@ -1,0 +1,8 @@
+- [x] Khởi tạo danh sách công việc sửa lỗi Header
+- [x] Thực hiện chỉnh sửa CSS trong `styles.css`
+  - [x] Thêm `flex-shrink: 0` cho `.theme-toggle-btn`
+  - [x] Thêm `flex-shrink: 0` và `white-space: nowrap` cho `.nav-actions .btn-nav`
+  - [x] Thêm media query trung gian `(min-width: 1025px) and (max-width: 1180px)` để tối ưu hóa khoảng cách và padding của menu
+- [x] Chạy Browser Subagent kiểm tra và chụp ảnh nghiệm thu ở các viewports (375px, 768px, 1050px, 1200px, 1440px)
+- [x] Xác nhận kết quả hiển thị trên ảnh chụp thực tế và hoàn thành nhiệm vụ
+- [x] Cập nhật walkthrough.md tổng kết các thay đổi

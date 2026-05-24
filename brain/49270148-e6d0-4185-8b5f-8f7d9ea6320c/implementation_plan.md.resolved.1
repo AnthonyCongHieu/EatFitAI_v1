@@ -1,0 +1,73 @@
+# Kế hoạch Thiết kế Giao diện Admin & Hệ thống Gemini Pool Manager
+
+Dựa theo nhu cầu sát sườn của dự án **EatFitAI** và yêu cầu thiết lập hệ thống **Gemini Pool Quota**, dưới đây là cấu trúc giao diện và luồng xử lý chi tiết trước khi code.
+
+## 1. Cấu trúc Layout Giao Diện Web Admin 
+
+Web Admin sẽ áp dụng thiết kế chia đôi cơ bản của hệ thống SaaS (Software as a Service):
+
+### A. Sidebar (Menu Trái)
+- **Dashboard:** Thống kê nhanh toàn bộ hệ thống.
+- **Data Manager:** 
+  - `Users:` Quản lý người dùng.
+  - `Food Master:` Thêm/sửa món ăn cho thuật toán calo.
+- **AI Operations:**
+  - `Model Logs:` Xem chính xác từng ảnh User upload và máy trả kết quả gì.
+  - `Gemini Core:` (Tính năng cốt lõi mới) - Trung tâm điều lệnh các API Keys.
+- **Settings:** Đổi mật khẩu/cài đặt môi trường.
+
+### B. Màn Hình Gemini Core (API Key Manager)
+Đây là màn hình quan trọng nhất, thiết kế riêng để trị vấn đề "Quota Limit" của AI Studio.
+
+#### Giao diện danh sách Key (Card Grid / Table)
+Mỗi API Key sẽ được đại diện bởi 1 thẻ (Card), hiển thị các vạch màu (Progress Bar) giống hệt trang dashboard của Google:
+1. **RPM (Request Per Minute)**: Số yêu cầu trên 1 phút (Free = 15).
+2. **RPD (Request Per Day)**: Số yêu cầu trên 1 ngày (Free = 1,500).
+3. **TPM (Tokens Per Minute)**: Lượng Token tối đa / phút (Free = 1 Triệu tokens).
+
+#### Tiện ích ở Gemini Core:
+- Nút **[+ Thêm API Key mới]**: Cho phép nhập List N keys đưa vào trạm (Pool).
+- Trạng thái màu sắc của từng Key:
+  - 🟢 **Khỏe mạnh** (Còn nhiều Quota).
+  - 🟡 **Cảnh báo RPM** (Đang nghẽn mạng do gọi quá nhanh trong 1 phút).
+  - 🔴 **Kiệt sức - Exhausted** (Đã hết RPD trong ngày hoặc bị Google tạm khóa).
+
+---
+
+## 2. Kế Hoạch Hệ Thống Backend cho Gemini Pool
+
+Web chỉ là nơi hiển thị, việc **"Rotate" (Xoay tua)** và **"Đếm" (Count)** phải đặt ở Database/Backend.
+
+### Thay đổi Cấu trúc Database (Data Structure Changes)
+Tạo bảng mới `GeminiKeys`:
+- `KeyId` (Guid, PK)
+- `ApiKey` (String) - Có thể mã hóa bề mặt.
+- `Alias` (String) - Ví dụ: "Key Google Acc 1".
+- `Tier` (Enum) - `Free` hoặc `PayAsYouGo`.
+- `Status` (Enum) - `Active`, `Cooldown`, `Exhausted`, `Banned`.
+- `RpmUsed` (Int) - Số hit gọi trong phút hiện tại.
+- `RpdUsed` (Int) - Số hit gọi trong ngày.
+- `TpmUsed` (Int) - Số Token gọi trong phút.
+- `LastRequestAt` (DateTime) - Thời điểm xả API cuối cùng để Backend tự phán đoán khi nào Reset 1 phút.
+
+### Kịch Bản Reset & Cooldown
+- **Reset Phút / Timeout**: Khi backend lấy 1 Key ra gọi, nó đếm `LastRequestAt`. Nếu khác phút hiện tại (chênh lệch > 60 giây), tự động Reset 2 biến `RpmUsed` = 0 và `TpmUsed` = 0.
+- **Reset Ngày**: Vào 00:00 UTC (Giờ máy chủ), tự động Reset biến `RpdUsed` = 0 của mọi Key về 0. Trạng thái `Exhausted` sẽ nhảy về `Active`. 
+
+### Thuật toán Xoay Tua (Round Robin / Pool Routing)
+Khi User mobile tải lên đồ ăn cần AI tư vấn:
+1. Backend gọi vào kho Db `GeminiKeys` tìm tất cả thẻ có `Status = Active`.
+2. Lọc ra các thẻ chưa chạm móc `RPM` (<= 14) và chưa đụng nóc `RPD` (<= 1490).
+3. Rút lấy thẻ rảnh rỗi nhất để đập vào thư viện Gemini gọi lệnh.
+
+---
+
+## 3. Các Câu Hỏi Bắt Buộc Giải Quyết Trước Khi Code (Open Questions)
+
+> [!CAUTION]
+> Xác nhận rõ các cấu trúc dưới đây để API không bị xây lại rác:
+
+1. **Bảo mật của Api Key**: Bạn có bắt buộc **mã hoá (Encrypt)** API Key lúc lưu vào Database SQL không? Hay cứ để dạng Text trần (Plain Text) vì Backend và DB là do mình quản lý an toàn tuyệt đối rồi?
+2. **Luật Rotate Khi Hết Tích Cực**: Giả sử trong Pool bạn chèn 5 API Key. Khi tất cả 5 Keys đều sụp đổ (Hết sạch RPD hoặc nghẽn RPM), ứng dụng sẽ trả về User trên App Mobile lỗi gì? ("Máy chủ AI đang bảo trì", "Quá tải" hay Fallback về một mô hình nội bộ dự phòng?)
+3. **Phân phối giao thức**: Tôi dự tính dùng **Supabase Postgres** hoặc **SQL Server** của EatFitAI hiện tại cộng thêm cột `GeminiKeys` đúng không?
+4. **Việc Thống Kê Tokens**: Gemini trả về chính xác `UsageMetadata` (Bao nhiêu tokens). Bạn có cần Backend log lại thành 1 bảng History (Lịch sử sử dụng từng API calls tốn bao nhiêu tokens không) để đối chiếu Google Billing hay chỉ cần cộng dồn vào `TpmUsed` rồi vứt đi?

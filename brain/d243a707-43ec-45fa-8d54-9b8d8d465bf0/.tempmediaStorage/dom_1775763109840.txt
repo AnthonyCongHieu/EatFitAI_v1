@@ -1,0 +1,176 @@
+[0] (500,500)<div  />
+	[1] (16,34)<a class='items-center justify-center flex-shrink-0 flex' href='/dashboard/org/ycicnpvzkftpeznasexd' />
+		[2] (16,34)<img  />
+	[3] (141,34)<a class='flex items-center gap-2 flex-shrink-0 text-sm' href='/dashboard/org/ycicnpvzkftpeznasexd' />
+		[4] (134,34)<span >DinhCongHieuFIVECAT22CT113's Org />
+		[5] (228,34)<div >Free />
+	[6] (252,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs h-[26px] px-1.5 py-4 [&_svg]:w-5 [&_svg]:h-5 ml-1' />
+		[7] (252,34)<div  />
+	[8] (305,34)<a class='flex items-center gap-2 flex-shrink-0 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm' />
+		[9] (312,34)<span >EatFitAI v1 />
+	[10] (345,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs h-[26px] px-1.5 py-4 [&_svg]:w-5 [&_svg]:h-5 ml-1 flex-shrink-0' />
+		[11] (345,34)<div  />
+	[12] (408,34)<a class='flex items-center gap-2 flex-shrink-0' href='/dashboard/project/bjlmndmafrajjysenpbm' />
+		[13] (379,34)<span >main />
+		[14] (420,35)<div >Production />
+	[15] (458,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs h-[26px] px-1.5 py-4 [&_svg]:w-5 [&_svg]:h-5 ml-1' />
+		[16] (458,34)<div  />
+	[17] (504,34)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-brand-400 dark:bg-brand-500 hover:bg-brand/80 dark:hover:bg-brand/50 text-foreground border-brand-500/75 dark:border-brand/30 hover:border-brand-600 dark:hover:border-brand focus-visible:outline-brand-600 data-[state=open]:bg-brand-400/80 dark:data-[state=open]:bg-brand-500/80 data-[state=open]:outline-brand-600 text-xs px-2.5 py-1 h-[26px] rounded-full pointer-events-auto' />
+		[18] (486,34)<div  />
+		[19] (511,34)<span  />
+			[20] (511,33)<span >Connect />
+	[21] (676,34)<span class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs px-2.5 py-1 rounded-full h-[32px] text-foreground-light hover:text-foreground' />
+		[22] (676,34)<span >Feedback />
+	[23] (747,34)<button class='px-4 py-2 whitespace-nowrap border-input text-sm hover:bg-accent hover:text-accent-foreground ring-offset-background disabled:pointer-events-none disabled:opacity-50 group flex-grow h-[30px] pl-1.5 md:pl-2 pr-1 items-center justify-between text-foreground-lighter border hover:bg-opacity-100 hover:border-stronger focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-border-strong focus-visible:ring-offset-1 focus-visible:ring-offset-background transition hidden md:flex md:min-w-32 xl:min-w-32 rounded-full bg-transparent [&_.command-shortcut]:border-none [&_.command-shortcut]:pr-2 [&_.command-shortcut]:bg-transparent [&_.command-shortcut]:text-foreground-lighter [&_.command-shortcut]:shadow-none' />
+		[24] (736,34)<div  />
+			[25] (743,34)<p >Search... />
+		[26] (774,34)<span  />
+			[27] (774,36)<span >Ctrl K />
+	[28] (805,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 group pointer-events-auto' id='help-dropdown-button' />
+		[29] (805,34)<span  />
+	[30] (831,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 group pointer-events-auto' id='advisor-center-trigger' />
+		[31] (831,34)<span  />
+	[32] (857,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 text-foreground-light hover:text-foreground pointer-events-auto' id='editor-trigger' />
+		[33] (857,34)<span  />
+	[34] (883,34)<button class='relative cursor-pointer space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-transparent border-strong hover:border-foreground-muted focus-visible:outline-border-strong data-[state=open]:border-stronger data-[state=open]:outline-border-strong text-xs rounded-full w-[32px] h-[32px] flex items-center justify-center p-0 pointer-events-auto' id='assistant-trigger' />
+		[35] (883,34)<span  />
+			[36] (883,34)<div  />
+				[37] (883,34)<div  />
+	[38] (933,34)<a class='relative justify-center cursor-pointer items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-brand-400 dark:bg-brand-500 hover:bg-brand/80 dark:hover:bg-brand/50 text-foreground border-brand-500/75 dark:border-brand/30 hover:border-brand-600 dark:hover:border-brand focus-visible:outline-brand-600 data-[state=open]:bg-brand-400/80 dark:data-[state=open]:bg-brand-500/80 data-[state=open]:outline-brand-600 text-xs px-2.5 py-1 h-[26px] hidden md:flex' href='/dashboard/org/ycicnpvzkftpeznasexd/billing?panel=subscriptionPlan&source=headerUpgradeCta' />
+		[39] (933,34)<span >Upgrade to Pro />
+	[40] (982,34)<button class='relative justify-center cursor-pointer items-center space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs border flex-shrink-0 hidden md:flex [&>span]:flex px-0 py-0 rounded-full overflow-hidden h-8 w-8 pointer-events-auto' id='radix-:r1f:' />
+		[41] (982,34)<span  />
+			[42] (982,34)<img  />
+	[43] (16,104)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm'>Project Overview />
+		Project Overview
+	[44] (16,153)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/editor'>Table Editor />
+		Table Editor
+	[45] (16,201)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/sql'>SQL Editor />
+		SQL Editor
+	[46] (16,283)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/database/schemas'>Database />
+		Database
+	[47] (16,332)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/auth/users'>Authentication />
+		Authentication
+	[48] (16,381)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/storage/files'>Storage />
+		Storage
+	[49] (16,430)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/functions'>Edge Functions />
+		Edge Functions
+	[50] (16,479)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/realtime/inspector'>Realtime />
+		Realtime
+	[51] (16,561)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/advisors/security'>Advisors />
+		Advisors
+	[52] (16,610)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/observability'>Observability />
+		Observability
+	[53] (16,659)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/logs/explorer'>Logs />
+		Logs
+	[54] (16,708)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/integrations'>Integrations />
+		Integrations
+	[55] (16,790)<a class='peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md py-2 px-1.5 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 text-foreground-lighter data-[active=true]:text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!pl-1.5 group-data-[collapsible=icon]:!pr-2 text-sm' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/general'>Project Settings />
+		Project Settings
+	[56] (15,970)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=open]:bg-surface-300 data-[state=open]:outline-border-strong border-transparent text-xs py-1 h-[26px] w-min px-1.5 mx-0.5' id='radix-:r1p:' />
+		[57] (15,970)<div  />
+	Settings
+	Configuration
+	[58] (115,222)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/general' />
+		[59] (115,222)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-semibold bg-sidebar-accent text-foreground-lighter z-10 rounded-md' role='menuitem' />
+			[60] (115,222)<span  />
+				[61] (115,222)<div  />
+					[62] (115,222)<div  />
+						[63] (115,222)<span >General />
+	[64] (115,262)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/compute-and-disk' />
+		[65] (115,262)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[66] (115,262)<span  />
+				[67] (115,262)<div  />
+					[68] (115,262)<div  />
+						[69] (115,262)<span >Compute and Disk />
+	[70] (115,302)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/infrastructure' />
+		[71] (115,302)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[72] (115,302)<span  />
+				[73] (115,302)<div  />
+					[74] (115,302)<div  />
+						[75] (115,302)<span >Infrastructure />
+	[76] (115,342)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/integrations' />
+		[77] (115,342)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[78] (115,342)<span  />
+				[79] (115,342)<div  />
+					[80] (115,342)<div  />
+						[81] (115,342)<span >Integrations />
+	[82] (115,383)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/api-keys/new' />
+		[83] (115,383)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[84] (115,383)<span  />
+				[85] (115,383)<div  />
+					[86] (115,383)<div  />
+						[87] (115,383)<span >API Keys />
+	[88] (115,423)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/jwt' />
+		[89] (115,423)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[90] (115,423)<span  />
+				[91] (115,423)<div  />
+					[92] (115,423)<div  />
+						[93] (115,423)<span >JWT Keys />
+	[94] (115,463)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/log-drains' />
+		[95] (115,463)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[96] (115,463)<span  />
+				[97] (115,463)<div  />
+					[98] (115,463)<div  />
+						[99] (115,463)<span >Log Drains />
+	[100] (115,504)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/addons' />
+		[101] (115,504)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[102] (115,504)<span  />
+				[103] (115,504)<div  />
+					[104] (115,504)<div  />
+						[105] (115,504)<span >Add-ons />
+	Integrations
+	[106] (115,632)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/integrations/data_api/overview' />
+		[107] (115,632)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[108] (115,632)<span  />
+				[109] (115,632)<div  />
+					[110] (108,632)<div  />
+						[111] (108,632)<span >Data API />
+					[112] (177,632)<div  />
+	[113] (115,672)<a class='block' href='/dashboard/project/bjlmndmafrajjysenpbm/integrations/vault/overview' />
+		[114] (115,672)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[115] (115,672)<span  />
+				[116] (115,672)<div  />
+					[117] (108,672)<div  />
+						[118] (95,672)<span >Vault />
+						[119] (157,672)<div >Beta />
+					[120] (177,672)<div  />
+	Billing
+	[121] (115,800)<a class='block' href='/dashboard/org/ycicnpvzkftpeznasexd/billing' />
+		[122] (115,800)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[123] (115,800)<span  />
+				[124] (115,800)<div  />
+					[125] (108,800)<div  />
+						[126] (108,800)<span >Subscription />
+					[127] (177,800)<div  />
+	[128] (115,840)<a class='block' href='/dashboard/org/ycicnpvzkftpeznasexd/usage?projectRef=bjlmndmafrajjysenpbm' />
+		[129] (115,840)<li class='cursor-pointer flex space-x-3 items-center outline-none focus-visible:ring-1 ring-foreground-muted focus-visible:z-10 group px-3 py-1 font-normal border-default group-hover:border-foreground-muted' role='menuitem' />
+			[130] (115,840)<span  />
+				[131] (115,840)<div  />
+					[132] (108,840)<div  />
+						[133] (108,840)<span >Usage />
+					[134] (177,840)<div  />
+	[135] (599,535)<main class='h-full flex flex-col flex-1 w-full overflow-y-auto overflow-x-hidden @container' scrollable='true' />
+		Project Settings
+		General configuration, domains, ownership, and lifecycle
+		General settings
+		[136] (701,422)<input class='flex w-full rounded-md border border-control read-only:border-button bg-foreground/[.026] file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-foreground-muted read-only:text-foreground-light focus:ring-background-control focus:border-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background-control focus-visible:ring-offset-2 focus-visible:ring-offset-foreground-muted disabled:cursor-not-allowed disabled:text-foreground-muted aria-[] aria-[invalid=true]:bg-destructive-200 aria-[invalid=true]:border-destructive-400 aria-[invalid=true]:focus:border-destructive aria-[invalid=true]:focus-visible:border-destructive text-base md:text-sm leading-4 px-3 py-2 h-[34px]' id=':r7d:-form-item' />
+		[137] (480,408)<label class='text peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm transition-colors text-foreground flex gap-2 items-center break-words leading-normal'>Project name />
+			Project name
+		Displayed throughout the dashboard.
+		[138] (677,528)<input class='flex w-full border-control read-only:border-button file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-foreground-muted read-only:text-foreground-light focus:ring-background-control focus:border-control focus-visible:outline-none focus-visible:ring-background-control focus-visible:ring-offset-foreground-muted disabled:cursor-not-allowed disabled:text-foreground-muted aria-[] aria-[invalid=true]:bg-destructive-200 aria-[invalid=true]:border-destructive-400 aria-[invalid=true]:focus:border-destructive aria-[invalid=true]:focus-visible:border-destructive h-[34px] flex-1 rounded-none border-0 -m-px bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent text-base md:text-sm leading-4 px-3 py-2' id=':r7e:-form-item' />
+		[139] (785,528)<div class='text-foreground-light flex h-auto cursor-text select-none items-center justify-center gap-2 text-sm group-data-[disabled=true]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4 order-last pr-2 has-[>button]:mr-[-0.4rem] has-[>kbd]:mr-[-0.35rem]' role='group' />
+			[140] (782,528)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs py-1 h-6 gap-1 rounded-md px-2 has-[>svg]:px-2 [&>svg:not([class*='size-'])]:size-3.5' />
+				[141] (769,528)<div  />
+				[142] (791,528)<span >Copy />
+		[143] (480,514)<label class='text peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-sm transition-colors text-foreground flex gap-2 items-center break-words leading-normal'>Project ID />
+			Project ID
+		Reference used in APIs and URLs.
+		Save changes
+		Project access
+		Organization-wide access
+		All 1 organization members can access this project.
+		[144] (769,863)<a class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px]' href='/dashboard/org/ycicnpvzkftpeznasexd/team' />
+			[145] (769,863)<span >Manage members />
+		Member
+		Role

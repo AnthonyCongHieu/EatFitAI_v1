@@ -1,0 +1,12 @@
+# Task: Check Supabase Storage for ml-models bucket
+
+## Plan
+1. [ ] Open Supabase Storage URL.
+2. [ ] Check for login requirement.
+3. [ ] If logged in, verify "ml-models" bucket content.
+4. [ ] Take screenshot and report findings.
+
+## Notes
+- Project ID: bjlmndmafrajjysenpbm
+- Bucket Name: ml-models
+- URL: https://supabase.com/dashboard/project/bjlmndmafrajjysenpbm/storage/buckets/ml-models

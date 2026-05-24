@@ -1,0 +1,116 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+DinhCongHieuFIVECAT22CT113's Org
+Free
+EatFitAI v1
+main
+Production
+Connect
+Feedback
+Search...
+K
+Upgrade to Pro
+Project Overview
+Table Editor
+SQL Editor
+Database
+Authentication
+Storage
+Edge Functions
+Realtime
+Advisors
+Observability
+Logs
+Integrations
+Project Settings
+Database
+[0] (115,569)<div class='flex-grow overflow-y-auto' scrollable='true' />
+	Database Management
+	Schema Visualizer
+	Tables
+	Functions
+	Triggers
+	Enumerated Types
+	Extensions
+	Indexes
+	Publications
+	Configuration
+	Roles
+	Policies
+	Settings
+	Platform
+	Replication
+	Backups
+	Migrations
+	Wrappers
+	Database Webhooks
+[1] (599,535)<main class='h-full flex flex-col flex-1 w-full overflow-y-auto overflow-x-hidden @container' scrollable='true' />
+	Disk management
+	Docs
+	Disk Management has moved
+	Disk configuration is now managed alongside Project Compute on the new Compute and Disk page.
+	Go to Compute and Disk
+	Network restrictions
+	Docs
+	Add restriction
+	Your database can be accessed by all IP addresses
+	You may start limiting access to your database by adding a network restriction.
+	Restrict all access
+	Network bans
+	IP addresses temporarily blocked due to suspicious traffic
+	Docs
+	There are no banned IP addresses for your project
+Connect to your project
+Choose how you want to use Supabase
+[2] (750,570)<div class='flex flex-1 flex-col overflow-y-auto divide-y' scrollable='true' />
+	URI
+	Connect your app
+	Give your agent everything it needs
+	[3] (921,226)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px]' />
+		[4] (895,226)<div  />
+		[5] (928,226)<span >Copy prompt />
+	1
+	Connection string
+	Copy the connection details for your database.
+	[6] (847,398)<pre class='code-block border border-surface p-4 w-full !my-0 !bg-surface-100 outline-none focus:border-foreground-lighter/50 rounded-md pl-6 [&_code]:text-foreground' scrollable='true' />
+		postgresql://postgres:[YOUR-PASSWORD]@db.bjlmndmafrajjysenpbm.supabase.co:5432/postgres
+	[7] (955,380)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs py-1 h-[26px] px-1.5' />
+		[8] (955,380)<div  />
+	Not IPv4 compatible
+	Use Session Pooler if on a IPv4 network or purchase IPv4 add-on
+	[9] (801,587)<a class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px] text-xs text-light hover:text-foreground' href='/dashboard/project/bjlmndmafrajjysenpbm/settings/addons?panel=ipv4' />
+		[10] (801,587)<span >IPv4 add-on />
+	[11] (867,587)<a class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px] text-xs text-light hover:text-foreground' href='/dashboard/project/bjlmndmafrajjysenpbm/database/settings#connection-pooling' />
+		[12] (867,587)<span >Pooler settings />
+	[13] (847,641)<button class='relative cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-alternative dark:bg-muted hover:bg-selection hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px] group/collapse w-full justify-start rounded-t-none !last:rounded-b group-data-[state=open]:rounded-b-none border-muted text-foreground-lighter !bg-dash-sidebar' />
+		[14] (737,641)<div  />
+		[15] (800,641)<span >Some platforms are IPv4-only: />
+	host
+	:
+	db.bjlmndmafrajjysenpbm.supabase.co
+	[16] (938,715)<button class='text-foreground-lighter ml-2 opacity-0 group-hover/param:opacity-100 hover:text-foreground rounded-sm p-1 transition-all' />
+	port
+	:
+	5432
+	[17] (793,749)<button class='text-foreground-lighter ml-2 opacity-0 group-hover/param:opacity-100 hover:text-foreground rounded-sm p-1 transition-all' />
+	database
+	:
+	postgres
+	[18] (830,784)<button class='text-foreground-lighter ml-2 opacity-0 group-hover/param:opacity-100 hover:text-foreground rounded-sm p-1 transition-all' />
+	user
+	:
+	postgres
+	[19] (812,818)<button class='text-foreground-lighter ml-2 opacity-0 group-hover/param:opacity-100 hover:text-foreground rounded-sm p-1 transition-all' />
+	2
+	Install Agent Skills (Optional)
+	Agent Skills give AI coding tools ready-made instructions, scripts, and resources for working with Supabase more accurately and efficiently.
+	npx skills add supabase/agent-skills
+	[20] (940,975)<button class='relative justify-center cursor-pointer inline-flex items-center space-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=open]:bg-selection data-[state=open]:outline-brand-600 data-[state=open]:border-button-hover text-xs px-2.5 py-1 h-[26px] opacity-0 group-hover:opacity-100 transition-opacity' />
+		[21] (929,975)<div  />
+		[22] (948,975)<span  />
+[23] (984,35)<button class='absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary before:content-[""] before:block before:absolute before:top-1/2 before:left-1/2 before:w-full before:h-full before:outline-red-500 before:outline-2 before:min-w-6 before:min-h-6 before:z-50 before:-translate-x-1/2 before:-translate-y-1/2'>Close />
+	Close
+
+</current_dom>

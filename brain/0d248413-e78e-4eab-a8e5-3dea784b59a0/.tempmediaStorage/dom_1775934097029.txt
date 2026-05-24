@@ -1,0 +1,45 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+[0] (500,181)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary' href='/' />
+	[1] (500,154)<img  />
+Sign up
+Don't have an account yet? Sign up for free, it only takes a minute.
+First name
+*
+[2] (434,471)<div  />
+	[3] (434,471)<input class='MuiInputBase-input MuiOutlinedInput-input' />
+Last name
+*
+[4] (566,471)<div  />
+	[5] (566,471)<input class='MuiInputBase-input MuiOutlinedInput-input' />
+Email address
+*
+[6] (500,586)<div  />
+	[7] (500,586)<input class='MuiInputBase-input MuiOutlinedInput-input' />
+Password
+*
+[8] (434,701)<div  />
+	[9] (434,701)<input class='MuiInputBase-input MuiOutlinedInput-input' />
+Password (repeat)
+*
+[10] (566,701)<div  />
+	[11] (566,701)<input class='MuiInputBase-input MuiOutlinedInput-input' />
+[12] (450,783)<label class='MuiFormControlLabel-root' />
+	[13] (378,783)<span  />
+		[14] (378,783)<span  />
+			[15] (378,783)<input class='jss14' />
+	[16] (464,783)<span  />
+		[17] (464,783)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary' href='https://cron-job.org/tos/'>I agree to the Terms of Service />
+[18] (444,844)<label class='MuiFormControlLabel-root' />
+	[19] (378,844)<span  />
+		[20] (378,844)<span  />
+			[21] (378,844)<input class='jss14' />
+	[22] (457,844)<span  />
+		[23] (457,844)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-colorPrimary' href='https://cron-job.org/privacy/'>I agree to the Privacy Policy />
+Create account
+[24] (389,998)<a class='MuiTypography-root MuiLink-root MuiLink-underlineHover MuiTypography-body2 MuiTypography-colorPrimary' href='/login'>«
+Sign in />
+
+</current_dom>

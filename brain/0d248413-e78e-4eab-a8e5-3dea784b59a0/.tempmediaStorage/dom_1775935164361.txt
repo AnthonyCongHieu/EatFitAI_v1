@@ -1,0 +1,98 @@
+<current_dom_explanation>
+This is a temporary snapshot of the current page's DOM structure. The DOM will change if you navigate to or interact with another page. Use a tool like browser_get_dom to capture and preserve the DOM in your trajectory if needed for later reference.
+</current_dom_explanation>
+<current_dom>
+CongHieu's projects
+Hobby
+Find…
+F
+[0] (83,444)<nav class='overflow-x-clip overflow-y-auto pt-2 pb-10 md:py-2 md:h-full overscroll-none max-md:h-[628px] max-md:max-h-[calc(100svh_-_108px)] max-md:shadow-modal max-md:rounded-[16px] max-md:bg-background-100 max-md:dark:bg-gray-100 sidebar-module__J4DTiG__hideScrollbar' scrollable='true' />
+	Settings
+	General
+	Build and Deployment
+	Environments
+	Environment Variables
+	Git
+	Deployment Protection
+	Functions
+	Cron Jobs
+	Microfrontends
+	Project Members
+	Drains
+	Security
+	Connectivity
+	Advanced
+Ship
+26
+Built for you to ship what’s next.
+Save the date
+anthonyconghieuu
+eatfitai-admin
+Project Settings
+Environment Variables
+Environment Variables
+Store API keys, tokens, and config securely.
+Learn more
+Link Shared Variable
+Add Environment Variable
+Project
+Shared
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+All Environments
+•••••••••••••••
+Added
+9h ago
+NEXT_PUBLIC_SUPABASE_URL
+All Environments
+•••••••••••••••
+Added
+9h ago
+NEXT_PUBLIC_APP_NAME
+Production
+•••••••••••••••
+Added
+11h ago
+AUTH_COOKIE_NAME
+Production
+•••••••••••••••
+Added
+11h ago
+Automatically expose
+System Environment Variables
+Add Environment Variable
+[1] (971,63)<button aria-label='Close' class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__shape button-module__QyrFCa__invert' />
+	[2] (971,63)<span  />
+[3] (618,165)<label  />
+	[4] (618,130)<div >key />
+	[5] (618,185)<input aria-label='environment variable key' class='input-module__q7zwrG__input tev-key-input-module__L-kdSa__monoInput' id='input-_r_ck_' placeholder='CLIENT_KEY…' />
+[6] (862,165)<label  />
+	[7] (862,130)<div >value />
+	[8] (862,185)<textarea aria-label='shared environment variable value' class='tev-add-form-module__PZYaGG__textarea input-module__1EzHua__input geist-themed geist-default tev-add-form-module__PZYaGG__textareaInput' />
+[9] (532,240)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset tev-add-form-module__PZYaGG__noteUnderKey w-fit *:px-0 !text-gray-900 hover:!text-gray-1000 hover:!bg-transparent !pl-1 !h-fit [&::after]:content-[''] [&::after]:absolute [&::after]:left-0 [&::after]:right-0 [&::after]:-inset-y-2 [&::after]:pointer-events-auto geist-new-themed geist-new-tertiary geist-new-tertiary-fill button-module__QyrFCa__tertiary button-module__QyrFCa__small button-module__QyrFCa__invert'>Create Note />
+	Create Note
+[10] (544,318)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset button-module__QyrFCa__secondary button-module__QyrFCa__small button-module__QyrFCa__invert' />
+	[11] (513,318)<span  />
+	[12] (551,318)<span >Add Another />
+[13] (742,437)<label >Environments />
+	Environments
+[14] (742,493)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset group !justify-between !pl-0 !font-normal button-module__QyrFCa__secondary button-module__QyrFCa__invert' />
+	[15] (556,493)<span  />
+		[16] (554,493)<div  />
+			[17] (516,493)<span  />
+			[18] (571,493)<span >All Environments />
+	[19] (969,493)<span  />
+[20] (742,559)<label >Branch />
+	Branch
+[21] (580,609)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset button-module__QyrFCa__secondary button-module__QyrFCa__small button-module__QyrFCa__invert' />
+	[22] (580,609)<span >Select a Custom Preview Branch />
+[23] (539,694)<label class='toggle-module__fUrgQa__wrapper toggle-module__fUrgQa__large toggle-module__fUrgQa__switchFirst toggle-module__fUrgQa__titleCasing' />
+	Sensitive
+Available for Production and Preview only
+[24] (541,937)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset button-module__QyrFCa__secondary button-module__QyrFCa__small button-module__QyrFCa__invert' />
+	[25] (513,937)<span  />
+	[26] (549,937)<span >Import .env />
+or paste .env contents in Key input
+[27] (963,937)<button class='button-module__QyrFCa__base reset-module__ylizOa__reset button-module__QyrFCa__button reset-module__ylizOa__reset button-module__QyrFCa__small button-module__QyrFCa__invert' />
+	[28] (963,937)<span >Save />
+
+</current_dom>

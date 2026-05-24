@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Bảng đánh giá toàn diện hệ thống EatFitAI với 9 hạng mục chấm điểm chi tiết:\n1. Authentication & Security: 7.5/10\n2. State Management: 7.0/10\n3. API Client & Networking: 7.5/10\n4. AI Vision Pipeline: 8.0/10\n5. AI LLM Pipeline (Gemini): 8.5/10\n6. Voice Command System: 6.5/10\n7. Diary & Statistics: 7.0/10\n8. Error Handling: 8.0/10\n9. Code Quality: 6.0/10\n\nTổng điểm: 7.5/10 (B+)\n\nBao gồm phân tích ưu/nhược điểm chi tiết cho từng module, bảng ưu tiên sửa chữa 10 items, và verdict tổng kết.",
+  "updatedAt":  "2026-04-25T15:13:18.425801100Z",
+  "requestFeedback":  true
+}

@@ -1,0 +1,73 @@
+[0] (23,46)<div aria-label='Trình đơn chính' class='gb_2c' role='button' />
+[1] (91,49)<a aria-label='Google Apps Script' class='gb_ee gb_Wc' href='/home' id='sdgBod' />
+	[2] (53,49)<img class='gb_1c' role='presentation' />
+	[3] (102,47)<span >Apps Script />
+[4] (403,46)<input aria-label='Tìm kiếm' class='Ax4B8 ZAGvjd' role='combobox' />
+[5] (211,46)<button aria-label='Tìm kiếm' class='gb_Pe' role='button' />
+[6] (915,46)<div aria-label='Hỗ trợ' class='U26fgb JRtysb WzwrXb lmSKjb' role='button' />
+	[7] (915,57)<span  />
+		[8] (915,58)<span  />
+			[9] (915,46)<i >help_outline />
+[10] (947,46)<a aria-label='Các ứng dụng của Google' class='gb_B' href='https://www.google.com.vn/intl/vi/about/products' role='button' />
+[11] (978,46)<a aria-label='Tài khoản Google: Công Hiếu  
+(hieufastyou@gmail.com)' class='gb_B gb_1a gb_2' href='https://accounts.google.com/SignOutOptions?hl=vi&continue=https://script.google.com/home%3Fpli%3D1&ec=GBRAiwM' role='button' />
+[12] (56,155)<button class='VfPpkd-BIzmGd VfPpkd-BIzmGd-OWXEXe-X9G3K bgpk6e gl6QPb' />
+	[13] (26,155)<span  />
+	[14] (68,155)<span >Dự án mới />
+[15] (83,252)<div aria-label='Dự án có gắn dấu sao' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[16] (83,252)<span  />
+		[17] (83,252)<span  />
+			[18] (23,252)<i >star_outline />
+			[19] (81,252)<span >Dự án có gắn dấu sao />
+[20] (83,310)<div aria-label='Dự án của tôi' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c jBCeZb M9Bg4d' role='button' />
+	[21] (83,310)<span  />
+		[22] (83,310)<span  />
+			[23] (23,310)<i >folder />
+			[24] (65,310)<span >Dự án của tôi />
+[25] (83,367)<div aria-label='Tất cả dự án' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[26] (83,367)<span  />
+		[27] (83,367)<span  />
+			[28] (23,367)<i >folder />
+			[29] (63,367)<span >Tất cả dự án />
+[30] (83,425)<div aria-label='Đã chia sẻ với tôi' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[31] (83,425)<span  />
+		[32] (83,425)<span  />
+			[33] (23,425)<i >group />
+			[34] (73,425)<span >Đã chia sẻ với tôi />
+[35] (83,483)<div aria-label='Thùng rác' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[36] (83,483)<span  />
+		[37] (83,483)<span  />
+			[38] (23,483)<i >delete />
+			[39] (59,483)<span >Thùng rác />
+[40] (83,583)<div aria-label='Các lần thực thi của tôi' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[41] (83,583)<span  />
+		[42] (83,583)<span  />
+			[43] (23,583)<span  />
+			[44] (85,583)<span >Các lần thực thi của tôi />
+[45] (83,641)<div aria-label='Trình kích hoạt của tôi' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[46] (83,641)<span  />
+		[47] (83,641)<span  />
+			[48] (23,641)<i >alarm />
+			[49] (83,641)<span >Trình kích hoạt của tôi />
+[50] (83,742)<div aria-label='Bắt đầu' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[51] (83,742)<span  />
+		[52] (83,742)<span  />
+			[53] (23,742)<i >play_circle_outline />
+			[54] (54,742)<span >Bắt đầu />
+[55] (83,799)<div aria-label='Cài đặt' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[56] (83,799)<span  />
+		[57] (83,799)<span  />
+			[58] (23,799)<i >settings />
+			[59] (53,799)<span >Cài đặt />
+[60] (83,857)<div aria-label='Trạng thái dịch vụ' class='U26fgb O0WRkf oG5Srb C0oVfc QcbH4c M9Bg4d' role='button' />
+	[61] (83,857)<span  />
+		[62] (83,857)<span  />
+			[63] (23,857)<i >warning_amber />
+			[64] (74,857)<span >Trạng thái dịch vụ />
+Dự án của tôi
+Không có dự án nào
+Không có dự án nào
+Sử dụng Apps Script để tự động hóa công việc trên các sản phẩm của Google cũng như các dịch vụ của bên thứ ba.
+[65] (591,839)<div aria-label='Tạo Apps Script' class='U26fgb O0WRkf oG5Srb HQ8yf C0oVfc Hi0i7 M9Bg4d' role='button' />
+	[66] (591,839)<span  />
+		[67] (591,839)<span >Tạo Apps Script />

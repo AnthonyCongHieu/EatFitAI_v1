@@ -1,0 +1,66 @@
+DinhCongHieuFIVECAT22CT113's Org
+Free
+EatFitAI v1
+main
+Production
+Connect
+Feedback
+Search...
+Ctrl K
+Upgrade to Pro
+Project Overview
+Table Editor
+SQL Editor
+Database
+Authentication
+Storage
+Edge Functions
+Realtime
+Advisors
+Observability
+Logs
+Integrations
+Project Settings
+Settings
+Configuration
+General
+Compute and Disk
+Infrastructure
+Integrations
+API Keys
+JWT Keys
+Log Drains
+Add-ons
+Integrations
+Data API
+Vault
+Beta
+Billing
+Subscription
+Usage
+API Keys
+Configure API keys to securely control access to your project
+Docs
+Publishable and secret API keys
+Legacy anon, service_role API keys
+anon
+public
+Copy
+This key is safe to use in a browser if you have enabled Row Level Security for your tables and configured policies.
+Prefer using
+Publishable API keys
+instead.
+service_role
+secret
+Copied
+This key has the ability to bypass Row Level Security. Never share it publicly. If leaked, generate a new JWT secret immediately.
+Prefer using
+Secret API keys
+instead.
+Disable legacy API keys
+Make sure you are no longer using your legacy API keys before proceeding.
+Disable JWT-based API keys
+Command menu
+Type a command or search
+[0] (507,182)<input class='py-3 border-none focus:ring-0 flex h-11 w-full rounded-md bg-transparent px-2 y-4 md:py-7 outline-none focus:shadow-none focus:ring-transparent text-base text-foreground-light placeholder:text-foreground-muted disabled:cursor-not-allowed disabled:opacity-50 border-0' id='radix-:r4p:' placeholder='Run a command or search...' role='combobox' />
+No results found.

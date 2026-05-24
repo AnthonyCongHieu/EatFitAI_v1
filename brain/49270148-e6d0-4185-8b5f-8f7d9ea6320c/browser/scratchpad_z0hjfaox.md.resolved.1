@@ -1,0 +1,18 @@
+# Kế hoạch Kiểm tra Luồng Đăng nhập Admin
+
+## Danh sách công việc
+- [x] Truy cập trang đăng nhập (http://localhost:3000/login)
+- [ ] Nhập thông tin Admin: `admin@eatfit.ai` / `Admin@123456`
+- [ ] Nhấn nút "Sign In"
+- [ ] Kiểm tra có lỗi hay không và xác nhận chuyển hướng về dashboard (`/`)
+- [ ] Kiểm tra dữ liệu trên dashboard là thật từ backend (localhost:5247)
+- [ ] Fix các lỗi phát sinh trong quá trình tương tác
+
+## Ghi chú
+- Đã thử nhập `admin@eatfit.ai`, nhận lỗi: `Email address "admin@eatfit.ai" is invalid`.
+- Đã thử email test khác, nhận lỗi: `email rate limit exceeded`.
+- Nghi ngờ: 
+    1. Code frontend đang gọi `signUp` thay vì `signIn`. Nếu user đã tồn tại, `signUp` sẽ lỗi.
+    2. Supabase config chưa cho phép đăng ký/đăng nhập với domain `@eatfit.ai`.
+    3. Error message có thể bị hardcode một phần hoặc logic hiển thị có vấn đề.
+    4. Cần kiểm tra lại file `src/app/(auth)/login/page.tsx` để xác định logic gọi Supabase.
