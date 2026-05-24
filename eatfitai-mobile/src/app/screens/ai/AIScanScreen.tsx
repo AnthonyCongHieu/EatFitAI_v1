@@ -969,8 +969,14 @@ const AIScanScreen: React.FC = () => {
             style={S.resultPanel}
           >
             {hasDetectedItems && topItem ? (
-              <View style={S.drawerContent}>
-                <MoChiInlineNotice mochiEvent="scan_success" routeName="AiCamera" compact />
+              <ScrollView
+                style={S.resultScroll}
+                contentContainerStyle={S.resultScrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={S.noticeWrap}>
+                  <MoChiInlineNotice mochiEvent="scan_success" routeName="AiCamera" compact />
+                </View>
                 {/* Title row */}
                 <View style={S.drawerTitleRow}>
                   <View style={{ flex: 1 }}>
@@ -1052,6 +1058,7 @@ const AIScanScreen: React.FC = () => {
                     style={S.detectedListScroll}
                     contentContainerStyle={S.detectedListScrollContent}
                     showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
                   >
                     {resultListItems.map((item, index) => {
                       const isPrimary = index === 0;
@@ -1225,15 +1232,21 @@ const AIScanScreen: React.FC = () => {
                     </Pressable>
                   </View>
                 </View>
-              </View>
+              </ScrollView>
             ) : (
               /* No results / offline state — custom dark theme */
-              <View style={S.drawerContent}>
-                {resultNotice?.title === 'AI tạm offline' ? (
-                  <MoChiInlineNotice mochiEvent="scan_error" routeName="AiCamera" compact />
-                ) : (
-                  <MoChiInlineNotice mochiEvent="scan_empty" routeName="AiCamera" compact />
-                )}
+              <ScrollView
+                style={S.resultScroll}
+                contentContainerStyle={S.resultScrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={S.noticeWrap}>
+                  {resultNotice?.title === 'AI tạm offline' ? (
+                    <MoChiInlineNotice mochiEvent="scan_error" routeName="AiCamera" compact />
+                  ) : (
+                    <MoChiInlineNotice mochiEvent="scan_empty" routeName="AiCamera" compact />
+                  )}
+                </View>
                 <View style={S.noResultsWrap}>
                   <ThemedText style={S.noResultsTitle}>
                     {resultNotice?.title ?? 'Chưa nhận diện được'}
@@ -1262,7 +1275,7 @@ const AIScanScreen: React.FC = () => {
                     <ThemedText style={S.noResultsSecondaryText}>Chụp lại</ThemedText>
                   </Pressable>
                 </View>
-              </View>
+              </ScrollView>
             )}
           </Animated.View>
         )}
@@ -1828,6 +1841,16 @@ const S = StyleSheet.create({
   },
   drawerContent: {
     gap: 0,
+  },
+  resultScroll: {
+    flex: 1,
+  },
+  resultScrollContent: {
+    gap: 0,
+    paddingBottom: 24,
+  },
+  noticeWrap: {
+    marginBottom: 16,
   },
   drawerTitleRow: {
     flexDirection: 'row',
