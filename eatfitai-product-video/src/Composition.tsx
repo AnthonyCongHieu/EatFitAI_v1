@@ -13,7 +13,7 @@ import {
 } from "remotion";
 
 export const FPS = 30;
-export const DURATION_IN_FRAMES = 74 * FPS;
+export const DURATION_IN_FRAMES = 50 * FPS;
 
 const colors = {
   bg: "#04100d",
@@ -38,17 +38,42 @@ const clamp = (frame: number, input: [number, number], output: [number, number])
     extrapolateRight: "clamp",
   });
 
-const fadeVolume = (frame: number) => {
-  const intro = interpolate(frame, [0, sec(1.2)], [0, 0.82], {
+const musicVolume = (frame: number) => {
+  const intro = interpolate(frame, [0, sec(0.8)], [0, 0.82], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const outro = interpolate(frame, [DURATION_IN_FRAMES - sec(3), DURATION_IN_FRAMES], [1, 0], {
+  const outro = interpolate(frame, [DURATION_IN_FRAMES - sec(2.4), DURATION_IN_FRAMES], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const voiceDucking = interpolate(frame, [sec(0.8), sec(1.8), sec(43), sec(48.5)], [0.78, 0.46, 0.46, 0.7], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  return intro * outro * voiceDucking;
+};
+
+const voiceVolume = (frame: number) => {
+  const intro = interpolate(frame, [0, sec(0.18)], [0, 0.96], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const outro = interpolate(frame, [DURATION_IN_FRAMES - sec(1.2), DURATION_IN_FRAMES], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   return intro * outro;
 };
+
+const sfxCues = [
+  { from: 7.4, duration: 0.2, file: "tap.wav", volume: 0.38 },
+  { from: 14.2, duration: 0.2, file: "tap.wav", volume: 0.34 },
+  { from: 23.6, duration: 0.42, file: "camera-shutter.wav", volume: 0.5 },
+  { from: 28.2, duration: 0.72, file: "success-ting.wav", volume: 0.42 },
+  { from: 35.4, duration: 0.34, file: "soft-pop.wav", volume: 0.4 },
+  { from: 40.4, duration: 0.72, file: "success-ting.wav", volume: 0.3 },
+];
 
 type Stage = "left" | "right" | "center";
 
@@ -69,98 +94,98 @@ type Scene = {
 
 const scenes: Scene[] = [
   {
-    start: 5,
-    duration: 8,
+    start: 7,
+    duration: 6,
     eyebrow: "TRANG CHỦ",
-    title: "Biết hôm nay còn bao nhiêu",
-    caption: "Calo, macro, nhật ký và MoChi quick-add ở ngay màn hình đầu.",
-    metric: "Dashboard thật",
+    title: "Mochi theo dõi mỗi ngày",
+    caption: "Theo dõi nước, bữa ăn hôm nay và mục tiêu sức khỏe ngay trên màn hình chính.",
+    metric: "Nước + bữa ăn",
     clip: "01-home-mochi-dashboard.mp4",
     trim: 1,
-    speed: 1.24,
+    speed: 1.48,
     accent: colors.green,
     mochi: "meal-coach.png",
     stage: "right",
   },
   {
     start: 13,
-    duration: 10,
-    eyebrow: "THỰC ĐƠN",
-    title: "Tìm món, ghi bữa",
-    caption: "Mở MoChi, tìm món ăn, lưu vào nhật ký và thấy macro đổi ngay.",
-    metric: "Search → lưu bữa",
+    duration: 5,
+    eyebrow: "TÌM KIẾM",
+    title: "Món yêu thích trong vài giây",
+    caption: "Tìm món, lưu lại và tra cứu nhanh khi cần.",
+    metric: "Tìm → lưu",
     clip: "02-menu-search-save.mp4",
     trim: 1,
-    speed: 1.6,
+    speed: 1.85,
     accent: colors.yellow,
     mochi: "meal-coach.png",
     stage: "left",
   },
   {
-    start: 23,
-    duration: 10,
-    eyebrow: "GỢI Ý MÓN",
-    title: "Có nguyên liệu, có ý tưởng",
-    caption: "Nhập đồ đang có trong bếp, EatFitAI gợi ý món phù hợp để nấu ngay.",
-    metric: "Gợi ý từ tủ lạnh",
+    start: 18,
+    duration: 5,
+    eyebrow: "CÔNG THỨC",
+    title: "Gợi ý hợp mục tiêu",
+    caption: "Công thức nấu ăn phù hợp với khẩu vị và mục tiêu dinh dưỡng của bạn.",
+    metric: "Recipe AI",
     clip: "03-recipe-suggestions.mp4",
     trim: 7,
-    speed: 1.45,
+    speed: 1.72,
     accent: colors.mint,
     mochi: "meal-coach.png",
     stage: "center",
   },
   {
-    start: 33,
-    duration: 7,
-    eyebrow: "SCAN ALBUM",
-    title: "Chọn ảnh có sẵn",
-    caption: "Dùng ảnh trong album để AI xử lý khi máy đang cắm cáp.",
-    metric: "Album → AI scan",
+    start: 23,
+    duration: 5,
+    eyebrow: "AI SCAN",
+    title: "Quét món ăn tự nhiên",
+    caption: "Nhận diện món bằng camera, tính calo và dinh dưỡng ngay lập tức.",
+    metric: "Camera scan",
     clip: "04a-scan-entry-clean.mp4",
     trim: 0.6,
-    speed: 1.12,
+    speed: 1.38,
     accent: colors.cyan,
     mochi: "scan-thinking.png",
     stage: "left",
   },
   {
-    start: 40,
-    duration: 11,
+    start: 28,
+    duration: 7,
     eyebrow: "AI NHẬN DIỆN",
-    title: "MoChi đoán món",
-    caption: "Ảnh gốc, món nhận diện, độ tin cậy và lời nhắc review trước khi ghi bữa.",
-    metric: "Nhận diện từ ảnh thật",
+    title: "Calo hiện ra tức thì",
+    caption: "Món ăn, độ tin cậy và thông tin dinh dưỡng được gom vào một màn hình review.",
+    metric: "Calo + dinh dưỡng",
     clip: "04b-scan-result-clean.mp4",
-    speed: 1.25,
+    speed: 1.55,
     accent: colors.cyan,
     mochi: "scan-success.png",
     stage: "right",
   },
   {
-    start: 51,
-    duration: 8,
-    eyebrow: "REVIEW",
-    title: "Bạn vẫn kiểm soát",
-    caption: "Chọn món, chỉnh khẩu phần và chọn bữa ăn trước khi lưu vào nhật ký.",
-    metric: "Review trước khi lưu",
+    start: 35,
+    duration: 5,
+    eyebrow: "THAO TÁC NHANH",
+    title: "Tất cả trong một chạm",
+    caption: "Thêm bữa ăn, quét mã vạch và xem lịch sử nhanh hơn.",
+    metric: "Quick actions",
     clip: "04c-scan-review.mp4",
     trim: 1.2,
-    speed: 1.18,
+    speed: 1.45,
     accent: colors.green,
     mochi: "scan-success.png",
     stage: "left",
   },
   {
-    start: 59,
-    duration: 8,
+    start: 40,
+    duration: 5,
     eyebrow: "THỐNG KÊ",
-    title: "Biết mình đang lệch đâu",
-    caption: "Calo, macro và phân bổ bữa ăn được gom lại để xem nhanh.",
-    metric: "Macro + bữa ăn",
+    title: "Theo dõi tiến bộ",
+    caption: "Biểu đồ calo, macro và xu hướng sức khỏe theo tuần.",
+    metric: "Weekly progress",
     clip: "05-stats-progress.mp4",
     trim: 2,
-    speed: 1.42,
+    speed: 1.72,
     accent: colors.mint,
     mochi: "weekly-report.png",
     stage: "center",
@@ -540,27 +565,6 @@ const SceneBlock = ({ scene }: { scene: Scene }) => {
         MoChi dẫn luồng
       </FloatingChip>
       <MoChiSticker scene={scene} />
-      <div
-        style={{
-          position: "absolute",
-          left: 56,
-          right: 56,
-          bottom: 34,
-          height: 5,
-          borderRadius: 999,
-          background: "rgba(255,255,255,0.12)",
-          overflow: "hidden",
-          zIndex: 40,
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: `${(frame / sec(scene.duration)) * 100}%`,
-            background: `linear-gradient(90deg, ${scene.accent}, ${colors.green})`,
-          }}
-        />
-      </div>
     </AbsoluteFill>
   );
 };
@@ -654,7 +658,7 @@ const Intro = () => {
             fontWeight: 780,
           }}
         >
-          EatFitAI v1 quay trên điện thoại thật, từ APK release.
+          Ứng dụng AI dinh dưỡng thông minh.
         </div>
       </div>
       <Img
@@ -700,9 +704,9 @@ const Closing = () => {
       >
         <div style={{ color: colors.green, fontSize: 25, fontWeight: 950, letterSpacing: 4 }}>V1 READY</div>
         <h2 style={{ margin: "24px 0 0", fontSize: 82, lineHeight: 0.98, fontWeight: 980, letterSpacing: -3 }}>
-          AI hỗ trợ.
+          Ăn khỏe.
           <br />
-          Bạn kiểm soát.
+          Sống tốt.
         </h2>
         <div style={{ display: "flex", gap: 14, marginTop: 32, flexWrap: "wrap" }}>
           {["Thực đơn", "Gợi ý món", "Scan AI", "Thống kê", "MoChi"].map((item, index) => (
@@ -737,8 +741,14 @@ const Closing = () => {
 export const EatFitAIProductIntro = () => {
   return (
     <AbsoluteFill style={{ fontFamily: "Inter, Segoe UI, Arial, sans-serif", background: colors.bg }}>
-      <Audio src={staticFile("audio/eatfitai-beat.wav")} loop volume={fadeVolume} />
-      <Sequence durationInFrames={sec(5)}>
+      <Audio src={staticFile("audio/eatfitai-beat.wav")} loop volume={musicVolume} />
+      <Audio src={staticFile("audio/eatfitai-voice-final.mp3")} volume={voiceVolume} />
+      {sfxCues.map((cue) => (
+        <Sequence key={`${cue.file}-${cue.from}`} from={sec(cue.from)} durationInFrames={sec(cue.duration)}>
+          <Audio src={staticFile(`audio/sfx/${cue.file}`)} volume={() => cue.volume} />
+        </Sequence>
+      ))}
+      <Sequence durationInFrames={sec(7)}>
         <Intro />
       </Sequence>
       {scenes.map((scene) => (
@@ -751,7 +761,7 @@ export const EatFitAIProductIntro = () => {
           <SceneBlock scene={scene} />
         </Sequence>
       ))}
-      <Sequence from={sec(67)} durationInFrames={sec(7)} premountFor={FPS}>
+      <Sequence from={sec(45)} durationInFrames={sec(5)} premountFor={FPS}>
         <Closing />
       </Sequence>
     </AbsoluteFill>

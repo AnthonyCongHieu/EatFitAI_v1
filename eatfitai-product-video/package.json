@@ -26,8 +26,10 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "music": "node scripts/generate-music.mjs",
-    "render": "npm run music && remotion render EatFitAIProductIntro out/eatfitai-v1-product-intro.mp4",
-    "still": "npm run music && remotion still EatFitAIProductIntro --frame=240 --scale=0.25 out/eatfitai-v1-product-intro-frame240.png",
+    "sfx": "node scripts/generate-sfx.mjs",
+    "voice": "node scripts/generate-voiceover.mjs",
+    "render": "npm run music && npm run sfx && remotion render EatFitAIProductIntro out/eatfitai-v1-product-intro.mp4 --concurrency=1 --overwrite",
+    "still": "npm run music && npm run sfx && remotion still EatFitAIProductIntro --frame=240 --scale=0.25 out/eatfitai-v1-product-intro-frame240.png",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"
   },

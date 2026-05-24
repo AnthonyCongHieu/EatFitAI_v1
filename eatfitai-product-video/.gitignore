@@ -6,3 +6,7 @@ dist
 # Keep only the final MP4 output in Git; preview stills are generated locally.
 out/*
 !out/eatfitai-product-intro.mp4
+
+# Generated voiceover intermediates; Composition uses the mixed final MP3.
+public/audio/voiceover/
+public/audio/eatfitai-voice-script-vi.txt
