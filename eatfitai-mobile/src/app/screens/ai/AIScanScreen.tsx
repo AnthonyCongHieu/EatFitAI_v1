@@ -60,6 +60,8 @@ import {
   clampVisionGrams,
   getDistinctVisionResultItems,
   getDefaultVisionGrams,
+  hasVisionNutritionEstimate,
+  isDisplayableVisionResultItem,
 } from '../../../utils/visionReview';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
@@ -96,10 +98,6 @@ const AI_PROCESSING_MESSAGES = [
   'Đang đối chiếu dữ liệu dinh dưỡng...',
   'Sắp có kết quả, bạn kiểm tra lại trước khi lưu.',
 ];
-const isUsableVisionItem = (item: MappedFoodItem): boolean =>
-  Boolean(item.isMatched || item.foodItemId || item.foodName || item.detectedLabelVi) ||
-  item.confidence > 0.4;
-
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const { width: SW } = Dimensions.get('window');
 
@@ -311,7 +309,7 @@ const AIScanScreen: React.FC = () => {
 
       try {
         const result = await aiService.detectFoodByImage(processedUri);
-        const filteredItems = result.items.filter(isUsableVisionItem);
+        const filteredItems = result.items.filter(isDisplayableVisionResultItem);
 
         setDetectionResult({
           ...result,
@@ -577,7 +575,7 @@ const AIScanScreen: React.FC = () => {
 
   const handleAddToBasket = useCallback(
     (items: MappedFoodItem[]) => {
-      const validItems = items.filter(isUsableVisionItem);
+      const validItems = items.filter(isDisplayableVisionResultItem);
       if (validItems.length === 0) {
         return;
       }
@@ -646,30 +644,34 @@ const AIScanScreen: React.FC = () => {
 
   const mealMacroTotals = calculateVisionDefaultMacroTotals(distinctResultItems);
   const useMealMacroTotals = hasMultipleDetectedItems;
+  const topItemHasNutritionEstimate = topItem ? hasVisionNutritionEstimate(topItem) : false;
+  const hasComputedNutrition = useMealMacroTotals
+    ? mealMacroTotals.calories > 0
+    : topItemHasNutritionEstimate;
 
   // Compute macros based on current grams for a single item, or default portions for a meal scan.
   const ratio = resultGrams / 100;
   const computedCal = useMealMacroTotals
     ? Math.round(mealMacroTotals.calories)
-    : topItem
+    : topItemHasNutritionEstimate && topItem
       ? Math.round((topItem.caloriesPer100g ?? 0) * ratio)
       : 0;
   const computedProtein = useMealMacroTotals
     ? Math.round(mealMacroTotals.protein)
-    : topItem
+    : topItemHasNutritionEstimate && topItem
       ? Math.round((topItem.proteinPer100g ?? 0) * ratio)
       : 0;
   const computedCarbs = useMealMacroTotals
     ? Math.round(mealMacroTotals.carb)
-    : topItem
+    : topItemHasNutritionEstimate && topItem
       ? Math.round((topItem.carbPer100g ?? 0) * ratio)
       : 0;
   const computedFat = useMealMacroTotals
     ? Math.round(mealMacroTotals.fat)
-    : topItem
+    : topItemHasNutritionEstimate && topItem
       ? Math.round((topItem.fatPer100g ?? 0) * ratio)
       : 0;
-  const hasMacroData = computedProtein + computedCarbs + computedFat > 0;
+  const hasMacroData = hasComputedNutrition && computedProtein + computedCarbs + computedFat > 0;
 
   /* ═══════════════════════════════════════════════
      Permission screens
@@ -992,22 +994,30 @@ const AIScanScreen: React.FC = () => {
                         marginTop: 4,
                       }}
                     >
-                      <ThemedText style={S.drawerKcal}>{computedCal} kcal</ThemedText>
-                      {hasMultipleDetectedItems ? (
-                        <ThemedText style={S.drawerServing}> / ước tính bữa</ThemedText>
+                      {hasComputedNutrition ? (
+                        <>
+                          <ThemedText style={S.drawerKcal}>{computedCal} kcal</ThemedText>
+                          {hasMultipleDetectedItems ? (
+                            <ThemedText style={S.drawerServing}> / ước tính bữa</ThemedText>
+                          ) : (
+                            <Pressable
+                              onPress={() => {
+                                setGramInputValue(String(resultGrams));
+                                setShowGramModal(true);
+                              }}
+                              hitSlop={8}
+                            >
+                              <ThemedText style={S.drawerServing}>
+                                {' '}
+                                / {resultGrams}g
+                              </ThemedText>
+                            </Pressable>
+                          )}
+                        </>
                       ) : (
-                        <Pressable
-                          onPress={() => {
-                            setGramInputValue(String(resultGrams));
-                            setShowGramModal(true);
-                          }}
-                          hitSlop={8}
-                        >
-                          <ThemedText style={S.drawerServing}>
-                            {' '}
-                            / {resultGrams}g
-                          </ThemedText>
-                        </Pressable>
+                        <ThemedText style={S.drawerServing}>
+                          Cần chọn món để tính kcal
+                        </ThemedText>
                       )}
                     </View>
                   </View>
@@ -1047,14 +1057,19 @@ const AIScanScreen: React.FC = () => {
                       const isPrimary = index === 0;
                       const confidence = Math.round((item.confidence ?? 0) * 100);
                       const itemGrams = getDefaultVisionGrams(item);
-                      const itemCalories = Math.round(
-                        ((item.caloriesPer100g ?? 0) * itemGrams) / 100,
-                      );
+                      const itemHasNutritionEstimate = hasVisionNutritionEstimate(item);
+                      const itemCalories = itemHasNutritionEstimate
+                        ? Math.round(((item.caloriesPer100g ?? 0) * itemGrams) / 100)
+                        : null;
                       const statusLabel =
                         item.trustSummary?.label ??
                         (item.isMatched && confidence >= 50
                           ? 'Đã khớp dinh dưỡng'
                           : 'Cần kiểm tra');
+                      const nutritionMeta =
+                        itemCalories == null
+                          ? 'Cần chọn món để tính kcal'
+                          : `${itemCalories} kcal / ${itemGrams}g`;
                       const key = `${item.source ?? 'vision'}-${item.userFoodItemId ?? item.foodItemId ?? item.label}-${index}`;
 
                       return (
@@ -1086,7 +1101,7 @@ const AIScanScreen: React.FC = () => {
                               {getVisionFoodDisplayName(item)}
                             </ThemedText>
                             <ThemedText style={S.detectedItemMeta} numberOfLines={1}>
-                              {statusLabel} · {itemCalories} kcal / {itemGrams}g
+                              {statusLabel} · {nutritionMeta}
                             </ThemedText>
                           </View>
 
@@ -1313,6 +1328,7 @@ const AIScanScreen: React.FC = () => {
 
               {/* Preview macros */}
               {topItem &&
+                topItemHasNutritionEstimate &&
                 (() => {
                   const previewGrams = parseInt(gramInputValue, 10) || 0;
                   const pr = previewGrams / 100;

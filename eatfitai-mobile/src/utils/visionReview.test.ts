@@ -6,6 +6,8 @@ import {
   getVisionQuickPortions,
   getVisionReviewSaveBlocker,
   hasUsableVisionNutrition,
+  hasVisionNutritionEstimate,
+  isDisplayableVisionResultItem,
   shouldAllowVisionQuickSave,
   shouldForceVisionReview,
 } from './visionReview';
@@ -81,6 +83,63 @@ describe('visionReview', () => {
     ).toBeNull();
   });
 
+  it('shows detected-label-only items without treating them as usable nutrition', () => {
+    const detectedOnly = makeItem({
+      label: 'pho',
+      detectedLabelVi: 'Phở',
+      foodItemId: null,
+      foodName: null,
+      caloriesPer100g: null,
+      proteinPer100g: null,
+      carbPer100g: null,
+      fatPer100g: null,
+      isMatched: false,
+    });
+
+    expect(isDisplayableVisionResultItem(detectedOnly)).toBe(true);
+    expect(hasUsableVisionNutrition(detectedOnly)).toBe(false);
+    expect(buildVisionReviewItems([detectedOnly])[0]!.selected).toBe(false);
+    expect(shouldAllowVisionQuickSave({ items: [detectedOnly], unmappedLabels: ['pho'] })).toBe(
+      false,
+    );
+  });
+
+  it('uses seed nutrition estimates for display without allowing quick save', () => {
+    const seedEstimate = makeItem({
+      label: 'com_tam',
+      detectedLabelVi: 'Cơm tấm',
+      foodItemId: null,
+      foodName: 'Cơm tấm',
+      caloriesPer100g: 165,
+      proteinPer100g: 7,
+      carbPer100g: 22,
+      fatPer100g: 5,
+      defaultGrams: 420,
+      isMatched: false,
+    });
+
+    expect(isDisplayableVisionResultItem(seedEstimate)).toBe(true);
+    expect(hasVisionNutritionEstimate(seedEstimate)).toBe(true);
+    expect(hasUsableVisionNutrition(seedEstimate)).toBe(false);
+    expect(buildVisionReviewItems([seedEstimate])[0]!.selected).toBe(false);
+
+    const totals = calculateVisionDefaultMacroTotals([seedEstimate]);
+
+    expect(Math.round(totals.calories)).toBe(693);
+    expect(Math.round(totals.protein)).toBe(29);
+    expect(Math.round(totals.carb)).toBe(92);
+    expect(Math.round(totals.fat)).toBe(21);
+    expect(
+      getVisionReviewSaveBlocker([
+        {
+          item: seedEstimate,
+          selected: true,
+          grams: 420,
+        },
+      ]),
+    ).toBe('Hãy đổi món bằng Search hoặc bỏ chọn món chưa được map.');
+  });
+
   it('uses valid default grams when building review items', () => {
     const items = buildVisionReviewItems([
       makeItem({ defaultGrams: 180 }),
@@ -134,7 +193,12 @@ describe('visionReview', () => {
       makeItem({
         label: 'unknown',
         foodItemId: null,
+        foodName: null,
+        detectedLabelVi: null,
         caloriesPer100g: 500,
+        proteinPer100g: null,
+        carbPer100g: null,
+        fatPer100g: null,
         defaultGrams: 50,
         isMatched: false,
       }),

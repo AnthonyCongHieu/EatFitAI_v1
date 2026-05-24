@@ -15,14 +15,17 @@ export type CompactVisionMealBasket = {
 const hasVisionFoodSource = (item: MappedFoodItem): boolean =>
   (item.foodItemId ?? 0) > 0 || (item.userFoodItemId ?? 0) > 0;
 
+const hasRecognizedVisionFood = (item: MappedFoodItem): boolean =>
+  hasVisionFoodSource(item) ||
+  Boolean(item.isMatched || item.foodName || item.detectedLabelVi);
+
 const hasTrustedVisionNutrition = (item: MappedFoodItem): boolean =>
   !item.trustSummary?.needsReview &&
   !((item.missingNutrients ?? []).length > 0) &&
   (item.nutrientCompletenessScore ?? 100) >= 100;
 
-export const hasUsableVisionNutrition = (item: MappedFoodItem): boolean =>
-  hasVisionFoodSource(item) &&
-  hasTrustedVisionNutrition(item) &&
+export const hasVisionNutritionEstimate = (item: MappedFoodItem): boolean =>
+  hasRecognizedVisionFood(item) &&
   (item.caloriesPer100g ?? 0) > 0 &&
   (item.proteinPer100g ?? 0) >= 0 &&
   (item.carbPer100g ?? 0) >= 0 &&
@@ -30,6 +33,22 @@ export const hasUsableVisionNutrition = (item: MappedFoodItem): boolean =>
   ((item.proteinPer100g ?? 0) > 0 ||
     (item.carbPer100g ?? 0) > 0 ||
     (item.fatPer100g ?? 0) > 0);
+
+export const hasUsableVisionNutrition = (item: MappedFoodItem): boolean =>
+  hasVisionFoodSource(item) &&
+  hasTrustedVisionNutrition(item) &&
+  hasVisionNutritionEstimate(item);
+
+export const isDisplayableVisionResultItem = (item: MappedFoodItem): boolean =>
+  hasVisionNutritionEstimate(item) ||
+  Boolean(
+    item.isMatched ||
+      item.foodItemId ||
+      item.userFoodItemId ||
+      item.foodName ||
+      item.detectedLabelVi,
+  ) ||
+  (item.confidence ?? 0) > 0.4;
 
 export const clampVisionGrams = (grams: number): number =>
   Math.min(1000, Math.max(25, grams));
@@ -202,11 +221,7 @@ export type VisionMacroTotals = {
 };
 
 const hasVisionMacroEstimate = (item: MappedFoodItem): boolean =>
-  hasVisionFoodSource(item) &&
-  (item.caloriesPer100g ?? 0) > 0 &&
-  (item.proteinPer100g ?? 0) >= 0 &&
-  (item.carbPer100g ?? 0) >= 0 &&
-  (item.fatPer100g ?? 0) >= 0;
+  hasVisionNutritionEstimate(item);
 
 export const calculateVisionDefaultMacroTotals = (
   items: MappedFoodItem[],

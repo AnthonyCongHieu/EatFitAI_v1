@@ -111,6 +111,8 @@ _tmp_*.png
 .worktrees/
 tmp/
 @AutomationLog.txt
+docs_tuon_tap/
+eatfitai-prep-web/
 
 data_batches/
 data_chunks/

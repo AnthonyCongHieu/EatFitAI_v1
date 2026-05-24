@@ -237,7 +237,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
-        public async Task MapDetectionsAsync_ExactLabelDoesNotMapInactiveTarget()
+        public async Task MapDetectionsAsync_ExactLabelWithInactiveTargetFallsBackToSeedEstimate()
         {
             _context.FoodItems.Add(new FoodItem
             {
@@ -272,11 +272,14 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             var item = Assert.Single(mapped);
             Assert.Null(item.FoodItemId);
+            Assert.Equal("Cơm trắng", item.FoodName);
+            Assert.Equal(130, item.CaloriesPer100g);
             Assert.False(item.IsMatched);
+            Assert.True(item.RequiresUserConfirmation);
         }
 
         [Fact]
-        public async Task MapDetectionsAsync_UnmappedKnownLabelKeepsVietnameseDisplayName()
+        public async Task MapDetectionsAsync_UnmappedKnownLabelReturnsSeedNutritionEstimate()
         {
             var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
 
@@ -288,15 +291,23 @@ namespace EatFitAI.API.Tests.Unit.Services
             var item = Assert.Single(mapped);
             Assert.Null(item.FoodItemId);
             Assert.Equal("Cơm tấm", item.DetectedLabelVi);
+            Assert.Equal("Cơm tấm", item.FoodName);
+            Assert.Equal(165, item.CaloriesPer100g);
+            Assert.Equal(7, item.ProteinPer100g);
+            Assert.Equal(22, item.CarbPer100g);
+            Assert.Equal(5, item.FatPer100g);
+            Assert.Equal("plate", item.DefaultServingUnitName);
+            Assert.Equal(420, item.DefaultGrams);
+            Assert.Equal(1, item.DefaultPortionQuantity);
             Assert.True(item.TrustSummary?.NeedsReview);
             Assert.Equal("low", item.ConfidenceLevel);
             Assert.True(item.RequiresUserConfirmation);
             Assert.NotNull(item.WarningMessage);
-            Assert.Contains("calories", item.MissingNutrients);
+            Assert.DoesNotContain("calories", item.MissingNutrients);
         }
 
         [Fact]
-        public async Task MapDetectionsAsync_DoesNotMatchCatalogItemWithEmptyNutrition()
+        public async Task MapDetectionsAsync_FallsBackToSeedWhenCatalogItemHasEmptyNutrition()
         {
             _context.FoodItems.Add(new FoodItem
             {
@@ -322,8 +333,15 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             var item = Assert.Single(mapped);
             Assert.Null(item.FoodItemId);
-            Assert.Null(item.CaloriesPer100g);
+            Assert.Equal("Thịt bò", item.DetectedLabelVi);
+            Assert.Equal("Thịt bò", item.FoodName);
+            Assert.Equal(187, item.CaloriesPer100g);
+            Assert.Equal(20, item.ProteinPer100g);
+            Assert.Equal(0, item.CarbPer100g);
+            Assert.Equal(12, item.FatPer100g);
+            Assert.Equal(120, item.DefaultGrams);
             Assert.False(item.IsMatched);
+            Assert.True(item.RequiresUserConfirmation);
         }
 
         [Fact]
