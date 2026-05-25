@@ -34,6 +34,7 @@ import type { MealTypeId } from '../../../types';
 import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDiarySheet';
 import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
+import MeshBackground from '../../../components/ui/MeshBackground';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
@@ -351,6 +352,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
   return (
     <View style={S.container}>
+      <MeshBackground />
       {/* Absolute Add Button at bottom safely above tabs */}
       <Animated.View entering={FadeInUp.delay(500)} style={[S.floatBottomBtn, { bottom: insets.bottom + FLOATING_CTA_BOTTOM }]}>
         <Pressable

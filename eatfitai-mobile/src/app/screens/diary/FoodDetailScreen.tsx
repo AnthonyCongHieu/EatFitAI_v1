@@ -35,6 +35,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { favoritesService } from '../../../services/favoritesService';
 import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 import { TEST_IDS } from '../../../testing/testIds';
+import MeshBackground from '../../../components/ui/MeshBackground';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -292,6 +293,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       accessibilityLabel={TEST_IDS.foodDetail.screen}
       collapsable={false}
     >
+      <MeshBackground />
       {/* ═══ Top Gradient Overlay for Header Contrast ═══ */}
       <LinearGradient
         colors={['rgba(5, 7, 13, 0.7)', 'transparent']}

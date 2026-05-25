@@ -22,6 +22,7 @@ import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 import { useEN } from '../../../theme/emeraldNebula';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import { filterRecipesByPreferences } from '../../../utils/foodPreferenceFilter';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -458,10 +459,11 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
 
   return (
     <View style={[S.container, { backgroundColor: P.surface }]}>
+      <MeshBackground />
       {/* ═══ Header ═══ */}
       <View
         pointerEvents="box-none"
-        style={[S.header, { paddingTop: insets.top + 4, backgroundColor: P.surface, borderBottomWidth: 1, borderBottomColor: P.glassBorder }]}
+        style={[S.header, { paddingTop: insets.top + 4, backgroundColor: 'transparent', borderBottomWidth: 1, borderBottomColor: P.glassBorder }]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
