@@ -317,6 +317,28 @@ export const toRecipeSpecificIngredientName = (
     if (recipeKey.includes('mi')) return 'Mì';
   }
 
+  if (ingredientKey === 'pho') {
+    return recipeKey.includes('pho') ? 'Bánh phở' : 'Mì/bún/phở';
+  }
+
+  if (ingredientKey === 'bo' || ingredientKey === 'beef' || ingredientKey === 'thit bo') {
+    return 'Thịt bò';
+  }
+
+  if (ingredientKey === 'ga' || ingredientKey === 'chicken' || ingredientKey === 'thit ga') {
+    return 'Thịt gà';
+  }
+
+  if (
+    ingredientKey === 'heo' ||
+    ingredientKey === 'lon' ||
+    ingredientKey === 'pork' ||
+    ingredientKey === 'thit heo' ||
+    ingredientKey === 'thit lon'
+  ) {
+    return 'Thịt heo';
+  }
+
   return ingredientName;
 };
 

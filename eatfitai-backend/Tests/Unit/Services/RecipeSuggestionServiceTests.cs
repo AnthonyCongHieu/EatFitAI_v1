@@ -586,6 +586,60 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task GetRecipeDetailAsync_NormalizesGenericIngredientAliasesForDisplay()
+        {
+            var pho = new FoodItem
+            {
+                FoodItemId = 20,
+                FoodName = "Phở",
+                FoodNameUnsigned = "pho",
+                CaloriesPer100g = 138,
+                ProteinPer100g = 4,
+                CarbPer100g = 26,
+                FatPer100g = 1,
+                IsActive = true,
+                IsDeleted = false
+            };
+            var beef = new FoodItem
+            {
+                FoodItemId = 21,
+                FoodName = "Bò",
+                FoodNameUnsigned = "bo",
+                FoodNameEn = "beef",
+                CaloriesPer100g = 187,
+                ProteinPer100g = 26,
+                CarbPer100g = 0,
+                FatPer100g = 9,
+                IsActive = true,
+                IsDeleted = false
+            };
+            var recipe = new Recipe
+            {
+                RecipeId = 20,
+                RecipeName = "Phở bò",
+                ImageUrl = "recipe-images/v1/thumb/pho-bo.webp",
+                InstructionsJson = "[\"Sơ chế\", \"Nấu\", \"Hoàn thiện\"]",
+                SourceUrlsJson = "[\"https://monngonmoingay.com/cong-thuc-demo\"]",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            _context.FoodItems.AddRange(pho, beef);
+            _context.Recipes.Add(recipe);
+            _context.RecipeIngredients.AddRange(
+                new RecipeIngredient { RecipeId = 20, FoodItemId = pho.FoodItemId, Grams = 180 },
+                new RecipeIngredient { RecipeId = 20, FoodItemId = beef.FoodItemId, Grams = 150 });
+            await _context.SaveChangesAsync();
+
+            var result = await _service.GetRecipeDetailAsync(recipe.RecipeId);
+
+            Assert.NotNull(result);
+            Assert.Equal(new[] { "Bánh phở", "Thịt bò" }, result!.RequiredIngredients);
+            Assert.Equal(new[] { "Bánh phở", "Thịt bò" }, result.Ingredients.Select(item => item.FoodName));
+        }
+
+        [Fact]
         public async Task SuggestRecipesAsync_UsesNutritionProxyWithoutDisplayingItAsIngredient()
         {
             var chili = new FoodItem

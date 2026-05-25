@@ -282,6 +282,51 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task GetUserMealDiariesAsync_WithRecipeEntryUsesRecipeThumbnail()
+        {
+            _context.Recipes.Add(new Recipe
+            {
+                RecipeId = 20,
+                RecipeName = "Phở bò",
+                ImageUrl = "recipe-images/v1/thumb/pho-bo.webp",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            });
+            await _context.SaveChangesAsync();
+
+            var mealDiaries = new List<MealDiary>
+            {
+                new MealDiary
+                {
+                    MealDiaryId = 20,
+                    UserId = _testUserId,
+                    RecipeId = 20,
+                    Grams = 450,
+                    Calories = 406
+                }
+            };
+
+            _mealDiaryRepositoryMock.Setup(r => r.GetByUserIdAsync(_testUserId, null))
+                .ReturnsAsync(mealDiaries);
+            _mapperMock.Setup(m => m.Map<List<MealDiaryDto>>(It.IsAny<IEnumerable<MealDiary>>()))
+                .Returns(new List<MealDiaryDto>
+                {
+                    new MealDiaryDto
+                    {
+                        MealDiaryId = 20,
+                        UserId = _testUserId,
+                        RecipeId = 20
+                    }
+                });
+
+            var result = (await _mealDiaryService.GetUserMealDiariesAsync(_testUserId)).Single();
+
+            Assert.Equal("Phở bò", result.RecipeName);
+            Assert.Equal("recipe-images/v1/thumb/pho-bo.webp", result.FoodItemThumbNail);
+        }
+
+        [Fact]
         public async Task GetMealDiaryByIdAsync_ValidId_ReturnsDiary()
         {
             var mealDiary = new MealDiary

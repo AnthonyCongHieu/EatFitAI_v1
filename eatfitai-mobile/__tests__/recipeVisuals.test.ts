@@ -83,6 +83,23 @@ describe('recipeVisuals', () => {
     ]);
   });
 
+  it('normalizes generic ingredient aliases into recipe-specific display names', () => {
+    const rows = buildRecipeIngredientRows({
+      recipeName: 'Phở bò',
+      ingredients: [
+        { foodItemId: 1, foodName: 'Phở', grams: 180, calories: 0, protein: 0, carbs: 0, fat: 0 },
+        { foodItemId: 2, foodName: 'Bò', grams: 150, calories: 0, protein: 0, carbs: 0, fat: 0 },
+      ],
+      availableIngredients: ['Bò'],
+      missingIngredients: ['Phở'],
+    });
+
+    expect(rows).toEqual([
+      { key: 'ingredient-1', name: 'Bánh phở', grams: 180, status: 'missing' },
+      { key: 'ingredient-2', name: 'Thịt bò', grams: 150, status: 'available' },
+    ]);
+  });
+
   it('formats source URLs as readable source labels', () => {
     expect(formatRecipeSourceLabel('https://www.dienmayxanh.com/vao-bep/cach-nau-pho-ga')).toBe(
       'Điện Máy Xanh',

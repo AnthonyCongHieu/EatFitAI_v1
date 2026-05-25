@@ -71,6 +71,7 @@ namespace EatFitAI.API.Services
             var mealDiaries = await _mealDiaryRepository.GetByUserIdAsync(userId, date);
             var dtos = _mapper.Map<List<MealDiaryDto>>(mealDiaries);
             await PopulateUserFoodNamesAsync(userId, mealDiaries, dtos);
+            await PopulateRecipeDisplayDataAsync(dtos);
             return NormalizeMediaUrls(dtos);
         }
 
@@ -84,6 +85,7 @@ namespace EatFitAI.API.Services
 
             var dto = _mapper.Map<MealDiaryDto>(mealDiary);
             await PopulateUserFoodNamesAsync(userId, new[] { mealDiary }, new[] { dto });
+            await PopulateRecipeDisplayDataAsync(new[] { dto });
             return NormalizeMediaUrls(dto);
         }
 
@@ -636,6 +638,7 @@ namespace EatFitAI.API.Services
 
             var dto = _mapper.Map<MealDiaryDto>(mealDiary);
             await PopulateUserFoodNamesAsync(userId, new[] { mealDiary }, new[] { dto });
+            await PopulateRecipeDisplayDataAsync(new[] { dto });
             return NormalizeMediaUrls(dto);
         }
 
@@ -661,6 +664,7 @@ namespace EatFitAI.API.Services
 
             var dtos = _mapper.Map<List<MealDiaryDto>>(mealDiaries);
             await PopulateUserFoodNamesAsync(userId, mealDiaries, dtos);
+            await PopulateRecipeDisplayDataAsync(dtos);
             return NormalizeMediaUrls(dtos);
         }
 
@@ -904,6 +908,45 @@ namespace EatFitAI.API.Services
                     dto.FoodItemName = userFood.FoodName;
                     dto.FoodItemThumbNail = userFood.ThumbnailUrl;
                 }
+            }
+        }
+
+        private async Task PopulateRecipeDisplayDataAsync(IEnumerable<MealDiaryDto> dtos)
+        {
+            var recipeDtos = dtos
+                .Where(dto => dto.RecipeId.HasValue)
+                .ToList();
+            if (recipeDtos.Count == 0)
+            {
+                return;
+            }
+
+            var recipeIds = recipeDtos
+                .Select(dto => dto.RecipeId!.Value)
+                .Distinct()
+                .ToList();
+            var recipes = await _context.Recipes
+                .AsNoTracking()
+                .Where(recipe => recipeIds.Contains(recipe.RecipeId))
+                .Select(recipe => new
+                {
+                    recipe.RecipeId,
+                    recipe.RecipeName,
+                    recipe.ImageUrl
+                })
+                .ToDictionaryAsync(recipe => recipe.RecipeId);
+
+            foreach (var dto in recipeDtos)
+            {
+                if (!dto.RecipeId.HasValue || !recipes.TryGetValue(dto.RecipeId.Value, out var recipe))
+                {
+                    continue;
+                }
+
+                dto.RecipeName ??= recipe.RecipeName;
+                dto.FoodItemThumbNail ??= CatalogImageKeyResolver.ResolveRecipeThumbnailKey(
+                    recipe.RecipeName,
+                    recipe.ImageUrl);
             }
         }
     }

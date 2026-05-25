@@ -793,7 +793,8 @@ namespace EatFitAI.API.Services
             if (ingredientKey == "noodles"
                 || ingredientKey == "mi bun pho"
                 || ingredientKey == "mi pho"
-                || ingredientKey == "bun pho")
+                || ingredientKey == "bun pho"
+                || ingredientKey == "pho")
             {
                 if (recipeKey.Contains("pho", StringComparison.Ordinal)) return "Bánh phở";
                 if (recipeKey.Contains("hu tieu", StringComparison.Ordinal)) return "Hủ tiếu";
@@ -802,6 +803,25 @@ namespace EatFitAI.API.Services
                 if (recipeKey.Contains("cao lau", StringComparison.Ordinal)) return "Sợi cao lầu";
                 if (recipeKey.Contains("bun", StringComparison.Ordinal)) return "Bún";
                 if (recipeKey.Contains("mi", StringComparison.Ordinal)) return "Mì";
+            }
+
+            if (ingredientKey == "bo" || ingredientKey == "beef" || ingredientKey == "thit bo")
+            {
+                return "Thịt bò";
+            }
+
+            if (ingredientKey == "ga" || ingredientKey == "chicken" || ingredientKey == "thit ga")
+            {
+                return "Thịt gà";
+            }
+
+            if (ingredientKey == "heo"
+                || ingredientKey == "lon"
+                || ingredientKey == "pork"
+                || ingredientKey == "thit heo"
+                || ingredientKey == "thit lon")
+            {
+                return "Thịt heo";
             }
 
             return ingredientName;
