@@ -190,7 +190,7 @@ export const TeachLabelBottomSheet = ({
   const keyExtractor = useCallback((item: FoodItem) => item.id, []);
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Chọn món ăn đúng">
+    <BottomSheet visible={visible} onClose={onClose} title="Chọn món ăn đúng" height={620}>
       <View style={[styles.container, { paddingHorizontal: theme.spacing.lg }]}>
         <ThemedTextInput
           placeholder="Tìm kiếm món ăn..."

@@ -134,7 +134,7 @@ export const BottomSheet = ({
           </GestureDetector>
 
           {/* Body - can contain ScrollView */}
-          <View style={styles.body}>{children}</View>
+          <View style={[styles.body, height !== 'auto' && { flex: 1 }]}>{children}</View>
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
