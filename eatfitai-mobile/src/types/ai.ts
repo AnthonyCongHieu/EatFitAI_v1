@@ -36,6 +36,7 @@ export interface MappedFoodItem {
   warningMessage?: string | null;
 
   isMatched: boolean;
+  selected?: boolean;
 }
 
 export interface VisionDetectResult {

@@ -43,6 +43,24 @@ describe('visionReview', () => {
     expect(items[1]!.selected).toBe(false);
   });
 
+  it('respects pre-defined selected property on items', () => {
+    const items = buildVisionReviewItems([
+      makeItem({ selected: false }),
+      makeItem({
+        foodItemId: 2,
+        caloriesPer100g: 0,
+        proteinPer100g: 0,
+        carbPer100g: 0,
+        fatPer100g: 0,
+        selected: true,
+      }),
+    ]);
+
+    expect(items).toHaveLength(2);
+    expect(items[0]!.selected).toBe(false);
+    expect(items[1]!.selected).toBe(true);
+  });
+
   it('blocks save when a selected item has no usable nutrition', () => {
     const blocker = getVisionReviewSaveBlocker([
       {
@@ -137,7 +155,7 @@ describe('visionReview', () => {
           grams: 420,
         },
       ]),
-    ).toBe('Hãy đổi món bằng Search hoặc bỏ chọn món chưa được map.');
+    ).toBe('Cậu dùng "Tìm kiếm món" hoặc bỏ chọn món chưa rõ nha! 💚');
   });
 
   it('uses valid default grams when building review items', () => {

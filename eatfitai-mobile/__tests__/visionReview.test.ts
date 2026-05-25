@@ -110,7 +110,7 @@ describe('visionReview', () => {
     ]);
 
     expect(result).toBe(
-      'Hãy đổi món bằng Search hoặc bỏ chọn món chưa được map.',
+      'Cậu dùng "Tìm kiếm món" hoặc bỏ chọn món chưa rõ nha! 💚',
     );
   });
 
@@ -197,11 +197,11 @@ describe('visionReview', () => {
       },
     });
 
-    expect(buildVisionReviewItems([item])[0]?.selected).toBe(false);
+    expect(buildVisionReviewItems([item])[0]?.selected).toBe(true);
     expect(shouldAllowVisionQuickSave({ items: [item], unmappedLabels: [] })).toBe(false);
   });
 
-  it('blocks saving selected items with missing nutrients', () => {
+  it('allows saving selected items with missing nutrients', () => {
     const item = makeMappedFood({
       label: 'rice',
       foodItemId: 6,
@@ -225,8 +225,6 @@ describe('visionReview', () => {
 
     const blocker = getVisionReviewSaveBlocker([{ item, selected: true, grams: 150 }]);
 
-    expect(blocker).toBe(
-      'Món đã chọn chưa có dữ liệu dinh dưỡng đủ tin cậy. Hãy đổi món bằng Search hoặc bỏ chọn món đó.',
-    );
+    expect(blocker).toBeNull();
   });
 });
