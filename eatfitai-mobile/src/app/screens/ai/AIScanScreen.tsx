@@ -62,7 +62,6 @@ import {
   getDefaultVisionGrams,
   hasVisionNutritionEstimate,
   isDisplayableVisionResultItem,
-  hasUsableVisionNutrition,
 } from '../../../utils/visionReview';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';

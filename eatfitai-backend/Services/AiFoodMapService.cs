@@ -152,6 +152,12 @@ namespace EatFitAI.API.Services
                     continue;
                 }
 
+                if (TryResolveSeedCatalogMatch(catalogEntry, out var reviewSeedMatch))
+                {
+                    result.Add(CreateMappedFoodDto(original, catalogEntry, reviewSeedMatch, catalogMinConfidence));
+                    continue;
+                }
+
                 result.Add(new MappedFoodDto
                 {
                     Label = original.Label,

@@ -484,6 +484,51 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task MapDetectionsAsync_KnownSeededLabelBelowThresholdKeepsNutritionEstimateForReview()
+        {
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "pork", Confidence = 0.70f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Null(item.FoodItemId);
+            Assert.False(item.IsMatched);
+            Assert.Equal("Thịt heo", item.DetectedLabelVi);
+            Assert.Equal("Thịt heo", item.FoodName);
+            Assert.Equal(242, item.CaloriesPer100g);
+            Assert.Equal(27, item.ProteinPer100g);
+            Assert.Equal(0, item.CarbPer100g);
+            Assert.Equal(14, item.FatPer100g);
+            Assert.Equal(120, item.DefaultGrams);
+            Assert.Empty(item.MissingNutrients);
+            Assert.True(item.RequiresUserConfirmation);
+            Assert.True(item.TrustSummary?.NeedsReview);
+        }
+
+        [Fact]
+        public async Task MapDetectionsAsync_KnownSeededLabelWithVeryLowConfidenceStillKeepsNutritionEstimateForReview()
+        {
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "pork", Confidence = 0.08f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Null(item.FoodItemId);
+            Assert.False(item.IsMatched);
+            Assert.Equal("Thịt heo", item.FoodName);
+            Assert.Equal(242, item.CaloriesPer100g);
+            Assert.Equal("low", item.ConfidenceLevel);
+            Assert.True(item.RequiresUserConfirmation);
+            Assert.True(item.TrustSummary?.NeedsReview);
+        }
+
+        [Fact]
         public async Task MapDetectionsAsync_PreservesBoundingBoxForMatchedAndUnmatchedItems()
         {
             _context.FoodItems.Add(new FoodItem
