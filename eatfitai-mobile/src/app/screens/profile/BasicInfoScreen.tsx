@@ -84,32 +84,83 @@ interface EditModalProps {
 const EditModal = ({
   visible, title, value, onChangeText, onSave, onCancel,
   keyboardType = 'default', placeholder,
-}: EditModalProps) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <Pressable style={S.modalOverlay} onPress={onCancel}>
-      <Pressable style={S.modalCard} onPress={() => {}}>
-        <ThemedText style={S.modalTitle}>{title}</ThemedText>
-        <TextInput
-          style={S.modalInput}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          placeholder={placeholder}
-          placeholderTextColor={P.onSurfaceVariant + '40'}
-          autoFocus
-        />
-        <View style={S.modalBtnRow}>
-          <Pressable style={S.modalBtnCancel} onPress={onCancel}>
-            <ThemedText style={{ color: P.onSurfaceVariant, fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15 }}>Hủy</ThemedText>
-          </Pressable>
-          <Pressable style={S.modalBtnSave} onPress={onSave}>
-            <ThemedText style={{ color: '#003915', fontFamily: 'BeVietnamPro_700Bold', fontSize: 15 }}>Lưu</ThemedText>
-          </Pressable>
-        </View>
+}: EditModalProps) => {
+  const P = useEN();
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <Pressable style={S.modalOverlay} onPress={onCancel}>
+        <Pressable
+          style={[
+            S.modalCard,
+            {
+              backgroundColor: P.surfaceLow,
+              borderColor: P.glassBorder,
+              borderWidth: 1,
+            },
+          ]}
+          onPress={() => {}}
+        >
+          <ThemedText style={[S.modalTitle, { color: P.onSurface }]}>{title}</ThemedText>
+          <TextInput
+            style={[
+              S.modalInput,
+              {
+                backgroundColor: 'rgba(226, 232, 240, 0.04)',
+                borderColor: P.glassBorder,
+                color: P.onSurface,
+                borderRadius: 16,
+              },
+            ]}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            placeholder={placeholder}
+            placeholderTextColor={P.onSurfaceVariant + '40'}
+            autoFocus
+          />
+          <View style={S.modalBtnRow}>
+            <Pressable
+              style={({ pressed }) => [
+                S.modalBtnCancel,
+                { flex: 1 },
+                pressed && { opacity: 0.76 },
+              ]}
+              onPress={onCancel}
+            >
+              <ThemedText
+                style={{
+                  color: P.onSurface,
+                  fontFamily: 'BeVietnamPro_700Bold',
+                  fontSize: 15,
+                }}
+              >
+                Hủy
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                S.modalBtnSave,
+                { flex: 1, backgroundColor: P.primary },
+                pressed && { opacity: 0.76 },
+              ]}
+              onPress={onSave}
+            >
+              <ThemedText
+                style={{
+                  color: '#003915',
+                  fontFamily: 'BeVietnamPro_700Bold',
+                  fontSize: 15,
+                }}
+              >
+                Lưu
+              </ThemedText>
+            </Pressable>
+          </View>
+        </Pressable>
       </Pressable>
-    </Pressable>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 /* ═══ Gender Picker Modal ═══ */
 const GenderModal = ({
@@ -122,36 +173,68 @@ const GenderModal = ({
   current?: string;
   onSelect: (g: string) => void;
   onCancel: () => void;
-}) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <Pressable style={S.modalOverlay} onPress={onCancel}>
-      <Pressable style={S.modalCard} onPress={() => {}}>
-        <ThemedText style={S.modalTitle}>Chọn giới tính</ThemedText>
-        {['male', 'female'].map((g) => (
+}) => {
+  const P = useEN();
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <Pressable style={S.modalOverlay} onPress={onCancel}>
+        <Pressable
+          style={[
+            S.modalCard,
+            {
+              backgroundColor: P.surfaceLow,
+              borderColor: P.glassBorder,
+              borderWidth: 1,
+            },
+          ]}
+          onPress={() => {}}
+        >
+          <ThemedText style={[S.modalTitle, { color: P.onSurface }]}>Chọn giới tính</ThemedText>
+          {['male', 'female'].map((g) => {
+            const isSelected = current === g;
+            return (
+              <Pressable
+                key={g}
+                style={({ pressed }) => [
+                  S.genderOption,
+                  {
+                    backgroundColor: isSelected ? P.primary + '15' : 'rgba(226, 232, 240, 0.04)',
+                    borderColor: isSelected ? P.primary : P.glassBorder,
+                  },
+                  pressed && { opacity: 0.8 },
+                ]}
+                onPress={() => onSelect(g)}
+              >
+                <ThemedText
+                  style={[
+                    S.genderOptionText,
+                    {
+                      color: isSelected ? P.primary : P.onSurface,
+                      fontFamily: isSelected ? 'BeVietnamPro_700Bold' : 'BeVietnamPro_600SemiBold',
+                    },
+                  ]}
+                >
+                  {g === 'male' ? 'Nam' : 'Nữ'}
+                </ThemedText>
+                {isSelected && <Ionicons name="checkmark" size={20} color={P.primary} />}
+              </Pressable>
+            );
+          })}
           <Pressable
-            key={g}
-            style={[
-              S.genderOption,
-              current === g && { backgroundColor: P.primary + '20', borderColor: P.primary + '40' },
+            style={({ pressed }) => [
+              S.modalBtnCancel,
+              { marginTop: 8 },
+              pressed && { opacity: 0.76 },
             ]}
-            onPress={() => onSelect(g)}
+            onPress={onCancel}
           >
-            <ThemedText style={[
-              S.genderOptionText,
-              current === g && { color: P.primary },
-            ]}>
-              {g === 'male' ? 'Nam' : 'Nữ'}
-            </ThemedText>
-            {current === g && <Ionicons name="checkmark" size={20} color={P.primary} />}
+            <ThemedText style={{ color: P.onSurface, fontFamily: 'BeVietnamPro_700Bold', fontSize: 15 }}>Hủy</ThemedText>
           </Pressable>
-        ))}
-        <Pressable style={[S.modalBtnCancel, { marginTop: 8 }]} onPress={onCancel}>
-          <ThemedText style={{ color: P.onSurfaceVariant, fontFamily: 'BeVietnamPro_600SemiBold', fontSize: 15 }}>Hủy</ThemedText>
         </Pressable>
       </Pressable>
-    </Pressable>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 /* ═══════════════════════════════════════════════
    BasicInfoScreen
@@ -356,36 +439,28 @@ const S = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    backgroundColor: P.surfaceContainerHigh,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
     gap: 16,
   },
-  modalTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold', color: P.onSurface },
+  modalTitle: { fontSize: 18, fontFamily: 'BeVietnamPro_700Bold' },
   modalInput: {
-    borderRadius: 12,
-    backgroundColor: P.surfaceContainerLow,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: P.onSurface,
     borderWidth: 1,
-    borderColor: P.glassBorder,
   },
   modalBtnRow: { flexDirection: 'row', gap: 12, marginTop: 4 },
   modalBtnCancel: {
-    flex: 1,
     alignItems: 'center',
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: P.surfaceContainerLow,
+    borderRadius: 99,
+    backgroundColor: 'rgba(226, 232, 240, 0.12)',
   },
   modalBtnSave: {
-    flex: 1,
     alignItems: 'center',
     paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: P.primary,
+    borderRadius: 99,
   },
 });
 
