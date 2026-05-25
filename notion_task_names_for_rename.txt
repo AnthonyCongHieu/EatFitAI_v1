@@ -1,0 +1,131 @@
+ADMIN.01|[ADMIN.01] Admin control plane + AI usage oversight
+AI-001|[AI] Configurable detection threshold — env var
+AI-005|[AI] Graceful Gemini degradation + fallback UI
+AI-009|[AI] Hide voice recording UI — STT disabled on cloud
+AI-PROVIDER.01|[AI-PROVIDER.01] YOLO/ONNX provider inference and model deployment
+AI-SCAN.01|[AI-SCAN.01] AI Scan review, macro mapping, multi-dish recovery
+AUTH-001|[AUTH] Password reset codes → database persistence
+AUTH-002|[AUTH] Rate limit auth endpoints — brute-force protection
+AUTH-003|[SEC] Remove legacy Google Auth GET route
+AUTH.01|[AUTH.01] Auth continuity, Google OAuth, password reset
+BARCODE.01|[BARCODE.01] Barcode scanner and packaged food lookup
+CLOUD-001|[CLOUD] External health ping — UptimeRobot setup
+CLOUD-004|[CLOUD] Cold start optimization — lazy model load
+CLOUD-007|[CLOUD] Database connection — session mode port 5432
+CLOUD-010|[CLOUD] Fix render.yaml — Smtp → Brevo mapping
+CLOUD-READINESS.01|[CLOUD-READINESS.01] Cloud readiness, health checks, bootstraps
+DAILY-LOOP.01|[DAILY-LOOP.01] Daily nutrition loop + AI traffic route metrics
+DATASET.01|[DATASET.01] Vietnamese food dataset and YOLO training pipeline
+DEPLOY-MOBILE.01|[DEPLOY-MOBILE.01] Android build config, Firebase, release credentials
+DIETARY-FILTER.01|[DIETARY-FILTER.01] Dietary restrictions in food/recipe search
+DOC-001|[DOC] Documentation cleanup + archive stale docs
+FEAT-001|[FEAT] Barcode Scanner — expo-camera + Open Food Facts
+FEAT-006|[FEAT] Data Export — CSV diary + macros
+FEAT-008|[FEAT] Weekly digest + streak recovery + achievements
+FEAT-011|[FEAT] Quick logging — recent foods + common meals + copy meal
+FOOD-SEARCH.01|[FOOD-SEARCH.01] Food search reliability + server-side contract
+HOME-DIARY.01|[HOME-DIARY.01] Home dashboard + diary quick action stabilization
+I18N-ENCODING.01|[I18N-ENCODING.01] Vietnamese text and mojibake safety
+MEDIA-R2.01|[MEDIA-R2.01] R2 media storage and signed URL hardening
+MOCHI.01|[MOCHI.01] MoChi assistant surfaces, tutorial, notifications
+NOTIFICATIONS.01|[NOTIFICATIONS.01] Notifications center ordering and deletion logic
+NUTRITION.01|[NUTRITION.01] Production nutrition data hardening
+ONBOARDING-PROFILE.01|[ONBOARDING-PROFILE.01] Onboarding, profile, body metrics, avatar polish
+P1-00|[Plan] Lập Kế hoạch Thực hiện Đồ án
+P1-01|[P1-01] Khảo sát Yêu cầu Người dùng (Google Form)
+P1-02|[P1-02] Phân tích đối thủ cạnh tranh (≥5 app)
+P1-03|[P1-03] Viết SRS (Đặc tả Yêu cầu Phần mềm)
+P1-04|[P1-04] Vẽ Use Case + Activity Diagram
+P1-05|[P1-05] Chuẩn hóa API Contract & DTO lỗi/AI response
+P1-DOC.01|[P1-DOC.01] Khảo sát & Phân tích Bối cảnh Khởi nghiệp HealthTech
+P1-DOC.02|[P1-DOC.02] Tài liệu Quy trình Phát triển & Phương pháp luận Agile
+P2-01|[P2-01] Vẽ System Architecture Diagram
+P2-02|[P2-02] Vẽ ERD + Class Diagram
+P2-03|[P2-03] Wireframe / Screenshots UI (≥20 màn)
+P2-04|[P2-04] Sequence Diagram 3 luồng AI
+P3-BE.01|[P3-BE.01] Fix xUnit Test Infrastructure
+P3-BE.02|[P3-BE.02] Hợp nhất Google Auth + JWT chuẩn
+P3-BE.03|[P3-BE.03] Backend Proxy cho Voice API
+P3-BE.04|[P3-BE.04] Dọn Hardcoded Secrets & Config
+P3-BE.05|[P3-BE.05] DB Migration + Index Strategy
+P3-BE.06|[P3-BE.06] API Validate Data bất thường
+P3-BE.07|[P3-BE.07] Food Search Reliability & Contract Unification
+P3-CLOUD.01|[P3-CLOUD.01] Cloud Infrastructure Documentation (Render + Supabase)
+P3-CLOUD.02|[P3-CLOUD.02] Fix RLS — AiCorrectionEvent Security (Supabase Advisor)
+P3-CLOUD.03|[P3-CLOUD.03] Cold Start Mitigation & Health Monitoring (UptimeRobot)
+P3-FE.01|[P3-FE.01] Fix TypeScript toàn bộ mobile
+P3-FE.02|[P3-FE.02] Hợp nhất Google Login trên Mobile
+P3-FE.03|[P3-FE.03] Voice đi qua Backend proxy
+P3-FE.04|[P3-FE.04] UI Sửa lỗi AI (TeachLabel flow)
+P3-FE.05|[P3-FE.05] Quick Add Hub (Search/Scan/Voice)
+P3-FE.06|[P3-FE.06] Fallback UI khi AI offline
+P3-FE.07|[P3-FE.07] Error Boundary + Crash Recovery
+P3-FE.08|[P3-FE.08] Privacy Policy Screen nội dung đầy đủ
+P3-FE.09|[P3-FE.09] Food Search Recovery UX + Manual Logging Pass
+P3-FE.10|[P3-FE.10] Auth Continuity Fixes
+P4-AI.01|[P4-AI.01] Structured JSON Output cho LLM
+P4-AI.02|[P4-AI.02] AI Health State Machine (HEALTHY/DOWN)
+P4-AI.03|[P4-AI.03] Benchmark YOLOv8 với ảnh Việt
+P4-AI.04|[P4-AI.04] Data Pipeline & Train/Val/Test Split
+P4-AI.05|[P4-AI.05] Active Learning Correction API
+P4-AI.06|[P4-AI.06] Gemini STT/Multimodal Integration (thay PhoWhisper)
+P4-AI.07|[P4-AI.07] Giải thích kết quả AI
+P4-AI.08|[P4-AI.08] Voice Quality Gate + Telemetry Baseline
+P4-AI.09|[P4-AI.09] Gemini Key Pool Failover + Rotation Ops
+P4-AI.10|[P4-AI.10] Nghiên cứu So sánh YOLOv8 vs YOLO11 — Benchmark Khoa học
+P4-AI.11|[P4-AI.11] Full Migration YOLOv8 → YOLO11 trước Bảo vệ
+P4-AI.12|[P4-AI.12] Test Set Evaluation & Scientific Report (YOLOv8 + YOLO11)
+P4-FE.01|[P4-FE.01] Confidence-gated flow (buộc confirm)
+P4-FE.02|[P4-FE.02] Cải thiện Profile + Fix Avatar Upload
+P4-FE.03|[P4-FE.03] Rà soát UI/UX toàn app & Fix lỗi
+P4-FE.04|[P4-FE.04] UI Biểu đồ Benchmark cho Báo cáo
+P4-FE.05|[P4-FE.05] Gemini-based Smart Parser (thay Hybrid Rule-first)
+P4-FE.06|[P4-FE.06] Onboarding Fallback formula khi AI down
+P4-FE.07|[P4-FE.07] Barcode Scanner tìm thực phẩm đóng gói
+P4-FE.08|[P4-FE.08] Water Tracking (Theo dõi nước uống)
+P4-FE.09|[P4-FE.09] Natural Language Text Input ("thêm 2 trứng")
+P4-FE.10|[P4-FE.10] Voice Beta UX: Preview Before Save + Explicit Confirm
+P4-FE.11|[P4-FE.11] AI Scan Review/Replace Flow bằng Search
+P4-FE.12|[P4-FE.12] Recent Meals / Repeat Logging
+P5-01|[P5-01] Thu thập & Dán nhãn ảnh món Việt (≥1k)
+P5-02|[P5-02] Viết Test Cases + UAT (≥25 cases, ≥5 user)
+P5-03|[P5-03] AI Regression Test Set (ảnh + voice)
+P5-04|[P5-04] Rehearsal Demo 3 kịch bản rủi ro
+P5-05|[P5-05] Seed Data Demo cố định cho ngày bảo vệ
+P5-06|[P5-06] Phân tích Hạn chế & Hướng phát triển tương lai
+P5-07|[P5-07] Dietary Restrictions tích hợp filter Food Search
+P5-08|[P5-08] Export Dữ liệu Diary ra CSV
+P5-09|[P5-09] Critical Product Metrics
+P5-CLOUD.01|[P5-CLOUD.01] E2E Cloud Smoke Test — Full Flow trên Production
+P5-CLOUD.02|[P5-CLOUD.02] Mobile Production Build & Cloud URL Configuration
+P5-PROD.01|[P5-PROD.01] Production Readiness Checklist — App Chuẩn Khởi nghiệp
+P6-01|[P6-01] Chương 1-2 Báo cáo (Tổng quan + Cơ sở lý thuyết)
+P6-02|[P6-02] Chương 3-4 Báo cáo (Phân tích + Thiết kế)
+P6-03|[P6-03] Chương 5-6 Báo cáo (Cài đặt + Kết quả)
+P6-04|[P6-04] Video Nghiệm thu 3-5 phút
+P6-05|[P6-05] Slide Bảo vệ 15-20 slide
+P6-06|[P6-06] Format Báo cáo chuẩn ĐH Lạc Hồng
+P6-07|[P6-07] Poster Nghiên cứu A0/A1
+P6-08|[P6-08] Chuẩn bị Q&A Phản biện (≥15 câu hỏi)
+P6-DOC.01|[P6-DOC.01] Bài học Chuyên môn & Roadmap Phát triển Cá nhân
+P6-DOC.02|[P6-DOC.02] Data Migration & Deployment Evidence (Screenshots + Metrics)
+P6-QA.01|[P6-QA.01] Chuẩn bị Q&A Hội đồng — 20+ Câu hỏi Dự kiến
+P6-SLIDE.01|[P6-SLIDE.01] Slide Bảo vệ — Cấu trúc CLO-aligned + Demo Video
+PERFORMANCE.01|[PERFORMANCE.01] Mobile/backend performance and memory stabilization
+QUOTA.01|[QUOTA.01] AI quota, entitlement, and premium guidance
+RECIPE.01|[RECIPE.01] Recipe suggestion/detail reliability
+RELEASE-QA.01|[RELEASE-QA.01] Production smoke gates + Android device evidence
+REPORT-EVIDENCE.01|[REPORT-EVIDENCE.01] Product evidence docs for defense, excluding video production
+SEC-009|[SEC] Complete ex.Message cleanup — all controllers
+SEC-010|[SEC] Security headers + rate limiting middleware
+SEC-017|[SEC] Mobile token storage audit — expo-secure-store
+SEC-020|[SEC] Dependency vulnerability audit — npm + pip + dotnet
+SECURITY.01|[SECURITY.01] Public health/security redaction and key rotation
+STATS.01|[STATS.01] Daily/weekly/monthly stats consistency
+SUPPORT.01|[SUPPORT.01] In-app feedback email flow
+TEL-001|[TEL] Firebase Analytics integration — replace stub
+TEL-002|[TEL] Firebase Crashlytics integration — replace stub
+UI-POLISH.01|[UI-POLISH.01] Cross-screen UI polish and theme consistency
+VOICE.01|[VOICE.01] Voice command parser variants + confirm UX
+WATER.01|[WATER.01] Water tracking backend + mobile flow
+WEIGHT.01|[WEIGHT.01] Weight update/history/stats flow
