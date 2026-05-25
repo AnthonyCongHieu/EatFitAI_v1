@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Pressable,
   TextInput,
-  Alert,
   Dimensions,
   ScrollView,
   Keyboard,
@@ -774,7 +773,11 @@ const OnboardingScreen = (): React.ReactElement => {
             message: apiError instanceof Error ? apiError.message : String(apiError),
           },
         });
-        Alert.alert('Lỗi', 'Không thể hoàn tất onboarding. Vui lòng thử lại.');
+        Toast.show({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Không thể hoàn tất onboarding. Vui lòng thử lại.',
+        });
         return;
       }
 
@@ -849,7 +852,11 @@ const OnboardingScreen = (): React.ReactElement => {
           message: error instanceof Error ? error.message : String(error),
         },
       });
-      Alert.alert('Lỗi', 'Không thể lưu thông tin. Vui lòng thử lại.');
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể lưu thông tin. Vui lòng thử lại.',
+      });
     }
   };
 

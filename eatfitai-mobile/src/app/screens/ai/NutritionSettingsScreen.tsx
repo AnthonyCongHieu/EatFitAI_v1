@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -29,6 +28,8 @@ import { waterService } from '../../../services/waterService';
 import {
   handleApiError,
   handleApiErrorWithCustomMessage,
+  showSuccess,
+  showWarning,
 } from '../../../utils/errorHandler';
 import type { RootStackParamList } from '../../types';
 import { glassStyles } from '../../../components/ui/GlassCard';
@@ -155,9 +156,12 @@ const NutritionSettingsScreen = (): React.ReactElement => {
       setWaterTarget(val);
       queryClient.invalidateQueries({ queryKey: ['water-intake-today'] });
       setIsEditingWater(false);
-      Alert.alert('Đã lưu', `Mục tiêu nước: ${(val / 1000).toFixed(1)}L / ngày`);
+      showSuccess('target_updated', {
+        text1: 'Đã lưu mục tiêu nước!',
+        text2: `Mục tiêu nước: ${(val / 1000).toFixed(1)}L / ngày`,
+      });
     } catch {
-      Alert.alert('Lỗi', 'Không thể lưu mục tiêu nước');
+      showWarning('Lỗi', 'Không thể lưu mục tiêu nước');
     } finally {
       setIsSavingWater(false);
     }
@@ -197,10 +201,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
         fat: String(Math.round(variables.fat)),
       });
 
-      Alert.alert(
-        t('nutrition_settings.success_title'),
-        t('nutrition_settings.success_message'),
-      );
+      showSuccess('target_updated');
     },
     onError: (err) => handleApiError(err),
   });
