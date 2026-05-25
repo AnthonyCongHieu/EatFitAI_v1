@@ -203,6 +203,7 @@ export const VoiceResultCard = ({
       backgroundColor: 'rgba(255,255,255,0.08)',
       borderWidth: 1,
       borderColor: P.borderMuted,
+      marginBottom: theme.spacing.md,
     },
     fieldLabel: {
       fontSize: 12,
@@ -275,25 +276,33 @@ export const VoiceResultCard = ({
     totalPanel: {
       flexDirection: 'row',
       gap: 8,
-      padding: theme.spacing.md,
+      paddingVertical: 14,
+      paddingHorizontal: 8,
       borderRadius: theme.radius.md,
       backgroundColor: 'rgba(75,226,119,0.08)',
       borderWidth: 1,
       borderColor: P.border,
       marginBottom: theme.spacing.md,
+      marginTop: theme.spacing.sm,
     },
-    totalItem: { flex: 1 },
+    totalItem: { 
+      flex: 1, 
+      alignItems: 'center', 
+      justifyContent: 'center' 
+    },
     totalValue: {
       color: P.text,
-      fontSize: 15,
+      fontSize: 16,
       fontFamily: 'BeVietnamPro_700Bold',
+      textAlign: 'center',
     },
     totalLabel: {
-      marginTop: 2,
+      marginTop: 4,
       color: P.muted,
       fontSize: 10,
       fontFamily: 'BeVietnamPro_700Bold',
       textTransform: 'uppercase',
+      textAlign: 'center',
     },
     warning: {
       color: P.danger,
