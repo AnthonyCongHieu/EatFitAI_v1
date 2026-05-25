@@ -6,7 +6,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Dimensions,
   Image,
   Pressable,
@@ -16,6 +15,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { ConfirmModal } from '../../../components/ConfirmModal';
 import { CustomCalendarPicker } from '../../../components/ui/CustomCalendarPicker';
 import Animated, {
   FadeIn,
@@ -176,6 +176,8 @@ const MealDiaryScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<DiaryEntry | null>(null);
 
   useEffect(() => {
     setSelectedDate(initialDate);
@@ -303,22 +305,24 @@ const MealDiaryScreen = (): React.ReactElement => {
     });
   }, [navigation, dateKey]);
 
-  const handleDeleteEntry = useCallback(async (entry: DiaryEntry) => {
-    Alert.alert('Xóa món ăn', `Bạn có chắc muốn xóa "${entry.foodName}"?`, [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Xóa', style: 'destructive', onPress: async () => {
-          try {
-            await diaryService.deleteEntry(entry.id);
-            await invalidateDiaryQueries(queryClient);
-            showAppToast({ type: 'success', text1: 'Xóa xong rồi!', text2: `Đã bỏ ${entry.foodName} khỏi nhật ký` });
-          } catch (err: any) {
-            showAppToast({ type: 'error', text1: 'Lỗi xóa', text2: err?.message || 'Thử lại sau.' });
-          }
-        },
-      },
-    ]);
-  }, [queryClient]);
+  const handleDeleteEntry = useCallback((entry: DiaryEntry) => {
+    setEntryToDelete(entry);
+    setDeleteConfirmVisible(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!entryToDelete) return;
+    setDeleteConfirmVisible(false);
+    try {
+      await diaryService.deleteEntry(entryToDelete.id);
+      await invalidateDiaryQueries(queryClient);
+      showAppToast({ type: 'success', text1: 'Xóa xong rồi!', text2: `Đã bỏ ${entryToDelete.foodName} khỏi nhật ký` });
+    } catch (err: any) {
+      showAppToast({ type: 'error', text1: 'Lỗi xóa', text2: err?.message || 'Thử lại sau.' });
+    } finally {
+      setEntryToDelete(null);
+    }
+  }, [entryToDelete, queryClient]);
 
   const cardWidth = SCREEN_WIDTH - 32;
 
@@ -635,6 +639,23 @@ const MealDiaryScreen = (): React.ReactElement => {
             setShowDatePicker(false);
           }}
           onClose={() => setShowDatePicker(false)}
+        />
+      )}
+
+      {/* ══════════ DELETE CONFIRM MODAL ══════════ */}
+      {entryToDelete && (
+        <ConfirmModal
+          visible={deleteConfirmVisible}
+          title="Xóa món ăn"
+          message={`Bạn có chắc muốn xóa "${entryToDelete.foodName}"?`}
+          confirmText="Xóa"
+          cancelText="Hủy"
+          isDestructive={true}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => {
+            setDeleteConfirmVisible(false);
+            setEntryToDelete(null);
+          }}
         />
       )}
 

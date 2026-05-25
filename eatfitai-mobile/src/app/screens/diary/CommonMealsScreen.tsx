@@ -1,7 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   View,
@@ -11,6 +10,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { showAppToast } from '../../../utils/showAppToast';
+import { ConfirmModal } from '../../../components';
 
 import Button from '../../../components/Button';
 import SubScreenLayout from '../../../components/ui/SubScreenLayout';
@@ -27,6 +27,10 @@ const CommonMealsScreen = (): React.ReactElement => {
   const queryClient = useQueryClient();
   const { theme } = useAppTheme();
 
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [templateIdToDelete, setTemplateIdToDelete] = useState<string | null>(null);
+  const [templateNameToDelete, setTemplateNameToDelete] = useState<string>('');
+
   const commonMealsQuery = useQuery({
     queryKey: ['common-meals'],
     queryFn: () => foodService.getCommonMeals(),
@@ -41,34 +45,32 @@ const CommonMealsScreen = (): React.ReactElement => {
 
   const handleDelete = useCallback(
     (templateId: string, templateName: string) => {
-      Alert.alert(
-        'Xóa tổ hợp món',
-        `Bạn có chắc muốn xóa "${templateName}" không?`,
-        [
-          { text: 'Hủy', style: 'cancel' },
-          {
-            text: 'Xóa',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await foodService.deleteCommonMeal(templateId);
-                await queryClient.invalidateQueries({ queryKey: ['common-meals'] });
-                await commonMealsQuery.refetch();
-                showAppToast({
-                  type: 'success',
-                  text1: 'Xóa xong rồi!',
-                  text2: templateName,
-                });
-              } catch (error) {
-                handleApiError(error);
-              }
-            },
-          },
-        ],
-      );
+      setTemplateIdToDelete(templateId);
+      setTemplateNameToDelete(templateName);
+      setDeleteConfirmVisible(true);
     },
-    [commonMealsQuery, queryClient],
+    [],
   );
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!templateIdToDelete) return;
+    setDeleteConfirmVisible(false);
+    try {
+      await foodService.deleteCommonMeal(templateIdToDelete);
+      await queryClient.invalidateQueries({ queryKey: ['common-meals'] });
+      await commonMealsQuery.refetch();
+      showAppToast({
+        type: 'success',
+        text1: 'Xóa xong rồi!',
+        text2: templateNameToDelete,
+      });
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setTemplateIdToDelete(null);
+      setTemplateNameToDelete('');
+    }
+  }, [commonMealsQuery, queryClient, templateIdToDelete, templateNameToDelete]);
 
   return (
     <SubScreenLayout
@@ -168,6 +170,22 @@ const CommonMealsScreen = (): React.ReactElement => {
           />
         </View>
       )}
+
+      {/* ══════════ DELETE CONFIRM MODAL ══════════ */}
+      <ConfirmModal
+        visible={deleteConfirmVisible}
+        title="Xóa tổ hợp món"
+        message={`Bạn có chắc muốn xóa "${templateNameToDelete}" không?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        isDestructive={true}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setDeleteConfirmVisible(false);
+          setTemplateIdToDelete(null);
+          setTemplateNameToDelete('');
+        }}
+      />
     </SubScreenLayout>
   );
 };

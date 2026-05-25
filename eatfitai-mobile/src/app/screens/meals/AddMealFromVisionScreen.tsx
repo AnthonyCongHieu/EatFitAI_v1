@@ -62,7 +62,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
-  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
+  const { promptIfFirstLog, renderPromptModal } = usePostFirstLogNotificationPrompt();
   const insets = useSafeAreaInsets();
 
   const { imageUri, result, initialGrams } = route.params;
@@ -712,6 +712,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         initialQuery={currentReplaceQuery}
         title="Đổi món bằng Search"
       />
+      {renderPromptModal()}
     </Screen>
   );
 };

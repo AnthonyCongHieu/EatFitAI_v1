@@ -100,7 +100,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
+  const { promptIfFirstLog, renderPromptModal } = usePostFirstLogNotificationPrompt();
 
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -636,6 +636,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
           baseGrams={recipe.totalGrams || 100}
         />
       )}
+      {renderPromptModal()}
     </View>
   );
 };

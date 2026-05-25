@@ -7,7 +7,6 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   AppState,
   Linking,
   StyleSheet,
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ConfirmModal } from './ConfirmModal';
 
 import {
   dismissOptionalUpdateVersion,
@@ -33,6 +33,11 @@ export default function MobileControlGate({
   const { theme } = useAppTheme();
   const [config, setConfig] = useState<MobileRuntimeConfig | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [updateConfirmVisible, setUpdateConfirmVisible] = useState(false);
+  const [updateUrl, setUpdateUrl] = useState<string>('');
+  const [updateVersion, setUpdateVersion] = useState<string>('');
+
   const optionalUpdatePromptedVersionRef = useRef<string | null>(null);
 
   const openUpdateUrl = useCallback((url: string) => {
@@ -65,31 +70,11 @@ export default function MobileControlGate({
       }
 
       optionalUpdatePromptedVersionRef.current = latestVersion;
-      Alert.alert(
-        'Có bản cập nhật mới',
-        `EatFitAI ${latestVersion} đã sẵn sàng. Cập nhật để nhận bản APK mới nhất.`,
-        [
-          {
-            text: 'Để sau',
-            style: 'cancel',
-            onPress: () => {
-              void dismissOptionalUpdateVersion(latestVersion);
-            },
-          },
-          {
-            text: 'Cập nhật',
-            onPress: () => openUpdateUrl(updateUrl),
-          },
-        ],
-        {
-          cancelable: true,
-          onDismiss: () => {
-            void dismissOptionalUpdateVersion(latestVersion);
-          },
-        },
-      );
+      setUpdateUrl(updateUrl);
+      setUpdateVersion(latestVersion);
+      setUpdateConfirmVisible(true);
     },
-    [openUpdateUrl],
+    [],
   );
 
   const refreshConfig = useCallback(
@@ -181,7 +166,26 @@ export default function MobileControlGate({
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <ConfirmModal
+        visible={updateConfirmVisible}
+        title="Có bản cập nhật mới"
+        message={`EatFitAI ${updateVersion} đã sẵn sàng. Cập nhật để nhận bản APK mới nhất.`}
+        confirmText="Cập nhật"
+        cancelText="Để sau"
+        onConfirm={() => {
+          setUpdateConfirmVisible(false);
+          openUpdateUrl(updateUrl);
+        }}
+        onCancel={() => {
+          setUpdateConfirmVisible(false);
+          void dismissOptionalUpdateVersion(updateVersion);
+        }}
+      />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

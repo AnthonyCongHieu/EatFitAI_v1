@@ -4,7 +4,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   Pressable,
@@ -213,10 +212,11 @@ const ProfileScreen = (): React.ReactElement => {
       if (source === 'camera') {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert(
-            'Quyền truy cập',
-            'Vui lòng cấp quyền truy cập camera trong cài đặt ứng dụng.',
-          );
+          showAppToast({
+            type: 'error',
+            text1: 'Quyền truy cập',
+            text2: 'Vui lòng cấp quyền truy cập camera trong cài đặt ứng dụng.',
+          });
           return;
         }
         result = await ImagePicker.launchCameraAsync({

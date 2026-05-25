@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Alert,
   Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -12,6 +11,7 @@ import {
   Dimensions,
   type ScrollView,
 } from 'react-native';
+import { ConfirmModal } from '../../components';
 import Animated, {
   FadeInUp,
   useSharedValue,
@@ -279,6 +279,9 @@ const HomeScreen = (): React.ReactElement => {
   const [waterCardY, setWaterCardY] = useState<number | null>(null);
   const [scrollY, setScrollY] = useState(0);
   const [weightModalVisible, setWeightModalVisible] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [entryIdToDelete, setEntryIdToDelete] = useState<string | null>(null);
+  const [foodNameToDelete, setFoodNameToDelete] = useState<string>('');
   const notificationInboxItems = useMoChiNotificationInboxStore((state) => state.items);
   const markMoChiNotificationActed = useMoChiNotificationInboxStore((state) => state.markActed);
   const setMoChiVisibleTarget = useMoChiVisibleTargetsStore((state) => state.setVisibleTarget);
@@ -480,34 +483,37 @@ const HomeScreen = (): React.ReactElement => {
 
   const handleDelete = useCallback(
     (entryId: string, foodName: string) => {
-      Alert.alert(t('common.deleteConfirm'), t('common.deleteItem', foodName), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: () => {
-            deleteEntry(entryId)
-              .then(() => {
-                Toast.show({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
-                queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-                queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
-                queryClient.invalidateQueries({ queryKey: ['daily-loop'] });
-              })
-              .catch((err: any) => {
-                handleApiErrorWithCustomMessage(err, {
-                  not_found: { text1: t('common.notFound'), text2: t('common.mayBeDeleted') },
-                  forbidden: { text1: t('common.noPermission'), text2: t('common.onlyDeleteOwn') },
-                  server_error: { text1: t('common.serverError'), text2: t('common.tryAgainLater') },
-                  network_error: { text1: t('common.networkError'), text2: t('common.checkConnection') },
-                  unknown: { text1: t('common.deleteFailed'), text2: t('common.contactSupport') },
-                });
-              });
-          },
-        },
-      ]);
+      setEntryIdToDelete(entryId);
+      setFoodNameToDelete(foodName);
+      setDeleteConfirmVisible(true);
     },
-    [deleteEntry, queryClient],
+    [],
   );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!entryIdToDelete) return;
+    setDeleteConfirmVisible(false);
+    deleteEntry(entryIdToDelete)
+      .then(() => {
+        Toast.show({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+        queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+        queryClient.invalidateQueries({ queryKey: ['daily-loop'] });
+      })
+      .catch((err: any) => {
+        handleApiErrorWithCustomMessage(err, {
+          not_found: { text1: t('common.notFound'), text2: t('common.mayBeDeleted') },
+          forbidden: { text1: t('common.noPermission'), text2: t('common.onlyDeleteOwn') },
+          server_error: { text1: t('common.serverError'), text2: t('common.tryAgainLater') },
+          network_error: { text1: t('common.networkError'), text2: t('common.checkConnection') },
+          unknown: { text1: t('common.deleteFailed'), text2: t('common.contactSupport') },
+        });
+      })
+      .finally(() => {
+        setEntryIdToDelete(null);
+        setFoodNameToDelete('');
+      });
+  }, [deleteEntry, entryIdToDelete, queryClient]);
 
   // Calculated values
   const remainingCalories = useMemo(() => {
@@ -964,6 +970,22 @@ const HomeScreen = (): React.ReactElement => {
         <WeightUpdateModal
           visible={weightModalVisible}
           onClose={() => setWeightModalVisible(false)}
+        />
+
+        {/* ══════════ DELETE CONFIRM MODAL ══════════ */}
+        <ConfirmModal
+          visible={deleteConfirmVisible}
+          title={t('common.deleteConfirm')}
+          message={t('common.deleteItem', foodNameToDelete)}
+          confirmText={t('common.delete')}
+          cancelText={t('common.cancel')}
+          isDestructive={true}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => {
+            setDeleteConfirmVisible(false);
+            setEntryIdToDelete(null);
+            setFoodNameToDelete('');
+          }}
         />
       </Screen>
     </View>

@@ -90,7 +90,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
-  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
+  const { promptIfFirstLog, renderPromptModal } = usePostFirstLogNotificationPrompt();
 
   const selectedDate = route.params.selectedDate;
   const returnToDiaryOnSave = route.params.returnToDiaryOnSave ?? false;
@@ -497,6 +497,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           )}
         </Pressable>
       </View>
+      {renderPromptModal()}
     </View>
   );
 };
