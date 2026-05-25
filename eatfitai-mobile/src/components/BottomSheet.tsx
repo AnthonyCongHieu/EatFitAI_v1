@@ -10,6 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
+import { useEN } from '../theme/emeraldNebula';
 
 type BottomSheetProps = {
   visible: boolean;
@@ -37,6 +38,7 @@ export const BottomSheet = ({
   animated: _animated = true,
 }: BottomSheetProps): React.ReactElement | null => {
   const { theme } = useAppTheme();
+  const P = useEN();
 
   const translateY = useSharedValue(0);
 
@@ -93,7 +95,7 @@ export const BottomSheet = ({
           style={[
             styles.content,
             {
-              backgroundColor: theme.colors.card,
+              backgroundColor: P.surfaceLow || theme.colors.card,
               borderTopLeftRadius: theme.radius.xl,
               borderTopRightRadius: theme.radius.xl,
               height: height === 'auto' ? undefined : height,
@@ -108,7 +110,7 @@ export const BottomSheet = ({
               {showHandle && (
                 <View style={styles.handle}>
                   <View
-                    style={[styles.handleBar, { backgroundColor: theme.colors.muted }]}
+                    style={[styles.handleBar, { backgroundColor: P.outline || theme.colors.muted }]}
                   />
                 </View>
               )}
@@ -123,7 +125,7 @@ export const BottomSheet = ({
                   )}
                   {showCloseButton && (
                     <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
-                      <ThemedText style={{ color: theme.colors.muted, fontSize: 24 }}>
+                      <ThemedText style={{ color: P.onSurfaceVariant || theme.colors.muted, fontSize: 24 }}>
                         ×
                       </ThemedText>
                     </Pressable>
@@ -178,6 +180,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   body: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },

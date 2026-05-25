@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { BottomSheet } from '../BottomSheet';
-import Button from '../Button';
-import { useAppTheme } from '../../theme/ThemeProvider';
+import { useEN } from '../../theme/emeraldNebula';
+import { Ionicons } from '@expo/vector-icons';
 import type { MealTypeId } from '../../types';
 
 interface AddRecipeToDiarySheetProps {
@@ -23,11 +23,11 @@ interface AddRecipeToDiarySheetProps {
   baseGrams?: number;
 }
 
-const MEAL_TYPES: { id: MealTypeId; label: string; icon: string }[] = [
-  { id: 1, label: 'Bữa sáng', icon: '🌅' },
-  { id: 2, label: 'Bữa trưa', icon: '☀️' },
-  { id: 3, label: 'Bữa tối', icon: '🌙' },
-  { id: 4, label: 'Ăn vặt', icon: '🍵' },
+const MEAL_TYPES: { id: MealTypeId; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 1, label: 'Bữa sáng', icon: 'sunny-outline' },
+  { id: 2, label: 'Bữa trưa', icon: 'restaurant-outline' },
+  { id: 3, label: 'Bữa tối', icon: 'moon-outline' },
+  { id: 4, label: 'Ăn vặt', icon: 'cafe-outline' },
 ];
 
 const SERVINGS_OPTIONS = [0.5, 1, 1.5, 2, 3, 4];
@@ -35,7 +35,6 @@ const SERVINGS_OPTIONS = [0.5, 1, 1.5, 2, 3, 4];
 export const AddRecipeToDiarySheet = ({
   visible,
   onClose,
-  recipeName,
   nutrition,
   onConfirm,
   defaultMealType,
@@ -43,7 +42,7 @@ export const AddRecipeToDiarySheet = ({
   currentGrams,
   baseGrams = 100,
 }: AddRecipeToDiarySheetProps): React.ReactElement => {
-  const { theme } = useAppTheme();
+  const P = useEN();
   const [selectedMealType, setSelectedMealType] = useState<MealTypeId | undefined>(defaultMealType as MealTypeId | undefined);
   const [selectedServings, setSelectedServings] = useState(currentGrams ? currentGrams / baseGrams : 1);
 
@@ -61,149 +60,142 @@ export const AddRecipeToDiarySheet = ({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} height={650}>
+    <BottomSheet visible={visible} onClose={onClose} height={600}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingVertical: 10, paddingBottom: 30 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <ThemedText variant="h3" weight="600" style={{ marginBottom: theme.spacing.sm }}>
-          ➕ Thêm vào nhật ký
-        </ThemedText>
-        <ThemedText
-          variant="body"
-          color="textSecondary"
-          style={{ marginBottom: theme.spacing.lg }}
-        >
-          {recipeName}
-        </ThemedText>
-
         {/* Meal Type Selection */}
-        <ThemedText
-          variant="bodySmall"
-          weight="600"
-          style={{ marginBottom: theme.spacing.sm }}
-        >
+        <ThemedText style={[styles.sectionTitle, { color: P.onSurfaceVariant }]}>
           Chọn bữa ăn
         </ThemedText>
         <View style={styles.mealTypeGrid}>
-          {MEAL_TYPES.map((meal) => (
-            <Pressable
-              key={meal.id}
-              onPress={() => setSelectedMealType(meal.id)}
-              style={[
-                styles.mealTypeButton,
-                {
-                  backgroundColor:
-                    selectedMealType === meal.id
-                      ? theme.colors.primary + '20'
-                      : theme.colors.background,
-                  borderColor:
-                    selectedMealType === meal.id
-                      ? theme.colors.primary
-                      : theme.colors.border,
-                },
-              ]}
-            >
-              <ThemedText variant="h4">{meal.icon}</ThemedText>
-              <ThemedText
-                variant="caption"
-                weight={selectedMealType === meal.id ? '600' : '400'}
-                color={selectedMealType === meal.id ? 'primary' : 'textSecondary'}
+          {MEAL_TYPES.map((meal) => {
+            const isSelected = selectedMealType === meal.id;
+            return (
+              <Pressable
+                key={meal.id}
+                onPress={() => setSelectedMealType(meal.id)}
+                style={[
+                  styles.mealTypeButton,
+                  {
+                    backgroundColor: isSelected
+                      ? P.primary + '15'
+                      : 'rgba(226, 232, 240, 0.04)',
+                    borderColor: isSelected ? P.primary : P.glassBorder,
+                  },
+                ]}
               >
-                {meal.label}
-              </ThemedText>
-            </Pressable>
-          ))}
+                <Ionicons
+                  name={meal.icon}
+                  size={20}
+                  color={isSelected ? P.primary : P.onSurfaceVariant}
+                />
+                <ThemedText
+                  style={[
+                    styles.mealLabel,
+                    {
+                      color: isSelected ? P.primary : P.onSurfaceVariant,
+                      fontFamily: isSelected ? 'BeVietnamPro_700Bold' : 'BeVietnamPro_500Medium',
+                    },
+                  ]}
+                >
+                  {meal.label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
         </View>
 
         {/* Servings Selection */}
         <ThemedText
-          variant="bodySmall"
-          weight="600"
-          style={{ marginTop: theme.spacing.lg, marginBottom: theme.spacing.sm }}
+          style={[styles.sectionTitle, { marginTop: 24, color: P.onSurfaceVariant }]}
         >
           Số khẩu phần
         </ThemedText>
         <View style={styles.servingsGrid}>
-          {SERVINGS_OPTIONS.map((servings) => (
-            <Pressable
-              key={servings}
-              onPress={() => setSelectedServings(servings)}
-              style={[
-                styles.servingsButton,
-                {
-                  backgroundColor:
-                    selectedServings === servings
-                      ? theme.colors.secondary + '20'
-                      : theme.colors.background,
-                  borderColor:
-                    selectedServings === servings
-                      ? theme.colors.secondary
-                      : theme.colors.border,
-                },
-              ]}
-            >
-              <ThemedText
-                variant="body"
-                weight={selectedServings === servings ? '700' : '400'}
+          {SERVINGS_OPTIONS.map((servings) => {
+            const isSelected = selectedServings === servings;
+            return (
+              <Pressable
+                key={servings}
+                onPress={() => setSelectedServings(servings)}
+                style={[
+                  styles.servingsButton,
+                  {
+                    backgroundColor: isSelected
+                      ? P.primary + '15'
+                      : 'rgba(226, 232, 240, 0.04)',
+                    borderColor: isSelected ? P.primary : P.glassBorder,
+                  },
+                ]}
               >
-                {servings}
-              </ThemedText>
-            </Pressable>
-          ))}
+                <ThemedText
+                  style={[
+                    styles.servingsText,
+                    {
+                      color: isSelected ? P.primary : P.onSurface,
+                      fontFamily: isSelected ? 'BeVietnamPro_700Bold' : 'BeVietnamPro_500Medium',
+                    },
+                  ]}
+                >
+                  {servings}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
         </View>
 
-        {/* Nutrition Preview - Clean horizontal layout */}
+        {/* Nutrition Preview */}
         <View
           style={[
             styles.nutritionPreview,
-            { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+            { backgroundColor: P.surfaceLow, borderColor: P.glassBorder },
           ]}
         >
-          <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: 12 }}>
+          <ThemedText style={[styles.nutritionTitle, { color: P.onSurfaceVariant }]}>
             Dinh dưỡng ({selectedServings} khẩu phần)
           </ThemedText>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <View style={styles.nutritionRow}>
             {/* Calories */}
-            <View style={{ alignItems: 'center' }}>
-              <ThemedText variant="h4" weight="700" color="primary">
+            <View style={styles.nutritionBox}>
+              <ThemedText style={[styles.nutritionVal, { color: P.primary }]}>
                 {calculatedNutrition.calories}
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
+              <ThemedText style={[styles.nutritionLabel, { color: P.textMuted }]}>
                 kcal
               </ThemedText>
             </View>
 
             {/* Protein */}
-            <View style={{ alignItems: 'center' }}>
-              <ThemedText variant="h4" weight="700" style={{ color: '#ff8c8c' }}>
+            <View style={styles.nutritionBox}>
+              <ThemedText style={[styles.nutritionVal, { color: '#34d399' }]}>
                 {calculatedNutrition.protein}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Protein
+              <ThemedText style={[styles.nutritionLabel, { color: P.textMuted }]}>
+                Đạm
               </ThemedText>
             </View>
 
             {/* Carbs */}
-            <View style={{ alignItems: 'center' }}>
-              <ThemedText variant="h4" weight="700" style={{ color: '#22C55E' }}>
+            <View style={styles.nutritionBox}>
+              <ThemedText style={[styles.nutritionVal, { color: '#f7c052' }]}>
                 {calculatedNutrition.carbs}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Carbs
+              <ThemedText style={[styles.nutritionLabel, { color: P.textMuted }]}>
+                Tinh bột
               </ThemedText>
             </View>
 
             {/* Fat */}
-            <View style={{ alignItems: 'center' }}>
-              <ThemedText variant="h4" weight="700" style={{ color: '#f7c052' }}>
+            <View style={styles.nutritionBox}>
+              <ThemedText style={[styles.nutritionVal, { color: '#f87171' }]}>
                 {calculatedNutrition.fat}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Fat
+              <ThemedText style={[styles.nutritionLabel, { color: P.textMuted }]}>
+                Chất béo
               </ThemedText>
             </View>
           </View>
@@ -211,19 +203,31 @@ export const AddRecipeToDiarySheet = ({
 
         {/* Actions */}
         <View style={styles.actions}>
-          <Button
-            title="Hủy"
-            variant="outline"
+          <Pressable
+            style={({ pressed }) => [
+              styles.cancelBtn,
+              pressed && { opacity: 0.76 },
+            ]}
             onPress={onClose}
-            style={{ flex: 1, marginRight: 8 }}
-          />
-          <Button
-            title={diaryEntryId ? 'Cập nhật' : 'Thêm'}
-            variant="primary"
+          >
+            <ThemedText style={[styles.cancelText, { color: P.onSurface }]}>
+              Hủy
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.confirmBtn,
+              { backgroundColor: P.primary },
+              pressed && { opacity: 0.76 },
+              selectedMealType === undefined && { opacity: 0.5 },
+            ]}
             onPress={handleConfirm}
-            style={{ flex: 1.5 }}
             disabled={selectedMealType === undefined}
-          />
+          >
+            <ThemedText style={styles.confirmText}>
+              {diaryEntryId ? 'Cập nhật' : 'Thêm'}
+            </ThemedText>
+          </Pressable>
         </View>
       </ScrollView>
     </BottomSheet>
@@ -231,61 +235,113 @@ export const AddRecipeToDiarySheet = ({
 };
 
 const styles = StyleSheet.create({
+  sheetTitle: {
+    fontSize: 20,
+    fontFamily: 'BeVietnamPro_700Bold',
+    marginBottom: 6,
+  },
+  sheetSubtitle: {
+    fontSize: 14,
+    fontFamily: 'BeVietnamPro_500Medium',
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
   mealTypeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
   mealTypeButton: {
-    width: '47%',
-    padding: 14,
+    width: '48%',
+    paddingVertical: 12,
     borderRadius: 16,
-    borderWidth: 2,
+    borderWidth: 1,
     alignItems: 'center',
-    gap: 6,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  mealLabel: {
+    fontSize: 14,
   },
   servingsGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   servingsButton: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    borderRadius: 14,
-    borderWidth: 2,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  servingsText: {
+    fontSize: 14,
+  },
   nutritionPreview: {
-    marginTop: 20,
+    marginTop: 24,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
   },
-  nutritionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 12,
-  },
-  nutritionItem: {
-    width: '47%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+  nutritionTitle: {
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
   },
   nutritionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
+  },
+  nutritionBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  nutritionVal: {
+    fontSize: 18,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+  nutritionLabel: {
+    fontSize: 11,
+    fontFamily: 'BeVietnamPro_500Medium',
+    marginTop: 2,
   },
   actions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 20,
+    marginTop: 24,
+  },
+  cancelBtn: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 16,
+    backgroundColor: 'rgba(226, 232, 240, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmBtn: {
+    flex: 1.5,
+    minHeight: 46,
+    borderRadius: 99,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelText: {
+    fontSize: 14,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+  confirmText: {
+    fontSize: 16,
+    fontFamily: 'BeVietnamPro_700Bold',
+    color: '#003915',
   },
 });

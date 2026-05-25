@@ -445,11 +445,11 @@ const RecipeDetailScreen = (): React.ReactElement => {
             </View>
             <View style={[S.macroBox, { backgroundColor: P.macroC + '15', borderColor: P.macroC + '40' }]}>
               <ThemedText style={[S.macroVal, { color: P.macroC }]}>{Math.round(recipe.totalCarbs!)}g</ThemedText>
-              <ThemedText style={S.macroLabel}>Carb</ThemedText>
+              <ThemedText style={S.macroLabel}>Tinh bột</ThemedText>
             </View>
             <View style={[S.macroBox, { backgroundColor: P.macroF + '15', borderColor: P.macroF + '40' }]}>
               <ThemedText style={[S.macroVal, { color: P.macroF }]}>{Math.round(recipe.totalFat!)}g</ThemedText>
-              <ThemedText style={S.macroLabel}>Béo</ThemedText>
+              <ThemedText style={S.macroLabel}>Chất béo</ThemedText>
             </View>
           </Animated.View>
 
