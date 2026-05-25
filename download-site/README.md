@@ -7,23 +7,24 @@ Static download page for the public Android APK. It is designed for Cloudflare P
 - Version: `1.0.0`
 - Android package: `com.eatfitai.app`
 - GitHub release tag: `android-v1.0.0`
-- APK asset name: `EatFitAI-android-v1.0.0.apk`
+- APK asset name: `EatFitAI-android-v1.0.0-build-20260526-014411.apk`
 - APK URL:
-  `https://github.com/anthonyconghieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk`
+  `https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0-build-20260526-014411.apk`
+- Download counter baseline: `16` lượt from the previous APK asset, added to the new asset's GitHub `download_count`.
 
 ## Publish the APK
 
 Build or collect the APK first. From the repository root, do not commit the APK.
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\EatFitAI-android-v1.0.0.apk
-gh release create android-v1.0.0 .\EatFitAI-android-v1.0.0.apk --title "EatFitAI Android v1.0.0" --notes "Public Android APK release."
+Get-FileHash -Algorithm SHA256 .\EatFitAI-android-v1.0.0-build-20260526-014411.apk
+gh release create android-v1.0.0 .\EatFitAI-android-v1.0.0-build-20260526-014411.apk --title "EatFitAI Android v1.0.0" --notes "Public Android APK release."
 ```
 
 If the release already exists:
 
 ```powershell
-gh release upload android-v1.0.0 .\EatFitAI-android-v1.0.0.apk --clobber
+gh release upload android-v1.0.0 .\EatFitAI-android-v1.0.0-build-20260526-014411.apk
 ```
 
 Then update `sha256` in `download-site/script.js` with the SHA-256 value.
