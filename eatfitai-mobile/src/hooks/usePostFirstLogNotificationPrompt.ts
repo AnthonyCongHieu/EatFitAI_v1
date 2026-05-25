@@ -7,9 +7,9 @@
  * Usage: call `promptIfFirstLog()` after a successful diary add/save.
  * It will only fire ONCE per installation.
  */
-import { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 import {
   requestNotificationPermissions,
@@ -46,7 +46,49 @@ const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
 };
 
 export function usePostFirstLogNotificationPrompt() {
+  const [visible, setVisible] = useState(false);
   const prompting = useRef(false);
+
+  const handleConfirm = useCallback(async () => {
+    setVisible(false);
+    try {
+      const granted = await requestNotificationPermissions();
+      if (granted) {
+        // Save default settings & schedule
+        await AsyncStorage.setItem(
+          NOTIFICATIONS_SETTINGS_KEY,
+          JSON.stringify(DEFAULT_NOTIFICATION_SETTINGS),
+        );
+        await scheduleNotifications(DEFAULT_NOTIFICATION_SETTINGS);
+
+        trackEvent('notification_permission_granted_after_first_log', {
+          category: 'product',
+          flow: 'onboarding',
+          step: 'first_log_complete',
+          status: 'granted',
+        });
+      } else {
+        trackEvent('notification_permission_denied_after_first_log', {
+          category: 'product',
+          flow: 'onboarding',
+          step: 'first_log_complete',
+          status: 'denied',
+        });
+      }
+    } catch (err) {
+      logger.warn('[PostFirstLogNotif] Error enabling notifications:', err);
+    }
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    setVisible(false);
+    trackEvent('notification_permission_prompt_dismissed', {
+      category: 'product',
+      flow: 'onboarding',
+      step: 'first_log_complete',
+      status: 'dismissed',
+    });
+  }, []);
 
   const promptIfFirstLog = useCallback(async () => {
     // Prevent double-fire
@@ -71,58 +113,7 @@ export function usePostFirstLogNotificationPrompt() {
       // Small delay so the "success toast" from diary add is visible first
       await new Promise((resolve) => setTimeout(resolve, 1200));
 
-      // Show a friendly Alert asking user if they want meal reminders
-      Alert.alert(
-        '🔔 Bật nhắc nhở bữa ăn?',
-        'Bạn vừa ghi nhận bữa đầu tiên — tuyệt vời! Bạn có muốn app nhắc nhở giờ ăn để không bỏ lỡ bữa nào không?',
-        [
-          {
-            text: 'Để sau',
-            style: 'cancel',
-            onPress: () => {
-              trackEvent('notification_permission_prompt_dismissed', {
-                category: 'product',
-                flow: 'onboarding',
-                step: 'first_log_complete',
-                status: 'dismissed',
-              });
-            },
-          },
-          {
-            text: 'Bật nhắc nhở',
-            onPress: async () => {
-              try {
-                const granted = await requestNotificationPermissions();
-                if (granted) {
-                  // Save default settings & schedule
-                  await AsyncStorage.setItem(
-                    NOTIFICATIONS_SETTINGS_KEY,
-                    JSON.stringify(DEFAULT_NOTIFICATION_SETTINGS),
-                  );
-                  await scheduleNotifications(DEFAULT_NOTIFICATION_SETTINGS);
-
-                  trackEvent('notification_permission_granted_after_first_log', {
-                    category: 'product',
-                    flow: 'onboarding',
-                    step: 'first_log_complete',
-                    status: 'granted',
-                  });
-                } else {
-                  trackEvent('notification_permission_denied_after_first_log', {
-                    category: 'product',
-                    flow: 'onboarding',
-                    step: 'first_log_complete',
-                    status: 'denied',
-                  });
-                }
-              } catch (err) {
-                logger.warn('[PostFirstLogNotif] Error enabling notifications:', err);
-              }
-            },
-          },
-        ],
-        { cancelable: true },
-      );
+      setVisible(true);
     } catch (err) {
       logger.warn('[PostFirstLogNotif] Error in promptIfFirstLog:', err);
     } finally {
@@ -130,5 +121,15 @@ export function usePostFirstLogNotificationPrompt() {
     }
   }, []);
 
-  return { promptIfFirstLog };
+  const renderPromptModal = () => React.createElement(ConfirmModal, {
+    visible,
+    title: 'Bật nhắc nhở bữa ăn?',
+    message: 'Bạn vừa ghi nhận bữa đầu tiên — tuyệt vời! Bạn có muốn app nhắc nhở giờ ăn để không bỏ lỡ bữa nào không?',
+    confirmText: 'Bật nhắc nhở',
+    cancelText: 'Để sau',
+    onConfirm: handleConfirm,
+    onCancel: handleCancel,
+  });
+
+  return { promptIfFirstLog, renderPromptModal };
 }

@@ -46,6 +46,7 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { TEST_IDS } from '../../../testing/testIds';
 import type { MealTypeId } from '../../../types';
 import { useEN } from '../../../theme/emeraldNebula';
+import MeshBackground from '../../../components/ui/MeshBackground';
 
 const PAGE_SIZE = 20;
 const RECENT_SEARCHES_KEY_PREFIX = '@eatfit_recent_searches_';
@@ -641,6 +642,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       accessibilityLabel={TEST_IDS.foodSearch.screen}
       collapsable={false}
     >
+      <MeshBackground />
       {/* ═══ Header ═══ */}
       <View style={S.header}>
         <Pressable style={S.iconBtn} onPress={() => navigation.goBack()} hitSlop={12}>

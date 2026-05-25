@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -195,7 +194,6 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
       })
       .catch((error: any) => {
         logger.error('[WelcomeScreen] Google Sign-In Error:', error);
-        Alert.alert('Đăng nhập thất bại', error?.message || 'Đã có lỗi xảy ra');
         Toast.show({
           type: 'error',
           text1: 'Đăng nhập thất bại',

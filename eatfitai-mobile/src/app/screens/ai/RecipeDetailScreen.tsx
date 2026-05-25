@@ -34,6 +34,7 @@ import type { MealTypeId } from '../../../types';
 import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDiarySheet';
 import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
+import MeshBackground from '../../../components/ui/MeshBackground';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
@@ -100,7 +101,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
+  const { promptIfFirstLog, renderPromptModal } = usePostFirstLogNotificationPrompt();
 
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -351,6 +352,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
   return (
     <View style={S.container}>
+      <MeshBackground />
       {/* Absolute Add Button at bottom safely above tabs */}
       <Animated.View entering={FadeInUp.delay(500)} style={[S.floatBottomBtn, { bottom: insets.bottom + FLOATING_CTA_BOTTOM }]}>
         <Pressable
@@ -443,11 +445,11 @@ const RecipeDetailScreen = (): React.ReactElement => {
             </View>
             <View style={[S.macroBox, { backgroundColor: P.macroC + '15', borderColor: P.macroC + '40' }]}>
               <ThemedText style={[S.macroVal, { color: P.macroC }]}>{Math.round(recipe.totalCarbs!)}g</ThemedText>
-              <ThemedText style={S.macroLabel}>Carb</ThemedText>
+              <ThemedText style={S.macroLabel}>Tinh bột</ThemedText>
             </View>
             <View style={[S.macroBox, { backgroundColor: P.macroF + '15', borderColor: P.macroF + '40' }]}>
               <ThemedText style={[S.macroVal, { color: P.macroF }]}>{Math.round(recipe.totalFat!)}g</ThemedText>
-              <ThemedText style={S.macroLabel}>Béo</ThemedText>
+              <ThemedText style={S.macroLabel}>Chất béo</ThemedText>
             </View>
           </Animated.View>
 
@@ -636,6 +638,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
           baseGrams={recipe.totalGrams || 100}
         />
       )}
+      {renderPromptModal()}
     </View>
   );
 };

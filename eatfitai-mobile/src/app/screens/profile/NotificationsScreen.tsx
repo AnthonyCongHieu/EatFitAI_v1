@@ -16,6 +16,7 @@ import {
   cancelAllMealNotifications,
 } from '../../../services/notificationService';
 import { useEN } from '../../../theme/emeraldNebula';
+import { showSuccess, showWarning } from '../../../utils/errorHandler';
 
 // Storage key
 const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
@@ -139,12 +140,17 @@ const NotificationsScreen = (): React.ReactElement => {
         const hasPermission = await requestNotificationPermissions();
         if (hasPermission) {
           await scheduleNotifications(newSettings);
+          showSuccess('settings_saved');
+        } else {
+          showWarning('Quyền thông báo', 'Vui lòng cấp quyền thông báo trong cài đặt thiết bị.');
         }
       } else {
         await cancelAllMealNotifications();
+        showSuccess('settings_saved');
       }
     } catch (error) {
       console.log('Error saving notification settings:', error);
+      showWarning('Lỗi', 'Không thể lưu cấu hình thông báo');
     } finally {
       setIsSaving(false);
     }

@@ -6,6 +6,7 @@ export { ThemedTextInput } from './ThemedTextInput';
 
 // Enhanced Components
 export { Modal } from './Modal';
+export { ConfirmModal } from './ConfirmModal';
 export { BottomSheet } from './BottomSheet';
 export { ActionSheet } from './ActionSheet';
 export { ProgressBar } from './ProgressBar';

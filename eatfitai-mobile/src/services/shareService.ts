@@ -1,7 +1,7 @@
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { Alert } from 'react-native';
 import logger from '../utils/logger';
+import { showAppToast } from '../utils/showAppToast';
 
 export const shareService = {
   /**
@@ -13,7 +13,11 @@ export const shareService = {
       // Check if sharing is available
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
-        Alert.alert('Lỗi', 'Thiết bị này không hỗ trợ chia sẻ.');
+        showAppToast({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Thiết bị này không hỗ trợ chia sẻ.',
+        });
         return;
       }
 
@@ -32,7 +36,11 @@ export const shareService = {
       });
     } catch (error) {
       logger.error('Share error:', error);
-      Alert.alert('Lỗi', 'Không thể chia sẻ ảnh. Vui lòng thử lại.');
+      showAppToast({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể chia sẻ ảnh. Vui lòng thử lại.',
+      });
     }
   },
 };

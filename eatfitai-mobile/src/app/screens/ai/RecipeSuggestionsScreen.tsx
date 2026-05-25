@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   TextInput,
   type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 import { useEN } from '../../../theme/emeraldNebula';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
+import MeshBackground from '../../../components/ui/MeshBackground';
 import { filterRecipesByPreferences } from '../../../utils/foodPreferenceFilter';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -241,6 +243,12 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
     macroF: P_STATIC.macroF,
   };
 
+  const [scrolled, setScrolled] = useState(false);
+  const handleScroll = useCallback((event: any) => {
+    const y = event.nativeEvent.contentOffset.y;
+    setScrolled(y > 20);
+  }, []);
+
   const { preferences, fetchPreferences } = useUserPreferenceStore();
 
   useEffect(() => {
@@ -458,10 +466,30 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
 
   return (
     <View style={[S.container, { backgroundColor: P.surface }]}>
+      <MeshBackground />
+
+      {/* ═══ Top Gradient Overlay for Header Contrast ═══ */}
+      <LinearGradient
+        colors={['rgba(5, 7, 13, 0.7)', 'transparent']}
+        style={[StyleSheet.absoluteFill, { height: insets.top + 80, zIndex: 40 }]}
+        pointerEvents="none"
+      />
+
       {/* ═══ Header ═══ */}
       <View
         pointerEvents="box-none"
-        style={[S.header, { paddingTop: insets.top + 4, backgroundColor: P.surface, borderBottomWidth: 1, borderBottomColor: P.glassBorder }]}
+        style={[
+          S.header,
+          { paddingTop: insets.top + 4 },
+          scrolled ? {
+            backgroundColor: P.surface,
+            borderBottomWidth: 1,
+            borderBottomColor: P.glassBorder,
+          } : {
+            backgroundColor: 'transparent',
+            borderBottomWidth: 0,
+          }
+        ]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={P.onSurface} />
@@ -476,6 +504,8 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
         contentContainerStyle={[S.scrollContent, { paddingTop: insets.top + 80 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {/* ═══ Search Section ═══ */}
         <View style={S.searchSection}>

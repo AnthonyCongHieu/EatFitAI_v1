@@ -197,10 +197,10 @@ const successMessages: Record<SuccessType, { text1: string; text2?: string }> = 
   meal_updated: { text1: 'Đã cập nhật xong rồi! ✨', text2: 'Thay đổi của bạn đã được ghi lại thành công.' },
   meal_deleted: { text1: 'Đã xóa món ăn! 🗑️', text2: 'Món ăn đã được bỏ khỏi nhật ký rồi.' },
   food_added: { text1: 'Thêm món mới thành công! 🥦', text2: 'Món ăn đã được lưu vào thực đơn của bạn.' },
-  settings_saved: { text1: 'Đã lưu cài đặt! ⚙️', text2: 'Mọi thứ đã sẵn sàng cho bạn rồi.' },
+  settings_saved: { text1: 'Đã lưu cài đặt!', text2: 'Mọi thứ đã sẵn sàng cho bạn rồi.' },
   profile_updated: { text1: 'Cập nhật hồ sơ xong rồi! 🎉', text2: 'Thông tin của bạn đã được lưu lại.' },
   target_updated: {
-    text1: 'Đặt mục tiêu mới thành công! 🎯',
+    text1: 'Đặt mục tiêu mới thành công!',
     text2: 'Cùng nhau cố gắng hoàn thành mục tiêu mới nha!',
   },
   favorite_added: { text1: 'Đã thêm vào yêu thích! ❤️', text2: 'Món ăn đã được lưu để bạn dễ tìm sau này.' },
@@ -247,7 +247,7 @@ export const showInfo = (text1: string, text2?: string) => {
 export const showWarning = (text1: string, text2?: string) => {
   showAppToast({
     type: 'error', // Using error type with orange styling suggested
-    text1: `⚠️ ${text1}`,
+    text1: text1,
     text2,
     visibilityTime: 3500,
   });
