@@ -49,7 +49,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Ph%E1%BB%9F+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=s5UfL8Z-p-k"
+    "videoUrl": null
   },
   {
     "slug": "pho-ga",
@@ -103,7 +103,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Ph%E1%BB%9F+g%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=Jm8j6K4wHn4"
+    "videoUrl": null
   },
   {
     "slug": "bun-bo-hue",
@@ -157,7 +157,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+b%C3%B2+Hu%E1%BA%BF"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=S7bW7U5cW7w"
+    "videoUrl": null
   },
   {
     "slug": "bun-rieu",
@@ -191,7 +191,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+ri%C3%AAu"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=Nn1wz6cZzEE",
+    "videoUrl": null,
     "prepItems": [
       "Lọc thịt cua đồng lấy nước cốt, bỏ bã.",
       "Cà chua rửa sạch bổ múi cau; hành lá cắt nhỏ.",
@@ -242,7 +242,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+m%E1%BA%AFm"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=gTsqoR8qLqQ",
+    "videoUrl": null,
     "prepItems": [
       "Sơ chế cá, tôm, mực rửa sạch, cắt miếng vừa ăn.",
       "Sả đập dập, băm nhỏ; cà tím cắt khúc ngâm nước muối để không bị thâm."
@@ -291,7 +291,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=H%E1%BB%A7+ti%E1%BA%BFu"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9Y",
+    "videoUrl": null,
     "prepItems": [
       "Hầm xương ống heo với hành tây và củ cải trắng để làm nước dùng ngọt thanh.",
       "Trần chín tôm, trứng cút bóc vỏ, thịt heo xá xíu thái mỏng.",
@@ -342,7 +342,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=M%C3%AC+Qu%E1%BA%A3ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F2Yt9W6p_N4",
+    "videoUrl": null,
     "prepItems": [
       "Tôm cắt râu, rửa sạch; thịt ba chỉ thái lát mỏng vừa ăn.",
       "Rau sống trộn đều (bắp chuối, giá, rau húng, cải con).",
@@ -393,7 +393,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Cao+l%E1%BA%A7u"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=h-k6Vv2dCgQ",
+    "videoUrl": null,
     "prepItems": [
       "Thịt heo nạc vai rửa sạch, cắt miếng lớn để làm xá xíu.",
       "Mì cao lầu trần qua nước sôi cho mềm.",
@@ -451,7 +451,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Ch%C3%A1o+l%C3%B2ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=vVj448b11D4",
+    "videoUrl": null,
     "prepItems": [
       "Lòng heo (gan, tim, dồi, dạ dày) xát muối, chanh rửa sạch nhiều lần.",
       "Gạo tẻ vo sạch, để ráo rồi rang vàng nhẹ trên chảo.",
@@ -510,7 +510,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=S%C3%BAp+cua"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H139",
+    "videoUrl": null,
     "prepItems": [
       "Nấu nước dùng gà hầm xương lấy nước ngọt trong suốt thơm nức.",
       "Thịt cua luộc xé sợi mềm, nấm tuyết cắt nhỏ nấm hương thái mỏng.",
@@ -568,7 +568,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+b%C3%AD+%C4%91%E1%BB%8F"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=t5J5O8A_Y3s",
+    "videoUrl": null,
     "prepItems": [
       "Bí đỏ gọt vỏ, bỏ ruột, rửa sạch cắt miếng vuông vừa ăn.",
       "Thịt heo băm nhỏ băm nhuyễn.",
@@ -626,7 +626,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+khoai+m%E1%BB%A1+t%C3%ADm"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5E4X3R9H9a",
+    "videoUrl": null,
     "prepItems": [
       "Khoai mỡ gọt vỏ, dùng muỗng nạo nhỏ hoặc đập dập băm nhuyễn để canh có độ sệt dẻo.",
       "Tôm tươi lột vỏ đập dập hoặc thịt heo băm nhuyễn.",
@@ -676,7 +676,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+kh%E1%BB%95+qua+nh%E1%BB%93i+th%E1%BB%8Bt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=bX-yPifvP5M",
+    "videoUrl": null,
     "prepItems": [
       "Khổ qua cắt khúc tròn khoảng 5cm hoặc rạch một đường dọc, lấy sạch ruột.",
       "Ngâm mộc nhĩ (nấm mèo) nở mềm thái nhỏ.",
@@ -726,7 +726,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+c%E1%BA%A3i+th%C3%ACa"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9b",
+    "videoUrl": null,
     "aliases": [
       "Canh cải thảo thịt bằm",
       "Canh cải thừa thịt bằm",
@@ -789,7 +789,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+b%E1%BA%A7u"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=vVj448b11D5",
+    "videoUrl": null,
     "prepItems": [
       "Bầu gọt vỏ, rửa sạch, cắt sợi mỏng hoặc băm nhỏ thái miếng vừa ăn.",
       "Tôm khô ngâm nước ấm cho mềm rồi giã giập hoặc dùng thịt băm.",
@@ -847,7 +847,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+rau+mu%E1%BB%91ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9c",
+    "videoUrl": null,
     "prepItems": [
       "Rau muống nhặt sạch lá úa, ngắt khúc vừa ăn, rửa sạch ngâm nước muối loãng 5 phút.",
       "Tỏi đập dập làm nước chấm rau."
@@ -903,7 +903,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+c%E1%BA%A3i+th%E1%BA%A3o"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9d",
+    "videoUrl": null,
     "prepItems": [
       "Cải thảo tách lá, rửa sạch và cắt khúc vuông vừa ăn.",
       "Thịt heo bằm nhuyễn hoặc thịt ức gà bằm.",
@@ -953,7 +953,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+b%C3%AD+%C4%91%E1%BB%8F+t%C3%B4m"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=vVj448b11D6",
+    "videoUrl": null,
     "prepItems": [
       "Bí đỏ gọt vỏ rửa sạch thái miếng vuông.",
       "Tôm tươi lột vỏ, rút chỉ đen rồi giã giập nhẹ.",
@@ -1011,7 +1011,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+x%C6%B0%C6%A1ng+h%E1%BA%A7m+c%E1%BB%A7+c%E1%BA%A3i"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9e",
+    "videoUrl": null,
     "prepItems": [
       "Xương heo/sườn non chặt miếng vừa ăn, chần qua nước sôi 2 phút để khử mùi và chất bẩn.",
       "Củ cải trắng gọt vỏ thái khoanh tròn vừa ăn.",
@@ -1061,7 +1061,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+chua+c%C3%A1"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9f",
+    "videoUrl": null,
     "prepItems": [
       "Cá lóc cắt khoanh vừa ăn, xát muối chanh khử tanh sạch nhớt.",
       "Dọc mùng (bạc hà) tước vỏ cắt khúc bóp muối; đậu bắp, cà chua bổ múi cau.",
@@ -1120,7 +1120,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=L%E1%BA%A9u+h%E1%BA%A3i+s%E1%BA%A3n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9g",
+    "videoUrl": null,
     "prepItems": [
       "Sơ chế tôm rửa sạch, mực cắt khoanh khía hoa, cá phi lê thái lát.",
       "Sả đập dập cắt khúc; cà chua bổ múi, dứa cắt lát.",
@@ -1170,7 +1170,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=L%E1%BA%A9u+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9h",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò thái mỏng bày đĩa; gân bò đuôi bò luộc sơ cắt miếng.",
       "Rang thơm quế, hồi, thảo quả để tạo hương vị phở cho nước lẩu.",
@@ -1221,7 +1221,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=L%E1%BA%A9u+g%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9i",
+    "videoUrl": null,
     "prepItems": [
       "Gà ta làm sạch chặt miếng vừa ăn.",
       "Lá giang rửa sạch nhặt lá úa, vò hơi nát để tạo vị chua.",
@@ -1279,7 +1279,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=L%E1%BA%A9u+n%E1%BA%A5m"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9j",
+    "videoUrl": null,
     "prepItems": [
       "Sơ chế củ cải, su su, cà rốt cắt khúc để nấu nước dùng chay ngọt.",
       "Các loại nấm (kim châm, bào ngư, đùi gà, nấm rơm) cắt gốc ngâm nước muối loãng, rửa sạch để ráo.",
@@ -1328,7 +1328,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=L%E1%BA%A9u+c%C3%A1"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9k",
+    "videoUrl": null,
     "prepItems": [
       "Cá điêu hồng làm sạch cắt khúc hoặc phi lê lát mỏng sạch xương.",
       "Dọc mùng tước vỏ bóp muối; cà chua cắt múi; thơm (dứa) cắt lát mỏng.",
@@ -1386,7 +1386,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=L%E1%BA%A9u+chua+cay+s%E1%BA%A3+%E1%BB%9Bt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9l",
+    "videoUrl": null,
     "prepItems": [
       "Sả cây đập dập cắt khúc; ớt hiểm giã giập nhẹ.",
       "Thịt bò thái mỏng, hải sản tôm mực rửa sạch.",
@@ -1436,7 +1436,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+t%E1%BA%A5m+s%C6%B0%E1%BB%9Dn"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9m",
+    "videoUrl": null,
     "prepItems": [
       "Gạo tấm vo sạch nấu chín chín ráo.",
       "Sườn cốt lết đập dập nhẹ cho mềm thịt.",
@@ -1487,7 +1487,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+h%E1%BA%A3i+s%E1%BA%A3n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9n",
+    "videoUrl": null,
     "prepItems": [
       "Cơm nguội đánh tơi hạt, trộn đều với 1 lòng đỏ trứng gà để tạo màu vàng rơm.",
       "Tôm tươi luộc sơ lột vỏ thái hạt lựu; mực thái hạt lựu.",
@@ -1543,7 +1543,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+tr%E1%BB%A9ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9o",
+    "videoUrl": null,
     "prepItems": [
       "Cơm nguội bóp tơi hạt cơm.",
       "Đập trứng gà ra chén đánh tan nhẹ.",
@@ -1599,7 +1599,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9p",
+    "videoUrl": null,
     "prepItems": [
       "Cơm nguội trộn lòng đỏ trứng.",
       "Thịt bò thái mỏng ướp tỏi băm, dầu hào.",
@@ -1655,7 +1655,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+g%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9q",
+    "videoUrl": null,
     "prepItems": [
       "Thịt gà luộc chín xé sợi mỏng vừa ăn.",
       "Cơm nguội bóp tơi trộn đều với lòng đỏ trứng gà.",
@@ -1705,7 +1705,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+g%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9r",
+    "videoUrl": null,
     "prepItems": [
       "Gà ta luộc chín với gừng hành để lấy nước hầm, vớt ra xé sợi.",
       "Gạo vo sạch, để ráo rồi xào sơ với mỡ gà và bột nghệ cho vàng.",
@@ -1762,7 +1762,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+th%E1%BB%8Bt+kho+tr%E1%BB%A9ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9s",
+    "videoUrl": null,
     "prepItems": [
       "Thịt ba chỉ thái miếng vuông lớn chần qua nước sôi rửa sạch.",
       "Trứng vịt (hoặc trứng gà) luộc chín bóc vỏ.",
@@ -1813,7 +1813,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+c%C3%A1+kho+t%E1%BB%99"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9t",
+    "videoUrl": null,
     "prepItems": [
       "Cá lóc làm sạch cắt khúc vừa ăn, rửa sạch để ráo.",
       "Hành tím băm nhỏ, ớt hiểm cắt lát.",
@@ -1864,7 +1864,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+b%C3%B2+l%C3%BAc+l%E1%BA%AFc"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9u",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò thăn thái khối vuông vừa ăn (hình quân cờ).",
       "Ớt chuông, hành tây cắt miếng vuông tương đương kích thước thịt bò.",
@@ -1914,7 +1914,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+s%C6%B0%E1%BB%9Dn+n%C6%B0%E1%BB%9Bng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9v",
+    "videoUrl": null,
     "prepItems": [
       "Sườn cốt lết heo đập dập cho mềm thớ thịt.",
       "Hành tỏi sả băm nhỏ vắt lấy nước cốt ướp sườn.",
@@ -1964,7 +1964,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+t%C3%B4m+rim"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9w",
+    "videoUrl": null,
     "prepItems": [
       "Tôm tươi cắt bỏ râu và đuôi, rửa sạch ráo nước.",
       "Hành tím tỏi băm nhỏ; hành lá cắt nhỏ."
@@ -2019,7 +2019,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+%C4%91%E1%BA%ADu+h%C5%A9+s%E1%BB%91t+c%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9x",
+    "videoUrl": null,
     "prepItems": [
       "Đậu hũ cắt khối vuông nhỏ vừa ăn.",
       "Cà chua băm nhỏ hoặc thái hạt lựu để làm nước sốt.",
@@ -2081,7 +2081,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+rau+c%E1%BB%A7+x%C3%A0o"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9y",
+    "videoUrl": null,
     "prepItems": [
       "Bông cải xanh (súp lơ) cắt miếng vừa ăn ngâm nước muối rửa sạch.",
       "Cà rốt gọt vỏ thái lát mỏng hoa văn; nấm tươi cắt đôi.",
@@ -2131,7 +2131,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+b%C3%B2+n%C3%A9"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H9z",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò thái lát mỏng vừa ăn, dùng chày đập nhẹ cho thịt bò mềm mại.",
       "Hành tây thái múi cau mỏng.",
@@ -2181,7 +2181,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H10",
+    "videoUrl": null,
     "prepItems": [
       "Thịt ba chỉ hoặc nạc vai rửa sạch thái lát mỏng.",
       "Sả, tỏi, hành tím băm thật nhỏ nhuyễn."
@@ -2230,7 +2230,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+ch%E1%BA%A3"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H11",
+    "videoUrl": null,
     "prepItems": [
       "Thịt ba chỉ thái mỏng; thịt nạc vai xay nhuyễn để làm chả viên.",
       "Đu đủ xanh và cà rốt thái mỏng làm đồ chua ngâm nước muối.",
@@ -2280,7 +2280,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+%C4%91%E1%BA%ADu"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H12",
+    "videoUrl": null,
     "prepItems": [
       "Đậu hũ rửa sạch thấm thật khô nước, cắt khối vuông vừa ăn.",
       "Rau kinh giới, tía tô, dưa leo rửa sạch ráo nước.",
@@ -2330,7 +2330,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H13",
+    "videoUrl": null,
     "prepItems": [
       "Thịt heo nạc vai thái lát mỏng vừa ăn.",
       "Đậu phộng rang vàng giã nhỏ; hành lá cắt nhỏ làm mỡ hành.",
@@ -2392,7 +2392,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+b%C3%B2+x%C3%A0o"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H14",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò thái mỏng ướp tỏi băm tiêu hạt nêm.",
       "Sả băm nhỏ; hành tây cắt múi cau mỏng.",
@@ -2442,7 +2442,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+t%C3%B4m+n%C6%B0%E1%BB%9Bng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H15",
+    "videoUrl": null,
     "prepItems": [
       "Tôm tươi cắt râu, rửa sạch rút chỉ đen, để ráo nước xiên vào que tre.",
       "Rau sống thơm ngò dưa leo cắt nhỏ.",
@@ -2492,7 +2492,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+ch%E1%BA%A3+gi%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H16",
+    "videoUrl": null,
     "prepItems": [
       "Cuốn chả giò nhân thịt bằm nấm mèo khoai môn bào sợi, cuốn chặt tay bằng bánh tráng bía.",
       "Rau xà lách thơm ngò dưa leo thái nhỏ.",
@@ -2554,7 +2554,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=M%C3%AC+x%C3%A0o+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H17",
+    "videoUrl": null,
     "prepItems": [
       "Trần mì trứng qua nước sôi 1 phút rồi vớt ra xả nước lạnh trộn chút dầu ăn để không dính.",
       "Thịt bò thái mỏng ướp tỏi băm tiêu hạt nêm.",
@@ -2610,7 +2610,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=M%C3%AC+x%C3%A0o+h%E1%BA%A3i+s%E1%BA%A3n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H18",
+    "videoUrl": null,
     "prepItems": [
       "Luộc sơ và xả lạnh mì trứng để giữ sợi dai.",
       "Tôm lột vỏ; mực cắt miếng khía hoa vẽ bắt mắt.",
@@ -2665,7 +2665,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=H%E1%BB%A7+ti%E1%BA%BFu+x%C3%A0o"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H19",
+    "videoUrl": null,
     "prepItems": [
       "Trần sơ sợi hủ tiếu mềm ráo nước xóc chút dầu ăn cho tơi.",
       "Thịt heo thái mỏng; tôm bóc vỏ rút chỉ.",
@@ -2715,7 +2715,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=H%E1%BB%A7+ti%E1%BA%BFu+Nam+Vang"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H20",
+    "videoUrl": null,
     "prepItems": [
       "Hầm xương heo lấy nước dùng trong vắt ngọt xương.",
       "Luộc chín tôm, trứng cút bóc vỏ; thịt heo xá xíu thái mỏng.",
@@ -2776,7 +2776,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Nui+x%C3%A0o+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H21",
+    "videoUrl": null,
     "prepItems": [
       "Luộc nui qua nước sôi 8-10 phút cho nở mềm dai rồi xả nước lạnh trộn chút dầu ăn.",
       "Thịt bò thái mỏng hoặc bằm nhỏ ướp tỏi băm tiêu hạt nêm.",
@@ -2826,7 +2826,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+n%C6%B0%E1%BB%9Bc+l%C3%A8o+c%C3%A1"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H22",
+    "videoUrl": null,
     "prepItems": [
       "Cá lóc làm sạch lọc lấy phi lê thái lát dày; xương cá giữ lại ninh lấy nước dùng.",
       "Sả đập dập sả cây; nghệ giã nhỏ lọc nước cốt.",
@@ -2887,7 +2887,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+x%C3%A0o+rau+c%E1%BB%A7"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H23",
+    "videoUrl": null,
     "prepItems": [
       "Bún gạo ngâm nước ấm cho mềm ráo nước trộn chút dầu ăn.",
       "Đậu hũ chiên vàng thái sợi mỏng.",
@@ -2937,7 +2937,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+kho+t%C3%A0u"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H24",
+    "videoUrl": null,
     "prepItems": [
       "Thịt ba chỉ thái miếng vuông dày 3cm chần qua nước sôi gừng hành tím rồi rửa ráo.",
       "Tỏi hành băm nhỏ giã nhuyễn."
@@ -2986,7 +2986,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C3%A1+kho+t%E1%BB%99"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H25",
+    "videoUrl": null,
     "prepItems": [
       "Cá lóc cắt khoanh rửa muối và giấm khử nhớt tanh để ráo nước.",
       "Hành tím tỏi ớt băm nhỏ."
@@ -3035,7 +3035,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B2+kho"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H26",
+    "videoUrl": null,
     "prepItems": [
       "Thịt nạm bò có gân thái miếng vuông dày chần nước sôi gừng đập giập khử mùi hôi.",
       "Cà rốt gọt vỏ cắt khoanh khoanh tỉa hoa dày.",
@@ -3085,7 +3085,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%C3%A0+kho+g%E1%BB%ABng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H55",
+    "videoUrl": null,
     "prepItems": [
       "Thịt gà ta rửa sạch với muối, chặt miếng vừa ăn để ráo.",
       "Gừng tươi cạo vỏ thái sợi mỏng.",
@@ -3141,7 +3141,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=S%C6%B0%E1%BB%9Dn+kho+chua+ng%E1%BB%8Dt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H56",
+    "videoUrl": null,
     "prepItems": [
       "Sườn non chặt khúc vừa ăn, chần qua nước sôi rồi rửa sạch để ráo.",
       "Hành tây, ớt chuông cắt miếng vuông.",
@@ -3197,7 +3197,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=T%C3%B4m+rim+m%E1%BA%B7n+ng%E1%BB%8Dt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H57",
+    "videoUrl": null,
     "prepItems": [
       "Tôm cắt bỏ râu và đuôi, rửa sạch rút chỉ đen, để ráo.",
       "Hành tím, tỏi băm nhỏ.",
@@ -3247,7 +3247,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C3%A1+kho+ti%C3%AAu"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H58",
+    "videoUrl": null,
     "prepItems": [
       "Cá lóc cắt khúc vừa ăn, chà xát muối giấm khử nhớt tanh rồi rửa sạch.",
       "Hành tím tỏi băm nhỏ.",
@@ -3303,7 +3303,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+kho+s%E1%BA%A3+%E1%BB%9Bt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H59",
+    "videoUrl": null,
     "prepItems": [
       "Thịt ba chỉ rửa sạch thái miếng mỏng vừa ăn.",
       "Sả, ớt băm nhỏ nhuyễn.",
@@ -3361,7 +3361,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+h%C5%A9+kho+n%E1%BA%A5m"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H60",
+    "videoUrl": null,
     "prepItems": [
       "Đậu hũ thái miếng vuông chiên vàng giòn các mặt.",
       "Nấm đùi gà, nấm đông cô ngâm nước muối loãng rửa sạch cắt miếng vừa ăn.",
@@ -3417,7 +3417,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B2+kho+qu%E1%BA%BF+h%E1%BB%93i"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H61",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò nạm thái miếng vuông vừa ăn, chần nước sôi gừng khử mùi hôi.",
       "Cà rốt tỉa hoa thái khúc dày.",
@@ -3467,7 +3467,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%C3%A0+kho+n%C6%B0%E1%BB%9Bc+d%E1%BB%ABa"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H62",
+    "videoUrl": null,
     "prepItems": [
       "Thịt gà ta chặt miếng vừa ăn, rửa sạch để ráo.",
       "Tỏi băm, hành tím băm.",
@@ -3525,7 +3525,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%E1%BB%99t+chi%C3%AAn"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H63",
+    "videoUrl": null,
     "prepItems": [
       "Bột gạo pha năng hấp chín, cắt miếng vuông vừa ăn.",
       "Đu đủ xanh bào sợi mỏng làm đồ chua chấm.",
@@ -3583,7 +3583,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+x%C3%A8o"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H64",
+    "videoUrl": null,
     "prepItems": [
       "Bột bánh xèo pha nước cốt dừa, bột nghệ và hành lá cắt nhỏ.",
       "Thịt ba chỉ thái mỏng; tôm rửa sạch lột vỏ.",
@@ -3640,7 +3640,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+kh%E1%BB%8Dt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H65",
+    "videoUrl": null,
     "prepItems": [
       "Bột gạo pha nước cốt dừa, bột nghệ cho có màu vàng và hành lá.",
       "Tôm tươi bóc vỏ bỏ đầu.",
@@ -3697,7 +3697,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Ch%E1%BA%A3+gi%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H66",
+    "videoUrl": null,
     "prepItems": [
       "Trộn nhân: thịt heo bằm, khoai môn bào sợi, miến và nấm mèo ngâm nở thái nhỏ, trứng gà.",
       "Bánh tráng bía cuốn chả giò.",
@@ -3747,7 +3747,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B2+l%C3%A1+l%E1%BB%91t"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H67",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò băm nhỏ trộn chút mỡ heo cho béo.",
       "Lá lốt rửa sạch từng lá lau thật khô ráo.",
@@ -3797,7 +3797,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B2+n%C3%A9"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H68",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò thăn thái lát mỏng, đập dập nhẹ cho mềm thớ.",
       "Pate gan heo lạt; trứng gà tươi.",
@@ -3847,7 +3847,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B2+l%C3%BAc+l%E1%BA%AFc"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H69",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò thăn thái khối vuông hình quân cờ vừa ăn.",
       "Ớt chuông, hành tây cắt miếng vuông tương đương bò.",
@@ -3897,7 +3897,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Tr%E1%BB%A9ng+chi%C3%AAn"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H70",
+    "videoUrl": null,
     "prepItems": [
       "Trứng gà hoặc trứng vịt đập ra tô.",
       "Hành lá cắt nhỏ nhuyễn; hành tím băm nhỏ."
@@ -3973,7 +3973,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Tr%E1%BB%A9ng+chi%C3%AAn+c%C3%A0+chua"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=wX-yPifvP5M"
+    "videoUrl": null
   },
   {
     "slug": "rau-muong-xao-toi",
@@ -4021,7 +4021,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Rau+mu%E1%BB%91ng+x%C3%A0o+t%E1%BB%8Fi"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H71",
+    "videoUrl": null,
     "prepItems": [
       "Rau muống nhặt bỏ lá úa và gốc già, ngắt khúc rửa sạch để ráo.",
       "Tỏi đập dập và tỏi băm nhỏ thật nhiều."
@@ -4090,7 +4090,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%E1%BA%A3i+th%C3%ACa+x%C3%A0o+n%E1%BA%A5m"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H72",
+    "videoUrl": null,
     "prepItems": [
       "Cải thìa chẻ đôi rửa sạch cặn cát dơ.",
       "Nấm đùi gà nấm đông cô thái lát vừa ngâm nước muối rửa sạch.",
@@ -4169,7 +4169,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B4ng+c%E1%BA%A3i+x%C3%A0o+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=kY31z46D4c8"
+    "videoUrl": null
   },
   {
     "slug": "ca-tim-xao-toi",
@@ -4215,7 +4215,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C3%A0+t%C3%ADm+x%C3%A0o+t%E1%BB%8Fi"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H73",
+    "videoUrl": null,
     "prepItems": [
       "Cà tím cắt miếng vừa ăn ngâm nước muối loãng để không bị thâm đen đen.",
       "Tỏi băm thật nhỏ nhuyễn sả cây thái mỏng."
@@ -4281,7 +4281,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+que+x%C3%A0o+th%E1%BB%8Bt+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H74",
+    "videoUrl": null,
     "prepItems": [
       "Đậu que tước xơ bẻ đôi rửa sạch để ráo.",
       "Thịt bò thái mỏng ướp tỏi băm tiêu hạt nêm.",
@@ -4342,7 +4342,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=T%C3%B4m+x%C3%A0o+rau+c%E1%BB%A7"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H75",
+    "videoUrl": null,
     "prepItems": [
       "Tôm tươi bóc vỏ rút chỉ rửa sạch để ráo.",
       "Bông cải xanh, súp lơ trắng cắt miếng ngâm muối rửa sạch; cà rốt tỉa hoa thái mỏng.",
@@ -4403,7 +4403,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=M%E1%BB%B1c+x%C3%A0o+sa+t%E1%BA%BF"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H76",
+    "videoUrl": null,
     "prepItems": [
       "Mực làm sạch cắt miếng khía bông hoa vẽ đẹp mắt.",
       "Sả, tỏi băm nhuyễn; hành tây thái múi cau mỏng.",
@@ -4465,7 +4465,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%C3%A0+x%C3%A0o+s%E1%BA%A3+%E1%BB%9Bt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H77",
+    "videoUrl": null,
     "prepItems": [
       "Thịt gà rửa sạch chặt miếng nhỏ vừa ăn để ráo nước.",
       "Sả cây băm nhỏ nhuyễn; tỏi ớt băm nhỏ."
@@ -4520,7 +4520,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+rau+c%E1%BB%A7"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H78",
+    "videoUrl": null,
     "prepItems": [
       "Cơm nguội bóp tơi hạt cơm để tủ lạnh cho khô ráo.",
       "Cà rốt, bông cải xanh cắt hạt lựu nhỏ chần sơ nước sôi.",
@@ -4577,7 +4577,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Khoai+lang+chi%C3%AAn"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H79",
+    "videoUrl": null,
     "prepItems": [
       "Khoai lang gọt vỏ thái thanh dài vừa ăn ngâm nước muối loãng khử nhựa đắng.",
       "Pha bột chiên giòn sệt vừa phải thêm mè đen mè trắng.",
@@ -4634,7 +4634,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Khoai+t%C3%A2y+chi%C3%AAn"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H80",
+    "videoUrl": null,
     "prepItems": [
       "Khoai tây gọt vỏ thái thanh dài vừa ăn ngâm nước muối loãng xả sạch nhựa.",
       "Luộc sơ khoai trong nước sôi có chút muối 2 phút vớt ra ngâm nước đá lạnh ráo ráo.",
@@ -4691,7 +4691,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+h%C5%A9+chi%C3%AAn+s%E1%BA%A3"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H81",
+    "videoUrl": null,
     "prepItems": [
       "Đậu hũ trắng cắt miếng vuông vừa ăn rửa sạch thấm khô nước khía đường nhẹ trên mặt.",
       "Sả băm nhỏ ớt hiểm băm nhuyễn trộn đều gia vị."
@@ -4749,7 +4749,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%E1%BB%8Fi+cu%E1%BB%91n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H86",
+    "videoUrl": null,
     "prepItems": [
       "Tôm luộc chín lột vỏ chẻ đôi; thịt ba chỉ luộc chín thái mỏng.",
       "Rau hẹ cắt khúc; xà lách, rau thơm rửa sạch để ráo.",
@@ -4807,7 +4807,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+cu%E1%BB%91n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H87",
+    "videoUrl": null,
     "prepItems": [
       "Bột bánh cuốn pha nước ấm, chút dầu ăn để nghỉ 30 phút.",
       "Xào nhân: thịt heo băm nhỏ xào với hành tím và nấm mèo cắt nhỏ.",
@@ -4856,7 +4856,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+ba+ch%E1%BB%89+h%E1%BA%A5p+khoai+m%C3%B4n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H88",
+    "videoUrl": null,
     "prepItems": [
       "Thịt ba chỉ luộc sơ thái lát dày 1cm.",
       "Khoai môn gọt vỏ thái lát có kích thước tương đương thịt, chiên sơ vàng bề mặt.",
@@ -4912,7 +4912,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C3%A1+h%E1%BA%A5p+g%E1%BB%ABng+h%C3%A0nh"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H89",
+    "videoUrl": null,
     "prepItems": [
       "Cá làm sạch khía chéo thân cá để ngấm gia vị.",
       "Gừng tươi thái sợi mỏng; hành lá phần đầu trắng chẻ sợi ngâm đá.",
@@ -4962,7 +4962,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%C3%A0+h%E1%BA%A5p+s%E1%BA%A3"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H90",
+    "videoUrl": null,
     "prepItems": [
       "Gà ta làm sạch, xoa bóp muối rượu gừng khử mùi hôi.",
       "Sả cây đập dập cắt khúc; lá chanh thái sợi.",
@@ -5019,7 +5019,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=T%C3%B4m+h%E1%BA%A5p+s%E1%BA%A3"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H91",
+    "videoUrl": null,
     "prepItems": [
       "Tôm tươi cắt bỏ râu rửa sạch ráo nước.",
       "Sả cây đập dập cắt khúc.",
@@ -5075,7 +5075,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Rau+c%E1%BB%A7+h%E1%BA%A5p"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H92",
+    "videoUrl": null,
     "prepItems": [
       "Cà rốt gọt vỏ thái lát; bông cải xanh thái miếng vừa ăn.",
       "Bầu gọt vỏ cắt khoanh; đậu bắp cắt bỏ đầu đuôi.",
@@ -5122,7 +5122,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Cu%E1%BB%91n+b%C3%A1nh+tr%C3%A1ng+th%E1%BB%8Bt+heo"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H93",
+    "videoUrl": null,
     "prepItems": [
       "Thịt ba chỉ heo ngon luộc chín xắt lát mỏng dài.",
       "Rau sống xà lách, ngò rí, tía tô, lá cóc, dưa leo cắt lát mỏng dài.",
@@ -5169,7 +5169,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Cu%E1%BB%91n+rau+c%E1%BB%A7+ch%E1%BA%A5m+n%C6%B0%E1%BB%9Bc+m%E1%BA%AFm"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H94",
+    "videoUrl": null,
     "prepItems": [
       "Bánh tráng cuốn mềm.",
       "Đậu hũ chiên vàng thái sợi mỏng.",
@@ -5216,7 +5216,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Th%E1%BB%8Bt+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H95",
+    "videoUrl": null,
     "prepItems": [
       "Thịt nạc vai heo rửa sạch thái lát vừa ăn đập nhẹ cho mềm.",
       "Sả, tỏi, hành tím băm thật nhỏ nhuyễn."
@@ -5265,7 +5265,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=S%C6%B0%E1%BB%9Dn+n%C6%B0%E1%BB%9Bng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H96",
+    "videoUrl": null,
     "prepItems": [
       "Sườn non chặt khúc dài vừa ăn chần sơ nước sôi, rửa sạch lau khô.",
       "Tỏi, hành tím băm nhuyễn vắt lấy nước cốt ướp."
@@ -5314,7 +5314,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%B2+n%C6%B0%E1%BB%9Bng+l%C3%A1+l%E1%BB%91t"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H97",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò băm nhỏ trộn chút mỡ heo cho béo ngậy.",
       "Lá lốt rửa sạch lau thật khô ráo.",
@@ -5372,7 +5372,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=T%C3%B4m+n%C6%B0%E1%BB%9Bng+mu%E1%BB%91i+%E1%BB%9Bt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H98",
+    "videoUrl": null,
     "prepItems": [
       "Tôm tươi to rửa sạch rút chỉ đen để nguyên vỏ ráo nước, xiên que tre dọc thân.",
       "Ớt hiểm giã nhuyễn với muối hột."
@@ -5426,7 +5426,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=M%E1%BB%B1c+n%C6%B0%E1%BB%9Bng+sa+t%E1%BA%BF"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H99",
+    "videoUrl": null,
     "prepItems": [
       "Mực làm sạch cắt miếng khía bông hoa vẽ đẹp mắt.",
       "Sả, tỏi băm nhuyễn; hành tím băm."
@@ -5475,7 +5475,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C3%A1+n%C6%B0%E1%BB%9Bng+gi%E1%BA%A5y+b%E1%BA%A1c"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H100",
+    "videoUrl": null,
     "prepItems": [
       "Cá làm sạch đánh vảy khía chéo thân cá ráo nước.",
       "Sả băm nhỏ; gừng tỏi hành tím băm nhuyễn.",
@@ -5525,7 +5525,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%C3%A0+n%C6%B0%E1%BB%9Bng+s%E1%BA%A3"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H101",
+    "videoUrl": null,
     "prepItems": [
       "Đùi gà rửa sạch khía vài đường sâu cho thấm vị.",
       "Sả, tỏi băm nhuyễn thật mịn nhuyễn.",
@@ -5583,7 +5583,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Rau+c%E1%BB%A7+n%C6%B0%E1%BB%9Bng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H102",
+    "videoUrl": null,
     "prepItems": [
       "Bí ngòi, cà tím cắt khoanh mỏng vừa.",
       "Ớt chuông cắt miếng vuông; bắp ngô cắt khúc dài 3cm.",
@@ -5641,7 +5641,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%E1%BA%AFp+x%C3%A0o+m%E1%BB%A1+h%C3%A0nh"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H103",
+    "videoUrl": null,
     "aliases": [
       "Bắp nướng hành mỡ",
       "bap nuong hanh mo"
@@ -5706,7 +5706,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=%C4%90%E1%BA%ADu+h%C5%A9+s%E1%BB%91t+c%C3%A0+chua"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H104",
+    "videoUrl": null,
     "prepItems": [
       "Đậu hũ cắt vuông vừa chiên vàng giòn ráo dầu.",
       "Cà chua thái hạt lựu mềm nhuyễn.",
@@ -5768,7 +5768,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Tempeh+x%C3%A0o+s%E1%BA%A3+%E1%BB%9Bt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H105",
+    "videoUrl": null,
     "prepItems": [
       "Tempeh cắt khối vuông nhỏ chiên sơ vàng các mặt.",
       "Sả, ớt hiểm băm nhuyễn nhuyễn tỏi băm."
@@ -5824,7 +5824,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Rau+c%E1%BB%A7+lu%E1%BB%99c+ch%E1%BA%A5m+n%C6%B0%E1%BB%9Bc+m%E1%BA%AFm"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H106",
+    "videoUrl": null,
     "prepItems": [
       "Cải thìa nhặt rửa sạch; cà rốt thái lát mỏng.",
       "Đậu bắp đậu que tước xơ cắt đôi; su su gọt vỏ thái múi dày."
@@ -5878,7 +5878,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Canh+rau+c%E1%BB%A7"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H107",
+    "videoUrl": null,
     "aliases": [
       "Canh nấm rau củ",
       "canh nam rau cu"
@@ -5930,7 +5930,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C6%A1m+chi%C3%AAn+chay"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H108",
+    "videoUrl": null,
     "prepItems": [
       "Cơm nguội bóp tơi hạt cơm ráo.",
       "Cà rốt, bắp ngọt, đậu Hà Lan cắt hạt lựu luộc sơ.",
@@ -5979,7 +5979,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%BAn+rau+c%E1%BB%A7"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H109",
+    "videoUrl": null,
     "prepItems": [
       "Nấu nước dùng từ củ cải, cà rốt, lê cho ngọt trong.",
       "Nấm đùi gà nấm rơm rửa ngâm muối cắt nhỏ.",
@@ -6039,7 +6039,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%E1%BA%AFp+c%E1%BA%A3i+x%C3%A0o+t%E1%BB%8Fi"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H110",
+    "videoUrl": null,
     "prepItems": [
       "Bắp cải trắng thái sợi mỏng dài rửa sạch để ráo nước.",
       "Tỏi đập dập và tỏi băm thật nhiều."
@@ -6096,7 +6096,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%AD+%C4%91%E1%BB%8F+h%E1%BA%A7m+n%E1%BA%A5m"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H111",
+    "videoUrl": null,
     "prepItems": [
       "Bí đỏ gọt vỏ thái miếng vuông lớn.",
       "Nấm đông cô ngâm nở rửa sạch khía nhẹ đầu nấm.",
@@ -6153,7 +6153,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Khoai+lang+h%E1%BA%A5p"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H112",
+    "videoUrl": null,
     "prepItems": [
       "Khoai lang chọn củ thon đều rửa sạch bụi đất cắt bớt hai đầu.",
       "Chuẩn bị xửng hấp nước sôi nấu."
@@ -6208,7 +6208,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+b%C3%A8o"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H113",
+    "videoUrl": null,
     "prepItems": [
       "Bột gạo và bột năng pha nước ấm để nghỉ 30 phút.",
       "Nhân tôm chấy: tôm tươi luộc chín giã nhuyễn rồi sấy khô.",
@@ -6266,7 +6266,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H114",
+    "videoUrl": null,
     "prepItems": [
       "Bột gạo trộn nước cốt dừa và men cơm rượu ủ ấm 6-8 tiếng.",
       "Chuẩn bị khuôn hấp quét dầu mỏng."
@@ -6323,7 +6323,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+b%E1%BB%99t+l%E1%BB%8Dc"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H115",
+    "videoUrl": null,
     "prepItems": [
       "Bột năng nhào với nước sôi nóng tạo khối dẻo mịn.",
       "Nhân bánh: tôm nhỏ rim mặn ngọt cùng thịt ba chỉ thái hạt lựu."
@@ -6381,7 +6381,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+c%C4%83n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H116",
+    "videoUrl": null,
     "prepItems": [
       "Bột gạo pha nước ấm, cơm nguội xay nhuyễn giúp bánh giòn xốp.",
       "Chuẩn bị khuôn đất nung chuyên dụng.",
@@ -6437,7 +6437,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+canh"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H117",
+    "videoUrl": null,
     "prepItems": [
       "Sợi bánh canh bột gạo hoặc bột lọc tươi.",
       "Thịt cua luộc gỡ thịt xào thơm.",
@@ -6496,7 +6496,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+ch%C6%B0ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H118",
+    "videoUrl": null,
     "prepItems": [
       "Gạo nếp cái hoa vàng ngâm mềm vo sạch để ráo xóc muối.",
       "Đậu xanh không vỏ hấp chín giã nhuyễn nắm thành viên.",
@@ -6554,7 +6554,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+c%E1%BB%91ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H119",
+    "videoUrl": null,
     "prepItems": [
       "Bột gạo pha bột đậu nành ngâm nước xay mịn để nghỉ.",
       "Đậu xanh nguyên hạt luộc chín vừa.",
@@ -6613,7 +6613,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+da+l%E1%BB%A3n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H120",
+    "videoUrl": null,
     "prepItems": [
       "Nước cốt lá dứa thơm xay lọc kỹ màu xanh xanh.",
       "Đậu xanh hấp chín giã nhuyễn mịn màng màu vàng.",
@@ -6671,7 +6671,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+%C4%91%C3%BAc"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H121",
+    "videoUrl": null,
     "prepItems": [
       "Bột gạo bột năng hòa nước vôi trong để lắng.",
       "Nhân thịt băm xào nấm mèo hành tím khô giòn."
@@ -6728,7 +6728,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+t%C3%A9t"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H122",
+    "videoUrl": null,
     "prepItems": [
       "Gạo nếp ngâm qua đêm vo sạch để ráo xóc muối trộn nước cốt dừa xào sơ.",
       "Nhân bánh: đậu xanh hấp chín tán nhuyễn bọc quanh mỡ heo ướp tiêu đường muối.",
@@ -6786,7 +6786,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+tr%C3%A1ng+tr%E1%BB%99n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H123",
+    "videoUrl": null,
     "prepItems": [
       "Bánh tráng cắt sợi vừa ăn.",
       "Trứng cút luộc chín bóc vỏ; khô bò khô mực xé sợi sợi.",
@@ -6844,7 +6844,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=B%C3%A1nh+tr%C3%A1ng+cu%E1%BB%91n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H124",
+    "videoUrl": null,
     "prepItems": [
       "Bánh tráng đỏ hoặc bánh tráng dẻo mềm.",
       "Khô bò xé nhỏ; trứng cút luộc chín cắt đôi.",
@@ -6901,7 +6901,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Donut+m%C3%A8+r%E1%BB%97ng+ru%E1%BB%99t"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H125",
+    "videoUrl": null,
     "prepItems": [
       "Bột mì trộn men nở, đường và nước ấm nhào dẻo mịn bột nghỉ 1 tiếng.",
       "Hạt mè (vừng) trắng rang thơm sẵn khay."
@@ -6951,7 +6951,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=X%C3%B4i+m%E1%BA%B7n"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H126",
+    "videoUrl": null,
     "prepItems": [
       "Gạo nếp ngâm mềm qua đêm vo sạch để ráo hấp chín xôi dẻo.",
       "Lạp xưởng thái lát mỏng chiên chín vàng.",
@@ -7002,7 +7002,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=X%C3%B4i+%C4%91%E1%BA%ADu"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H127",
+    "videoUrl": null,
     "prepItems": [
       "Gạo nếp cái hoa vàng ngâm qua đêm vo sạch.",
       "Đậu xanh đãi vỏ (hoặc đậu phộng luộc chín mềm).",
@@ -7052,7 +7052,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=X%C3%B4i+g%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H128",
+    "videoUrl": null,
     "prepItems": [
       "Gạo nếp ngâm mềm hơ qua xóc muối hột.",
       "Thịt đùi gà ta luộc chín ngọt róc thịt xé sợi nhỏ dai giòn.",
@@ -7108,7 +7108,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%E1%BB%8Fi+cu%E1%BB%91n+t%C3%B4m+th%E1%BB%8Bt"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H129",
+    "videoUrl": null,
     "prepItems": [
       "Tôm tươi luộc chín lột vỏ chẻ đôi dọc thân; thịt heo ba chỉ luộc mỏng.",
       "Bún tươi dai dẻo.",
@@ -7166,7 +7166,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%E1%BB%8Fi+b%E1%BA%AFp+c%E1%BA%A3i"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H130",
+    "videoUrl": null,
     "prepItems": [
       "Bắp cải trắng thái sợi thật mỏng, ngâm nước đá lạnh vắt ráo ráo.",
       "Thịt đùi gà luộc xé sợi mỏng dai ngon.",
@@ -7228,7 +7228,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%E1%BB%8Fi+d%C6%B0a+leo+c%C3%A0+r%E1%BB%91t"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H131",
+    "videoUrl": null,
     "prepItems": [
       "Dưa leo bỏ ruột thái lát chéo dài mỏng vừa.",
       "Cà rốt bào sợi sợi mỏng.",
@@ -7285,7 +7285,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Salad+rau+c%E1%BB%A7"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H132",
+    "videoUrl": null,
     "prepItems": [
       "Xà lách rửa sạch ngắt khúc vừa ăn.",
       "Cà chua bi bổ đôi; dưa leo thái lát khoanh tròn.",
@@ -7333,7 +7333,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Salad+b%C3%B2"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H133",
+    "videoUrl": null,
     "prepItems": [
       "Thịt bò thăn mềm thái lát mỏng ướp tỏi tiêu xì dầu.",
       "Rau xà lách, hành tây xắt mỏng ngâm đá lạnh khử hăng, cà chua bi chẻ đôi."
@@ -7388,7 +7388,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=G%E1%BB%8Fi+xo%C3%A0i+t%C3%B4m+kh%C3%B4"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H134",
+    "videoUrl": null,
     "prepItems": [
       "Xoài xanh bào sợi mỏng ngâm đá lạnh giữ giòn.",
       "Tôm khô loại ngon ngâm nước ấm cho nở mềm giã dập nhẹ xào thơm.",
@@ -7437,7 +7437,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Salad+tr%E1%BB%A9ng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H135",
+    "videoUrl": null,
     "prepItems": [
       "Trứng gà luộc lòng đào cắt lát mỏng dài tròn.",
       "Xà lách xanh giòn, cà chua bi bổ đôi, dưa leo.",
@@ -7493,7 +7493,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Salad+khoai+t%C3%A2y"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H136",
+    "videoUrl": null,
     "prepItems": [
       "Khoai tây gọt vỏ luộc hấp chín mềm bở tơi.",
       "Dưa leo thái lát mỏng bóp muối vắt kiệt nước.",
@@ -7549,7 +7549,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=Ch%C3%A1o+g%C3%A0"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H137",
+    "videoUrl": null,
     "prepItems": [
       "Gạo tẻ trộn gạo nếp rang thơm ngâm mềm gạo vỡ hạt.",
       "Thịt gà ta luộc chín ngọt róc thịt xé sợi nhỏ dai giòn.",
@@ -7607,7 +7607,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=T%C3%B4m+rim"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H138",
+    "videoUrl": null,
     "prepItems": [
       "Tôm tươi to làm sạch cắt râu rút chỉ lưng.",
       "Hành tím tỏi băm nhuyễn mịn nhuyễn."
@@ -7664,7 +7664,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=S%C3%BAp+cua"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H141",
+    "videoUrl": null,
     "prepItems": [
       "Xương gà ninh lấy nước dùng ngọt thanh.",
       "Thịt cua hấp gỡ xương sạch sẽ.",
@@ -7716,7 +7716,7 @@
     "sourceUrls": [
       "https://monngonmoingay.com/?s=C%C3%A1+h%E1%BA%A5p+g%E1%BB%ABng"
     ],
-    "videoUrl": "https://www.youtube.com/watch?v=F5D4X3R9H140",
+    "videoUrl": null,
     "prepItems": [
       "Cá chẽm (hoặc cá diêu hồng cá điêu hồng) làm sạch khía xiên.",
       "Gừng tươi xắt sợi mỏng tơ nhiều.",

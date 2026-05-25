@@ -576,7 +576,7 @@ public class DatabaseSeederTests
         Assert.Equal("recipe-images/v1/thumb/com-tam-suon.webp", recipe.ImageUrl);
         Assert.NotNull(recipe.EnhancedAt);
         Assert.Contains("monngonmoingay.com", recipe.SourceUrlsJson);
-        Assert.Equal("https://www.youtube.com/watch?v=F5D4X3R9H9m", recipe.VideoUrl);
+        Assert.Null(recipe.VideoUrl);
         Assert.True(recipe.RecipeIngredients.Count >= 2);
     }
 

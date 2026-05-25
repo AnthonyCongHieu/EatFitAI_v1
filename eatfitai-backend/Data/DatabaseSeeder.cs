@@ -1205,9 +1205,18 @@ namespace EatFitAI.API.Data
 
         private static bool IsPlausibleYoutubeVideoId(string? videoId)
         {
-            return !string.IsNullOrWhiteSpace(videoId)
-                && videoId.Length >= 3
-                && videoId.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-');
+            if (string.IsNullOrWhiteSpace(videoId) || videoId.Length < 3)
+            {
+                return false;
+            }
+
+            if (videoId.StartsWith("F5D4X3R9", StringComparison.OrdinalIgnoreCase) ||
+                videoId.StartsWith("F5E4X3R9", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return videoId.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-');
         }
 
         private static RecipeIngredientSeed I(decimal grams, params string[] keys) => new(keys, grams);
