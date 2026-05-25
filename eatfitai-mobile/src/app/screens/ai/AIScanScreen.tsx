@@ -62,6 +62,7 @@ import {
   getDefaultVisionGrams,
   hasVisionNutritionEstimate,
   isDisplayableVisionResultItem,
+  hasUsableVisionNutrition,
 } from '../../../utils/visionReview';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
@@ -161,6 +162,7 @@ const AIScanScreen: React.FC = () => {
   const [resultGrams, setResultGrams] = useState(100);
   const [showGramModal, setShowGramModal] = useState(false);
   const [gramInputValue, setGramInputValue] = useState('100');
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
   const addIngredient = useIngredientBasketStore((s) => s.addIngredient);
   const barcodeLockRef = useRef(false);
@@ -327,6 +329,19 @@ const AIScanScreen: React.FC = () => {
           (a, b) => b.confidence - a.confidence,
         )[0];
         setResultGrams(getDefaultVisionGrams(topDetectedItem));
+
+        const distinct = getDistinctVisionResultItems(filteredItems);
+        const initialSelected: number[] = [];
+        distinct.forEach((item, index) => {
+          if (item.isMatched && hasVisionNutritionEstimate(item)) {
+            initialSelected.push(index);
+          }
+        });
+        if (initialSelected.length === 0 && distinct.length > 0) {
+          initialSelected.push(0);
+        }
+        setSelectedIndices(initialSelected);
+
         setMode('results');
         trackEvent('ai_scan_result', {
           flow: 'ai_scan',
@@ -555,6 +570,7 @@ const AIScanScreen: React.FC = () => {
     setResultNotice(null);
     setShowImagePreview(false);
     setResultGrams(100);
+    setSelectedIndices([]);
     setMode('camera');
   }, []);
 
@@ -562,16 +578,29 @@ const AIScanScreen: React.FC = () => {
     if (!capturedUri || !detectionResult) return;
 
     const distinctItems = getDistinctVisionResultItems(detectionResult.items);
+    const itemsWithSelection = distinctItems.map((item, index) => ({
+      ...item,
+      selected: selectedIndices.includes(index),
+    }));
+
+    if (selectedIndices.length === 0) {
+      showAppToast({
+        type: 'info',
+        text1: 'Chưa chọn món nào',
+        text2: 'Vui lòng chọn ít nhất 1 món trước khi lưu.',
+      });
+      return;
+    }
 
     navigation.navigate('AddMealFromVision', {
       imageUri: capturedUri,
       result: {
         ...detectionResult,
-        items: distinctItems,
+        items: itemsWithSelection,
       },
       initialGrams: resultGrams,
     });
-  }, [capturedUri, detectionResult, navigation, resultGrams]);
+  }, [capturedUri, detectionResult, navigation, resultGrams, selectedIndices]);
 
   const handleAddToBasket = useCallback(
     (items: MappedFoodItem[]) => {
@@ -637,17 +666,43 @@ const AIScanScreen: React.FC = () => {
     : [];
   const resultListItems = distinctResultItems;
   const hasDetectedItems = distinctResultItems.length > 0;
-  const hasMultipleDetectedItems = distinctResultItems.length > 1;
-  const topItem = distinctResultItems[0] ?? null;
+
+  // Selection states
+  const selectedItems = distinctResultItems.filter((_, idx) => selectedIndices.includes(idx));
+  const hasMultipleDetectedItems = selectedItems.length > 1;
+  const topItem = selectedItems[0] ?? null;
   const processingText =
     AI_PROCESSING_MESSAGES[processingMessageIndex] ?? AI_PROCESSING_MESSAGES[0]!;
 
-  const mealMacroTotals = calculateVisionDefaultMacroTotals(distinctResultItems);
+  const mealMacroTotals = calculateVisionDefaultMacroTotals(selectedItems);
   const useMealMacroTotals = hasMultipleDetectedItems;
   const topItemHasNutritionEstimate = topItem ? hasVisionNutritionEstimate(topItem) : false;
   const hasComputedNutrition = useMealMacroTotals
     ? mealMacroTotals.calories > 0
     : topItemHasNutritionEstimate;
+
+  const handleToggleSelectItem = useCallback((index: number) => {
+    setSelectedIndices((prev) => {
+      if (prev.includes(index)) {
+        return prev.filter((i) => i !== index);
+      } else {
+        return [...prev, index];
+      }
+    });
+  }, []);
+
+  // Synchronize resultGrams when active single item changes
+  useEffect(() => {
+    if (selectedIndices.length === 1) {
+      const activeItemIndex = selectedIndices[0];
+      if (activeItemIndex !== undefined) {
+        const activeItem = distinctResultItems[activeItemIndex];
+        if (activeItem) {
+          setResultGrams(getDefaultVisionGrams(activeItem));
+        }
+      }
+    }
+  }, [selectedIndices, distinctResultItems]);
 
   // Compute macros based on current grams for a single item, or default portions for a meal scan.
   const ratio = resultGrams / 100;
@@ -968,7 +1023,7 @@ const AIScanScreen: React.FC = () => {
             entering={SlideInUp.duration(300).easing(Easing.out(Easing.ease))}
             style={S.resultPanel}
           >
-            {hasDetectedItems && topItem ? (
+            {hasDetectedItems ? (
               <ScrollView
                 style={S.resultScroll}
                 contentContainerStyle={S.resultScrollContent}
@@ -983,10 +1038,12 @@ const AIScanScreen: React.FC = () => {
                     <ThemedText style={S.resultEyebrow}>Kết quả nhận diện</ThemedText>
                     <ThemedText style={S.drawerFoodName} numberOfLines={2}>
                       {hasMultipleDetectedItems
-                        ? `${distinctResultItems.length} món trong ảnh`
-                        : getVisionFoodDisplayName(topItem)}
+                        ? `${selectedItems.length} món trong ảnh`
+                        : topItem
+                          ? getVisionFoodDisplayName(topItem)
+                          : 'Chưa chọn món nào'}
                     </ThemedText>
-                    {topItem.trustSummary?.label ? (
+                    {topItem?.trustSummary?.label ? (
                       <View style={S.trustBadge}>
                         <ThemedText style={S.trustBadgeText}>
                           {topItem.trustSummary.label}
@@ -1005,7 +1062,7 @@ const AIScanScreen: React.FC = () => {
                           <ThemedText style={S.drawerKcal}>{computedCal} kcal</ThemedText>
                           {hasMultipleDetectedItems ? (
                             <ThemedText style={S.drawerServing}> / ước tính bữa</ThemedText>
-                          ) : (
+                          ) : topItem ? (
                             <Pressable
                               onPress={() => {
                                 setGramInputValue(String(resultGrams));
@@ -1018,7 +1075,7 @@ const AIScanScreen: React.FC = () => {
                                 / {resultGrams}g
                               </ThemedText>
                             </Pressable>
-                          )}
+                          ) : null}
                         </>
                       ) : (
                         <ThemedText style={S.drawerServing}>
@@ -1061,7 +1118,7 @@ const AIScanScreen: React.FC = () => {
                     nestedScrollEnabled={true}
                   >
                     {resultListItems.map((item, index) => {
-                      const isPrimary = index === 0;
+                      const isSelected = selectedIndices.includes(index);
                       const confidence = Math.round((item.confidence ?? 0) * 100);
                       const itemGrams = getDefaultVisionGrams(item);
                       const itemHasNutritionEstimate = hasVisionNutritionEstimate(item);
@@ -1080,23 +1137,24 @@ const AIScanScreen: React.FC = () => {
                       const key = `${item.source ?? 'vision'}-${item.userFoodItemId ?? item.foodItemId ?? item.label}-${index}`;
 
                       return (
-                        <View
+                        <Pressable
                           key={key}
+                          onPress={() => handleToggleSelectItem(index)}
                           style={[
                             S.detectedItem,
-                            isPrimary ? S.detectedItemPrimary : null,
+                            isSelected ? S.detectedItemPrimary : null,
                           ]}
                         >
                           <View
                             style={[
                               S.detectedRank,
-                              isPrimary ? S.detectedRankPrimary : null,
+                              isSelected ? S.detectedRankPrimary : null,
                             ]}
                           >
                             <ThemedText
                               style={[
                                 S.detectedRankText,
-                                isPrimary ? S.detectedRankTextPrimary : null,
+                                isSelected ? S.detectedRankTextPrimary : null,
                               ]}
                             >
                               {index + 1}
@@ -1115,7 +1173,7 @@ const AIScanScreen: React.FC = () => {
                           <ThemedText style={S.detectedConfidence}>
                             {confidence}%
                           </ThemedText>
-                        </View>
+                        </Pressable>
                       );
                     })}
                   </ScrollView>
@@ -1214,7 +1272,7 @@ const AIScanScreen: React.FC = () => {
                   {/* Add to basket — bordered, no icon */}
                   <Pressable
                     style={S.basketBtn}
-                    onPress={() => handleAddToBasket(resultListItems)}
+                    onPress={() => handleAddToBasket(selectedItems)}
                   >
                     <ThemedText style={S.basketBtnText}>
                       {hasMultipleDetectedItems ? 'Thêm tất cả vào giỏ' : 'Thêm vào giỏ'}

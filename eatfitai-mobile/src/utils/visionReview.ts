@@ -67,7 +67,7 @@ export const buildVisionReviewItems = (
 ): VisionReviewItem[] =>
   items.map((item) => ({
     item,
-    selected: item.isMatched && hasUsableVisionNutrition(item),
+    selected: item.selected !== undefined ? item.selected : (item.isMatched && hasVisionNutritionEstimate(item)),
     grams: getDefaultVisionGrams(item),
   }));
 
@@ -252,16 +252,16 @@ export const getVisionReviewSaveBlocker = (
   );
 
   if (hasUnmappedSelectedItem) {
-    return 'Hãy đổi món bằng Search hoặc bỏ chọn món chưa được map.';
+    return 'Cậu dùng "Tìm kiếm món" hoặc bỏ chọn món chưa rõ nha! 💚';
   }
 
   const hasInvalidNutrition = items.some(
     (reviewItem) =>
-      reviewItem.selected && !hasUsableVisionNutrition(reviewItem.item),
+      reviewItem.selected && !hasVisionNutritionEstimate(reviewItem.item),
   );
 
   if (hasInvalidNutrition) {
-    return 'Món đã chọn chưa có dữ liệu dinh dưỡng đủ tin cậy. Hãy đổi món bằng Search hoặc bỏ chọn món đó.';
+    return 'Món chọn thiếu dinh dưỡng, cậu đổi món hoặc bỏ chọn nha! 💚';
   }
 
   return null;

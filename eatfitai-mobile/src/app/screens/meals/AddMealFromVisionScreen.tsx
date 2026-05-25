@@ -12,6 +12,7 @@ import {
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { showAppToast } from '../../../utils/showAppToast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
@@ -62,13 +63,19 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
   const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
+  const insets = useSafeAreaInsets();
 
   const { imageUri, result, initialGrams } = route.params;
 
   const [detectionItems, setDetectionItems] = useState<VisionReviewItem[]>(() => {
     const items = buildVisionReviewItems(result.items);
-    if (initialGrams !== undefined && items.length > 0 && items[0]) {
-      items[0].grams = initialGrams;
+    const selectedItems = items.filter(item => item.selected);
+    if (initialGrams !== undefined) {
+      if (selectedItems.length === 1 && selectedItems[0]) {
+        selectedItems[0].grams = initialGrams;
+      } else if (items.length > 0 && items[0]) {
+        items[0].grams = initialGrams;
+      }
     }
     return items;
   });
@@ -552,7 +559,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     >
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 170 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.imageSection}>
@@ -581,7 +588,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           ]}
         >
           <ThemedText variant="bodySmall" color="textSecondary">
-            Vui lòng kiểm tra lại thông tin, điều chỉnh khối lượng hoặc thêm bớt các món và chọn bữa ăn trước khi lưu vào nhật ký.
+            Cậu xem lại các món ăn tớ đoán xem chuẩn chưa nè! Chỉnh lại khối lượng, thêm bớt món hoặc chọn bữa ăn trước khi tụi mình lưu vào nhật ký nha! 💚
           </ThemedText>
         </View>
 
@@ -622,6 +629,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           {
             backgroundColor: theme.colors.card,
             borderTopColor: theme.colors.border,
+            paddingBottom: Math.max(24, insets.bottom + 8),
           },
         ]}
       >
