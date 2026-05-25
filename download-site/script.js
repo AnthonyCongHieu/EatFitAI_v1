@@ -7,11 +7,12 @@
     version: "1.0.0",
     packageName: "com.eatfitai.app",
     releaseTag: "android-v1.0.0",
-    fileName: "EatFitAI-android-v1.0.0.apk",
-    fileSize: "152.96 MiB",
-    sha256: "8ca307b968ec31b1fff7b209f5748e648a77fec614be10db97f899f78e0cbcaa",
+    fileName: "EatFitAI-android-v1.0.0-build-20260526-014411.apk",
+    fileSize: "153.00 MiB",
+    sha256: "400da397e605394b696b227a67a0f35b31c36e0c67c63ae5702620547ec75b79",
+    downloadCountBaseline: 16,
     downloadUrl:
-      "https://github.com/anthonyconghieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk",
+      "https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0-build-20260526-014411.apk",
     releaseUrl: "",
     repositoryUrl: "",
   };
@@ -1051,8 +1052,8 @@
   }
 
   async function fetchDownloadCount() {
-    const cacheKey = "eatfitai_download_count";
-    const cacheTimeKey = "eatfitai_download_count_time";
+    const cacheKey = `eatfitai_download_count_${RELEASE.releaseTag}_${RELEASE.fileName}`;
+    const cacheTimeKey = `eatfitai_download_count_time_${RELEASE.releaseTag}_${RELEASE.fileName}`;
     const cacheDuration = 5 * 60 * 1000; // 5 minutes cache
 
     const now = Date.now();
@@ -1066,7 +1067,7 @@
 
     try {
       const response = await fetch(
-        "https://api.github.com/repos/anthonyconghieu/EatFitAI_v1/releases/tags/android-v1.0.0"
+        `https://api.github.com/repos/AnthonyCongHieu/EatFitAI_v1/releases/tags/${RELEASE.releaseTag}`
       );
       if (!response.ok) {
         throw new Error(`GitHub API HTTP error: ${response.status}`);
@@ -1078,14 +1079,15 @@
       );
 
       if (apkAsset && typeof apkAsset.download_count === "number") {
-        const count = apkAsset.download_count;
+        const count = RELEASE.downloadCountBaseline + apkAsset.download_count;
         const formattedCount = new Intl.NumberFormat("vi-VN").format(count);
         setText("[data-download-count]", `${formattedCount} lượt`);
 
         localStorage.setItem(cacheKey, formattedCount);
         localStorage.setItem(cacheTimeKey, now.toString());
       } else {
-        setText("[data-download-count]", "0 lượt");
+        const formattedCount = new Intl.NumberFormat("vi-VN").format(RELEASE.downloadCountBaseline);
+        setText("[data-download-count]", `${formattedCount} lượt`);
       }
     } catch (error) {
       console.error("Lỗi khi lấy số lượt tải từ GitHub:", error);
