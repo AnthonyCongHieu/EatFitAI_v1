@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Python script to repair the header of KnowledgeMap component by restoring missing state variables and DOM refs.",
+  "updatedAt":  "2026-05-25T14:34:10.458131100Z"
+}

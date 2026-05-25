@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Tạo script PowerShell clean_infra.ps1 để dọn dẹp các dòng code rác trong Infrastructure.tsx",
+  "updatedAt":  "2026-05-25T16:44:21.980116300Z"
+}

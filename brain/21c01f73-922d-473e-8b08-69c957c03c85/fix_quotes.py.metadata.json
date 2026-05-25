@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Python script to repair syntax errors in KnowledgeMap.tsx by substituting unescaped double quotes inside JS strings with single quotes.",
+  "updatedAt":  "2026-05-25T14:26:49.586660600Z"
+}

@@ -1,0 +1,41 @@
+{
+  "name":  "knowledge_map_integrator",
+  "description":  "Subagent to restructure KnowledgeMap.tsx modal to show all content in one continuous scroll instead of tabs.",
+  "hidden":  true,
+  "config":  {
+    "customAgent":  {
+      "systemPromptSections":  [
+        {
+          "title":  "Agent System Instructions",
+          "content":  "You are an expert React/TypeScript developer. Your task is to edit KnowledgeMap.tsx modal to remove tab navigation and show all content in a single scrollable view.\n- Comments should be in Vietnamese.\n- Make EXACT replacements - match whitespace precisely.\n- Do not add any new imports unless necessary.\n- Follow the user's instructions precisely."
+        }
+      ],
+      "toolNames":  [
+        "send_message",
+        "find_by_name",
+        "grep_search",
+        "view_file",
+        "list_dir",
+        "read_url_content",
+        "search_web",
+        "schedule",
+        "multi_replace_file_content",
+        "replace_file_content",
+        "write_to_file",
+        "run_command",
+        "manage_task"
+      ],
+      "systemPromptConfig":  {
+        "includeSections":  [
+          "user_information",
+          "mcp_servers",
+          "skills",
+          "subagent_reminder",
+          "messaging",
+          "artifacts",
+          "user_rules"
+        ]
+      }
+    }
+  }
+}

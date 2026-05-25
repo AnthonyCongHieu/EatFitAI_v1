@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Tạo script khôi phục Infrastructure.tsx sạch từ log của conversation trước, tự động xử lý escape và ghi đè dưới dạng UTF-8 không BOM",
+  "updatedAt":  "2026-05-25T16:53:13.928379600Z"
+}

@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary":  "Kế hoạch tái cấu trúc gộp sâu giao diện DatasetPipeline.tsx từ nhiều card rời rạc thành 2 Card Unified lớn song song nhằm tối ưu hóa 100% chiều dài trang và loại bỏ sự tách biệt.",
+  "updatedAt":  "2026-05-25T22:33:20.556816700Z",
+  "requestFeedback":  true
+}

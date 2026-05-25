@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary":  "Cập nhật walkthrough.md để tổng kết các cải tiến Bản đồ Kiến trúc (KnowledgeMap.tsx) và tích hợp dịch vụ Email Brevo vào module Hạ tầng & Chi phí.",
+  "updatedAt":  "2026-05-25T18:15:31.868562600Z"
+}

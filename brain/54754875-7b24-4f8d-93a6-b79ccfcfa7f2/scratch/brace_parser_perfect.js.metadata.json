@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Cấu hình brace_parser_perfect.js để định vị chính xác dòng đóng ngoặc sớm khiến hàm Learn bị kết thúc trước tab Quiz.",
+  "updatedAt":  "2026-05-24T15:01:17.105020700Z"
+}

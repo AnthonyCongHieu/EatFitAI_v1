@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Cập nhật script cleanup.ps1 sử dụng thuật toán tìm kiếm ngược ký tự mở ngoặc từ vị trí Taxonomy Simulator để tránh hoàn toàn lỗi encoding tiếng Việt.",
+  "updatedAt":  "2026-05-25T18:53:40.882425400Z"
+}

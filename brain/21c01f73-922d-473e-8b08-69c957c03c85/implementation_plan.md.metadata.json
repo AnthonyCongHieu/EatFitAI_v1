@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary":  "Kế hoạch chi tiết để tạo bản sao ứng dụng ôn thi tốt nghiệp dành riêng cho dự án SmartCare và lưu trữ ngoài Desktop. Kế hoạch bao gồm việc sửa đổi cấu trúc dữ liệu, nội dung học tập, trắc nghiệm, câu hỏi phản biện, lịch sử git commit, code mẫu, sơ đồ hạ tầng, và giao diện AI Chatbox dựa trên thông tin nghiệp vụ và kỹ thuật của SmartCare.",
+  "updatedAt":  "2026-05-25T14:01:33.855153800Z",
+  "requestFeedback":  true
+}

@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Python script to repair KnowledgeMap.tsx by substituting the corrupted staticNodes block with clean SmartCare nodes and removing encoding errors.",
+  "updatedAt":  "2026-05-25T14:25:39.601591200Z"
+}

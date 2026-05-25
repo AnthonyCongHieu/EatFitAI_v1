@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
+  "summary":  "Kế hoạch cải tiến toàn diện giao diện Lý thuyết & Biểu đồ của EatFitAI Prep. Tập trung vào 4 vấn đề cốt lõi: (1) Giảm quá tải thông tin - thêm TL;DR, phân cấp nội dung, (2) Tăng trực quan SVG dataflow - lớn hơn, interactive tooltip, animated step-by-step, (3) Guided Learning Path - progress tracking, stepper, localStorage persistence, (4) Mở rộng nội dung Rubric - thêm câu hỏi phản biện từ 12→15, mapping rõ ràng tiêu chí. Chia thành 5 Pha triển khai tuần tự.",
+  "updatedAt":  "2026-05-24T15:20:21.010734400Z",
+  "requestFeedback":  true
+}

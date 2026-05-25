@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Cấu hình lại brace_analyzer.js để tìm chính xác dòng đóng ngoặc sớm khiến hàm Learn bị kết thúc trước dòng cuối cùng.",
+  "updatedAt":  "2026-05-24T14:54:43.997292600Z"
+}

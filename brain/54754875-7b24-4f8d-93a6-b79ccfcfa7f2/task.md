@@ -1,0 +1,24 @@
+# Danh Sách Công Việc Triển Khai Cải Tiến Learn.tsx
+
+- [x] `Pha 1: Giảm quá tải & Phân cấp nội dung`
+  - [x] Thiết kế lại mảng cấu trúc dữ liệu `handbookStages` thêm `tldr` và `level: 'core' | 'advanced'` cho tất cả các phần học
+  - [x] Xóa bỏ tab "Trắc nghiệm" trùng lặp cùng toàn bộ state và render logic của nó trong `Learn.tsx`
+  - [x] Chỉnh sửa font chữ, loại bỏ `fontFamily: "system-ui, sans-serif"` inline để hiển thị font `Inter` hiện đại
+  - [x] Cải tiến UI render phần lý thuyết: hiển thị TL;DR box nổi bật, ẩn `techBox`/`bulletPoints` của Core section vào accordion, ẩn hoàn toàn Advanced section vào collapsible lớn
+- [x] `Pha 2: Nâng cấp sơ đồ SVG Dataflow động`
+  - [x] Phóng to 6 biểu đồ SVG từ `600x150` lên `800x220`, cập nhật lại tọa độ nodes, text size và lines cho thoáng, dễ nhìn
+  - [x] Cài đặt state và render logic cho **Interactive Tooltip** nổi trên SVG khi di chuột vào các node
+  - [x] Thiết kế thanh điều khiển biểu đồ: nút "▶️ Xem Từng Bước" (Step-by-step Storytelling Mode) kèm nút `Trước`/`Sau` và hộp thuyết minh mô tả chi tiết bước hiện tại
+  - [x] Thêm chú giải màu sắc nodes (Legend Box) phía dưới mỗi sơ đồ
+- [x] `Pha 3: Tích hợp Guided Learning Path & Tiết Độ Học Tập`
+  - [x] Xây dựng thanh Stepper ngang (Stage 1 -> Stage 6) chỉ rõ trạng thái `Chưa học`, `Đang học`, `Đã học`
+  - [x] Thêm nút "✅ Đã nắm vững Stage này" tự động tăng điểm Rubric lên tối đa và cập nhật Radar Chart
+  - [x] Cài đặt `localStorage` lưu trữ và khôi phục tự động `rubricScores`, `completedStages`, `activeStage`
+  - [x] Thiết kế Welcome Onboarding Card tuyệt đẹp cho người học lần đầu
+- [x] `Pha 4: Mở rộng 15 câu phản biện & Speak Tips`
+  - [x] Bổ sung thêm 3 câu hỏi phản biện cực kỳ thực tế nâng tổng số câu hỏi phản biện từ 12 lên 15 câu
+  - [x] Thiết kế thêm trường `speakingTip` (Mẹo diễn đạt trước hội đồng) cho tất cả 15 câu hỏi phản biện
+  - [x] Thêm badge tiêu chí Rubric đính kèm cụ thể cho từng phần lý thuyết
+- [x] `Pha 5: Build & Xác minh`
+  - [x] Chạy kiểm tra biên dịch TypeScript: `npx tsc --noEmit --skipLibCheck`
+  - [x] Verify giao diện thực tế đảm bảo không lỗi

@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Sửa lỗi mã hóa console UnicodeEncodeError bằng cách cấu hình stdout utf-8 và viết lại các thông báo bằng tiếng Anh không dấu.",
+  "updatedAt":  "2026-05-24T14:40:04.697054700Z"
+}

@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Cập nhật script find_history.ps1 để parse JSON log chuẩn xác hơn, duyệt ngược từ cuối file lên để lấy code của Infrastructure.tsx bản mới nhất.",
+  "updatedAt":  "2026-05-25T16:50:08.782422200Z"
+}
