@@ -52,6 +52,7 @@ import { trackEvent } from '../../../services/analytics';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
+import { CustomCalendarPicker } from '../../../components/ui/CustomCalendarPicker';
 import { TEST_IDS } from '../../../testing/testIds';
 import MoChiInlineNotice from '../../../features/mochi/MoChiInlineNotice';
 import MoChiScreenState from '../../../features/mochi/MoChiScreenState';
@@ -150,11 +151,26 @@ interface MonthSummary {
 }
 
 /* ─── Date helper (Hanoi UTC+7) ─── */
-const formatViDate = (): string => {
-  const now = new Date();
-  const offset = now.getTime() + 7 * 60 * 60 * 1000;
-  const hanoi = new Date(offset);
-  return `Hôm nay, ${hanoi.getUTCDate()} Thg ${hanoi.getUTCMonth() + 1}`;
+const formatViDate = (date: Date): string => {
+  const todayStr = formatLocalDate(new Date());
+  const targetStr = formatLocalDate(date);
+
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  if (targetStr === todayStr) {
+    return `Hôm nay, ${day} Thg ${month}`;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = formatLocalDate(yesterday);
+  if (targetStr === yesterdayStr) {
+    return `Hôm qua, ${day} Thg ${month}`;
+  }
+
+  return `${day} Thg ${month}, ${year}`;
 };
 
 const cardW = SCREEN_WIDTH - 40; // 20px content margins * 2
@@ -269,6 +285,9 @@ const StatsScreen = (): React.ReactElement => {
   const [pendingWeeklyReviewFocus, setPendingWeeklyReviewFocus] = useState(focusWeeklyReview);
   const [isWeeklyReviewFocused, setIsWeeklyReviewFocused] = useState(focusWeeklyReview);
 
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   /* ─── Data: Today ─── */
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
@@ -294,8 +313,8 @@ const StatsScreen = (): React.ReactElement => {
 
   /* ─── Data: Water ─── */
   const { data: statsWaterData } = useQuery<WaterIntakeData>({
-    queryKey: ['water-intake-today'],
-    queryFn: () => waterService.getWaterIntake(new Date()),
+    queryKey: ['water-intake-today', formatLocalDate(selectedDate)],
+    queryFn: () => waterService.getWaterIntake(selectedDate),
     staleTime: 2 * 60 * 1000, // 2 phút — share cache với HomeScreen
     enabled: activeTab === 'today',
   });
@@ -344,8 +363,8 @@ const StatsScreen = (): React.ReactElement => {
 
   useEffect(() => {
     fetchWeekSummary();
-    fetchSummary();
-  }, []);
+    fetchSummary(formatLocalDate(selectedDate));
+  }, [selectedDate]);
 
   useEffect(() => {
     if (!focusWeeklyReview) {
@@ -522,13 +541,16 @@ const StatsScreen = (): React.ReactElement => {
 
   const handleRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (activeTab === 'today') { fetchSummary(); fetchWeekSummary(); }
+    if (activeTab === 'today') {
+      fetchSummary(formatLocalDate(selectedDate));
+      fetchWeekSummary();
+    }
     else if (activeTab === 'week') {
       fetchWeekSummary();
       void refetchWeeklyReview();
     }
     else fetchMonthData();
-  }, [activeTab, fetchSummary, fetchWeekSummary, fetchMonthData, refetchWeeklyReview]);
+  }, [activeTab, fetchSummary, fetchWeekSummary, fetchMonthData, refetchWeeklyReview, selectedDate]);
 
   const handleDayPress = useCallback(
     (date: string) => {
@@ -611,10 +633,16 @@ const StatsScreen = (): React.ReactElement => {
         {/* ═══════════ TODAY ═══════════ */}
         {activeTab === 'today' && (
           <>
-            <View style={S.dateMetaRow}>
+            <Pressable
+              onPress={() => setShowDatePicker(true)}
+              style={({ pressed }) => [
+                S.dateMetaRow,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
               <Ionicons name="calendar-outline" size={15} color={P.textSlate400} />
-              <ThemedText style={S.dateMetaText}>{formatViDate()}</ThemedText>
-            </View>
+              <ThemedText style={S.dateMetaText}>{formatViDate(selectedDate)}</ThemedText>
+            </Pressable>
 
             {/* ── HERO CARD ── */}
             <Animated.View entering={FadeInDown.delay(100).springify()}>
@@ -1660,6 +1688,20 @@ const StatsScreen = (): React.ReactElement => {
           </View>
         )}
       </ScrollView>
+
+      {/* ══════════ DATE PICKER MODAL ══════════ */}
+      {showDatePicker && (
+        <CustomCalendarPicker
+          selectedDate={selectedDate}
+          minDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
+          maxDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+          onSelectDate={(date) => {
+            setSelectedDate(date);
+            setShowDatePicker(false);
+          }}
+          onClose={() => setShowDatePicker(false)}
+        />
+      )}
     </View>
   );
 };
